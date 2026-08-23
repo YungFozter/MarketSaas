@@ -32,11 +32,6 @@ CREATE TABLE IF NOT EXISTS public.store_config (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Insertar configuración inicial por defecto si no existe
-INSERT INTO public.store_config (id, name, slogan, is_open, min_order, delivery_fee)
-VALUES ('default', 'MarketSaaS Minimarket', 'Tu Minimarket de Confianza', true, 0, 1.00)
-ON CONFLICT (id) DO NOTHING;
-
 -- 3. Tabla de Pedidos (Orders)
 CREATE TABLE IF NOT EXISTS public.orders (
   id TEXT PRIMARY KEY,
