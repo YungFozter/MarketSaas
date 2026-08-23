@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { Lock, ShieldCheck, KeyRound, X } from 'lucide-react';
+import { Lock, ShieldCheck, KeyRound, User, Eye, EyeOff, X } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
   const { storeConfig } = useStore();
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('admin@tienda.com');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(false);
 
   if (!isOpen) return null;
 
-  const validPin = storeConfig.adminPin || '1234';
+  const validPassword = storeConfig.adminPassword || 'admin';
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (pin === validPin || pin === '1234' || pin === 'admin') {
+    if (password === validPassword || password === 'admin' || password === '1234') {
       setError(false);
-      setPin('');
+      setPassword('');
       onSuccess();
     } else {
       setError(true);
@@ -32,40 +34,60 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col items-center text-center mb-6">
+        <div className="flex flex-col items-center text-center mb-5">
           <div className="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3 shadow-inner">
             <Lock className="w-7 h-7" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900">Acceso Administrador</h3>
+          <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Acceso Administrador</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Ingresa tu clave de acceso para entrar a la Vista de Dueño/POS. (Clave demo: <span className="font-mono font-bold text-amber-600">{validPin}</span>)
+            Ingresa las credenciales del dueño para entrar al POS y Gestión. (Demo pass: <span className="font-mono font-bold text-amber-600">{validPassword}</span>)
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
+            <label className="text-[11px] font-bold text-slate-700 block mb-1">Correo / Usuario</label>
             <div className="relative">
-              <KeyRound className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" />
+              <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
-                type="password"
-                maxLength={8}
-                value={pin}
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50/50 outline-none focus:border-amber-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-slate-700 block mb-1">Contraseña de Seguridad</label>
+            <div className="relative">
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
                 onChange={(e) => {
-                  setPin(e.target.value);
+                  setPassword(e.target.value);
                   setError(false);
                 }}
-                placeholder="Ingresa PIN..."
-                className={`w-full pl-11 pr-4 py-2.5 rounded-xl border text-center font-mono text-lg tracking-widest outline-none transition-all ${
+                placeholder="Ingresa tu contraseña..."
+                className={`w-full pl-9 pr-9 py-2 rounded-xl border text-xs font-mono outline-none transition-all ${
                   error
                     ? 'border-rose-400 bg-rose-50/50 text-rose-700 ring-2 ring-rose-200'
                     : 'border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-200'
                 }`}
                 autoFocus
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             {error && (
-              <p className="text-xs text-rose-600 font-medium mt-1.5 text-center">
-                ⚠️ PIN incorrecto. Intenta de nuevo (Clave: {validPin})
+              <p className="text-[11px] text-rose-600 font-bold mt-1.5 text-center">
+                ⚠️ Contraseña incorrecta (Clave demo: {validPassword})
               </p>
             )}
           </div>
@@ -74,15 +96,15 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 text-slate-900 text-sm font-bold hover:bg-amber-400 shadow-md shadow-amber-500/20"
+              className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 text-slate-950 text-xs font-extrabold hover:bg-amber-400 shadow-md shadow-amber-500/20 transition-all"
             >
-              Ingresar
+              Iniciar Sesión
             </button>
           </div>
         </form>

@@ -291,52 +291,66 @@ export const InventoryManager = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Código de Barra / SKU</label>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Código de Producto <span className="text-[10px] text-emerald-600 font-normal">(Auto si se deja vacío)</span>
+                  </label>
                   <input
                     type="text"
-                    value={editingProduct.code}
+                    value={editingProduct.code || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, code: e.target.value })}
-                    placeholder="78012345001"
+                    placeholder="Ej. COD-001 (Auto si está vacío)"
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-mono"
                   />
                 </div>
               </div>
 
-              {/* Costo, Precio Venta y Precio Oferta */}
-              <div className="grid grid-cols-3 gap-3 p-3.5 bg-emerald-50/50 rounded-2xl border border-emerald-100">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Costo Compra ($)</label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={editingProduct.costPrice || 0}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
-                  />
+              {/* Costo, Precio Venta, Precio Oferta y Margen % */}
+              <div className="space-y-2 p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Costo Compra (Bs.)</label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      value={editingProduct.costPrice || 0}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Venta (Bs.) *</label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      required
+                      value={editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-2.5 py-2 rounded-xl border border-emerald-300 text-xs font-black text-emerald-800 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Normal (Bs.)</label>
+                    <input
+                      type="number"
+                      step="0.10"
+                      value={editingProduct.originalPrice || editingProduct.price}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Venta ($) *</label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    required
-                    value={editingProduct.price}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2.5 py-2 rounded-xl border border-emerald-300 text-xs font-black text-emerald-800 bg-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Normal ($)</label>
-                  <input
-                    type="number"
-                    step="0.05"
-                    value={editingProduct.originalPrice || editingProduct.price}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-                  />
-                </div>
+                {/* Calculadora en tiempo real de Margen % */}
+                {editingProduct.price > 0 && (
+                  <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-xs">
+                    <span className="text-slate-600 font-semibold">Margen de Ganancia Estimado:</span>
+                    <span className="font-extrabold text-emerald-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200">
+                      {(((editingProduct.price - (editingProduct.costPrice || 0)) / editingProduct.price) * 100).toFixed(1)}% Margen Neto
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Stock y Stock Mínimo */}
@@ -373,18 +387,48 @@ export const InventoryManager = () => {
                 </div>
               </div>
 
-              {/* Imagen URL y Badge */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">URL de la Foto</label>
-                  <input
-                    type="url"
-                    value={editingProduct.image}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
-                  />
-                </div>
+              {/* Cargar Foto de Producto (Archivo + URL) */}
+              <div className="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <label className="text-xs font-bold text-slate-800 block">Foto del Producto (Cargar desde Archivo o Enlace)</label>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                    {editingProduct.image ? (
+                      <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[10px] text-slate-400">Sin Foto</span>
+                    )}
+                  </div>
 
+                  <div className="flex-1 space-y-2 w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setEditingProduct({ ...editingProduct, image: reader.result });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                    />
+                    <input
+                      type="url"
+                      placeholder="O pega una URL de foto en Internet..."
+                      value={editingProduct.image || ''}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Badge y Descripción */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Badge Promocional</label>
                   <input
@@ -395,18 +439,17 @@ export const InventoryManager = () => {
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
-              </div>
 
-              {/* Descripción */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Descripción</label>
-                <textarea
-                  rows="2"
-                  value={editingProduct.description || ''}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                  placeholder="Detalles del producto para los clientes..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium"
-                />
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Descripción Corta</label>
+                  <input
+                    type="text"
+                    value={editingProduct.description || ''}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                    placeholder="Detalles para el cliente..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium"
+                  />
+                </div>
               </div>
 
               {/* Botones */}

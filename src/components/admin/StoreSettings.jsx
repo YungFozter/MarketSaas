@@ -11,29 +11,34 @@ import {
   CheckCircle2, 
   QrCode, 
   DollarSign,
-  Power
+  Power,
+  Image as ImageIcon,
+  Lock,
+  Upload
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { presetBanners } from '../../data/initialData';
 
 export const StoreSettings = () => {
   const { storeConfig, setStoreConfig, showToast } = useStore();
 
   const [form, setForm] = useState({ 
-    currencySymbol: '$',
-    adminPin: '1234',
+    currencySymbol: 'Bs.',
+    adminPassword: 'admin',
     themeColor: 'emerald',
     logoUrl: '',
-    bannerUrl: '',
+    bannerUrl: presetBanners[0].url,
+    qrImageUrl: '',
     coupons: [],
     categories: [],
     ...storeConfig 
   });
   const [newCondoName, setNewCondoName] = useState('');
-  const [newCondoFee, setNewCondoFee] = useState('1.00');
+  const [newCondoFee, setNewCondoFee] = useState('5.00');
   const [newCondoTime, setNewCondoTime] = useState('10-15 min');
 
   const [newCouponCode, setNewCouponCode] = useState('');
-  const [newCouponDiscount, setNewCouponDiscount] = useState('1.50');
+  const [newCouponDiscount, setNewCouponDiscount] = useState('10.00');
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -47,7 +52,7 @@ export const StoreSettings = () => {
       id: `c-${Date.now()}`,
       name: newCondoName,
       towers: ['Torre A', 'Torre B', 'Casas'],
-      deliveryFee: parseFloat(newCondoFee) || 1.00,
+      deliveryFee: parseFloat(newCondoFee) || 5.00,
       estTime: newCondoTime || '15 min'
     };
     setForm(prev => ({
@@ -70,8 +75,8 @@ export const StoreSettings = () => {
     const newCoupon = {
       id: `coup-${Date.now()}`,
       code: newCouponCode.toUpperCase().trim(),
-      discount: parseFloat(newCouponDiscount) || 1.00,
-      description: `Cupón de descuento por ${form.currencySymbol || '$'}${parseFloat(newCouponDiscount).toFixed(2)}`
+      discount: parseFloat(newCouponDiscount) || 10.00,
+      description: `Cupón de descuento por Bs. ${parseFloat(newCouponDiscount).toFixed(2)}`
     };
     setForm(prev => ({
       ...prev,
@@ -98,7 +103,7 @@ export const StoreSettings = () => {
             <span>Configuración de la Tienda & Marca Blanca</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Personaliza el nombre, moneda, clave PIN de acceso, cupones y tarifas de delivery.
+            Personaliza el logo, banner de portada, contraseña de dueño, QR de cobro y cupones.
           </p>
         </div>
 
@@ -111,11 +116,92 @@ export const StoreSettings = () => {
         </button>
       </div>
 
+      {/* Identidad Visual & Portadas */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
+        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+          <ImageIcon className="w-4 h-4 text-emerald-600" />
+          <span>Personalización Visual (Logo & Imagen de Portada)</span>
+        </h3>
+
+        {/* Cargar Logotipo */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <label className="text-xs font-bold text-slate-800 block">Logotipo de la Tienda</label>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-20 h-20 rounded-2xl bg-white border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-[10px] text-slate-400 font-bold text-center px-1">Sin Logo</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2 w-full">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setForm(prev => ({ ...prev, logoUrl: reader.result }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+              />
+              <input
+                type="url"
+                placeholder="O pega el enlace de tu logo..."
+                value={form.logoUrl || ''}
+                onChange={(e) => setForm(prev => ({ ...prev, logoUrl: e.target.value }))}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Galería de Portadas Predeterminadas */}
+        <div className="space-y-3">
+          <label className="text-xs font-bold text-slate-800 block">
+            Imagen de Portada / Banner (Elige una opción predeterminada o sube la tuya)
+          </label>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {presetBanners.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                onClick={() => setForm(prev => ({ ...prev, bannerUrl: b.url }))}
+                className={`group relative rounded-2xl overflow-hidden border-2 transition-all text-left h-24 ${
+                  form.bannerUrl === b.url ? 'border-emerald-600 ring-2 ring-emerald-600/30 shadow-md' : 'border-slate-200 hover:border-slate-400'
+                }`}
+              >
+                <img src={b.url} alt={b.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <div className="absolute inset-0 bg-slate-900/40 p-2 flex items-end">
+                  <span className="text-[10px] font-bold text-white leading-tight drop-shadow-md">{b.name}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="pt-2">
+            <input
+              type="url"
+              placeholder="O escribe una URL personalizada para la portada..."
+              value={form.bannerUrl || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, bannerUrl: e.target.value }))}
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Estado del Local & Datos Generales */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
         <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
           <Power className="w-4 h-4 text-emerald-600" />
-          <span>Información Básica & Clave PIN Administrador</span>
+          <span>Información Básica & Autenticación de Dueño</span>
         </h3>
 
         {/* Switch Abierto / Cerrado */}
@@ -178,22 +264,21 @@ export const StoreSettings = () => {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Símbolo de Moneda (ej. $, S/, Bs, €)</label>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Moneda del Sistema</label>
             <input
               type="text"
-              value={form.currencySymbol || '$'}
-              onChange={(e) => setForm(prev => ({ ...prev, currencySymbol: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+              disabled
+              value="Bolivianos (Bs.)"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-600 cursor-not-allowed"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Clave PIN de Acceso Administrador (Dueño)</label>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Contraseña de Seguridad (Acceso Dueño)</label>
             <input
-              type="text"
-              maxLength={8}
-              value={form.adminPin || '1234'}
-              onChange={(e) => setForm(prev => ({ ...prev, adminPin: e.target.value }))}
+              type="password"
+              value={form.adminPassword || 'admin'}
+              onChange={(e) => setForm(prev => ({ ...prev, adminPassword: e.target.value }))}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
             />
           </div>
@@ -214,6 +299,94 @@ export const StoreSettings = () => {
               type="text"
               value={form.schedule}
               onChange={(e) => setForm(prev => ({ ...prev, schedule: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Datos Bancarios y Carga de Imagen del QR de Cobro */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-emerald-600" />
+          <span>Datos Bancarios & Imagen del Código QR de Cobro</span>
+        </h3>
+
+        {/* Cargar Foto de QR */}
+        <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
+          <label className="text-xs font-bold text-amber-950 block">Imagen del Código QR de Cobro (Se mostrará al cliente al pagar)</label>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-24 h-24 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+              {form.qrImageUrl ? (
+                <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1" />
+              ) : (
+                <span className="text-[10px] text-amber-600 font-bold text-center px-1">Sin Foto QR</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-2 w-full">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setForm(prev => ({ ...prev, qrImageUrl: reader.result }));
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
+              />
+              <input
+                type="url"
+                placeholder="O pega una URL directa de la imagen del QR..."
+                value={form.qrImageUrl || ''}
+                onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Banco o Billetera Digital</label>
+            <input
+              type="text"
+              value={form.bankDetails.bank}
+              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bank: e.target.value } }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Número de Cuenta</label>
+            <input
+              type="text"
+              value={form.bankDetails.accountNumber}
+              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Titular de la Cuenta</label>
+            <input
+              type="text"
+              value={form.bankDetails.holder}
+              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, holder: e.target.value } }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Alias QR / Glosa</label>
+            <input
+              type="text"
+              value={form.bankDetails.aliasQR}
+              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, aliasQR: e.target.value } }))}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
             />
           </div>

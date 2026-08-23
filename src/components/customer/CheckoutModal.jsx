@@ -328,10 +328,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       <div className="mt-3 pt-3 border-t border-emerald-200/60 flex items-center justify-between text-xs">
                         <span className="font-semibold text-slate-700">¿Con cuánto pagarás? (Para tu vuelto exacto):</span>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-slate-500">$</span>
+                          <span className="font-bold text-slate-500">Bs.</span>
                           <input
                             type="number"
-                            step="0.5"
+                            step="1.0"
                             value={cashAmount}
                             onChange={(e) => setCashAmount(e.target.value)}
                             className="w-20 px-2 py-1 rounded-lg border border-slate-300 font-black text-right text-xs bg-white"
@@ -356,15 +356,26 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                       <div className="flex-1">
                         <p className="font-extrabold text-slate-900 text-xs sm:text-sm">Transferencia / QR Digital</p>
-                        <p className="text-[11px] text-slate-500">Transfiere de inmediato a la cuenta de la tienda</p>
+                        <p className="text-[11px] text-slate-500">Transfiere de inmediato al código QR de la tienda</p>
                       </div>
                     </div>
 
                     {paymentMethod === 'qr' && (
-                      <div className="mt-3 pt-3 border-t border-emerald-200/60 text-xs space-y-2 bg-white p-3 rounded-xl border border-slate-200">
+                      <div className="mt-3 pt-3 border-t border-emerald-200/60 text-xs space-y-2.5 bg-white p-3.5 rounded-2xl border border-slate-200">
+                        {storeConfig.qrImageUrl ? (
+                          <div className="flex flex-col items-center text-center pb-2 border-b border-slate-100">
+                            <p className="text-[11px] font-bold text-slate-700 mb-1.5">Escanea este Código QR para Pagar:</p>
+                            <img src={storeConfig.qrImageUrl} alt="Código QR de Cobro" className="w-44 h-44 object-contain rounded-2xl border-2 border-amber-300 shadow-sm p-1.5 bg-white" />
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
+                            <p className="text-[11px] font-bold text-amber-900">Escanea el código QR de cobro de la tienda o transfiere a la cuenta:</p>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-slate-800">{storeConfig.bankDetails.bank}</span>
                           <button
+                            type="button"
                             onClick={handleCopyBankInfo}
                             className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md"
                           >
@@ -373,7 +384,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                           </button>
                         </div>
                         <p className="text-slate-600 text-[11px]">Cuenta: <strong>{storeConfig.bankDetails.accountNumber}</strong></p>
-                        <p className="text-slate-600 text-[11px]">Titular: {storeConfig.bankDetails.holder} ({storeConfig.bankDetails.rut})</p>
+                        <p className="text-slate-600 text-[11px]">Titular: {storeConfig.bankDetails.holder}</p>
                       </div>
                     )}
                   </div>

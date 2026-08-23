@@ -418,11 +418,13 @@ export const StoreProvider = ({ children }) => {
       }
       showToast(`Producto "${productData.name}" actualizado.`);
     } else {
-      // Nuevo
+      // Nuevo - Código auto-incrementable por defecto si el dueño no ingresa uno
+      const nextNum = products.length + 1;
+      const autoCode = `COD-${String(nextNum).padStart(3, '0')}`;
       const newProd = {
         ...payload,
         id: `prod-${Date.now()}`,
-        code: productData.code || `780${Math.floor(10000000 + Math.random() * 90000000)}`,
+        code: productData.code && productData.code.trim() ? productData.code.trim() : autoCode,
         image: productData.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'
       };
       setProducts(prev => [newProd, ...prev]);
@@ -431,7 +433,7 @@ export const StoreProvider = ({ children }) => {
           if (error) console.error('Error insertando producto en Supabase:', error);
         });
       }
-      showToast(`Nuevo producto "${newProd.name}" creado.`);
+      showToast(`Nuevo producto "${newProd.name}" creado (${newProd.code}).`);
     }
   };
 
