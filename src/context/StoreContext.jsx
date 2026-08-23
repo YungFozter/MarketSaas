@@ -81,7 +81,7 @@ export const StoreProvider = ({ children }) => {
     });
 
     // 2. Cargar storeConfig
-    supabase.from('store_config').select('*').eq('id', 'default').single().then(({ data, error }) => {
+    supabase.from('store_config').select('*').eq('id', 'default').maybeSingle().then(({ data, error }) => {
       if (!error && data) {
         const { id, ...configData } = data;
         setStoreConfig(prev => ({ ...prev, ...configData }));
