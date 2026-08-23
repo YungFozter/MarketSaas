@@ -27,10 +27,20 @@ export const StoreProvider = ({ children }) => {
   });
 
   // 3. Configuración de Tienda
-  const [storeConfig, setStoreConfig] = useState(() => {
+  const [storeConfig, setStoreConfigState] = useState(() => {
     const saved = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
     return saved ? JSON.parse(saved) : initialStoreConfig;
   });
+
+  const setStoreConfig = (newConfigData) => {
+    const updated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
+    setStoreConfigState(updated);
+    if (supabase) {
+      supabase.from('store_config').upsert([{ id: tenantSlug, tenant_id: tenantSlug, ...updated }]).then(({ error }) => {
+        if (error) console.error('Error sincronizando storeConfig en Supabase:', error);
+      });
+    }
+  };
 
   // 4. Carrito de Compras
   const [cart, setCart] = useState(() => {
@@ -80,30 +90,30 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     if (!supabase) return;
 
-    // 1. Cargar productos
+    // 1. Cargar productos por tienda
     supabase.from('products').select('*').eq('tenant_id', tenantSlug).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setProducts(data);
       }
     });
 
-    // 2. Cargar storeConfig
-    supabase.from('store_config').select('*').eq('id', tenantSlug).single().then(({ data, error }) => {
+    // 2. Cargar storeConfig por tienda
+    supabase.from('store_config').select('*').eq('id', tenantSlug).maybeSingle().then(({ data, error }) => {
       if (!error && data) {
         const { id, ...configData } = data;
         setStoreConfig(prev => ({ ...prev, ...configData }));
       }
     });
 
-    // 3. Cargar pedidos
-    supabase.from('orders').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+    // 3. Cargar pedidos por tienda
+    supabase.from('orders').select('*').eq('tenant_id', tenantSlug).order('created_at', { ascending: false }).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setOrders(data);
       }
     });
 
-    // 4. Cargar solicitudes de productos
-    supabase.from('product_requests').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+    // 4. Cargar solicitudes de productos por tienda
+    supabase.from('product_requests').select('*').eq('tenant_id', tenantSlug).order('created_at', { ascending: false }).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setProductRequests(data);
       }
@@ -299,6 +309,7 @@ export const StoreProvider = ({ children }) => {
 
     const newOrder = {
       id: orderId,
+      tenant_id: tenantSlug,
       customer: {
         name: orderData.name,
         phone: orderData.phone,
@@ -394,13 +405,14 @@ export const StoreProvider = ({ children }) => {
 
   // Crear o Editar Producto (Dueño)
   const saveProduct = (productData) => {
+    const payload = { ...productData, tenant_id: tenantSlug };
     if (productData.id) {
       // Editar
       setProducts(prev =>
-        prev.map(p => (p.id === productData.id ? { ...p, ...productData } : p))
+        prev.map(p => (p.id === productData.id ? { ...p, ...payload } : p))
       );
       if (supabase) {
-        supabase.from('products').upsert([productData]).then(({ error }) => {
+        supabase.from('products').upsert([payload]).then(({ error }) => {
           if (error) console.error('Error guardando producto en Supabase:', error);
         });
       }
@@ -408,7 +420,7 @@ export const StoreProvider = ({ children }) => {
     } else {
       // Nuevo
       const newProd = {
-        ...productData,
+        ...payload,
         id: `prod-${Date.now()}`,
         code: productData.code || `780${Math.floor(10000000 + Math.random() * 90000000)}`,
         image: productData.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'
