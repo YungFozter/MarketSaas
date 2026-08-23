@@ -28,7 +28,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
   const popularProducts = products.filter(p => p.isPopular).slice(0, 4);
 
   return (
-    <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
       {/* Banner Superior Principal */}
       <HeroBanner 
         searchQuery={searchQuery}

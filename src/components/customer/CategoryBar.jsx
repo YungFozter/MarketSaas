@@ -39,7 +39,7 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }) => {
       </div>
 
       {/* Barra de scroll horizontal limpia */}
-      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth -mx-3 px-3 sm:mx-0 sm:px-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth">
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat.id;
           const count = cat.id === 'all'
