@@ -38,7 +38,7 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
           </div>
           <h3 className="text-xl font-bold text-slate-900">Acceso Administrador</h3>
           <p className="text-xs text-slate-500 mt-1">
-            Ingresa tu clave de acceso para entrar a la Vista de Dueño/POS. (Clave demo: <span className="font-mono font-bold text-amber-600">1234</span>)
+            Ingresa tu clave de acceso para entrar a la Vista de Dueño/POS. (Clave demo: <span className="font-mono font-bold text-amber-600">{validPin}</span>)
           </p>
         </div>
 
@@ -65,7 +65,7 @@ export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
             {error && (
               <p className="text-xs text-rose-600 font-medium mt-1.5 text-center">
-                ⚠️ PIN incorrecto. Intenta de nuevo (Demo: 1234)
+                ⚠️ PIN incorrecto. Intenta de nuevo (Clave: {validPin})
               </p>
             )}
           </div>
