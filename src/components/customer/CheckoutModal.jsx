@@ -90,19 +90,19 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
-        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8"
+        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con Indicador de Pasos */}
-        <div className="p-5 sm:p-6 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-700">
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-700">
               Paso {step} de 2
             </span>
-            <h2 className="text-xl font-extrabold text-slate-900">
-              {step === 1 ? 'Dirección y Tipo de Entrega' : 'Método de Pago y Confirmación'}
+            <h2 className="text-base sm:text-xl font-extrabold text-slate-900 leading-tight">
+              {step === 1 ? 'Dirección y Entrega' : 'Método de Pago'}
             </h2>
           </div>
           <button
@@ -114,7 +114,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Contenido del Checkout */}
-        <div className="p-6 sm:p-8">
+        <div className="p-4 sm:p-8 overflow-y-auto flex-1">
           {step === 1 ? (
             /* PASO 1: ENTREGA Y DIRECCIÓN */
             <div className="space-y-6">

@@ -48,23 +48,23 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
   const waUrl = `https://wa.me/${storeConfig.whatsapp}?text=${waMessage}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
-        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8"
+        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con Estado */}
-        <div className="p-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between shrink-0">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="bg-white/20 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-xs font-bold">
+            <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+              <span className="bg-white/20 backdrop-blur-xs px-2.5 py-0.5 rounded-full text-[11px] font-bold">
                 Pedido #{order.id}
               </span>
-              <span className="text-xs text-emerald-100 font-medium">
+              <span className="text-[11px] text-emerald-100 font-medium">
                 {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            <h2 className="text-xl font-extrabold tracking-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
               Seguimiento en Vivo
             </h2>
           </div>
@@ -76,7 +76,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
           </button>
         </div>
 
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-4 sm:p-8 space-y-5 overflow-y-auto flex-1">
           {/* Alerta de Cancelado si aplica */}
           {isCancelled ? (
             <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-3">

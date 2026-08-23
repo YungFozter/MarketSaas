@@ -33,9 +33,9 @@ export const AdminHome = () => {
   ];
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
+    <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
       {/* Barra de Pestañas del Administrador */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar border-b border-slate-200">
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar touch-pan-x scroll-smooth -mx-3 px-3 sm:mx-0 sm:px-0 border-b border-slate-200">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -44,7 +44,7 @@ export const AdminHome = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 shrink-0 border ${
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 shrink-0 border ${
                 isActive
                   ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.02]'
                   : 'bg-white text-slate-600 border-slate-200/90 hover:border-slate-300 hover:bg-slate-50'

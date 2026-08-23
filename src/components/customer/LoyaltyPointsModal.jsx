@@ -32,13 +32,13 @@ export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
-        className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8"
+        className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header con Saldo de Puntos */}
-        <div className="p-6 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex flex-col justify-between relative overflow-hidden">
+        <div className="p-5 sm:p-6 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-slate-950 flex flex-col justify-between relative overflow-hidden shrink-0">
           <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/20 rounded-full blur-xl pointer-events-none"></div>
 
           <div className="flex items-center justify-between mb-4 relative z-10">
@@ -67,7 +67,7 @@ export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Cupones Canjeables */}
-        <div className="p-6 sm:p-8 space-y-4">
+        <div className="p-4 sm:p-8 space-y-4 overflow-y-auto flex-1">
           <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
             <Gift className="w-4 h-4 text-emerald-600" />
             <span>Canjea tus puntos por descuentos inmediatos:</span>

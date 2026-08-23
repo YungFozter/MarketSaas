@@ -20,23 +20,23 @@ export const RequestProductModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
-        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8"
+        className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 bg-gradient-to-r from-teal-700 to-emerald-700 text-white flex items-center justify-between">
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-teal-700 to-emerald-700 text-white flex items-center justify-between shrink-0">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-bold mb-1">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>Buzón Comunitario</span>
             </div>
-            <h2 className="text-xl font-extrabold tracking-tight">
+            <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
               ¿Falta algún producto en la tienda?
             </h2>
-            <p className="text-xs text-emerald-100 mt-0.5">
-              Pídelo al dueño para que lo traiga en el próximo pedido a proveedores.
+            <p className="text-[11px] sm:text-xs text-emerald-100 mt-0.5">
+              Pídelo al dueño para que lo traiga en el próximo pedido.
             </p>
           </div>
           <button
@@ -47,7 +47,7 @@ export const RequestProductModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="p-6 sm:p-8 space-y-6">
+        <div className="p-4 sm:p-8 space-y-5 overflow-y-auto flex-1">
           {/* Formulario para pedir */}
           <form onSubmit={handleSubmit} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
             <h4 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">

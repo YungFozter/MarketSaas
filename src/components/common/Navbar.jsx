@@ -37,31 +37,31 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
   return (
     <header className="sticky top-0 z-40 w-full glass-nav border-b border-slate-200/80 shadow-xs transition-all">
       {/* Barra superior de Promoción y Confianza */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-4 text-xs font-medium">
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 font-medium text-center sm:text-left">
             <span className="flex items-center gap-1.5 bg-white/20 backdrop-blur-xs px-2.5 py-0.5 rounded-full">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
               100% Garantía de Frescura & Vecindad
             </span>
-            <span className="hidden sm:flex items-center gap-1.5 text-emerald-100">
-              <Clock className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="hidden md:flex items-center gap-1.5 text-emerald-100">
+              <Clock className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
               Entregas en tu puerta en 10-15 min
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* Switch de Modo Cliente / Administrador */}
             <div className="flex items-center bg-black/20 p-0.5 rounded-xl border border-white/20">
               <button
                 onClick={() => setViewMode('customer')}
-                className={`px-3 py-1 rounded-lg font-semibold text-xs transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg font-semibold text-[11px] sm:text-xs transition-all flex items-center gap-1 ${
                   viewMode === 'customer'
                     ? 'bg-white text-emerald-800 shadow-sm'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
+                <ShoppingBag className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>Vista Cliente</span>
               </button>
               <button
@@ -74,13 +74,13 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                     }
                   }
                 }}
-                className={`px-3 py-1 rounded-lg font-semibold text-xs transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg font-semibold text-[11px] sm:text-xs transition-all flex items-center gap-1 ${
                   viewMode === 'admin'
                     ? 'bg-amber-400 text-slate-900 shadow-sm font-bold'
                     : 'text-white/80 hover:text-white'
                 }`}
               >
-                <Store className="w-3.5 h-3.5" />
+                <Store className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>Vista Dueño</span>
                 {activeOrdersCount > 0 && (
                   <span className="bg-rose-500 text-white px-1.5 py-0.2 rounded-full text-[10px] animate-pulse">
@@ -94,25 +94,25 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
       </div>
 
       {/* Navegación Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4">
           
           {/* Logo y Nombre del Negocio */}
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 ring-4 ring-emerald-50">
-              <Store className="w-6 h-6" />
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 ring-2 sm:ring-4 ring-emerald-50 shrink-0">
+              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="font-extrabold text-base sm:text-xl text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
                   {storeConfig.name}
                 </span>
-                <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-md border border-emerald-200">
+                <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
                   Abierto
                 </span>
               </div>
-              <p className="text-xs text-slate-500 hidden sm:block">
+              <p className="text-xs text-slate-500 hidden sm:block truncate">
                 {storeConfig.tagline}
               </p>
             </div>
@@ -142,7 +142,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
           )}
 
           {/* Acciones del Navbar */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {viewMode === 'customer' ? (
               <>
                 {/* Botón de Solicitar Producto ("Pídelo si no está") */}
@@ -158,23 +158,23 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 {/* VeciPuntos / Fidelidad */}
                 <button
                   onClick={onOpenPoints}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-900 transition-all shadow-2xs group"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-900 transition-all shadow-2xs group"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-amber-400 text-amber-950 flex items-center justify-center font-black text-xs shadow-2xs group-hover:rotate-12 transition-transform">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-amber-400 text-amber-950 flex items-center justify-center font-black text-[11px] sm:text-xs shadow-2xs group-hover:rotate-12 transition-transform">
                     ★
                   </div>
                   <div className="text-left leading-none">
-                    <span className="text-[10px] uppercase font-bold text-amber-600 block">Puntos</span>
-                    <span className="text-xs font-extrabold text-amber-950">{veciPoints} pts</span>
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-amber-600 block">Puntos</span>
+                    <span className="text-[11px] sm:text-xs font-extrabold text-amber-950">{veciPoints} pts</span>
                   </div>
                 </button>
 
                 {/* Carrito de Compras Flotante */}
                 <button
                   onClick={onOpenCart}
-                  className="relative flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 sm:px-4 py-2 rounded-xl font-bold text-sm shadow-md shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                  className="relative flex items-center gap-1.5 sm:gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <ShoppingBag className="w-5 h-5" />
+                  <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span className="hidden sm:inline">Carrito</span>
                   <span className="font-extrabold">${cartTotal.toFixed(2)}</span>
 
@@ -205,25 +205,29 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100"
+              aria-label="Abrir menú de navegación"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6" />}
             </button>
           </div>
         </div>
 
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden py-3 border-t border-slate-200 space-y-2 animate-fadeIn">
+          <div className="lg:hidden py-3 border-t border-slate-200 space-y-2.5 animate-fadeIn">
             {viewMode === 'customer' && (
               <button
                 onClick={() => {
                   onOpenLocationModal();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-slate-100 text-left text-xs font-bold text-slate-800"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 text-left text-xs font-bold text-slate-800 hover:bg-slate-200 transition-colors"
               >
-                <MapPin className="w-4 h-4 text-emerald-600" />
-                <span>Ubicación: {selectedLocation.condominium} - {selectedLocation.tower}</span>
+                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-500 block uppercase font-semibold">Ubicación de entrega:</span>
+                  <span className="truncate block font-bold text-slate-900">{selectedLocation.condominium} - {selectedLocation.tower}</span>
+                </div>
               </button>
             )}
 
@@ -232,21 +236,21 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 onOpenRequests();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700"
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700 hover:bg-emerald-50 transition-colors"
             >
-              <PlusCircle className="w-4 h-4 text-emerald-600" />
+              <PlusCircle className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>Pídelo si no está en la tienda</span>
             </button>
 
-            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex flex-wrap items-center justify-between gap-2 border border-emerald-200/60">
               <span className="font-semibold flex items-center gap-1.5">
-                <PhoneCall className="w-3.5 h-3.5 text-emerald-700" /> WhatsApp Tienda:
+                <PhoneCall className="w-4 h-4 text-emerald-700 shrink-0" /> WhatsApp Tienda:
               </span>
               <a 
                 href={`https://wa.me/${storeConfig.whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="font-bold text-emerald-700 underline"
+                className="font-bold text-emerald-800 underline bg-emerald-100 px-2 py-1 rounded-lg hover:bg-emerald-200 transition-colors"
               >
                 {storeConfig.phone}
               </a>

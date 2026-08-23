@@ -241,17 +241,17 @@ export const InventoryManager = () => {
 
       {/* Modal de Crear / Editar Producto */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
           <div 
-            className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-8"
+            className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 sm:p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="text-lg font-extrabold text-slate-900">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-900 leading-tight">
                   {isNew ? 'Registrar Nuevo Producto' : 'Editar Producto'}
                 </h3>
-                <p className="text-xs text-slate-500">Configura precios, costos y stock para la tienda online y física.</p>
+                <p className="text-[11px] sm:text-xs text-slate-500">Configura precios, costos y stock.</p>
               </div>
               <button
                 onClick={() => setEditingProduct(null)}
@@ -261,7 +261,7 @@ export const InventoryManager = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="p-6 sm:p-8 space-y-4">
+            <form onSubmit={handleSaveForm} className="p-4 sm:p-8 space-y-4 overflow-y-auto flex-1">
               {/* Nombre */}
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Nombre del Producto *</label>

@@ -22,6 +22,7 @@ export const LiveOrdersBoard = () => {
   const { orders, updateOrderStatus, cancelOrder, storeConfig } = useStore();
   const [filterType, setFilterType] = useState('all'); // 'all' | 'delivery' | 'pickup'
   const [searchTerm, setSearchTerm] = useState('');
+  const [mobileColumn, setMobileColumn] = useState('pending'); // 'pending' | 'preparing' | 'on_the_way' | 'delivered'
 
   const filteredOrders = orders.filter((o) => {
     const matchesType = filterType === 'all' || o.deliveryType === filterType;
@@ -59,10 +60,10 @@ export const LiveOrdersBoard = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header y Filtros */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-emerald-600" />
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <ShoppingBag className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>Tablero de Pedidos en Vivo (Live Dispatch)</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -70,22 +71,22 @@ export const LiveOrdersBoard = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 sm:flex-initial">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por ID, cliente, torre..."
-              className="pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-500 w-48 sm:w-56"
+              placeholder="Buscar por ID, cliente..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-500 sm:w-56"
             />
           </div>
 
           <div className="flex items-center bg-slate-100 p-1 rounded-xl">
             <button
               onClick={() => setFilterType('all')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                 filterType === 'all' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -93,7 +94,7 @@ export const LiveOrdersBoard = () => {
             </button>
             <button
               onClick={() => setFilterType('delivery')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                 filterType === 'delivery' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -101,7 +102,7 @@ export const LiveOrdersBoard = () => {
             </button>
             <button
               onClick={() => setFilterType('pickup')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all ${
                 filterType === 'pickup' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -111,11 +112,55 @@ export const LiveOrdersBoard = () => {
         </div>
       </div>
 
-      {/* Columnas Kanban */}
+      {/* Selector de Estado para Móviles */}
+      <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar touch-pan-x">
+        <button
+          onClick={() => setMobileColumn('pending')}
+          className={`px-3 py-2 rounded-xl font-bold text-xs shrink-0 border ${
+            mobileColumn === 'pending'
+              ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200'
+          }`}
+        >
+          Nuevos ({pendingOrders.length})
+        </button>
+        <button
+          onClick={() => setMobileColumn('preparing')}
+          className={`px-3 py-2 rounded-xl font-bold text-xs shrink-0 border ${
+            mobileColumn === 'preparing'
+              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200'
+          }`}
+        >
+          En Preparación ({preparingOrders.length})
+        </button>
+        <button
+          onClick={() => setMobileColumn('on_the_way')}
+          className={`px-3 py-2 rounded-xl font-bold text-xs shrink-0 border ${
+            mobileColumn === 'on_the_way'
+              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200'
+          }`}
+        >
+          En Camino ({onTheWayOrders.length})
+        </button>
+        <button
+          onClick={() => setMobileColumn('delivered')}
+          className={`px-3 py-2 rounded-xl font-bold text-xs shrink-0 border ${
+            mobileColumn === 'delivered'
+              ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+              : 'bg-white text-slate-700 border-slate-200'
+          }`}
+        >
+          Entregados ({deliveredOrders.length})
+        </button>
+      </div>
+
+      {/* Columnas Kanban (Multicolumna en Desktop / Pestaña en Móvil) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 items-start">
         
         {/* COLUMNA 1: NUEVOS / PENDIENTES */}
-        <div className="bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-120">
+        <div className={`bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-96 ${mobileColumn === 'pending' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-amber-500"></span>
@@ -146,7 +191,7 @@ export const LiveOrdersBoard = () => {
         </div>
 
         {/* COLUMNA 2: EN PREPARACIÓN */}
-        <div className="bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-120">
+        <div className={`bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-96 ${mobileColumn === 'preparing' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -177,7 +222,7 @@ export const LiveOrdersBoard = () => {
         </div>
 
         {/* COLUMNA 3: EN CAMINO / LISTO */}
-        <div className="bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-120">
+        <div className={`bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-96 ${mobileColumn === 'on_the_way' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-purple-500"></span>
@@ -208,7 +253,7 @@ export const LiveOrdersBoard = () => {
         </div>
 
         {/* COLUMNA 4: ENTREGADOS */}
-        <div className="bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-120">
+        <div className={`bg-slate-100/80 p-4 rounded-3xl border border-slate-200/80 flex flex-col min-h-96 ${mobileColumn === 'delivered' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
