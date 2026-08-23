@@ -20,6 +20,7 @@ import { useStore } from '../../context/StoreContext';
 
 export const LiveOrdersBoard = () => {
   const { orders, updateOrderStatus, cancelOrder, storeConfig } = useStore();
+  const currency = storeConfig.currencySymbol || '$';
   const [filterType, setFilterType] = useState('all'); // 'all' | 'delivery' | 'pickup'
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileColumn, setMobileColumn] = useState('pending'); // 'pending' | 'preparing' | 'on_the_way' | 'delivered'

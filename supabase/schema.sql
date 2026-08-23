@@ -3,6 +3,7 @@
 -- 1. Tabla de Productos
 CREATE TABLE IF NOT EXISTS public.products (
   id TEXT PRIMARY KEY,
+  tenant_id TEXT DEFAULT 'default',
   name TEXT NOT NULL,
   category TEXT NOT NULL,
   price NUMERIC NOT NULL,
@@ -18,16 +19,21 @@ CREATE TABLE IF NOT EXISTS public.products (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Tabla de Configuración de la Tienda
+-- 2. Tabla de Configuración de la Tienda Multi-Tenant
 CREATE TABLE IF NOT EXISTS public.store_config (
   id TEXT PRIMARY KEY DEFAULT 'default',
+  tenant_id TEXT DEFAULT 'default',
   name TEXT NOT NULL,
   slogan TEXT,
+  currency_symbol TEXT DEFAULT '$',
+  admin_pin TEXT DEFAULT '1234',
+  theme_color TEXT DEFAULT 'emerald',
   is_open BOOLEAN DEFAULT true,
   min_order NUMERIC DEFAULT 0,
   delivery_fee NUMERIC DEFAULT 0,
   condominiums JSONB NOT NULL DEFAULT '[]'::jsonb,
   coupons JSONB NOT NULL DEFAULT '[]'::jsonb,
+  categories JSONB NOT NULL DEFAULT '[]'::jsonb,
   payment_methods JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

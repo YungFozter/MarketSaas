@@ -16,7 +16,8 @@ import {
 import { useStore } from '../../context/StoreContext';
 
 export const AdminDashboard = ({ onNavigateTab }) => {
-  const { orders, products, storeConfig, productRequests } = useStore();
+  const { orders, products, storeConfig, productRequests, exportSalesCSV } = useStore();
+  const currency = storeConfig.currencySymbol || '$';
 
   // Cálculos de métricas
   const totalSales = orders
@@ -60,17 +61,25 @@ export const AdminDashboard = ({ onNavigateTab }) => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={exportSalesCSV}
+            className="px-3.5 py-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5"
+            title="Descargar reporte de ventas en archivo CSV"
+          >
+            <TrendingUp className="w-4 h-4 text-amber-700" />
+            <span>Exportar CSV</span>
+          </button>
           <button
             onClick={() => onNavigateTab('pos')}
-            className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5"
           >
             <Store className="w-4 h-4" />
             <span>Punto de Venta (POS)</span>
           </button>
           <button
             onClick={() => onNavigateTab('orders')}
-            className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
           >
             <ShoppingBag className="w-4 h-4" />
             <span>Ver Pedidos ({activeOrders.length})</span>

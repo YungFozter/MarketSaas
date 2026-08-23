@@ -241,11 +241,28 @@ export const initialStoreConfig = {
   name: 'Minimarket Don Pepe & VeciStore',
   tagline: 'Tu tienda de confianza a pasos de tu puerta',
   address: 'Calle Los Sauces #420 (Junto al acceso principal)',
+  themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'
+  currencySymbol: '$',
+  adminPin: '1234',
+  logoUrl: '',
+  bannerUrl: '',
   condominiums: [
     { id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C', 'Casas 1-50'], deliveryFee: 1.00, estTime: '10-15 min' },
     { id: 'c2', name: 'Condominio Altos del Valle', towers: ['Torre 1', 'Torre 2', 'Torre 3'], deliveryFee: 1.25, estTime: '12-18 min' },
     { id: 'c3', name: 'Edificio Vista Sol', towers: ['Piso 1-12'], deliveryFee: 0.90, estTime: '8-12 min' },
     { id: 'c4', name: 'Barrio Central (Casas)', towers: ['Sector Norte', 'Sector Sur'], deliveryFee: 1.50, estTime: '15-20 min' }
+  ],
+  categories: [
+    'Lácteos & Huevos',
+    'Panadería & Desayuno',
+    'Abarrotes',
+    'Frutas & Verduras',
+    'Bebidas & Licores',
+    'Snacks & Golosinas',
+    'Limpieza & Hogar'
+  ],
+  coupons: [
+    { id: 'coup-1', code: 'VECINO10', discount: 1.50, minSubtotal: 10.00, description: 'Descuento $1.50 para vecinos en compras > $10' }
   ],
   defaultDeliveryFee: 1.00,
   freeDeliveryThreshold: 15.00,
@@ -254,7 +271,6 @@ export const initialStoreConfig = {
   schedule: 'Lunes a Domingo: 08:00 AM - 10:30 PM',
   isOpen: true,
   pointsRatio: 10, // 10 puntos por cada $1 gastado
-  currencySymbol: '$',
   paymentMethods: [
     { id: 'cash', name: 'Efectivo contra entrega', desc: 'Indica con cuánto pagarás para tu vuelto', icon: 'Banknote', enabled: true },
     { id: 'qr', name: 'Transferencia / QR Digital', desc: 'Pago rápido directo a la cuenta del local', icon: 'QrCode', enabled: true },

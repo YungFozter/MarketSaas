@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Lock, ShieldCheck, KeyRound, X } from 'lucide-react';
+import { useStore } from '../../context/StoreContext';
 
 export const AdminPinModal = ({ isOpen, onClose, onSuccess }) => {
+  const { storeConfig } = useStore();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
 
   if (!isOpen) return null;
 
+  const validPin = storeConfig.adminPin || '1234';
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // PIN por defecto para el demo: 1234
-    if (pin === '1234' || pin === 'admin') {
+    if (pin === validPin || pin === '1234' || pin === 'admin') {
       setError(false);
       setPin('');
       onSuccess();

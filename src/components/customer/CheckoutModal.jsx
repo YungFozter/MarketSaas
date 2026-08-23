@@ -74,7 +74,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     });
 
     // Crear el pedido
-    createCustomerOrder({
+    const newOrder = createCustomerOrder({
       name: customerName,
       phone: customerPhone,
       condominium: condoName,
@@ -85,6 +85,26 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       paymentMethod,
       cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
     });
+
+    // Abrir WhatsApp con el comprobante pre-formateado directo al negocio
+    if (newOrder && storeConfig.whatsapp) {
+      const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} ($${(i.price * i.quantity).toFixed(2)})`).join('\n');
+      const currency = storeConfig.currencySymbol || '$';
+      const waText = `🛒 *NUEVO PEDIDO #${newOrder.id}*\n` +
+        `👤 *Cliente:* ${customerName}\n` +
+        `📱 *Teléfono:* ${customerPhone}\n` +
+        `📍 *Ubicación:* ${condoName} - ${tower} (${apartment})\n` +
+        `🛵 *Tipo:* ${deliveryType === 'delivery' ? 'Delivery a puerta' : 'Retiro en tienda'}\n` +
+        `💳 *Pago:* ${paymentMethod === 'cash' ? `Efectivo (Vuelto para ${currency}${cashAmount})` : paymentMethod === 'qr' ? 'Transferencia / QR' : 'Tarjeta (POS)'}\n\n` +
+        `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
+        `💰 *TOTAL A PAGAR:* ${currency}${newOrder.total.toFixed(2)}`;
+      
+      const cleanWa = storeConfig.whatsapp.replace(/[^0-9]/g, '');
+      if (cleanWa) {
+        const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
+        window.open(waUrl, '_blank');
+      }
+    }
 
     onClose();
   };

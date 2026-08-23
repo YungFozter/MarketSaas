@@ -8,32 +8,39 @@ const StoreContext = createContext();
 export const useStore = () => useContext(StoreContext);
 
 export const StoreProvider = ({ children }) => {
+  // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
+  const getTenantSlug = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('store') || params.get('tenant') || 'default';
+  };
+  const tenantSlug = getTenantSlug();
+
   // 1. Vista actual: 'customer' o 'admin'
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem('marketsaas_viewMode') || 'customer';
+    return localStorage.getItem(`marketsaas_${tenantSlug}_viewMode`) || 'customer';
   });
 
   // 2. Productos
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_products');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
     return saved ? JSON.parse(saved) : initialProducts;
   });
 
   // 3. Configuración de Tienda
   const [storeConfig, setStoreConfig] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_config');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
     return saved ? JSON.parse(saved) : initialStoreConfig;
   });
 
   // 4. Carrito de Compras
   const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_cart');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_cart`);
     return saved ? JSON.parse(saved) : [];
   });
 
   // 5. Ubicación seleccionada por el cliente
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_location');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_location`);
     return saved ? JSON.parse(saved) : {
       condominium: initialStoreConfig.condominiums[0].name,
       tower: initialStoreConfig.condominiums[0].towers[0],
@@ -44,19 +51,19 @@ export const StoreProvider = ({ children }) => {
 
   // 6. Pedidos
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_orders');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
     return saved ? JSON.parse(saved) : initialOrders;
   });
 
   // 7. Puntos de Fidelidad / VeciPuntos del cliente
   const [veciPoints, setVeciPoints] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_points');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_points`);
     return saved ? parseInt(saved, 10) : 340;
   });
 
   // 8. Solicitudes de productos ("Pídelo si no está")
   const [productRequests, setProductRequests] = useState(() => {
-    const saved = localStorage.getItem('marketsaas_requests');
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
     return saved ? JSON.parse(saved) : initialProductRequests;
   });
 
@@ -69,19 +76,19 @@ export const StoreProvider = ({ children }) => {
   // 11. Toast notification
   const [toast, setToast] = useState(null);
 
-  // Cargar datos de Supabase si está configurado
+  // Cargar datos de Supabase filtrados por tenantSlug si está configurado
   useEffect(() => {
     if (!supabase) return;
 
     // 1. Cargar productos
-    supabase.from('products').select('*').then(({ data, error }) => {
+    supabase.from('products').select('*').eq('tenant_id', tenantSlug).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
         setProducts(data);
       }
     });
 
     // 2. Cargar storeConfig
-    supabase.from('store_config').select('*').eq('id', 'default').single().then(({ data, error }) => {
+    supabase.from('store_config').select('*').eq('id', tenantSlug).single().then(({ data, error }) => {
       if (!error && data) {
         const { id, ...configData } = data;
         setStoreConfig(prev => ({ ...prev, ...configData }));
@@ -135,38 +142,69 @@ export const StoreProvider = ({ children }) => {
     };
   }, []);
 
-  // Guardar en localStorage (Fallback y Cache local)
+  // Guardar en localStorage por tenantSlug
   useEffect(() => {
-    localStorage.setItem('marketsaas_viewMode', viewMode);
-  }, [viewMode]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_viewMode`, viewMode);
+  }, [viewMode, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_products', JSON.stringify(products));
-  }, [products]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(products));
+  }, [products, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_config', JSON.stringify(storeConfig));
-  }, [storeConfig]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(storeConfig));
+  }, [storeConfig, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_cart', JSON.stringify(cart));
-  }, [cart]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_cart`, JSON.stringify(cart));
+  }, [cart, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_location', JSON.stringify(selectedLocation));
-  }, [selectedLocation]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_location`, JSON.stringify(selectedLocation));
+  }, [selectedLocation, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_orders', JSON.stringify(orders));
-  }, [orders]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(orders));
+  }, [orders, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_points', veciPoints.toString());
-  }, [veciPoints]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_points`, veciPoints.toString());
+  }, [veciPoints, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem('marketsaas_requests', JSON.stringify(productRequests));
-  }, [productRequests]);
+    localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(productRequests));
+  }, [productRequests, tenantSlug]);
+
+  // Exportar ventas a CSV para la contabilidad del dueño
+  const exportSalesCSV = () => {
+    if (orders.length === 0) {
+      showToast('No hay pedidos registrados para exportar.', 'warning');
+      return;
+    }
+    const headers = ["ID Pedido", "Fecha", "Cliente", "Telefono", "Condominio", "Torre/Depto", "Tipo", "Metodo Pago", "Total", "Estado"];
+    const rows = orders.map(o => [
+      o.id,
+      new Date(o.createdAt).toLocaleDateString() + " " + new Date(o.createdAt).toLocaleTimeString(),
+      `"${o.customer.name}"`,
+      `"${o.customer.phone}"`,
+      `"${o.customer.condominium}"`,
+      `"${o.customer.tower} - ${o.customer.apartment}"`,
+      o.deliveryType === 'delivery' ? 'Delivery' : 'Retiro',
+      o.paymentMethod,
+      o.total.toFixed(2),
+      o.status
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `reporte_ventas_${storeConfig.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Reporte de ventas exportado en formato CSV.', 'success');
+  };
 
   // Mostrar alerta Toast
   const showToast = (message, type = 'success') => {
@@ -492,6 +530,7 @@ export const StoreProvider = ({ children }) => {
   return (
     <StoreContext.Provider
       value={{
+        tenantSlug,
         viewMode,
         setViewMode,
         products,
@@ -530,7 +569,8 @@ export const StoreProvider = ({ children }) => {
         setActiveTrackingOrderId,
         toast,
         showToast,
-        triggerConfetti
+        triggerConfetti,
+        exportSalesCSV
       }}
     >
       {children}

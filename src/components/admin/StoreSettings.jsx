@@ -18,10 +18,22 @@ import { useStore } from '../../context/StoreContext';
 export const StoreSettings = () => {
   const { storeConfig, setStoreConfig, showToast } = useStore();
 
-  const [form, setForm] = useState({ ...storeConfig });
+  const [form, setForm] = useState({ 
+    currencySymbol: '$',
+    adminPin: '1234',
+    themeColor: 'emerald',
+    logoUrl: '',
+    bannerUrl: '',
+    coupons: [],
+    categories: [],
+    ...storeConfig 
+  });
   const [newCondoName, setNewCondoName] = useState('');
   const [newCondoFee, setNewCondoFee] = useState('1.00');
   const [newCondoTime, setNewCondoTime] = useState('10-15 min');
+
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponDiscount, setNewCouponDiscount] = useState('1.50');
 
   const handleSave = (e) => {
     e.preventDefault();
@@ -53,6 +65,29 @@ export const StoreSettings = () => {
     }));
   };
 
+  const handleAddCoupon = () => {
+    if (!newCouponCode.trim()) return;
+    const newCoupon = {
+      id: `coup-${Date.now()}`,
+      code: newCouponCode.toUpperCase().trim(),
+      discount: parseFloat(newCouponDiscount) || 1.00,
+      description: `Cupón de descuento por ${form.currencySymbol || '$'}${parseFloat(newCouponDiscount).toFixed(2)}`
+    };
+    setForm(prev => ({
+      ...prev,
+      coupons: [...(prev.coupons || []), newCoupon]
+    }));
+    setNewCouponCode('');
+    showToast(`Cupón "${newCoupon.code}" creado.`);
+  };
+
+  const handleRemoveCoupon = (id) => {
+    setForm(prev => ({
+      ...prev,
+      coupons: (prev.coupons || []).filter(c => c.id !== id)
+    }));
+  };
+
   return (
     <form onSubmit={handleSave} className="space-y-6 max-w-4xl animate-fadeIn">
       {/* Header */}
@@ -60,10 +95,10 @@ export const StoreSettings = () => {
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Settings className="w-5 h-5 text-emerald-600" />
-            <span>Configuración de la Tienda & Tarifas de Delivery</span>
+            <span>Configuración de la Tienda & Marca Blanca</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Ajusta los costos de envío por condominio, horarios y datos de pago digital.
+            Personaliza el nombre, moneda, clave PIN de acceso, cupones y tarifas de delivery.
           </p>
         </div>
 
@@ -80,7 +115,7 @@ export const StoreSettings = () => {
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
         <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
           <Power className="w-4 h-4 text-emerald-600" />
-          <span>Estado del Local & Información Básica</span>
+          <span>Información Básica & Clave PIN Administrador</span>
         </h3>
 
         {/* Switch Abierto / Cerrado */}
@@ -104,7 +139,7 @@ export const StoreSettings = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Tienda / Local</label>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Tienda / Local *</label>
             <input
               type="text"
               value={form.name}
@@ -120,6 +155,27 @@ export const StoreSettings = () => {
               value={form.tagline}
               onChange={(e) => setForm(prev => ({ ...prev, tagline: e.target.value }))}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Símbolo de Moneda (ej. $, S/, Bs, €)</label>
+            <input
+              type="text"
+              value={form.currencySymbol || '$'}
+              onChange={(e) => setForm(prev => ({ ...prev, currencySymbol: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">Clave PIN de Acceso Administrador (Dueño)</label>
+            <input
+              type="text"
+              maxLength={8}
+              value={form.adminPin || '1234'}
+              onChange={(e) => setForm(prev => ({ ...prev, adminPin: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
             />
           </div>
 
@@ -291,6 +347,72 @@ export const StoreSettings = () => {
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Cupones de Descuento de la Tienda */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-emerald-600" />
+          <span>Gestión de Cupones de Descuento</span>
+        </h3>
+
+        {/* Lista de Cupones */}
+        <div className="space-y-2">
+          {(form.coupons || []).length === 0 ? (
+            <p className="text-xs text-slate-400 py-2">No hay cupones activos creados.</p>
+          ) : (
+            (form.coupons || []).map((c) => (
+              <div key={c.id} className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/50 border border-amber-200 text-xs">
+                <div>
+                  <span className="font-black text-amber-950 font-mono tracking-wider text-sm">{c.code}</span>
+                  <p className="text-[11px] text-slate-500">{c.description}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-black text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
+                    -{form.currencySymbol || '$'}{c.discount.toFixed(2)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCoupon(c.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Agregar Nuevo Cupón */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <p className="text-xs font-bold text-slate-700">Crear Nuevo Código Promocional:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="Código (ej. VECINO10)"
+              value={newCouponCode}
+              onChange={(e) => setNewCouponCode(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white"
+            />
+            <input
+              type="number"
+              step="0.50"
+              placeholder="Monto Descuento"
+              value={newCouponDiscount}
+              onChange={(e) => setNewCouponDiscount(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleAddCoupon}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Crear Cupón</span>
+          </button>
         </div>
       </div>
     </form>
