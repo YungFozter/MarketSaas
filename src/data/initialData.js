@@ -270,6 +270,7 @@ export const initialStoreConfig = {
   whatsapp: '56987654321',
   schedule: 'Lunes a Domingo: 08:00 AM - 10:30 PM',
   isOpen: true,
+  enablePoints: true,
   pointsRatio: 10, // 10 puntos por cada $1 gastado
   paymentMethods: [
     { id: 'cash', name: 'Efectivo contra entrega', desc: 'Indica con cuánto pagarás para tu vuelto', icon: 'Banknote', enabled: true },
