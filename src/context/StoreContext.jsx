@@ -36,7 +36,14 @@ export const StoreProvider = ({ children }) => {
     const updated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
     setStoreConfigState(updated);
     if (supabase) {
-      supabase.from('store_config').upsert([{ id: tenantSlug, tenant_id: tenantSlug, ...updated }]).then(({ error }) => {
+      const payload = {
+        id: tenantSlug,
+        tenant_id: tenantSlug,
+        name: updated.name || 'Tienda',
+        config: updated,
+        updated_at: new Date().toISOString()
+      };
+      supabase.from('store_config').upsert([payload]).then(({ error }) => {
         if (error) console.error('Error sincronizando storeConfig en Supabase:', error);
       });
     }
@@ -100,8 +107,9 @@ export const StoreProvider = ({ children }) => {
     // 2. Cargar storeConfig por tienda
     supabase.from('store_config').select('*').eq('id', tenantSlug).maybeSingle().then(({ data, error }) => {
       if (!error && data) {
-        const { id, ...configData } = data;
-        setStoreConfig(prev => ({ ...prev, ...configData }));
+        const loadedConfig = data.config || data;
+        const { id, tenant_id, ...configData } = loadedConfig;
+        setStoreConfigState(prev => ({ ...prev, ...configData }));
       }
     });
 

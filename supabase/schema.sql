@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS public.products (
 CREATE TABLE IF NOT EXISTS public.store_config (
   id TEXT PRIMARY KEY DEFAULT 'default',
   tenant_id TEXT DEFAULT 'default',
-  name TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT 'Tienda',
+  config JSONB DEFAULT '{}'::jsonb,
   slogan TEXT,
   currency_symbol TEXT DEFAULT '$',
   admin_pin TEXT DEFAULT '1234',
@@ -37,6 +38,10 @@ CREATE TABLE IF NOT EXISTS public.store_config (
   payment_methods JSONB NOT NULL DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Asegurar columna config en tablas existentes
+ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb;
+
 
 -- 3. Tabla de Pedidos (Orders)
 CREATE TABLE IF NOT EXISTS public.orders (
