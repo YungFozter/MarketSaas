@@ -122,10 +122,14 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         <div className="p-4 sm:p-6 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-700">
-              Paso {step} de 2
+              Paso {step} de {isDeliveryEnabled ? 2 : 1}
             </span>
             <h2 className="text-base sm:text-xl font-extrabold text-slate-900 leading-tight">
-              {step === 1 ? 'Dirección y Entrega' : 'Método de Pago'}
+              {!isDeliveryEnabled 
+                ? 'Confirmar Pedido (Retiro en Tienda)' 
+                : step === 1 
+                  ? 'Dirección y Entrega' 
+                  : 'Método de Pago'}
             </h2>
           </div>
           <button
@@ -310,7 +314,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 onClick={() => setStep(2)}
                 className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
               >
-                <span>Continuar al Pago (${finalTotal.toFixed(2)})</span>
+                <span>Continuar al Pago ({currency} {finalTotal.toFixed(2)})</span>
                 <span>→</span>
               </button>
             </div>
