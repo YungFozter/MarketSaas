@@ -3,13 +3,14 @@ import { Plus, Minus, Check, Sparkles, Tag, Eye } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 export const ProductCard = ({ product, onOpenDetail }) => {
-  const { cart, addToCart, updateCartQuantity } = useStore();
+  const { cart, addToCart, updateCartQuantity, storeConfig } = useStore();
 
   const cartItem = cart.find(item => item.id === product.id);
   const quantityInCart = cartItem ? cartItem.quantity : 0;
   const isOutOfStock = product.stock <= 0;
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const savings = hasDiscount ? (product.originalPrice - product.price).toFixed(2) : null;
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
     <div className="group relative bg-white rounded-3xl border border-slate-200/90 hover:border-emerald-300 shadow-2xs hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 flex flex-col overflow-hidden">
@@ -43,7 +44,7 @@ export const ProductCard = ({ product, onOpenDetail }) => {
           {hasDiscount && (
             <span className="bg-amber-500 text-slate-950 text-[9px] sm:text-[11px] font-black px-1.5 sm:px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
               <Tag className="w-3 h-3 text-amber-950 shrink-0" />
-              -${savings}
+              -{currency} {savings}
             </span>
           )}
         </div>
@@ -91,12 +92,12 @@ export const ProductCard = ({ product, onOpenDetail }) => {
           <div className="min-w-0">
             {hasDiscount && (
               <span className="text-[10px] sm:text-xs text-slate-400 line-through block font-medium leading-none">
-                ${product.originalPrice.toFixed(2)}
+                {currency} {product.originalPrice.toFixed(2)}
               </span>
             )}
             <div className="flex items-baseline gap-1">
               <span className="text-base sm:text-xl font-extrabold text-emerald-700">
-                ${product.price.toFixed(2)}
+                {currency} {product.price.toFixed(2)}
               </span>
             </div>
           </div>

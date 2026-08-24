@@ -35,6 +35,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
   const freeDeliveryThreshold = storeConfig.freeDeliveryThreshold;
   const progressPercent = Math.min(100, (cartSubtotal / freeDeliveryThreshold) * 100);
   const remainingForFree = Math.max(0, freeDeliveryThreshold - cartSubtotal);
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
@@ -77,7 +78,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                   {isFreeDelivery ? (
                     <span className="text-emerald-700 font-extrabold">¡Envío GRATIS alcanzado!</span>
                   ) : (
-                    <span>Agrega <strong>${remainingForFree.toFixed(2)}</strong> para delivery gratis</span>
+                    <span>Agrega <strong>{currency} {remainingForFree.toFixed(2)}</strong> para delivery gratis</span>
                   )}
                 </span>
                 <span className="text-emerald-700 font-black">{Math.round(progressPercent)}%</span>
@@ -127,7 +128,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                     </h4>
                     <p className="text-[11px] text-slate-400 font-medium">{item.unit}</p>
                     <p className="text-xs font-extrabold text-emerald-700 mt-0.5">
-                      ${item.price.toFixed(2)} c/u
+                      {currency} {item.price.toFixed(2)} c/u
                     </p>
                   </div>
 
@@ -153,7 +154,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                     </div>
 
                     <span className="font-extrabold text-xs text-slate-800">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      {currency} {(item.price * item.quantity).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -170,7 +171,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-100/70 border border-emerald-300 text-xs">
                   <div className="flex items-center gap-2 text-emerald-900 font-bold">
                     <Tag className="w-4 h-4 text-emerald-700" />
-                    <span>Cupón: {appliedCoupon.code} (-${appliedCoupon.discount.toFixed(2)})</span>
+                    <span>Cupón: {appliedCoupon.code} (-{currency} {appliedCoupon.discount.toFixed(2)})</span>
                   </div>
                   <button
                     onClick={removeCoupon}
@@ -199,7 +200,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
               <div className="space-y-1.5 text-xs text-slate-600">
                 <div className="flex justify-between">
                   <span>Subtotal productos</span>
-                  <span className="font-semibold text-slate-800">${cartSubtotal.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-800">{currency} {cartSubtotal.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between items-center">
@@ -210,7 +211,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                     {isFreeDelivery ? (
                       <span className="text-emerald-600 font-bold">GRATIS</span>
                     ) : (
-                      `+$${actualDeliveryFee.toFixed(2)}`
+                      `+${currency} ${actualDeliveryFee.toFixed(2)}`
                     )}
                   </span>
                 </div>
@@ -218,7 +219,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 font-semibold">
                     <span>Descuento aplicado</span>
-                    <span>-${appliedCoupon.discount.toFixed(2)}</span>
+                    <span>-{currency} {appliedCoupon.discount.toFixed(2)}</span>
                   </div>
                 )}
 
@@ -228,13 +229,13 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                       ¡Ahorro total en este pedido!
                     </span>
-                    <span>-${cartSavings.toFixed(2)}</span>
+                    <span>-{currency} {cartSavings.toFixed(2)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 text-base font-extrabold text-slate-900">
                   <span>Total a Pagar</span>
-                  <span className="text-xl font-black text-emerald-700">${cartTotal.toFixed(2)}</span>
+                  <span className="text-xl font-black text-emerald-700">{currency} {cartTotal.toFixed(2)}</span>
                 </div>
               </div>
 

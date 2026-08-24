@@ -300,7 +300,7 @@ export const StoreProvider = ({ children }) => {
 
   // Total final
   const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;
-  const cartTotal = Math.max(0, cartSubtotal + actualDeliveryFee - discountAmount);
+  const cartTotal = cart.length === 0 ? 0 : Math.max(0, cartSubtotal + actualDeliveryFee - discountAmount);
 
   // Crear Pedido desde la vista de Cliente
   const createCustomerOrder = (orderData) => {
