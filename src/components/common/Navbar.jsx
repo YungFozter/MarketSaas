@@ -130,10 +130,12 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 </div>
                 <div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block leading-none">
-                    Entrega en:
+                    {storeConfig.enableDelivery !== false ? 'Entrega en:' : 'Modalidad:'}
                   </span>
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                    {selectedLocation.condominium} - {selectedLocation.tower}
+                    {storeConfig.enableDelivery !== false 
+                      ? `${selectedLocation.condominium} - ${selectedLocation.tower}`
+                      : '🛍️ Retiro en Local Físico'}
                     <ChevronDown className="w-3 h-3 text-slate-400" />
                   </span>
                 </div>

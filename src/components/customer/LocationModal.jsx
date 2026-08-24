@@ -37,8 +37,12 @@ export const LocationModal = ({ isOpen, onClose }) => {
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">¿Dónde entregamos?</h2>
-              <p className="text-[11px] text-slate-500">Selecciona tu condominio</p>
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
+                {storeConfig.enableDelivery !== false ? '¿Dónde entregamos?' : 'Ubicación del Local'}
+              </h2>
+              <p className="text-[11px] text-slate-500">
+                {storeConfig.enableDelivery !== false ? 'Selecciona tu condominio' : 'Retiro en tienda local'}
+              </p>
             </div>
           </div>
           <button
@@ -50,73 +54,103 @@ export const LocationModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1.5">
-              Condominio / Conjunto Habitacional
-            </label>
-            <div className="space-y-2">
-              {storeConfig.condominiums.map((c) => {
-                const isSelected = condo === c.name;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setCondo(c.name);
-                      if (c.towers.length > 0) setTower(c.towers[0]);
-                    }}
-                    className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
-                      isSelected
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold'
-                        : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <div>
-                        <p className="text-xs sm:text-sm font-bold">{c.name}</p>
-                        <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime} • Delivery {currency} {c.deliveryFee.toFixed(2)}</p>
-                      </div>
-                    </div>
-                    {isSelected && <Check className="w-4 h-4 text-emerald-600" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          {storeConfig.enableDelivery === false ? (
+            <div className="space-y-4 text-center py-2">
+              <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <h3 className="font-extrabold text-base text-slate-900">Retiro en Tienda Habilitado</h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Esta tienda atiende compras presenciales y pedidos para retirar directamente en el local:
+                </p>
+                <p className="font-bold text-xs text-emerald-800 bg-white p-2.5 rounded-xl border border-emerald-200">
+                  📍 {storeConfig.address || 'Calle Los Sauces #420'}
+                </p>
+              </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Torre o Sector</label>
-              <select
-                value={tower}
-                onChange={(e) => setTower(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+              <p className="text-[11px] text-slate-400">
+                * El servicio de envíos/delivery a otros condominios no está activado para esta tienda por el momento.
+              </p>
+
+              <button
+                onClick={onClose}
+                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all"
               >
-                {currentCondoObj.towers.map((t, idx) => (
-                  <option key={idx} value={t}>{t}</option>
-                ))}
-              </select>
+                Entendido, Continuar Comprando
+              </button>
             </div>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  Condominio / Conjunto Habitacional
+                </label>
+                <div className="space-y-2">
+                  {storeConfig.condominiums.map((c) => {
+                    const isSelected = condo === c.name;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => {
+                          setCondo(c.name);
+                          if (c.towers.length > 0) setTower(c.towers[0]);
+                        }}
+                        className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold'
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <div>
+                            <p className="text-xs sm:text-sm font-bold">{c.name}</p>
+                            <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime} • Delivery {currency} {c.deliveryFee.toFixed(2)}</p>
+                          </div>
+                        </div>
+                        {isSelected && <Check className="w-4 h-4 text-emerald-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">Depto / Casa</label>
-              <input
-                type="text"
-                value={apartment}
-                onChange={(e) => setApartment(e.target.value)}
-                placeholder="Ej. 402"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
-              />
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Torre o Sector</label>
+                  <select
+                    value={tower}
+                    onChange={(e) => setTower(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                  >
+                    {currentCondoObj.towers.map((t, idx) => (
+                      <option key={idx} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
 
-          <button
-            onClick={handleSave}
-            className="w-full mt-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
-          >
-            <span>Guardar Ubicación</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Depto / Casa</label>
+                  <input
+                    type="text"
+                    value={apartment}
+                    onChange={(e) => setApartment(e.target.value)}
+                    placeholder="Ej. 402"
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleSave}
+                className="w-full mt-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+              >
+                <span>Guardar Ubicación</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
