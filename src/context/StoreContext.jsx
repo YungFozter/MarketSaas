@@ -121,9 +121,10 @@ export const StoreProvider = ({ children }) => {
     });
 
     // 4. Cargar solicitudes de productos por tienda
-    supabase.from('product_requests').select('*').eq('tenant_id', tenantSlug).order('created_at', { ascending: false }).then(({ data, error }) => {
+    supabase.from('product_requests').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        setProductRequests(data);
+        const filtered = data.filter(r => !r.tenant_id || r.tenant_id === tenantSlug);
+        if (filtered.length > 0) setProductRequests(filtered);
       }
     });
 
@@ -503,6 +504,7 @@ export const StoreProvider = ({ children }) => {
   const submitProductRequest = (customerName, productName, notes) => {
     const newReq = {
       id: `REQ-${Math.floor(100 + Math.random() * 900)}`,
+      tenant_id: tenantSlug,
       customerName: customerName || 'Vecino anónimo',
       productName,
       notes,
@@ -511,6 +513,11 @@ export const StoreProvider = ({ children }) => {
       date: new Date().toISOString().split('T')[0]
     };
     setProductRequests(prev => [newReq, ...prev]);
+    if (supabase) {
+      supabase.from('product_requests').insert([newReq]).then(({ error }) => {
+        if (error) console.error('Error insertando solicitud de producto en Supabase:', error);
+      });
+    }
     showToast('¡Solicitud enviada! El dueño de la tienda la evaluará pronto.', 'success');
   };
 

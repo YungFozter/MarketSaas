@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
 -- 4. Tabla de Solicitudes de Productos ("Pídelo si no está")
 CREATE TABLE IF NOT EXISTS public.product_requests (
   id TEXT PRIMARY KEY,
+  tenant_id TEXT DEFAULT 'default',
   product_name TEXT NOT NULL,
   productName TEXT,
   customer_name TEXT,
@@ -75,6 +76,8 @@ CREATE TABLE IF NOT EXISTS public.product_requests (
   status TEXT DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.product_requests ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
 
 -- 5. Tabla de Perfil del Cliente / Puntos de Fidelidad
 CREATE TABLE IF NOT EXISTS public.customer_profile (
