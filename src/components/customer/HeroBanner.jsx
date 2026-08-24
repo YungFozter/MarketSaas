@@ -4,6 +4,7 @@ import { useStore } from '../../context/StoreContext';
 
 export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, onOpenPoints }) => {
   const { storeConfig, selectedLocation, cartSavings } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900 text-white shadow-xl mb-6 sm:mb-8 p-5 sm:p-8 lg:p-10">
@@ -66,7 +67,7 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
             </div>
             <div className="min-w-0">
               <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">Delivery Express</p>
-              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">Desde ${storeConfig.defaultDeliveryFee.toFixed(2)}</p>
+              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">Desde {currency} {storeConfig.defaultDeliveryFee.toFixed(2)}</p>
             </div>
           </div>
 

@@ -3,8 +3,9 @@ import { X, Plus, Minus, ShieldCheck, Sparkles, Truck, Check, Share2, Tag } from
 import { useStore } from '../../context/StoreContext';
 
 export const ProductModal = ({ product, onClose }) => {
-  const { addToCart, cart, updateCartQuantity, selectedLocation } = useStore();
+  const { addToCart, cart, updateCartQuantity, selectedLocation, storeConfig } = useStore();
   const [qty, setQty] = useState(1);
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   if (!product) return null;
 
@@ -66,15 +67,15 @@ export const ProductModal = ({ product, onClose }) => {
             {/* Precios */}
             <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-3 sm:mb-4 p-3 sm:p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
               <span className="text-xl sm:text-3xl font-black text-emerald-800">
-                ${product.price.toFixed(2)}
+                {currency} {product.price.toFixed(2)}
               </span>
               {hasDiscount && (
                 <>
                   <span className="text-xs sm:text-sm text-slate-400 line-through">
-                    ${product.originalPrice.toFixed(2)}
+                    {currency} {product.originalPrice.toFixed(2)}
                   </span>
                   <span className="bg-amber-400 text-amber-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md">
-                    Ahorras ${(product.originalPrice - product.price).toFixed(2)}
+                    Ahorras {currency} {(product.originalPrice - product.price).toFixed(2)}
                   </span>
                 </>
               )}
@@ -130,7 +131,7 @@ export const ProductModal = ({ product, onClose }) => {
                   className="w-full py-3 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>Agregar al Carrito - ${(product.price * qty).toFixed(2)}</span>
+                  <span>Agregar al Carrito - {currency} {(product.price * qty).toFixed(2)}</span>
                 </button>
               </>
             )}

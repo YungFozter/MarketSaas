@@ -15,7 +15,8 @@ import {
 import { useStore } from '../../context/StoreContext';
 
 export const PosTerminal = () => {
-  const { products, categories, completePosSale, showToast } = useStore();
+  const { products, categories, completePosSale, showToast, storeConfig } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   const [posCart, setPosCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +144,7 @@ export const PosTerminal = () => {
                 <div>
                   <h4 className="font-bold text-slate-900 text-xs line-clamp-2 leading-tight mb-1">{p.name}</h4>
                   <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-sm text-emerald-700">${p.price.toFixed(2)}</span>
+                    <span className="font-extrabold text-sm text-emerald-700">{currency} {p.price.toFixed(2)}</span>
                     <span className="text-[10px] text-slate-400 font-semibold">{p.stock} u.</span>
                   </div>
                 </div>
@@ -184,7 +185,7 @@ export const PosTerminal = () => {
               <div key={item.id} className="pt-2 flex items-center justify-between gap-2 text-xs">
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 truncate">{item.name}</p>
-                  <p className="text-[11px] text-slate-400">${item.price.toFixed(2)} c/u</p>
+                  <p className="text-[11px] text-slate-400">{currency} {item.price.toFixed(2)} c/u</p>
                 </div>
 
                 <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
@@ -204,7 +205,7 @@ export const PosTerminal = () => {
                 </div>
 
                 <span className="font-black text-slate-900 min-w-12 text-right">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  {currency} {(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))
@@ -252,7 +253,7 @@ export const PosTerminal = () => {
 
             {paymentType === 'cash' && (
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex items-center justify-between">
-                <span className="font-bold text-slate-700">Paga con ($):</span>
+                <span className="font-bold text-slate-700">Paga con ({currency}):</span>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="number"
@@ -269,7 +270,7 @@ export const PosTerminal = () => {
             {paymentType === 'cash' && parseFloat(cashReceived) > subtotal && (
               <div className="flex justify-between text-xs font-bold bg-amber-50 p-2 rounded-lg text-amber-900 border border-amber-200">
                 <span>Vuelto a entregar:</span>
-                <span className="font-black">${changeToReturn}</span>
+                <span className="font-black">{currency} {changeToReturn}</span>
               </div>
             )}
 
@@ -277,7 +278,7 @@ export const PosTerminal = () => {
             <div className="pt-2">
               <div className="flex justify-between items-baseline mb-3">
                 <span className="text-sm font-extrabold text-slate-700">Total a Cobrar:</span>
-                <span className="text-2xl font-black text-emerald-700">${subtotal.toFixed(2)}</span>
+                <span className="text-2xl font-black text-emerald-700">{currency} {subtotal.toFixed(2)}</span>
               </div>
 
               <button

@@ -487,7 +487,8 @@ export const StoreProvider = ({ children }) => {
 
     setOrders(prev => [posOrder, ...prev]);
     triggerConfetti();
-    showToast(`Venta de mostrador ${saleId} registrada por $${subtotal.toFixed(2)}.`, 'success');
+    const currency = storeConfig.currencySymbol || 'Bs.';
+    showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
   };
 
   // Solicitar producto ("Pídelo si no está")
@@ -521,6 +522,7 @@ export const StoreProvider = ({ children }) => {
 
   // Canjear VeciPuntos por Cupón
   const redeemPoints = (pointsCost, discountValue, couponName) => {
+    const currency = storeConfig.currencySymbol || 'Bs.';
     if (veciPoints < pointsCost) {
       showToast('No tienes suficientes VeciPuntos para este cupón.', 'error');
       return false;
@@ -529,7 +531,7 @@ export const StoreProvider = ({ children }) => {
     setAppliedCoupon({
       code: couponName,
       discount: discountValue,
-      description: `Descuento de $${discountValue.toFixed(2)} por VeciPuntos`
+      description: `Descuento de ${currency} ${discountValue.toFixed(2)} por VeciPuntos`
     });
     triggerConfetti();
     showToast(`¡Cupón "${couponName}" canjeado y aplicado a tu carrito!`, 'success');

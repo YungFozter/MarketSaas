@@ -20,7 +20,7 @@ import { useStore } from '../../context/StoreContext';
 
 export const LiveOrdersBoard = () => {
   const { orders, updateOrderStatus, cancelOrder, storeConfig } = useStore();
-  const currency = storeConfig.currencySymbol || '$';
+  const currency = storeConfig.currencySymbol || 'Bs.';
   const [filterType, setFilterType] = useState('all'); // 'all' | 'delivery' | 'pickup'
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileColumn, setMobileColumn] = useState('pending'); // 'pending' | 'preparing' | 'on_the_way' | 'delivered'
@@ -44,13 +44,13 @@ export const LiveOrdersBoard = () => {
   const handleNotifyWhatsApp = (order) => {
     let text = '';
     if (order.status === 'preparing') {
-      text = `¡Hola ${order.customer.name}! Te avisamos que tu pedido #${order.id} ya está en preparación en ${storeConfig.name}. Total: $${order.total.toFixed(2)}. Pronto saldrá en reparto hacia ${order.customer.condominium} - ${order.customer.tower}.`;
+      text = `¡Hola ${order.customer.name}! Te avisamos que tu pedido #${order.id} ya está en preparación en ${storeConfig.name}. Total: ${currency} ${order.total.toFixed(2)}. Pronto saldrá en reparto hacia ${order.customer.condominium} - ${order.customer.tower}.`;
     } else if (order.status === 'on_the_way') {
       text = `¡Hola ${order.customer.name}! 🛵 Tu pedido #${order.id} YA VA EN CAMINO a tu puerta en ${order.customer.condominium} - ${order.customer.tower}, ${order.customer.apartment}. ¡Por favor atento al citófono/timbre!`;
     } else if (order.status === 'delivered') {
       text = `¡Hola ${order.customer.name}! Tu pedido #${order.id} figura como ENTREGADO. ¡Muchas gracias por preferir tu negocio de barrio ${storeConfig.name}! Acumulaste ${order.pointsEarned} VeciPuntos.`;
     } else {
-      text = `¡Hola ${order.customer.name}! Hemos recibido tu pedido #${order.id} por un total de $${order.total.toFixed(2)}. Ya lo estamos gestionando.`;
+      text = `¡Hola ${order.customer.name}! Hemos recibido tu pedido #${order.id} por un total de ${currency} ${order.total.toFixed(2)}. Ya lo estamos gestionando.`;
     }
 
     const cleanPhone = order.customer.phone.replace(/[^0-9]/g, '');
@@ -291,6 +291,8 @@ export const LiveOrdersBoard = () => {
 
 // Tarjeta individual de Pedido para el Kanban
 const OrderCard = ({ order, onStatusChange, onCancel, onNotifyWA }) => {
+  const { storeConfig } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
   const isDelivery = order.deliveryType === 'delivery';
 
   return (
@@ -327,7 +329,7 @@ const OrderCard = ({ order, onStatusChange, onCancel, onNotifyWA }) => {
             <span className="font-medium">
               <span className="font-extrabold text-emerald-700">{item.quantity}x</span> {item.name}
             </span>
-            <span className="font-bold text-slate-900">${(item.price * item.quantity).toFixed(2)}</span>
+            <span className="font-bold text-slate-900">{currency} {(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
       </div>
@@ -337,9 +339,9 @@ const OrderCard = ({ order, onStatusChange, onCancel, onNotifyWA }) => {
         <div>
           <span className="text-[11px] text-slate-400 block font-medium">
             {order.paymentMethod === 'cash' ? '💵 Efectivo' : order.paymentMethod === 'qr' ? '📱 Transferencia / QR' : '💳 Tarjeta POS'}
-            {order.cashChangeFor && ` (Paga con $${order.cashChangeFor})`}
+            {order.cashChangeFor && ` (Paga con ${currency} ${order.cashChangeFor})`}
           </span>
-          <span className="text-sm font-black text-slate-900">${order.total.toFixed(2)}</span>
+          <span className="text-sm font-black text-slate-900">{currency} {order.total.toFixed(2)}</span>
         </div>
 
         <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${isDelivery ? 'bg-teal-100 text-teal-900' : 'bg-slate-100 text-slate-700'}`}>

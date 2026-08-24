@@ -17,7 +17,8 @@ import {
 import { useStore } from '../../context/StoreContext';
 
 export const InventoryManager = () => {
-  const { products, categories, saveProduct, deleteProduct, showToast } = useStore();
+  const { products, categories, saveProduct, deleteProduct, showToast, storeConfig } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -176,15 +177,15 @@ export const InventoryManager = () => {
 
                     {/* Costo */}
                     <td className="py-3 px-4 font-semibold text-slate-600">
-                      ${cost.toFixed(2)}
+                      {currency} {cost.toFixed(2)}
                     </td>
 
                     {/* Precio de Venta */}
                     <td className="py-3 px-4">
-                      <span className="font-black text-sm text-emerald-700">${prod.price.toFixed(2)}</span>
+                      <span className="font-black text-sm text-emerald-700">{currency} {prod.price.toFixed(2)}</span>
                       {prod.originalPrice > prod.price && (
                         <span className="block text-[10px] text-slate-400 line-through">
-                          ${prod.originalPrice.toFixed(2)}
+                          {currency} {prod.originalPrice.toFixed(2)}
                         </span>
                       )}
                     </td>

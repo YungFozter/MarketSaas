@@ -4,6 +4,7 @@ import { useStore } from '../../context/StoreContext';
 
 export const LocationModal = ({ isOpen, onClose }) => {
   const { storeConfig, selectedLocation, setSelectedLocation, showToast } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   const [condo, setCondo] = useState(selectedLocation.condominium);
   const [tower, setTower] = useState(selectedLocation.tower);
@@ -73,7 +74,7 @@ export const LocationModal = ({ isOpen, onClose }) => {
                       <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <div>
                         <p className="text-xs sm:text-sm font-bold">{c.name}</p>
-                        <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime} • Delivery ${c.deliveryFee.toFixed(2)}</p>
+                        <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime} • Delivery {currency} {c.deliveryFee.toFixed(2)}</p>
                       </div>
                     </div>
                     {isSelected && <Check className="w-4 h-4 text-emerald-600" />}

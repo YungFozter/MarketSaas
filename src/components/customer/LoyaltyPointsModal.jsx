@@ -3,7 +3,8 @@ import { X, Sparkles, Gift, Award, Check, ArrowRight, ShieldCheck } from 'lucide
 import { useStore } from '../../context/StoreContext';
 
 export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
-  const { veciPoints, redeemPoints, appliedCoupon } = useStore();
+  const { veciPoints, redeemPoints, appliedCoupon, storeConfig } = useStore();
+  const currency = storeConfig?.currencySymbol || 'Bs.';
 
   if (!isOpen) return null;
 
@@ -12,14 +13,14 @@ export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
       code: 'VECI-1OFF',
       points: 150,
       discount: 1.00,
-      title: 'Cupón $1.00 OFF',
+      title: `Cupón ${currency} 1.00 OFF`,
       desc: 'Descuento directo en tu canasta del día'
     },
     {
       code: 'VECI-250OFF',
       points: 300,
       discount: 2.50,
-      title: 'Cupón $2.50 OFF',
+      title: `Cupón ${currency} 2.50 OFF`,
       desc: '¡Ahorro ideal para tus compras de la semana!'
     },
     {
@@ -61,7 +62,7 @@ export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
               <span className="text-lg font-extrabold text-amber-950/80">Puntos</span>
             </div>
             <p className="text-xs font-medium text-amber-950/90 mt-1">
-              Ganas 10 puntos por cada $1 gastado en compras a la tienda.
+              Ganas 10 puntos por cada 1 {currency} gastado en compras a la tienda.
             </p>
           </div>
         </div>

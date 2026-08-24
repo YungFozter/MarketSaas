@@ -17,7 +17,7 @@ import { useStore } from '../../context/StoreContext';
 
 export const AdminDashboard = ({ onNavigateTab }) => {
   const { orders, products, storeConfig, productRequests, exportSalesCSV } = useStore();
-  const currency = storeConfig.currencySymbol || '$';
+  const currency = storeConfig.currencySymbol || 'Bs.';
 
   // Cálculos de métricas
   const totalSales = orders
@@ -99,7 +99,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-slate-900 mb-1">
-            ${totalSales.toFixed(2)}
+            {currency} {totalSales.toFixed(2)}
           </div>
           <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5" />
@@ -116,7 +116,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-teal-700 mb-1">
-            ${estimatedProfit.toFixed(2)}
+            {currency} {estimatedProfit.toFixed(2)}
           </div>
           <p className="text-xs text-slate-500 font-medium">
             (Ventas - Costos de Proveedor)
@@ -132,7 +132,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-amber-900 mb-1">
-            ${totalDeliveryCollected.toFixed(2)}
+            {currency} {totalDeliveryCollected.toFixed(2)}
           </div>
           <p className="text-xs text-amber-700 font-bold">
             Cobro por envíos a puerta
@@ -262,7 +262,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
                       <td className="py-3 font-medium text-slate-600">
                         {ord.deliveryType === 'delivery' ? '🛵 Delivery' : '🛍️ Retiro'}
                       </td>
-                      <td className="py-3 font-black text-emerald-700">${ord.total.toFixed(2)}</td>
+                      <td className="py-3 font-black text-emerald-700">{currency} {ord.total.toFixed(2)}</td>
                       <td className="py-3">
                         <span className={`px-2 py-0.5 rounded-lg border font-extrabold text-[10px] ${statusColors[ord.status] || 'bg-slate-100 text-slate-700'}`}>
                           {statusLabels[ord.status] || ord.status}
