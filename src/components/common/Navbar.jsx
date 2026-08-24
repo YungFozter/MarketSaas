@@ -118,8 +118,8 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
             </div>
           </div>
 
-          {/* Selector de Ubicación (Vista Cliente) */}
-          {viewMode === 'customer' && (
+          {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
+          {viewMode === 'customer' && storeConfig.enableDelivery !== false && (
             <div className="hidden lg:flex items-center">
               <button
                 onClick={onOpenLocationModal}
@@ -130,12 +130,10 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 </div>
                 <div>
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block leading-none">
-                    {storeConfig.enableDelivery !== false ? 'Entrega en:' : 'Modalidad:'}
+                    Entrega en:
                   </span>
                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                    {storeConfig.enableDelivery !== false 
-                      ? `${selectedLocation.condominium} - ${selectedLocation.tower}`
-                      : '🛍️ Retiro en Local Físico'}
+                    {selectedLocation.condominium} - {selectedLocation.tower}
                     <ChevronDown className="w-3 h-3 text-slate-400" />
                   </span>
                 </div>
