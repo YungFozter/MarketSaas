@@ -280,6 +280,7 @@ export const initialStoreConfig = {
   whatsapp: '59172125280',
   schedule: 'Lunes a Domingo: 08:00 AM - 10:30 PM',
   isOpen: true,
+  enableDelivery: true,
   enablePoints: true,
   pointsRatio: 10, // 10 puntos por cada 1 Bs. gastado
   paymentMethods: [

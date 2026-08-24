@@ -30,8 +30,11 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     showToast 
   } = useStore();
 
-  const [step, setStep] = useState(1);
-  const [deliveryType, setDeliveryType] = useState('delivery'); // 'delivery' | 'pickup'
+  const isDeliveryEnabled = storeConfig.enableDelivery !== false;
+  const [deliveryType, setDeliveryType] = useState(isDeliveryEnabled ? 'delivery' : 'pickup'); // 'delivery' | 'pickup'
+
+  const effectiveDeliveryType = isDeliveryEnabled ? deliveryType : 'pickup';
+
   const [customerName, setCustomerName] = useState('Vecino Ejemplo');
   const [customerPhone, setCustomerPhone] = useState('+56 9 8765 1234');
   const [condoName, setCondoName] = useState(selectedLocation.condominium);
@@ -45,7 +48,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   if (!isOpen || cart.length === 0) return null;
 
   const currentCondoObj = storeConfig.condominiums.find(c => c.name === condoName) || storeConfig.condominiums[0];
-  const finalDeliveryFee = deliveryType === 'delivery' ? actualDeliveryFee : 0;
+  const finalDeliveryFee = effectiveDeliveryType === 'delivery' ? actualDeliveryFee : 0;
+  const currency = storeConfig.currencySymbol || 'Bs.';
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
 
@@ -81,20 +85,19 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       tower,
       apartment,
       notes,
-      deliveryType,
+      deliveryType: effectiveDeliveryType,
       paymentMethod,
       cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
     });
 
     // Abrir WhatsApp con el comprobante pre-formateado directo al negocio
     if (newOrder && storeConfig.whatsapp) {
-      const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} ($${(i.price * i.quantity).toFixed(2)})`).join('\n');
-      const currency = storeConfig.currencySymbol || '$';
+      const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency}${(i.price * i.quantity).toFixed(2)})`).join('\n');
       const waText = `🛒 *NUEVO PEDIDO #${newOrder.id}*\n` +
         `👤 *Cliente:* ${customerName}\n` +
         `📱 *Teléfono:* ${customerPhone}\n` +
         `📍 *Ubicación:* ${condoName} - ${tower} (${apartment})\n` +
-        `🛵 *Tipo:* ${deliveryType === 'delivery' ? 'Delivery a puerta' : 'Retiro en tienda'}\n` +
+        `🛵 *Tipo:* ${effectiveDeliveryType === 'delivery' ? 'Delivery a puerta' : 'Retiro en tienda'}\n` +
         `💳 *Pago:* ${paymentMethod === 'cash' ? `Efectivo (Vuelto para ${currency}${cashAmount})` : paymentMethod === 'qr' ? 'Transferencia / QR' : 'Tarjeta (POS)'}\n\n` +
         `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
         `💰 *TOTAL A PAGAR:* ${currency}${newOrder.total.toFixed(2)}`;
@@ -144,43 +147,58 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   ¿Cómo deseas recibir tu pedido?
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setDeliveryType('delivery')}
-                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                      deliveryType === 'delivery'
-                        ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className={`p-2 rounded-xl ${deliveryType === 'delivery' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                        <Truck className="w-5 h-5" />
+                  {isDeliveryEnabled ? (
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType('delivery')}
+                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                        effectiveDeliveryType === 'delivery'
+                          ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className={`p-2 rounded-xl ${effectiveDeliveryType === 'delivery' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-black text-emerald-700">
+                          {finalDeliveryFee === 0 ? 'GRATIS' : `+${currency} ${actualDeliveryFee.toFixed(2)}`}
+                        </span>
                       </div>
-                      <span className="text-xs font-black text-emerald-700">
-                        {finalDeliveryFee === 0 ? 'GRATIS' : `+$${actualDeliveryFee.toFixed(2)}`}
-                      </span>
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">Envío a Domicilio</p>
+                        <p className="text-[11px] text-slate-500 font-medium">Llega a tu puerta en {currentCondoObj?.estTime || '15 min'}</p>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="p-4 rounded-2xl border border-slate-200 bg-slate-50 opacity-60 flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="p-2 rounded-xl bg-slate-200 text-slate-400">
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400">No disponible</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-500 text-sm">Envío a Domicilio</p>
+                        <p className="text-[11px] text-slate-400 font-medium">Desactivado por la tienda</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-extrabold text-slate-900 text-sm">Envío a Domicilio</p>
-                      <p className="text-[11px] text-slate-500 font-medium">Llega a tu puerta en {currentCondoObj?.estTime || '15 min'}</p>
-                    </div>
-                  </button>
+                  )}
 
                   <button
                     type="button"
                     onClick={() => setDeliveryType('pickup')}
                     className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                      deliveryType === 'pickup'
+                      effectiveDeliveryType === 'pickup'
                         ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <div className={`p-2 rounded-xl ${deliveryType === 'pickup' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                      <div className={`p-2 rounded-xl ${effectiveDeliveryType === 'pickup' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                         <Store className="w-5 h-5" />
                       </div>
-                      <span className="text-xs font-black text-emerald-700">$0.00</span>
+                      <span className="text-xs font-black text-emerald-700">{currency} 0.00</span>
                     </div>
                     <div>
                       <p className="font-extrabold text-slate-900 text-sm">Retiro en Tienda</p>

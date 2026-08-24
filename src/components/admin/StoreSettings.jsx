@@ -348,6 +348,25 @@ export const StoreSettings = () => {
           </button>
         </div>
 
+        {/* Switch Servicio de Delivery a Domicilio */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+          <div>
+            <p className="font-bold text-xs sm:text-sm text-slate-900">Servicio de Envíos a Domicilio (Delivery)</p>
+            <p className="text-[11px] text-slate-500">
+              {form.enableDelivery !== false ? 'Tu tienda ofrece envíos a domicilio y muestra el banner promocional a los clientes.' : 'Tu tienda atiende únicamente para Retiro en Tienda (Delivery desactivado).' }
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm(prev => ({ ...prev, enableDelivery: prev.enableDelivery === false ? true : false }))}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
+              form.enableDelivery !== false ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-300 text-slate-700'
+            }`}
+          >
+            {form.enableDelivery !== false ? '🛵 ACTIVADO' : '🛍️ DESACTIVADO'}
+          </button>
+        </div>
+
         {/* Switch Programa de Puntos de Fidelidad */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
           <div>
