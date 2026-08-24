@@ -98,9 +98,10 @@ export const StoreProvider = ({ children }) => {
     if (!supabase) return;
 
     // 1. Cargar productos por tienda
-    supabase.from('products').select('*').eq('tenant_id', tenantSlug).then(({ data, error }) => {
+    supabase.from('products').select('*').then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        setProducts(data);
+        const filtered = data.filter(p => !p.tenant_id || p.tenant_id === tenantSlug);
+        if (filtered.length > 0) setProducts(filtered);
       }
     });
 
@@ -114,9 +115,10 @@ export const StoreProvider = ({ children }) => {
     });
 
     // 3. Cargar pedidos por tienda
-    supabase.from('orders').select('*').eq('tenant_id', tenantSlug).order('created_at', { ascending: false }).then(({ data, error }) => {
+    supabase.from('orders').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        setOrders(data);
+        const filtered = data.filter(o => !o.tenant_id || o.tenant_id === tenantSlug);
+        if (filtered.length > 0) setOrders(filtered);
       }
     });
 
@@ -341,6 +343,7 @@ export const StoreProvider = ({ children }) => {
       paymentMethod: orderData.paymentMethod,
       cashChangeFor: orderData.cashChangeFor || null,
       status: 'pending',
+      tenant_id: tenantSlug,
       createdAt: new Date().toISOString(),
       pointsEarned: earnedPoints
     };

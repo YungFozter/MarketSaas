@@ -46,6 +46,7 @@ ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{
 -- 3. Tabla de Pedidos (Orders)
 CREATE TABLE IF NOT EXISTS public.orders (
   id TEXT PRIMARY KEY,
+  tenant_id TEXT DEFAULT 'default',
   customer JSONB NOT NULL,
   items JSONB NOT NULL,
   subtotal NUMERIC NOT NULL,
@@ -61,6 +62,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   createdAt TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
 
 -- 4. Tabla de Solicitudes de Productos ("Pídelo si no está")
 CREATE TABLE IF NOT EXISTS public.product_requests (
