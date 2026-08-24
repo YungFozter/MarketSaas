@@ -44,10 +44,6 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-200 shrink-0" />
               <span className="truncate">100% Garantía de Frescura</span>
             </span>
-            <span className="hidden md:flex items-center gap-1.5 text-emerald-100">
-              <Clock className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-              Entregas en 10-15 min
-            </span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
