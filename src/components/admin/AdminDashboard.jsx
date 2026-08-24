@@ -10,6 +10,7 @@ import {
   ArrowUpRight, 
   CheckCircle2,
   Sparkles,
+  Receipt,
   Store,
   Layers
 } from 'lucide-react';
@@ -146,7 +147,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio</span>
               <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
-                <Sparkles className="w-5 h-5" />
+                <Receipt className="w-5 h-5" />
               </div>
             </div>
             <div className="text-2xl sm:text-3xl font-black text-amber-900 mb-1">
