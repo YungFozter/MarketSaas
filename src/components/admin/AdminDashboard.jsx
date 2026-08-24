@@ -18,27 +18,27 @@ import { useStore } from '../../context/StoreContext';
 export const AdminDashboard = ({ onNavigateTab }) => {
   const { orders, products, storeConfig, productRequests, exportSalesCSV } = useStore();
   const currency = storeConfig.currencySymbol || 'Bs.';
+  const isDeliveryEnabled = storeConfig.enableDelivery !== false;
 
   // Cálculos de métricas
-  const totalSales = orders
-    .filter(o => o.status !== 'cancelled')
-    .reduce((acc, o) => acc + o.total, 0);
+  const validOrders = orders.filter(o => o.status !== 'cancelled');
+  const totalSales = validOrders.reduce((acc, o) => acc + o.total, 0);
 
-  const totalDeliveryCollected = orders
-    .filter(o => o.status !== 'cancelled' && o.deliveryType === 'delivery')
+  const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
+
+  const totalDeliveryCollected = validOrders
+    .filter(o => o.deliveryType === 'delivery')
     .reduce((acc, o) => acc + o.deliveryFee, 0);
 
   // Ganancia estimada (Venta - Costo)
-  const estimatedProfit = orders
-    .filter(o => o.status !== 'cancelled')
-    .reduce((acc, o) => {
-      const orderCost = o.items.reduce((itemAcc, item) => {
-        const prod = products.find(p => p.id === item.id);
-        const unitCost = prod?.costPrice || (item.price * 0.65);
-        return itemAcc + unitCost * item.quantity;
-      }, 0);
-      return acc + (o.subtotal - orderCost) + o.deliveryFee;
+  const estimatedProfit = validOrders.reduce((acc, o) => {
+    const orderCost = o.items.reduce((itemAcc, item) => {
+      const prod = products.find(p => p.id === item.id);
+      const unitCost = prod?.costPrice || (item.price * 0.65);
+      return itemAcc + unitCost * item.quantity;
     }, 0);
+    return acc + (o.subtotal - orderCost) + o.deliveryFee;
+  }, 0);
 
   const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
@@ -57,7 +57,9 @@ export const AdminDashboard = ({ onNavigateTab }) => {
             Panel de Control: {storeConfig.name}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Métricas de ventas, pedidos activos en condominios y control de inventario.
+            {isDeliveryEnabled 
+              ? 'Métricas de ventas, envíos a domicilio y control de inventario.' 
+              : 'Métricas de ventas, pedidos de retiro en local y control de inventario.'}
           </p>
         </div>
 
@@ -103,7 +105,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
           </div>
           <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5" />
-            {orders.length} transacciones registradas
+            {validOrders.length} transacciones registradas
           </p>
         </div>
 
@@ -123,21 +125,38 @@ export const AdminDashboard = ({ onNavigateTab }) => {
           </p>
         </div>
 
-        {/* Ingreso por Delivery de Condominio */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recaudación Delivery</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
-              <Sparkles className="w-5 h-5" />
+        {/* Tarjeta 3 Dinámica: Ticket Promedio o Delivery */}
+        {isDeliveryEnabled ? (
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Recaudación Delivery</span>
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+                <Sparkles className="w-5 h-5" />
+              </div>
             </div>
+            <div className="text-2xl sm:text-3xl font-black text-amber-900 mb-1">
+              {currency} {totalDeliveryCollected.toFixed(2)}
+            </div>
+            <p className="text-xs text-amber-700 font-bold">
+              Cobro por envíos a puerta
+            </p>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-900 mb-1">
-            {currency} {totalDeliveryCollected.toFixed(2)}
+        ) : (
+          <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Promedio</span>
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+                <Sparkles className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="text-2xl sm:text-3xl font-black text-amber-900 mb-1">
+              {currency} {averageTicket.toFixed(2)}
+            </div>
+            <p className="text-xs text-amber-700 font-bold">
+              Venta promedio por cliente
+            </p>
           </div>
-          <p className="text-xs text-amber-700 font-bold">
-            Cobro por envíos a puerta
-          </p>
-        </div>
+        )}
 
         {/* Pedidos Activos */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs relative overflow-hidden">
@@ -213,7 +232,7 @@ export const AdminDashboard = ({ onNavigateTab }) => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-emerald-600" />
-              <span>Últimos Pedidos de los Condominios</span>
+              <span>{isDeliveryEnabled ? 'Últimos Pedidos y Envíos' : 'Últimas Ventas y Pedidos de Retiro'}</span>
             </h3>
             <button 
               onClick={() => onNavigateTab('orders')}
@@ -257,7 +276,11 @@ export const AdminDashboard = ({ onNavigateTab }) => {
                       <td className="py-3 font-bold text-slate-900">{ord.id}</td>
                       <td className="py-3">
                         <p className="font-bold text-slate-800">{ord.customer.name}</p>
-                        <p className="text-[11px] text-slate-400">{ord.customer.condominium} - {ord.customer.tower}</p>
+                        <p className="text-[11px] text-slate-400">
+                          {ord.deliveryType === 'delivery' 
+                            ? `${ord.customer.condominium} - ${ord.customer.tower}` 
+                            : '🛍️ Retiro en Local Físico'}
+                        </p>
                       </td>
                       <td className="py-3 font-medium text-slate-600">
                         {ord.deliveryType === 'delivery' ? '🛵 Delivery' : '🛍️ Retiro'}
