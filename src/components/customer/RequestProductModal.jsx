@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, PlusCircle, ThumbsUp, Sparkles, MessageSquarePlus, CheckCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './RequestProductModal.css';
 
 export const RequestProductModal = ({ isOpen, onClose }) => {
   const { productRequests, submitProductRequest, voteProductRequest, selectedLocation } = useStore();

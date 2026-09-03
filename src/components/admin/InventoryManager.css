@@ -1,0 +1,16 @@
+/* ==========================================================================
+   InventoryManager.css - Estilos específicos para la gestión de productos y stock
+   ========================================================================== */
+
+.inventory-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.inventory-search-input:focus {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.inventory-badge-tag {
+  letter-spacing: 0.02em;
+}

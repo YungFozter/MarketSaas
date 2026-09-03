@@ -5,6 +5,7 @@ import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
 import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './CustomerHome.css';
 
 export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
   const { products, selectedLocation, activeTrackingOrderId, setActiveTrackingOrderId } = useStore();

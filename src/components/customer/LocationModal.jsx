@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, MapPin, Building2, Check, ArrowRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './LocationModal.css';
 
 export const LocationModal = ({ isOpen, onClose }) => {
   const { storeConfig, selectedLocation, setSelectedLocation, showToast } = useStore();

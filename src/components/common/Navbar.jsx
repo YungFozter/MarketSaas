@@ -18,6 +18,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './Navbar.css';
 
 export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal, onRequestAdminAccess, onOpenAuthModal }) => {
   const { 

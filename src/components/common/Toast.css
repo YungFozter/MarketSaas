@@ -1,0 +1,13 @@
+/* ==========================================================================
+   Toast.css - Estilos específicos para notificaciones flotantes (Toasts)
+   ========================================================================== */
+
+.toast-container {
+  position: fixed;
+  z-index: 50;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-message {
+  line-height: 1.35;
+}

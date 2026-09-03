@@ -1,0 +1,25 @@
+/* ==========================================================================
+   CheckoutModal.css - Estilos específicos para el modal de finalización de compra
+   ========================================================================== */
+
+.checkout-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+
+.checkout-modal-card {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.checkout-modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.checkout-payment-option {
+  transition: all 0.2s ease;
+}

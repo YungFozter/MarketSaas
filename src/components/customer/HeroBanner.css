@@ -1,0 +1,15 @@
+/* ==========================================================================
+   HeroBanner.css - Estilos específicos para el banner principal de bienvenida
+   ========================================================================== */
+
+.hero-banner-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.hero-banner-image {
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}

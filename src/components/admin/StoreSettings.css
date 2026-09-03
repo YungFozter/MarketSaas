@@ -1,0 +1,15 @@
+/* ==========================================================================
+   StoreSettings.css - Estilos para configuración general de la tienda
+   ========================================================================== */
+
+.settings-section-card {
+  transition: border-color 0.2s ease;
+}
+
+.settings-color-swatch {
+  transition: transform 0.15s ease, ring-width 0.15s ease;
+}
+
+.settings-color-swatch:hover {
+  transform: scale(1.08);
+}

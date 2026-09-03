@@ -12,6 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
   const { orders, storeConfig } = useStore();

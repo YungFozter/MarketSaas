@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Sparkles, Gift, Award, Check, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './LoyaltyPointsModal.css';
 
 export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
   const { veciPoints, redeemPoints, appliedCoupon, storeConfig } = useStore();

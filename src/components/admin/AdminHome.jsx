@@ -21,6 +21,7 @@ import { PosTerminal } from './PosTerminal';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { useStore } from '../../context/StoreContext';
+import './AdminHome.css';
 
 export const AdminHome = ({ onOpenAuthModal }) => {
   const [activeTab, setActiveTab] = useState('dashboard');

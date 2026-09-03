@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, ThumbsUp, CheckCircle, Clock, Trash2, Plus } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './ProductRequestsAdmin.css';
 
 export const ProductRequestsAdmin = ({ onAddNewProductWithData }) => {
   const { productRequests, updateRequestStatus } = useStore();

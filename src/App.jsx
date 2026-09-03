@@ -11,6 +11,7 @@ import { LoyaltyPointsModal } from './components/customer/LoyaltyPointsModal';
 import { RequestProductModal } from './components/customer/RequestProductModal';
 import { LocationModal } from './components/customer/LocationModal';
 import { AuthModal } from './components/auth/AuthModal';
+import './App.css';
 
 const AppContent = () => {
   const { viewMode, setViewMode, activeTrackingOrderId, setActiveTrackingOrderId } = useStore();

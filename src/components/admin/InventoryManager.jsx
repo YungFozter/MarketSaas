@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './InventoryManager.css';
 
 export const InventoryManager = () => {
   const { products, categories, saveProduct, deleteProduct, showToast, storeConfig } = useStore();

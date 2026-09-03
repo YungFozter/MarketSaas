@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './Toast.css';
 
 export const Toast = () => {
   const { toast } = useStore();

@@ -1,0 +1,17 @@
+/* ==========================================================================
+   AdminHome.css - Estilos específicos para la vista principal del Administrador
+   ========================================================================== */
+
+.admin-home-container {
+  padding-bottom: 5rem;
+}
+
+.admin-tabs-scroller {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-tabs-scroller::-webkit-scrollbar {
+  display: none;
+}

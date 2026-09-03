@@ -2,26 +2,20 @@ import React, { useState } from 'react';
 import { 
   Settings, 
   Truck, 
-  Building2, 
-  Phone, 
-  Clock, 
   Save, 
   Plus, 
   Trash2, 
-  CheckCircle2, 
   QrCode, 
   DollarSign,
   Power,
   Image as ImageIcon,
-  Lock,
-  Upload,
   Palette,
   Tag,
-  ShieldCheck,
   AlertTriangle
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
+import './StoreSettings.css';
 
 // Helper de compresión de imágenes con Canvas para prevenir desbordamientos de localStorage y Supabase
 const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {

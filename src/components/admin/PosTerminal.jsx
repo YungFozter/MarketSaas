@@ -13,6 +13,7 @@ import {
   Barcode 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './PosTerminal.css';
 
 export const PosTerminal = () => {
   const { products, categories, completePosSale, showToast, storeConfig } = useStore();

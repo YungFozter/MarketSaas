@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests } from '../data/initialData';
 import confetti from 'canvas-confetti';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../services/supabaseClient';
 
 const StoreContext = createContext();
 

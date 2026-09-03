@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './HeroBanner.css';
 
 export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, onOpenPoints }) => {
   const { storeConfig, selectedLocation, cartSavings } = useStore();

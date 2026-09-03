@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus, ShieldCheck, Sparkles, Truck, Check, Share2, Tag } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './ProductModal.css';
 
 export const ProductModal = ({ product, onClose }) => {
   const { addToCart, cart, updateCartQuantity, selectedLocation, storeConfig } = useStore();

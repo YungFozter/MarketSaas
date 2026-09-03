@@ -17,6 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './AuthModal.css';
 
 export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const { 

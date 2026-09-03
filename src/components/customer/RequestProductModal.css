@@ -1,0 +1,15 @@
+/* ==========================================================================
+   RequestProductModal.css - Estilos específicos para solicitar productos faltantes
+   ========================================================================== */
+
+.request-product-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  backdrop-filter: blur(6px);
+}
+
+.request-product-modal-card {
+  max-height: 90vh;
+  overflow-y: auto;
+}

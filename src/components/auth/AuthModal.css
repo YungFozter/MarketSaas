@@ -1,0 +1,22 @@
+/* ==========================================================================
+   AuthModal.css - Estilos específicos para el modal de Login y Registro
+   ========================================================================== */
+
+.auth-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.auth-modal-card {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

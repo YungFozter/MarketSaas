@@ -1,0 +1,18 @@
+/* ==========================================================================
+   Navbar.css - Estilos específicos para la barra de navegación principal
+   ========================================================================== */
+
+.navbar-container {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  width: 100%;
+}
+
+.navbar-brand-logo {
+  transition: transform 0.2s ease-in-out;
+}
+
+.navbar-brand-logo:hover {
+  transform: scale(1.04);
+}

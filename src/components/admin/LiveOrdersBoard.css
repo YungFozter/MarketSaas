@@ -1,0 +1,27 @@
+/* ==========================================================================
+   LiveOrdersBoard.css - Estilos específicos para el tablero Kanban de pedidos
+   ========================================================================== */
+
+.kanban-board-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .kanban-board-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.kanban-column-body {
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+}
+
+.kanban-order-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-order-card:hover {
+  transform: translateY(-2px);
+}

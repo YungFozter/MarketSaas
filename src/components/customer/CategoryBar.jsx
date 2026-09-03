@@ -11,6 +11,7 @@ import {
   Layers 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './CategoryBar.css';
 
 const iconMap = {
   Sparkles: <Sparkles className="w-4 h-4" />,

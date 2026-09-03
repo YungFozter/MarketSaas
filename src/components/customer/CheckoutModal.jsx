@@ -15,6 +15,7 @@ import {
   Clock 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './CheckoutModal.css';
 
 export const CheckoutModal = ({ isOpen, onClose }) => {
   const { 

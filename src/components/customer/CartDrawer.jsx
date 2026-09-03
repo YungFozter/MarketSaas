@@ -12,6 +12,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './CartDrawer.css';
 
 export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints }) => {
   const { 

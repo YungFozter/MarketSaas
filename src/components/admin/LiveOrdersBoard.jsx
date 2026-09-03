@@ -7,16 +7,11 @@ import {
   Store, 
   MessageCircle, 
   MapPin, 
-  Banknote, 
-  QrCode, 
-  CreditCard, 
-  AlertCircle, 
   Search,
-  Filter,
-  ArrowRight,
-  Phone
+  ArrowRight
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './LiveOrdersBoard.css';
 
 export const LiveOrdersBoard = () => {
   const { orders, updateOrderStatus, cancelOrder, storeConfig } = useStore();

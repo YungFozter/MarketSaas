@@ -1,0 +1,14 @@
+/* ==========================================================================
+   OrderTrackingModal.css - Estilos para seguimiento en tiempo real del pedido
+   ========================================================================== */
+
+.tracking-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+}
+
+.tracking-step-line {
+  transition: all 0.3s ease;
+}

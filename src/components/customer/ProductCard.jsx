@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, Minus, Check, Sparkles, Tag, Eye } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import './ProductCard.css';
 
 export const ProductCard = ({ product, onOpenDetail }) => {
   const { cart, addToCart, updateCartQuantity, storeConfig } = useStore();

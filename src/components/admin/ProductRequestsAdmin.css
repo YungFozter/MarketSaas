@@ -1,0 +1,15 @@
+/* ==========================================================================
+   ProductRequestsAdmin.css - Estilos para gestión de peticiones vecinales
+   ========================================================================== */
+
+.requests-admin-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.requests-admin-card:hover {
+  border-color: #cbd5e1;
+}
+
+.requests-vote-pill {
+  font-variant-numeric: tabular-nums;
+}
