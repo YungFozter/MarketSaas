@@ -30,6 +30,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [registerStep, setRegisterStep] = useState(1); // 1: Datos Dueño, 2: Datos Tienda
+  const [registeredUser, setRegisteredUser] = useState(null);
   
   // Campos de Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -70,6 +71,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     if (isOpen) {
       setErrorMsg('');
       setLoading(false);
+      setRegisteredUser(null);
       if (initialMode) setMode(initialMode);
       if (currentUser) {
         setRegisterStep(2);
@@ -135,10 +137,16 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     if (error) {
       if (error.message?.includes('already registered')) {
         setErrorMsg('Este correo electrónico ya está registrado. Intenta iniciar sesión.');
+      } else if (error.message?.includes('invalid')) {
+        setErrorMsg('El formato del correo es inválido. Utiliza un correo real (ej. @gmail.com).');
       } else {
         setErrorMsg(error.message || 'Error al registrar la cuenta.');
       }
       return;
+    }
+
+    if (data?.user) {
+      setRegisteredUser(data.user);
     }
 
     // Pasamos a crear tienda
@@ -163,7 +171,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       storeName: storeName.trim(),
       slug: storeSlug.trim(),
       phone: phone.trim(),
-      whatsapp: phone.trim().replace(/[^0-9]/g, '')
+      whatsapp: phone.trim().replace(/[^0-9]/g, ''),
+      ownerId: registeredUser?.id || currentUser?.id
     });
     setLoading(false);
 

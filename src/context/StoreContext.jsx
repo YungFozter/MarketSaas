@@ -667,7 +667,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   // 2. Creación y Registro de Tienda para el Comerciante
-  const createMerchantStore = async ({ storeName, slug, phone, whatsapp, themeColor = 'emerald' }) => {
+  const createMerchantStore = async ({ storeName, slug, phone, whatsapp, themeColor = 'emerald', ownerId = null }) => {
     if (!supabase) return { data: null, error: { message: 'Supabase no está configurado.' } };
 
     const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
@@ -685,7 +685,7 @@ export const StoreProvider = ({ children }) => {
         return { data: null, error: { message: `El enlace "${cleanSlug}" ya está en uso. Por favor elige otro.` } };
       }
 
-      const userId = currentUser?.id || (await supabase.auth.getUser())?.data?.user?.id || null;
+      const userId = ownerId || currentUser?.id || (await supabase.auth.getUser())?.data?.user?.id || null;
 
       const newConfig = {
         ...initialStoreConfig,
