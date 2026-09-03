@@ -9,11 +9,16 @@ export const useStore = () => useContext(StoreContext);
 
 export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
-  const getTenantSlug = () => {
+  const getInitialTenantSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('store') || params.get('tenant') || 'default';
+    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || 'default';
   };
-  const tenantSlug = getTenantSlug();
+  const [tenantSlug, setTenantSlug] = useState(getInitialTenantSlug);
+
+  // Estados de Autenticación de Dueño
+  const [currentUser, setCurrentUser] = useState(null);
+  const [merchantStore, setMerchantStore] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   // 1. Vista actual: 'customer' o 'admin'
   const [viewMode, setViewMode] = useState(() => {
@@ -41,6 +46,7 @@ export const StoreProvider = ({ children }) => {
         tenant_id: tenantSlug,
         name: updated.name || 'Tienda',
         config: updated,
+        owner_id: currentUser?.id || merchantStore?.owner_id || null,
         updated_at: new Date().toISOString()
       };
       supabase.from('store_config').upsert([payload]).then(({ error }) => {
@@ -93,7 +99,79 @@ export const StoreProvider = ({ children }) => {
   // 11. Toast notification
   const [toast, setToast] = useState(null);
 
-  // Cargar datos de Supabase filtrados por tenantSlug si está configurado
+  // Función para buscar y cargar la tienda asociada al dueño
+  const fetchStoreForUser = async (userId) => {
+    if (!supabase || !userId) return null;
+    try {
+      let storeRecord = null;
+      // Intento 1: buscar por owner_id
+      const { data, error } = await supabase
+        .from('store_config')
+        .select('*')
+        .eq('owner_id', userId)
+        .maybeSingle();
+
+      if (!error && data) {
+        storeRecord = data;
+      } else {
+        // Intento 2: buscar en toda la tabla por si owner_id está en config JSONB
+        const allStores = await supabase.from('store_config').select('*');
+        if (allStores.data && allStores.data.length > 0) {
+          storeRecord = allStores.data.find(s => {
+            const cfg = s.config || s;
+            return s.owner_id === userId || cfg?.owner_id === userId;
+          }) || null;
+        }
+      }
+
+      if (storeRecord) {
+        const loadedConfig = storeRecord.config || storeRecord;
+        const { id, tenant_id, ...configData } = loadedConfig;
+        setStoreConfigState(prev => ({ ...prev, ...configData, name: storeRecord.name || configData.name }));
+        setMerchantStore(storeRecord);
+        setTenantSlug(storeRecord.id);
+        localStorage.setItem('marketsaas_active_tenant', storeRecord.id);
+        return storeRecord;
+      }
+    } catch (err) {
+      console.warn('Nota al cargar tienda del usuario:', err);
+    }
+    return null;
+  };
+
+  // Inicialización y Listener de Supabase Auth
+  useEffect(() => {
+    if (!supabase) {
+      setIsAuthLoading(false);
+      return;
+    }
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        await fetchStoreForUser(session.user.id);
+      }
+      setIsAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setCurrentUser(session.user);
+        if (event === 'SIGNED_IN') {
+          await fetchStoreForUser(session.user.id);
+        }
+      } else {
+        setCurrentUser(null);
+        setMerchantStore(null);
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Cargar datos de Supabase reactivamente cada vez que cambia tenantSlug
   useEffect(() => {
     if (!supabase) return;
 
@@ -110,7 +188,7 @@ export const StoreProvider = ({ children }) => {
       if (!error && data) {
         const loadedConfig = data.config || data;
         const { id, tenant_id, ...configData } = loadedConfig;
-        setStoreConfigState(prev => ({ ...prev, ...configData }));
+        setStoreConfigState(prev => ({ ...prev, ...configData, name: data.name || configData.name }));
       }
     });
 
@@ -132,10 +210,12 @@ export const StoreProvider = ({ children }) => {
 
     // Subscripciones en Tiempo Real (Realtime) para Pedidos y Productos
     const ordersChannel = supabase
-      .channel('public:orders')
+      .channel(`public:orders:${tenantSlug}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
         if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new, ...prev.filter(o => o.id !== payload.new.id)]);
+          if (!payload.new.tenant_id || payload.new.tenant_id === tenantSlug) {
+            setOrders(prev => [payload.new, ...prev.filter(o => o.id !== payload.new.id)]);
+          }
         } else if (payload.eventType === 'UPDATE') {
           setOrders(prev => prev.map(o => (o.id === payload.new.id ? payload.new : o)));
         } else if (payload.eventType === 'DELETE') {
@@ -145,10 +225,12 @@ export const StoreProvider = ({ children }) => {
       .subscribe();
 
     const productsChannel = supabase
-      .channel('public:products')
+      .channel(`public:products:${tenantSlug}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
         if (payload.eventType === 'INSERT') {
-          setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
+          if (!payload.new.tenant_id || payload.new.tenant_id === tenantSlug) {
+            setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
+          }
         } else if (payload.eventType === 'UPDATE') {
           setProducts(prev => prev.map(p => (p.id === payload.new.id ? payload.new : p)));
         } else if (payload.eventType === 'DELETE') {
@@ -161,7 +243,7 @@ export const StoreProvider = ({ children }) => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(productsChannel);
     };
-  }, []);
+  }, [tenantSlug]);
 
   // Guardar en localStorage por tenantSlug
   useEffect(() => {
@@ -343,7 +425,6 @@ export const StoreProvider = ({ children }) => {
       paymentMethod: orderData.paymentMethod,
       cashChangeFor: orderData.cashChangeFor || null,
       status: 'pending',
-      tenant_id: tenantSlug,
       createdAt: new Date().toISOString(),
       pointsEarned: earnedPoints
     };
@@ -561,10 +642,175 @@ export const StoreProvider = ({ children }) => {
     showToast('Cupón removido.', 'info');
   };
 
+  // --- MÉTODOS DE AUTENTICACIÓN Y ONBOARDING MULTI-TENANT ---
+
+  // 1. Registro de Comerciante (Supabase Auth)
+  const signUpMerchant = async (email, password, fullName) => {
+    if (!supabase) return { data: null, error: { message: 'Supabase no está configurado.' } };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName }
+        }
+      });
+      if (error) throw error;
+      if (data?.user) {
+        setCurrentUser(data.user);
+      }
+      return { data, error: null };
+    } catch (err) {
+      console.error('Error en signUpMerchant:', err);
+      return { data: null, error: err };
+    }
+  };
+
+  // 2. Creación y Registro de Tienda para el Comerciante
+  const createMerchantStore = async ({ storeName, slug, phone, whatsapp, themeColor = 'emerald' }) => {
+    if (!supabase) return { data: null, error: { message: 'Supabase no está configurado.' } };
+
+    const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+    if (!cleanSlug) return { data: null, error: { message: 'El identificador de tienda no es válido.' } };
+
+    try {
+      // Validar si ya existe ese slug
+      const { data: existing } = await supabase
+        .from('store_config')
+        .select('id')
+        .eq('id', cleanSlug)
+        .maybeSingle();
+
+      if (existing) {
+        return { data: null, error: { message: `El enlace "${cleanSlug}" ya está en uso. Por favor elige otro.` } };
+      }
+
+      const userId = currentUser?.id || (await supabase.auth.getUser())?.data?.user?.id || null;
+
+      const newConfig = {
+        ...initialStoreConfig,
+        name: storeName,
+        tagline: 'Tu tienda de confianza a pasos de tu puerta',
+        phone: phone || '',
+        whatsapp: whatsapp || phone || '',
+        themeColor: themeColor || 'emerald',
+        owner_id: userId
+      };
+
+      const storeRecord = {
+        id: cleanSlug,
+        tenant_id: cleanSlug,
+        name: storeName,
+        slogan: 'Tu tienda de confianza a pasos de tu puerta',
+        theme_color: themeColor || 'emerald',
+        currency_symbol: 'Bs.',
+        is_open: true,
+        admin_pin: '1234',
+        condominiums: initialStoreConfig.condominiums,
+        coupons: initialStoreConfig.coupons,
+        categories: initialStoreConfig.categories,
+        payment_methods: initialStoreConfig.paymentMethods,
+        config: newConfig,
+        owner_id: userId,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('store_config').insert([storeRecord]).select();
+      if (error) throw error;
+
+      // Actualizar estados reactivos
+      setTenantSlug(cleanSlug);
+      setStoreConfigState(newConfig);
+      setMerchantStore(storeRecord);
+      localStorage.setItem('marketsaas_active_tenant', cleanSlug);
+
+      // Sembrar catálogo inicial para esta tienda si se desea
+      const seededProducts = initialProducts.map(p => ({
+        id: `${cleanSlug}-${p.id}`,
+        tenant_id: cleanSlug,
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        original_price: p.originalPrice || p.price,
+        unit: p.unit,
+        stock: p.stock,
+        image: p.image,
+        badge: p.badge || null,
+        is_active: true,
+        code: p.code
+      }));
+
+      await supabase.from('products').insert(seededProducts);
+      setProducts(seededProducts);
+
+      // Actualizar parámetro en la URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('store', cleanSlug);
+      window.history.replaceState({}, '', newUrl.toString());
+
+      setViewMode('admin');
+      showToast(`¡Tienda "${storeName}" creada con éxito!`, 'success');
+      triggerConfetti();
+
+      return { data: storeRecord, error: null };
+    } catch (err) {
+      console.error('Error creando tienda:', err);
+      return { data: null, error: err };
+    }
+  };
+
+  // 3. Inicio de Sesión de Comerciante
+  const signInMerchant = async (email, password) => {
+    if (!supabase) return { data: null, store: null, error: { message: 'Supabase no está configurado.' } };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      if (error) throw error;
+
+      if (data?.user) {
+        setCurrentUser(data.user);
+        const store = await fetchStoreForUser(data.user.id);
+        if (store) {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('store', store.id);
+          window.history.replaceState({}, '', newUrl.toString());
+        }
+        setViewMode('admin');
+        showToast('¡Bienvenido a tu panel de administración!', 'success');
+        return { data, store, error: null };
+      }
+      return { data, store: null, error: null };
+    } catch (err) {
+      console.error('Error en signInMerchant:', err);
+      return { data: null, store: null, error: err };
+    }
+  };
+
+  // 4. Cerrar Sesión de Comerciante
+  const signOutMerchant = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setCurrentUser(null);
+    setMerchantStore(null);
+    setViewMode('customer');
+    showToast('Sesión de comerciante cerrada.', 'info');
+  };
+
   return (
     <StoreContext.Provider
       value={{
         tenantSlug,
+        setTenantSlug,
+        currentUser,
+        merchantStore,
+        isAuthLoading,
+        signUpMerchant,
+        signInMerchant,
+        createMerchantStore,
+        signOutMerchant,
         viewMode,
         setViewMode,
         products,

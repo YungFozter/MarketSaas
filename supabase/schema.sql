@@ -36,11 +36,13 @@ CREATE TABLE IF NOT EXISTS public.store_config (
   coupons JSONB NOT NULL DEFAULT '[]'::jsonb,
   categories JSONB NOT NULL DEFAULT '[]'::jsonb,
   payment_methods JSONB NOT NULL DEFAULT '[]'::jsonb,
+  owner_id UUID,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Asegurar columna config en tablas existentes
+-- Asegurar columnas config y owner_id en tablas existentes
 ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS owner_id UUID;
 
 
 -- 3. Tabla de Pedidos (Orders)

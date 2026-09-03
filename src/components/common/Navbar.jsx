@@ -12,11 +12,14 @@ import {
   PlusCircle, 
   Menu, 
   X,
-  PhoneCall
+  PhoneCall,
+  LogIn,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
-export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal, onRequestAdminAccess }) => {
+export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal, onRequestAdminAccess, onOpenAuthModal }) => {
   const { 
     viewMode, 
     setViewMode, 
@@ -26,7 +29,10 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
     selectedLocation, 
     veciPoints, 
     storeConfig,
-    orders
+    orders,
+    currentUser,
+    merchantStore,
+    signOutMerchant
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -47,11 +53,19 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Si está autenticado, mostrar badge del dueño */}
+            {currentUser && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-100 bg-white/10 px-2.5 py-0.5 rounded-md truncate max-w-[170px]">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                <span className="truncate">{merchantStore?.name || currentUser.email}</span>
+              </span>
+            )}
+
             {/* Switch de Modo Cliente / Administrador */}
             <div className="flex items-center bg-black/25 p-0.5 rounded-lg border border-white/20">
               <button
                 onClick={() => setViewMode('customer')}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 ${
+                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'customer'
                     ? 'bg-white text-emerald-900 shadow-xs font-bold'
                     : 'text-white/80 hover:text-white'
@@ -63,14 +77,18 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               <button
                 onClick={() => {
                   if (viewMode === 'customer') {
-                    if (onRequestAdminAccess) {
+                    if (currentUser) {
+                      setViewMode('admin');
+                    } else if (onOpenAuthModal) {
+                      onOpenAuthModal();
+                    } else if (onRequestAdminAccess) {
                       onRequestAdminAccess();
                     } else {
                       setViewMode('admin');
                     }
                   }
                 }}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 ${
+                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'admin'
                     ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
                     : 'text-white/80 hover:text-white'
@@ -188,14 +206,24 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               <div className="flex items-center gap-2">
                 <span className="hidden sm:flex items-center gap-1.5 text-xs font-semibold bg-amber-100 text-amber-900 px-3 py-1.5 rounded-xl border border-amber-300">
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                  Modo Tienda Activo
+                  <span className="truncate max-w-[140px] font-bold">{storeConfig.name}</span>
                 </span>
                 <button
                   onClick={() => setViewMode('customer')}
-                  className="text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all flex items-center gap-1"
+                  className="text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   Ver como Cliente
                 </button>
+                {currentUser && (
+                  <button
+                    onClick={signOutMerchant}
+                    className="text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 px-2.5 py-1.5 rounded-xl border border-rose-200 transition-all flex items-center gap-1 cursor-pointer"
+                    title="Cerrar sesión de comerciante"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Salir</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -253,6 +281,38 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 {storeConfig.phone}
               </a>
             </div>
+
+            {/* Opciones de Comerciante en móvil */}
+            {currentUser ? (
+              <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Sesión activa:</span>
+                  <span className="text-xs font-bold text-slate-800 truncate block">{currentUser.email}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    signOutMerchant();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg border border-rose-200 flex items-center gap-1 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Salir</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  if (onOpenAuthModal) onOpenAuthModal();
+                  else if (onRequestAdminAccess) onRequestAdminAccess();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm cursor-pointer transition-colors"
+              >
+                <LogIn className="w-4 h-4 text-emerald-400" />
+                <span>Acceso Comerciantes (Login / Registro)</span>
+              </button>
+            )}
           </div>
         )}
       </div>

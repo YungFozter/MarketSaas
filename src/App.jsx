@@ -10,7 +10,7 @@ import { OrderTrackingModal } from './components/customer/OrderTrackingModal';
 import { LoyaltyPointsModal } from './components/customer/LoyaltyPointsModal';
 import { RequestProductModal } from './components/customer/RequestProductModal';
 import { LocationModal } from './components/customer/LocationModal';
-import { AdminPinModal } from './components/admin/AdminPinModal';
+import { AuthModal } from './components/auth/AuthModal';
 
 const AppContent = () => {
   const { viewMode, setViewMode, activeTrackingOrderId, setActiveTrackingOrderId } = useStore();
@@ -21,16 +21,11 @@ const AppContent = () => {
   const [isPointsOpen, setIsPointsOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
-  const [isAdminPinOpen, setIsAdminPinOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleOpenCheckout = () => {
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
-  };
-
-  const handleAdminAccessSuccess = () => {
-    setIsAdminPinOpen(false);
-    setViewMode('admin');
   };
 
   return (
@@ -41,7 +36,8 @@ const AppContent = () => {
         onOpenPoints={() => setIsPointsOpen(true)}
         onOpenRequests={() => setIsRequestsOpen(true)}
         onOpenLocationModal={() => setIsLocationOpen(true)}
-        onRequestAdminAccess={() => setIsAdminPinOpen(true)}
+        onRequestAdminAccess={() => setIsAuthModalOpen(true)}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
       />
 
       {/* Contenido Principal según el Modo Activo */}
@@ -54,7 +50,7 @@ const AppContent = () => {
             onOpenLocationModal={() => setIsLocationOpen(true)}
           />
         ) : (
-          <AdminHome />
+          <AdminHome onOpenAuthModal={() => setIsAuthModalOpen(true)} />
         )}
       </div>
 
@@ -111,10 +107,9 @@ const AppContent = () => {
         onClose={() => setIsLocationOpen(false)}
       />
 
-      <AdminPinModal
-        isOpen={isAdminPinOpen}
-        onClose={() => setIsAdminPinOpen(false)}
-        onSuccess={handleAdminAccessSuccess}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
       {/* Toast Notification Container */}
