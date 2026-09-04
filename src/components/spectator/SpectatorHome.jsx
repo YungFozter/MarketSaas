@@ -6,7 +6,12 @@ import { SpectatorOnboardingBanner } from './SpectatorOnboardingBanner';
 import { SpectatorFooter } from './SpectatorFooter';
 import './SpectatorHome.css';
 
-export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
+export const SpectatorHome = ({ 
+  onExploreStore, 
+  onOpenAuthModal,
+  activeShowcaseTab = 'residents',
+  onSelectShowcaseTab
+}) => {
   const { setViewMode, currentUser } = useStore();
 
   const handleAuthAction = () => {
@@ -102,9 +107,11 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
       <section 
         id="section-showcase" 
         ref={showcaseRef}
-        className="spectator-section spectator-section-showcase spectator-scroll-reveal reveal-from-bottom w-full"
+        className="spectator-section spectator-section-showcase spectator-scroll-reveal reveal-from-bottom w-full scroll-mt-20"
       >
         <SpectatorShowcase
+          activeTab={activeShowcaseTab}
+          onTabChange={onSelectShowcaseTab}
           onExploreStore={onExploreStore}
           onGoToMerchant={handleAuthAction}
         />

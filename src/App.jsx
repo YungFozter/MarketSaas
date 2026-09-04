@@ -24,6 +24,7 @@ const AppContent = () => {
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [spectatorShowcaseTab, setSpectatorShowcaseTab] = useState('residents');
 
   const handleOpenCheckout = () => {
     setIsCartOpen(false);
@@ -40,6 +41,8 @@ const AppContent = () => {
         onOpenLocationModal={() => setIsLocationOpen(true)}
         onRequestAdminAccess={() => setIsAuthModalOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        activeSpectatorTab={spectatorShowcaseTab}
+        onSelectSpectatorTab={setSpectatorShowcaseTab}
       />
 
       {/* Contenido Principal según el Modo Activo */}
@@ -48,6 +51,8 @@ const AppContent = () => {
           <SpectatorHome
             onExploreStore={() => setViewMode('customer')}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            activeShowcaseTab={spectatorShowcaseTab}
+            onSelectShowcaseTab={setSpectatorShowcaseTab}
           />
         ) : viewMode === 'customer' ? (
           <CustomerHome

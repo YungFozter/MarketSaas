@@ -21,7 +21,16 @@ import {
 import { useStore } from '../../context/StoreContext';
 import './Navbar.css';
 
-export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal, onRequestAdminAccess, onOpenAuthModal }) => {
+export const Navbar = ({ 
+  onOpenCart, 
+  onOpenPoints, 
+  onOpenRequests, 
+  onOpenLocationModal, 
+  onRequestAdminAccess, 
+  onOpenAuthModal,
+  activeSpectatorTab = 'residents',
+  onSelectSpectatorTab
+}) => {
   const { 
     viewMode, 
     setViewMode, 
@@ -41,6 +50,19 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
 
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way').length;
+
+  const handleTabNavigation = (tab) => {
+    if (onSelectSpectatorTab) {
+      onSelectSpectatorTab(tab);
+    }
+    const el = document.getElementById('section-showcase');
+    if (el) {
+      const yOffset = -75;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    if (mobileMenuOpen) setMobileMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm transition-all">
@@ -186,46 +208,53 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
 
           {/* Menú Central Coherente (Enlaces de Navegación de la Plataforma en Vista Espectador) */}
           {viewMode === 'spectator' && (
-            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5">
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80">
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all cursor-pointer whitespace-nowrap"
               >
                 Solución
               </button>
               <button
-                onClick={() => {
-                  const el = document.getElementById('section-showcase');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                onClick={() => handleTabNavigation('residents')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSpectatorTab === 'residents'
+                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
               >
                 Para Residentes
               </button>
               <button
-                onClick={() => {
-                  const el = document.getElementById('section-showcase');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                onClick={() => handleTabNavigation('merchants')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSpectatorTab === 'merchants'
+                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
               >
                 Para Comerciantes
               </button>
               <button
-                onClick={() => {
-                  const el = document.getElementById('section-showcase');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                onClick={() => handleTabNavigation('condos')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  activeSpectatorTab === 'condos'
+                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                }`}
               >
                 Para Condominios
               </button>
               <button
                 onClick={() => {
                   const el = document.getElementById('section-onboarding');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  if (el) {
+                    const yOffset = -75;
+                    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
                 }}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all cursor-pointer whitespace-nowrap"
               >
                 Cómo Empezar
               </button>
@@ -370,16 +399,52 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
           <div className="lg:hidden py-3 border-t border-slate-200 space-y-2.5 animate-fadeIn">
             {/* Navegación Espectador / Tienda en Móvil */}
             {viewMode === 'spectator' ? (
-              <button
-                onClick={() => {
-                  setViewMode('customer');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span>Explorar Tienda de Demostración</span>
-              </button>
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    setViewMode('customer');
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
+                  <span>Explorar Tienda de Demostración</span>
+                </button>
+
+                {/* Accesos directos a perspectivas en móvil */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                  <button
+                    onClick={() => handleTabNavigation('residents')}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
+                      activeSpectatorTab === 'residents'
+                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    🛍️ Residentes
+                  </button>
+                  <button
+                    onClick={() => handleTabNavigation('merchants')}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
+                      activeSpectatorTab === 'merchants'
+                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    🏪 Comerciantes
+                  </button>
+                  <button
+                    onClick={() => handleTabNavigation('condos')}
+                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
+                      activeSpectatorTab === 'condos'
+                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    🏢 Condominios
+                  </button>
+                </div>
+              </div>
             ) : (
               <button
                 onClick={() => {

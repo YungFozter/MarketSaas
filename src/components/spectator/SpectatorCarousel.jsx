@@ -159,25 +159,25 @@ export const SpectatorCarousel = () => {
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Controles de Navegación Superiores */}
-      <div className="flex items-center justify-between mb-4 px-1">
+      <div className="flex items-center justify-between mb-2 sm:mb-2.5 px-1">
         <div className="text-left">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
+          <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
             Ecosistema MarketSaaS
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
+          <h3 className="text-base sm:text-lg font-extrabold text-slate-900 mt-0.5">
             Ventajas y Capacidades del Sistema
           </h3>
         </div>
 
         {/* Flechas Anterior / Siguiente */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={handlePrev}
             className="spectator-carousel-nav-btn"
             aria-label="Ver característica anterior"
             title="Anterior"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
 
           <button
@@ -186,7 +186,7 @@ export const SpectatorCarousel = () => {
             aria-label="Ver siguiente característica"
             title="Siguiente"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -203,24 +203,24 @@ export const SpectatorCarousel = () => {
               <div
                 key={feature.id}
                 style={{ flex: `0 0 ${itemWidthPercent}%`, maxWidth: `${itemWidthPercent}%` }}
-                className="px-2"
+                className="px-1.5 sm:px-2"
               >
-                <div className="spectator-carousel-card p-5 sm:p-6 text-left">
+                <div className="spectator-carousel-card p-3.5 sm:p-4 text-left">
                   
                   {/* Card Header: Icono y Badge */}
                   <div>
-                    <div className="flex items-center justify-between mb-3.5">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                         feature.color === 'emerald' ? 'bg-emerald-50 text-emerald-700' :
                         feature.color === 'amber' ? 'bg-amber-50 text-amber-700' :
                         feature.color === 'blue' ? 'bg-blue-50 text-blue-700' :
                         feature.color === 'indigo' ? 'bg-indigo-50 text-indigo-700' :
                         'bg-teal-50 text-teal-700'
                       }`}>
-                        <Icon className="w-5 h-5" />
+                        <Icon className="w-4 h-4" />
                       </div>
 
-                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                         feature.color === 'emerald' ? 'bg-emerald-100 text-emerald-800' :
                         feature.color === 'amber' ? 'bg-amber-100 text-amber-800' :
                         feature.color === 'blue' ? 'bg-blue-100 text-blue-800' :
@@ -232,22 +232,22 @@ export const SpectatorCarousel = () => {
                     </div>
 
                     {/* Títulos */}
-                    <h4 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight leading-snug mb-1">
+                    <h4 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight leading-snug mb-0.5">
                       {feature.title}
                     </h4>
-                    <div className="text-xs font-bold text-emerald-700 mb-2.5">
+                    <div className="text-[11px] font-bold text-emerald-700 mb-1.5">
                       {feature.subtitle}
                     </div>
 
                     {/* Descripción */}
-                    <p className="text-xs text-slate-500 leading-relaxed">
+                    <p className="text-xs text-slate-500 leading-snug line-clamp-2 sm:line-clamp-3">
                       {feature.description}
                     </p>
                   </div>
 
                   {/* Card Footer: Métrica / Highlight */}
-                  <div className="pt-4 mt-4 border-t border-slate-100">
-                    <div className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                  <div className="pt-2.5 mt-2.5 border-t border-slate-100">
+                    <div className="text-[10px] sm:text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
                       <span>{feature.stat}</span>
                     </div>
                   </div>
@@ -260,7 +260,7 @@ export const SpectatorCarousel = () => {
       </div>
 
       {/* Indicadores de Puntos (Dots / Pagination) */}
-      <div className="flex items-center justify-center gap-1.5 mt-4">
+      <div className="flex items-center justify-center gap-1.5 mt-2.5">
         {Array.from({ length: maxIndex + 1 }).map((_, dotIdx) => (
           <button
             key={dotIdx}

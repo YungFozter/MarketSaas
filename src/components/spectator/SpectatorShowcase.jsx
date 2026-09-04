@@ -34,8 +34,21 @@ import {
 } from 'lucide-react';
 import './SpectatorShowcase.css';
 
-export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
-  const [activeTab, setActiveTab] = useState('residents'); // 'residents' | 'merchants' | 'condos'
+export const SpectatorShowcase = ({ 
+  onExploreStore, 
+  onGoToMerchant,
+  activeTab: controlledTab,
+  onTabChange
+}) => {
+  const [internalTab, setInternalTab] = useState('residents'); // 'residents' | 'merchants' | 'condos'
+  const activeTab = controlledTab !== undefined ? controlledTab : internalTab;
+
+  const handleTabChange = (tab) => {
+    setInternalTab(tab);
+    if (onTabChange) {
+      onTabChange(tab);
+    }
+  };
 
   // Estado interactivo dentro del simulador de smartphone (Para Residentes)
   const [milkQuantity, setMilkQuantity] = useState(1);
@@ -124,7 +137,7 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
         <div className="flex justify-center mt-6">
           <div className="inline-flex p-1.5 rounded-2xl bg-slate-200/90 backdrop-blur-md shadow-2xs gap-1.5 max-w-full overflow-x-auto border border-slate-300/60">
             <button
-              onClick={() => setActiveTab('residents')}
+              onClick={() => handleTabChange('residents')}
               className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeTab === 'residents' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
               }`}
@@ -134,7 +147,7 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
             </button>
 
             <button
-              onClick={() => setActiveTab('merchants')}
+              onClick={() => handleTabChange('merchants')}
               className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeTab === 'merchants' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
               }`}
@@ -144,7 +157,7 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
             </button>
 
             <button
-              onClick={() => setActiveTab('condos')}
+              onClick={() => handleTabChange('condos')}
               className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
                 activeTab === 'condos' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
               }`}
