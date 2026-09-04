@@ -224,11 +224,8 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
-  // 4. Carrito de Compras
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_cart`);
-    return saved ? JSON.parse(saved) : [];
-  });
+  // 4. Carrito de Compras (En Modo Demostración inicia siempre vacío en cada recarga)
+  const [cart, setCart] = useState([]);
 
   // 5. Ubicación seleccionada por el cliente
   const [selectedLocation, setSelectedLocation] = useState(() => {
@@ -253,11 +250,8 @@ export const StoreProvider = ({ children }) => {
     return saved ? parseInt(saved, 10) : 340;
   });
 
-  // 8. Solicitudes de productos ("Pídelo si no está")
-  const [productRequests, setProductRequests] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
-    return saved ? JSON.parse(saved) : initialProductRequests;
-  });
+  // 8. Solicitudes de productos (En Modo Demostración inicia siempre con el listado limpio por defecto)
+  const [productRequests, setProductRequests] = useState(initialProductRequests);
 
   // 9. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -369,13 +363,15 @@ export const StoreProvider = ({ children }) => {
       }
     });
 
-    // 4. Cargar solicitudes de productos por tienda
-    supabase.from('product_requests').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
-      if (!error && data && data.length > 0) {
-        const filtered = data.filter(r => !r.tenant_id || r.tenant_id === tenantSlug);
-        if (filtered.length > 0) setProductRequests(filtered);
-      }
-    });
+    // 4. Cargar solicitudes de productos por tienda (solo para tiendas comerciales reales)
+    if (tenantSlug && tenantSlug !== 'default') {
+      supabase.from('product_requests').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
+        if (!error && data && data.length > 0) {
+          const filtered = data.filter(r => r.tenant_id === tenantSlug);
+          if (filtered.length > 0) setProductRequests(filtered);
+        }
+      });
+    }
 
     // Subscripciones en Tiempo Real (Realtime) para Pedidos y Productos
     const ordersChannel = supabase
@@ -414,13 +410,20 @@ export const StoreProvider = ({ children }) => {
     };
   }, [tenantSlug]);
 
-  // Guardar en localStorage por tenantSlug
+  // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {
     localStorage.setItem(`marketsaas_${tenantSlug}_viewMode`, viewMode);
+    // En Modo Demostración: al cambiar de sección o recargar, se limpia el carrito y se restablecen las peticiones iniciales
+    setCart([]);
+    setProductRequests(initialProductRequests);
+    try {
+      localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
+      localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
+    } catch (e) {}
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-04-v8-vecino-pricing';
+  const CURRENT_SCHEMA_VER = '2026-09-04-v9-demo-cleanup';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
@@ -428,8 +431,12 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
         setProducts(initialProducts);
         setStoreConfigState(initialStoreConfig);
+        setCart([]);
+        setProductRequests(initialProductRequests);
         localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts));
         localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
+        localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
+        localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
       }
     } catch (e) {
       console.warn('Error syncing catalog version:', e);
@@ -445,10 +452,6 @@ export const StoreProvider = ({ children }) => {
   }, [storeConfig, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem(`marketsaas_${tenantSlug}_cart`, JSON.stringify(cart));
-  }, [cart, tenantSlug]);
-
-  useEffect(() => {
     localStorage.setItem(`marketsaas_${tenantSlug}_location`, JSON.stringify(selectedLocation));
   }, [selectedLocation, tenantSlug]);
 
@@ -461,7 +464,9 @@ export const StoreProvider = ({ children }) => {
   }, [veciPoints, tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(productRequests));
+    if (tenantSlug && tenantSlug !== 'default') {
+      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(productRequests));
+    }
   }, [productRequests, tenantSlug]);
 
   // Exportar ventas a CSV para la contabilidad del dueño
@@ -784,7 +789,7 @@ export const StoreProvider = ({ children }) => {
       date: new Date().toISOString().split('T')[0]
     };
     setProductRequests(prev => [newReq, ...prev]);
-    if (supabase) {
+    if (supabase && tenantSlug && tenantSlug !== 'default') {
       supabase.from('product_requests').insert([newReq]).then(({ error }) => {
         if (error) console.error('Error insertando solicitud de producto en Supabase:', error);
       });

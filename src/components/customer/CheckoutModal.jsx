@@ -42,8 +42,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     ? storeConfig.condominiums
     : [{ id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C'], deliveryFee: 0, estTime: '10-15 min' }];
 
-  const [customerName, setCustomerName] = useState('Vecino Ejemplo');
-  const [customerPhone, setCustomerPhone] = useState('+591 72125280');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
   const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
   const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
   const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Depto 302');
@@ -55,8 +55,22 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setStep(1);
+      setCustomerName('');
+      setCustomerPhone('');
     }
   }, [isOpen]);
+
+  const handleProceedToPayment = () => {
+    if (!customerName.trim()) {
+      showToast('Por favor escribe tu nombre completo.', 'warning');
+      return;
+    }
+    if (!customerPhone.trim()) {
+      showToast('Por favor ingresa tu número de teléfono o WhatsApp.', 'warning');
+      return;
+    }
+    setStep(2);
+  };
 
   if (!isOpen || cart.length === 0) return null;
 
@@ -140,14 +154,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         <div className="p-4 sm:p-6 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
             <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-emerald-700">
-              Paso {step} de {isDeliveryEnabled ? 2 : 1}
+              Paso {step} de 2
             </span>
             <h2 className="text-base sm:text-xl font-extrabold text-slate-900 leading-tight">
-              {!isDeliveryEnabled 
-                ? 'Confirmar Pedido (Retiro en Tienda)' 
-                : step === 1 
-                  ? 'Dirección y Entrega' 
-                  : 'Método de Pago'}
+              {step === 1 
+                ? (effectiveDeliveryType === 'delivery' ? 'Dirección y Entrega' : 'Confirmar Pedido (Retiro en Tienda)') 
+                : 'Método de Pago'}
             </h2>
           </div>
           <button
@@ -340,8 +352,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
               <button
                 type="button"
-                onClick={() => setStep(2)}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+                onClick={handleProceedToPayment}
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Continuar al Pago ({currency} {finalTotal.toFixed(2)})</span>
                 <span>→</span>
@@ -370,14 +382,20 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         <Banknote className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-extrabold text-slate-900 text-xs sm:text-sm">Efectivo contra entrega</p>
-                        <p className="text-[11px] text-slate-500">Paga al recibir en tu puerta</p>
+                        <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                          {effectiveDeliveryType === 'pickup' ? 'Efectivo en Caja' : 'Efectivo contra entrega'}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {effectiveDeliveryType === 'pickup' ? 'Paga en caja al recoger en la tienda' : 'Paga al recibir en tu puerta'}
+                        </p>
                       </div>
                     </div>
 
                     {paymentMethod === 'cash' && (
                       <div className="mt-3 pt-3 border-t border-emerald-200/60 flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-700">¿Con cuánto pagarás? (Para tu vuelto exacto):</span>
+                        <span className="font-semibold text-slate-700">
+                          {effectiveDeliveryType === 'pickup' ? '¿Con cuánto pagarás en caja? (Para tu vuelto listo):' : '¿Con cuánto pagarás? (Para tu vuelto exacto):'}
+                        </span>
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-slate-500">Bs.</span>
                           <input
@@ -454,8 +472,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         <CreditCard className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-extrabold text-slate-900 text-xs sm:text-sm">Tarjeta (POS Inalámbrico)</p>
-                        <p className="text-[11px] text-slate-500">Llevamos el lector de tarjeta a tu puerta</p>
+                        <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                          {effectiveDeliveryType === 'pickup' ? 'Tarjeta en Tienda (POS)' : 'Tarjeta (POS Inalámbrico)'}
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          {effectiveDeliveryType === 'pickup' ? 'Paga al recoger de la tienda' : 'Llevamos el lector de tarjeta a tu puerta'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -490,7 +512,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
                 {paymentMethod === 'cash' && parseFloat(cashAmount) > finalTotal && (
                   <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg font-bold flex justify-between">
-                    <span>Vuelto que llevará el repartidor:</span>
+                    <span>{effectiveDeliveryType === 'pickup' ? 'Vuelto a entregarte en caja:' : 'Vuelto que llevará el repartidor:'}</span>
                     <span>{currency} {changeToReturn}</span>
                   </div>
                 )}
