@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { Navbar } from './components/common/Navbar';
 import { Toast } from './components/common/Toast';
+import { SpectatorHome } from './components/spectator/SpectatorHome';
 import { CustomerHome } from './components/customer/CustomerHome';
 import { AdminHome } from './components/admin/AdminHome';
 import { CartDrawer } from './components/customer/CartDrawer';
@@ -43,7 +44,12 @@ const AppContent = () => {
 
       {/* Contenido Principal según el Modo Activo */}
       <div className="flex-1">
-        {viewMode === 'customer' ? (
+        {viewMode === 'spectator' ? (
+          <SpectatorHome
+            onExploreStore={() => setViewMode('customer')}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          />
+        ) : viewMode === 'customer' ? (
           <CustomerHome
             onOpenCart={() => setIsCartOpen(true)}
             onOpenPoints={() => setIsPointsOpen(true)}

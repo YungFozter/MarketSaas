@@ -20,9 +20,9 @@ export const StoreProvider = ({ children }) => {
   const [merchantStore, setMerchantStore] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 1. Vista actual: 'customer' o 'admin'
+  // 1. Vista actual: 'spectator', 'customer' o 'admin'
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem(`marketsaas_${tenantSlug}_viewMode`) || 'customer';
+    return localStorage.getItem(`marketsaas_${tenantSlug}_viewMode`) || 'spectator';
   });
 
   // 2. Productos

@@ -62,38 +62,52 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               </span>
             )}
 
-            {/* Switch de Modo Cliente / Administrador */}
+            {/* Switch de Modo Espectador / Cliente / Administrador */}
             <div className="flex items-center bg-black/25 p-0.5 rounded-lg border border-white/20">
               <button
+                onClick={() => setViewMode('spectator')}
+                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'spectator'
+                    ? 'bg-white text-emerald-900 shadow-xs font-bold'
+                    : 'text-white/80 hover:text-white'
+                }`}
+                title="Conoce MarketSaaS y vista informativa"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <span>Info</span>
+              </button>
+
+              <button
                 onClick={() => setViewMode('customer')}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'customer'
                     ? 'bg-white text-emerald-900 shadow-xs font-bold'
                     : 'text-white/80 hover:text-white'
                 }`}
+                title="Ver tienda en vivo como cliente"
               >
-                <ShoppingBag className="w-3 h-3" />
+                <ShoppingBag className="w-3 h-3 text-teal-600" />
                 <span>Cliente</span>
               </button>
+
               <button
                 onClick={() => {
-                  if (viewMode === 'customer') {
-                    if (currentUser) {
-                      setViewMode('admin');
-                    } else if (onOpenAuthModal) {
-                      onOpenAuthModal();
-                    } else if (onRequestAdminAccess) {
-                      onRequestAdminAccess();
-                    } else {
-                      setViewMode('admin');
-                    }
+                  if (currentUser) {
+                    setViewMode('admin');
+                  } else if (onOpenAuthModal) {
+                    onOpenAuthModal();
+                  } else if (onRequestAdminAccess) {
+                    onRequestAdminAccess();
+                  } else {
+                    setViewMode('admin');
                   }
                 }}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
+                className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md font-semibold text-[10px] sm:text-xs transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'admin'
                     ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
                     : 'text-white/80 hover:text-white'
                 }`}
+                title="Panel de administración del comerciante"
               >
                 <Store className="w-3 h-3" />
                 <span>Dueño</span>
@@ -158,7 +172,28 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
 
           {/* Acciones del Navbar */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {viewMode === 'customer' ? (
+            {viewMode === 'spectator' ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('customer')}
+                  className="text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden xs:inline">Ver Tienda Demo</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (currentUser) setViewMode('admin');
+                    else if (onOpenAuthModal) onOpenAuthModal();
+                    else if (onRequestAdminAccess) onRequestAdminAccess();
+                  }}
+                  className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-3 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4 text-emerald-400" />
+                  <span>{currentUser ? 'Mi Panel' : 'Acceso Dueños'}</span>
+                </button>
+              </div>
+            ) : viewMode === 'customer' ? (
               <>
                 {/* Botón de Solicitar Producto ("Pídelo si no está") */}
                 <button
@@ -242,6 +277,31 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
         {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
           <div className="lg:hidden py-3 border-t border-slate-200 space-y-2.5 animate-fadeIn">
+            {/* Navegación Espectador / Tienda en Móvil */}
+            {viewMode === 'spectator' ? (
+              <button
+                onClick={() => {
+                  setViewMode('customer');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
+                <span>Explorar Tienda de Demostración</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setViewMode('spectator');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 text-left text-xs font-bold text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Conoce MarketSaaS (Info)</span>
+              </button>
+            )}
+
             {viewMode === 'customer' && (
               <button
                 onClick={() => {
