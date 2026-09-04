@@ -963,7 +963,7 @@ export const StoreProvider = ({ children }) => {
     }
     setCurrentUser(null);
     setMerchantStore(null);
-    setViewMode('customer');
+    setViewMode('spectator');
     showToast('Sesión de comerciante cerrada.', 'info');
   };
 

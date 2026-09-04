@@ -35,22 +35,6 @@ export const SpectatorHome = ({
       footerRef.current
     ].filter(Boolean);
 
-    // Rastreo continuo de la dirección de scroll (subiendo vs bajando)
-    let lastScrollY = window.scrollY;
-    let scrollDirection = 'down';
-
-    const handleScrollDirection = () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY) {
-        scrollDirection = 'down';
-      } else if (currentScrollY < lastScrollY) {
-        scrollDirection = 'up';
-      }
-      lastScrollY = currentScrollY;
-    };
-
-    window.addEventListener('scroll', handleScrollDirection, { passive: true });
-
     // IntersectionObserver seguro: añade visibilidad suave sin ocultar contenido
     const observer = new IntersectionObserver(
       (entries) => {
@@ -72,7 +56,6 @@ export const SpectatorHome = ({
     });
 
     return () => {
-      window.removeEventListener('scroll', handleScrollDirection);
       observer.disconnect();
     };
   }, []);

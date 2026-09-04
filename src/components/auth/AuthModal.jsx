@@ -185,13 +185,6 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     onClose();
   };
 
-  // Demo bypass rápido para desarrollo
-  const handleDemoAccess = () => {
-    setViewMode('admin');
-    onClose();
-    showToast('Acceso en modo demo activado.', 'info');
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
       <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 relative overflow-hidden flex flex-col max-h-[90vh]">
@@ -326,15 +319,6 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   className="text-xs font-semibold text-emerald-700 hover:underline cursor-pointer"
                 >
                   ¿No tienes una tienda aún? Crea una gratis aquí
-                </button>
-
-                {/* Acceso de Demostración */}
-                <button
-                  type="button"
-                  onClick={handleDemoAccess}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 font-medium py-1 cursor-pointer"
-                >
-                  O entrar en modo demo temporal (sin credenciales)
                 </button>
               </div>
             </form>

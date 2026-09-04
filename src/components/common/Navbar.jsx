@@ -100,7 +100,7 @@ export const Navbar = ({
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="text-white font-extrabold text-[11px] tracking-tight">Red Disponible 24 horas</span>
             <span className="text-slate-600">•</span>
-            <span className="text-emerald-400 font-bold text-[11px]">0% Comisiones Abusivas</span>
+            <span className="text-emerald-400 font-bold text-[11px]">Comercio de Proximidad Inteligente</span>
           </div>
 
           {/* Lado Derecho: Switch de Modos y Badge de Usuario */}
@@ -423,30 +423,34 @@ export const Navbar = ({
               </button>
             )}
 
-            <button
-              onClick={() => {
-                onOpenRequests();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700 hover:bg-emerald-50 transition-colors"
-            >
-              <PlusCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Pídelo si no está en la tienda</span>
-            </button>
+            {viewMode === 'customer' && (
+              <>
+                <button
+                  onClick={() => {
+                    onOpenRequests();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700 hover:bg-emerald-50 transition-colors"
+                >
+                  <PlusCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Pídelo si no está en la tienda</span>
+                </button>
 
-            <div className="p-3 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex flex-wrap items-center justify-between gap-2 border border-emerald-200/60">
-              <span className="font-semibold flex items-center gap-1.5">
-                <PhoneCall className="w-4 h-4 text-emerald-700 shrink-0" /> WhatsApp Tienda:
-              </span>
-              <a 
-                href={`https://wa.me/${storeConfig.whatsapp}`}
-                target="_blank"
-                rel="noreferrer"
-                className="font-bold text-emerald-800 underline bg-emerald-100 px-2 py-1 rounded-lg hover:bg-emerald-200 transition-colors"
-              >
-                {storeConfig.phone}
-              </a>
-            </div>
+                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-900 text-xs flex flex-wrap items-center justify-between gap-2 border border-emerald-200/60">
+                  <span className="font-semibold flex items-center gap-1.5">
+                    <PhoneCall className="w-4 h-4 text-emerald-700 shrink-0" /> WhatsApp Tienda:
+                  </span>
+                  <a 
+                    href={`https://wa.me/${storeConfig.whatsapp}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-emerald-800 underline bg-emerald-100 px-2 py-1 rounded-lg hover:bg-emerald-200 transition-colors"
+                  >
+                    {storeConfig.phone}
+                  </a>
+                </div>
+              </>
+            )}
 
             {/* Opciones de Comerciante en móvil */}
             {currentUser ? (

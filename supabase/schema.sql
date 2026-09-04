@@ -118,18 +118,20 @@ DROP POLICY IF EXISTS "Permitir acceso público total a perfil" ON public.custom
 -- Políticas de Seguridad Robustas (RLS)
 -- Lectura pública para catálogo e información básica
 CREATE POLICY "Lectura pública de productos" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Escritura de productos" ON public.products FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Escritura de productos por administradores" ON public.products FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
 CREATE POLICY "Lectura pública de store_config" ON public.store_config FOR SELECT USING (true);
-CREATE POLICY "Escritura de store_config" ON public.store_config FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Escritura de store_config por administradores" ON public.store_config FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
 -- Los clientes pueden crear pedidos y ver pedidos
 CREATE POLICY "Lectura de pedidos" ON public.orders FOR SELECT USING (true);
 CREATE POLICY "Inserción de pedidos por clientes" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Actualización de pedidos" ON public.orders FOR UPDATE USING (true);
+CREATE POLICY "Actualización de pedidos por administradores" ON public.orders FOR UPDATE USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
 -- Solicitudes de vecinos y perfiles
-CREATE POLICY "Acceso a solicitudes de productos" ON public.product_requests FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Lectura e inserción de solicitudes de productos" ON public.product_requests FOR SELECT USING (true);
+CREATE POLICY "Inserción de solicitudes por vecinos" ON public.product_requests FOR INSERT WITH CHECK (true);
+CREATE POLICY "Gestión de solicitudes por administradores" ON public.product_requests FOR UPDATE USING (auth.role() = 'authenticated');
 CREATE POLICY "Acceso a perfil de cliente" ON public.customer_profile FOR ALL USING (true) WITH CHECK (true);
 
 -- Habilitar Publicación en Tiempo Real (Realtime) para las tablas clave

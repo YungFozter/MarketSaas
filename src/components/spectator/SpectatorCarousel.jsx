@@ -28,11 +28,11 @@ const SYSTEM_FEATURES = [
     id: 'margin',
     icon: PiggyBank,
     color: 'amber',
-    badge: 'TRATO JUSTO',
-    title: '0% Comisiones Abusivas',
-    subtitle: '100% margen para el comercio',
-    description: 'A diferencia de las apps tradicionales que cobran 25% a 30%, aquí el valor total apoya directamente al minimarket y a la economía del barrio.',
-    stat: '💰 Cero retenciones por venta'
+    badge: 'TRATO DIRECTO',
+    title: 'Comercio Justo y Cercano',
+    subtitle: 'Relación directa sin intermediarios',
+    description: 'Conectamos a los vecinos directamente con sus tiendas de confianza. Los pedidos apoyan la economía del barrio con total transparencia y cercanía.',
+    stat: '🤝 Trato directo y transparente'
   },
   {
     id: 'whatsapp',

@@ -34,10 +34,56 @@ import {
   Receipt,
   Users,
   X,
-  MessageCircle
+  MessageCircle,
+  RotateCcw
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './SpectatorShowcase.css';
+
+const INITIAL_DEMO_ORDERS = [
+  {
+    id: '1042',
+    time: 'Hace 2 min',
+    tower: 'Torre A • Depto 904',
+    items: 'Pan Marraqueta + Leche Pil 1L + Huevos (12)',
+    price: 28.50,
+    status: 'pending',
+    badge: 'QR Pagado',
+    buyer: 'Camila Rojas'
+  },
+  {
+    id: '1044',
+    time: 'Hace 5 min',
+    tower: 'Torre B • Depto 301',
+    items: 'Bebida 2L + Papas Fritas',
+    price: 18.00,
+    status: 'pending',
+    badge: 'Efectivo',
+    buyer: 'Ignacio Silva'
+  },
+  {
+    id: '1040',
+    time: 'Hace 8 min',
+    tower: 'Torre C • Depto 201',
+    items: 'Abarrotes fin de mes & Frutas',
+    price: 85.00,
+    status: 'packing',
+    progress: 75,
+    badge: 'Transferencia',
+    buyer: 'Patricia Mena'
+  },
+  {
+    id: '1038',
+    time: 'Hace 14 min',
+    tower: 'Torre B • Depto 502',
+    items: 'Pack Desayuno Familiar',
+    price: 35.00,
+    status: 'delivering',
+    rider: 'Carlos (A pie • 2 min)',
+    badge: 'En ruta',
+    buyer: 'Rodrigo Gómez'
+  }
+];
 
 export const SpectatorShowcase = ({
   onExploreStore,
@@ -45,7 +91,7 @@ export const SpectatorShowcase = ({
   activeTab: controlledTab,
   onTabChange
 }) => {
-  const { storeConfig } = useStore();
+  const { storeConfig, showToast } = useStore();
   const [internalTab, setInternalTab] = useState('residents'); // 'residents' | 'merchants' | 'condos'
   const [isCondoModalOpen, setIsCondoModalOpen] = useState(false);
   const activeTab = controlledTab !== undefined ? controlledTab : internalTab;
@@ -126,50 +172,20 @@ export const SpectatorShowcase = ({
       return next;
     });
   };
-  const [merchantOrders, setMerchantOrders] = useState([
-    {
-      id: '1042',
-      time: 'Hace 2 min',
-      tower: 'Torre A • Depto 904',
-      items: 'Pan Marraqueta + Leche Pil 1L + Huevos (12)',
-      price: 28.50,
-      status: 'pending',
-      badge: 'QR Pagado',
-      buyer: 'Camila Rojas'
-    },
-    {
-      id: '1044',
-      time: 'Hace 5 min',
-      tower: 'Torre B • Depto 301',
-      items: 'Bebida 2L + Papas Fritas',
-      price: 18.00,
-      status: 'pending',
-      badge: 'Efectivo',
-      buyer: 'Ignacio Silva'
-    },
-    {
-      id: '1040',
-      time: 'Hace 8 min',
-      tower: 'Torre C • Depto 201',
-      items: 'Abarrotes fin de mes & Frutas',
-      price: 85.00,
-      status: 'packing',
-      progress: 75,
-      badge: 'Transferencia',
-      buyer: 'Patricia Mena'
-    },
-    {
-      id: '1038',
-      time: 'Hace 14 min',
-      tower: 'Torre B • Depto 502',
-      items: 'Pack Desayuno Familiar',
-      price: 35.00,
-      status: 'delivering',
-      rider: 'Carlos (A pie • 2 min)',
-      badge: 'En ruta',
-      buyer: 'Rodrigo Gómez'
+  const [merchantOrders, setMerchantOrders] = useState(INITIAL_DEMO_ORDERS);
+
+  const handleResetOrders = () => {
+    setMerchantOrders(INITIAL_DEMO_ORDERS);
+    if (showToast) {
+      showToast('Pedidos de prueba reiniciados en el Tablero Kanban.', 'info');
     }
-  ]);
+  };
+
+  const handleSimulateWhatsAppOrder = () => {
+    if (showToast) {
+      showToast('¡Simulación completada! En la tienda real, este pedido se abre en WhatsApp con emojis y datos de entrega.', 'success');
+    }
+  };
 
   const handleAdvanceOrder = (orderId) => {
     setMerchantOrders(prev => prev.map(order => {
@@ -420,7 +436,12 @@ export const SpectatorShowcase = ({
 
                 {/* Floating WhatsApp Checkout Pill inside Phone */}
                 <div className="p-2.5 bg-white/95 border-t border-slate-200/80">
-                  <div className="spectator-whatsapp-pill w-full px-3 py-2 rounded-xl flex items-center justify-between shadow-md">
+                  <button
+                    type="button"
+                    onClick={handleSimulateWhatsAppOrder}
+                    className="spectator-whatsapp-pill w-full px-3 py-2 rounded-xl flex items-center justify-between shadow-md hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer"
+                    title="Simular pedido por WhatsApp"
+                  >
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-[10px] font-black">
                         {totalCartItems}
@@ -431,7 +452,7 @@ export const SpectatorShowcase = ({
                       </div>
                     </div>
                     <span className="text-xs font-black">Bs. {totalCartPrice.toFixed(2)}</span>
-                  </div>
+                  </button>
                 </div>
 
               </div>
@@ -524,7 +545,17 @@ export const SpectatorShowcase = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={handleResetOrders}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 shadow-2xs"
+                    title="Reiniciar pedidos de prueba del tablero"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span className="hidden xs:inline">Reiniciar</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleToggleSound}
@@ -552,137 +583,157 @@ export const SpectatorShowcase = ({
                 </span>
               </div>
 
-              {/* Columnas Kanban Responsivas */}
-              <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-
-                {/* 1. Columna: Pendientes */}
-                <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/80 space-y-2">
-                  <div className="flex items-center justify-between pb-1 border-b border-amber-200/60">
-                    <span className="text-[11px] font-extrabold text-amber-800 uppercase flex items-center gap-1">
-                      🟡 Pendientes ({merchantOrders.filter(o => o.status === 'pending').length})
-                    </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">
-                      Nuevos
-                    </span>
+              {merchantOrders.filter(o => o.status !== 'completed').length === 0 ? (
+                <div className="p-8 text-center bg-white m-3 rounded-2xl border border-emerald-200 shadow-xs space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+                    <CheckCircle2 className="w-6 h-6" />
                   </div>
-
-                  <div className="space-y-2">
-                    {merchantOrders.filter(o => o.status === 'pending').map(order => (
-                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs space-y-1.5 text-left">
-                        <div className="flex justify-between items-center">
-                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
-                          <span className="text-[9px] text-slate-400 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" /> {order.time}
-                          </span>
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
-                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
-
-                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            {order.badge}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => handleAdvanceOrder(order.id)}
-                          className="w-full mt-1.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
-                        >
-                          <span>Pasar a Empaque</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <h4 className="font-extrabold text-slate-900 text-base">¡Todos los pedidos de prueba fueron entregados!</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                    Has completado el flujo completo de recepción, empaque y despacho con acuse de recibo en el tablero Kanban.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResetOrders}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs cursor-pointer inline-flex items-center gap-2 shadow-md shadow-emerald-600/20 active:scale-95 transition-all"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Reiniciar Simulación de Pedidos</span>
+                  </button>
                 </div>
+              ) : (
+                /* Columnas Kanban Responsivas */
+                <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-                {/* 2. Columna: En Empaque */}
-                <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-200/80 space-y-2">
-                  <div className="flex items-center justify-between pb-1 border-b border-blue-200/60">
-                    <span className="text-[11px] font-extrabold text-blue-800 uppercase flex items-center gap-1">
-                      🔵 En Empaque ({merchantOrders.filter(o => o.status === 'packing').length})
-                    </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">
-                      Bolsas
-                    </span>
+                  {/* 1. Columna: Pendientes */}
+                  <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/80 space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-amber-200/60">
+                      <span className="text-[11px] font-extrabold text-amber-800 uppercase flex items-center gap-1">
+                        🟡 Pendientes ({merchantOrders.filter(o => o.status === 'pending').length})
+                      </span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">
+                        Nuevos
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {merchantOrders.filter(o => o.status === 'pending').map(order => (
+                        <div key={order.id} className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs space-y-1.5 text-left">
+                          <div className="flex justify-between items-center">
+                            <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                            <span className="text-[9px] text-slate-400 flex items-center gap-0.5">
+                              <Clock className="w-2.5 h-2.5" /> {order.time}
+                            </span>
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                          <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                            <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {order.badge}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleAdvanceOrder(order.id)}
+                            className="w-full mt-1.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                          >
+                            <span>Pasar a Empaque</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {merchantOrders.filter(o => o.status === 'packing').map(order => (
-                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-1.5 text-left">
-                        <div className="flex justify-between items-center">
-                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
-                          <span className="text-[9px] text-blue-600 font-bold">Armando bolsa</span>
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
-                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+                  {/* 2. Columna: En Empaque */}
+                  <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-200/80 space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-blue-200/60">
+                      <span className="text-[11px] font-extrabold text-blue-800 uppercase flex items-center gap-1">
+                        🔵 En Empaque ({merchantOrders.filter(o => o.status === 'packing').length})
+                      </span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">
+                        Bolsas
+                      </span>
+                    </div>
 
-                        {/* Progress Bar */}
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-blue-500 h-full rounded-full transition-all" style={{ width: `${order.progress || 70}%` }} />
-                        </div>
+                    <div className="space-y-2">
+                      {merchantOrders.filter(o => o.status === 'packing').map(order => (
+                        <div key={order.id} className="p-2.5 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-1.5 text-left">
+                          <div className="flex justify-between items-center">
+                            <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                            <span className="text-[9px] text-blue-600 font-bold">Armando bolsa</span>
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                          <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
 
-                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
-                          <span className="text-[9px] text-slate-400">{order.buyer}</span>
-                        </div>
+                          {/* Progress Bar */}
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-blue-500 h-full rounded-full transition-all" style={{ width: `${order.progress || 70}%` }} />
+                          </div>
 
-                        <button
-                          onClick={() => handleAdvanceOrder(order.id)}
-                          className="w-full mt-1.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
-                        >
-                          <Truck className="w-3 h-3" />
-                          <span>Despachar a Torre</span>
-                        </button>
-                      </div>
-                    ))}
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                            <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
+                            <span className="text-[9px] text-slate-400">{order.buyer}</span>
+                          </div>
+
+                          <button
+                            onClick={() => handleAdvanceOrder(order.id)}
+                            className="w-full mt-1.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                          >
+                            <Truck className="w-3 h-3" />
+                            <span>Despachar a Torre</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* 3. Columna: En Camino */}
+                  <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-200/80 space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-purple-200/60">
+                      <span className="text-[11px] font-extrabold text-purple-800 uppercase flex items-center gap-1">
+                        🟣 En Camino ({merchantOrders.filter(o => o.status === 'delivering').length})
+                      </span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-200 text-purple-900">
+                        En ruta
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {merchantOrders.filter(o => o.status === 'delivering').map(order => (
+                        <div key={order.id} className="p-2.5 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-1.5 text-left">
+                          <div className="flex justify-between items-center">
+                            <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                            <span className="text-[9px] text-purple-700 font-extrabold bg-purple-100 px-1.5 py-0.2 rounded">
+                              {order.rider || 'Repartidor'}
+                            </span>
+                          </div>
+                          <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                          <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+
+                          <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                            <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
+                            <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5">
+                              <ShieldCheck className="w-3 h-3" /> Con acuse
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleAdvanceOrder(order.id)}
+                            className="w-full mt-1.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Finalizar Entrega</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                 </div>
-
-                {/* 3. Columna: En Camino */}
-                <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-200/80 space-y-2">
-                  <div className="flex items-center justify-between pb-1 border-b border-purple-200/60">
-                    <span className="text-[11px] font-extrabold text-purple-800 uppercase flex items-center gap-1">
-                      🟣 En Camino ({merchantOrders.filter(o => o.status === 'delivering').length})
-                    </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-200 text-purple-900">
-                      En ruta
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {merchantOrders.filter(o => o.status === 'delivering').map(order => (
-                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-1.5 text-left">
-                        <div className="flex justify-between items-center">
-                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
-                          <span className="text-[9px] text-purple-700 font-extrabold bg-purple-100 px-1.5 py-0.2 rounded">
-                            {order.rider || 'Repartidor'}
-                          </span>
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
-                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
-
-                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
-                          <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5">
-                            <ShieldCheck className="w-3 h-3" /> Con acuse
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => handleAdvanceOrder(order.id)}
-                          className="w-full mt-1.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>Finalizar Entrega</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
+              )}
 
               {/* Barra Inferior Informativa de Automatización */}
               <div className="px-4 py-2 bg-slate-900 text-slate-300 text-[11px] flex items-center justify-between border-t border-slate-800">
