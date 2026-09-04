@@ -17,33 +17,67 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
     }
   };
 
+  const heroRef = useRef(null);
   const showcaseRef = useRef(null);
   const onboardingRef = useRef(null);
   const footerRef = useRef(null);
 
   useEffect(() => {
-    // Configuración de IntersectionObserver para animaciones de entrada progresiva al hacer scroll
-    const sections = [showcaseRef.current, onboardingRef.current, footerRef.current].filter(Boolean);
+    const sections = [
+      heroRef.current,
+      showcaseRef.current,
+      onboardingRef.current,
+      footerRef.current
+    ].filter(Boolean);
 
+    // Rastreo continuo de la dirección de scroll (subiendo vs bajando)
+    let lastScrollY = window.scrollY;
+    let scrollDirection = 'down';
+
+    const handleScrollDirection = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY) {
+        scrollDirection = 'down';
+      } else if (currentScrollY < lastScrollY) {
+        scrollDirection = 'up';
+      }
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScrollDirection, { passive: true });
+
+    // IntersectionObserver continuo: se activa tanto al entrar como al salir
+    // para repetir las transiciones fluidas en todo momento al subir o bajar
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            // Aplicar clase direccional según el sentido del scroll
+            if (scrollDirection === 'down') {
+              entry.target.classList.remove('reveal-from-top');
+              entry.target.classList.add('reveal-from-bottom');
+            } else {
+              entry.target.classList.remove('reveal-from-bottom');
+              entry.target.classList.add('reveal-from-top');
+            }
             entry.target.classList.add('is-visible');
-            // Dejar de observar una vez visible para máximo rendimiento
-            observer.unobserve(entry.target);
+          } else {
+            // Al salir completamente del viewport, retirar visibilidad para reiniciar
+            // la animación la próxima vez que el usuario regrese navegando
+            entry.target.classList.remove('is-visible');
           }
         });
       },
       {
-        threshold: 0.12,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.08,
+        rootMargin: '0px 0px -20px 0px'
       }
     );
 
     sections.forEach((sec) => observer.observe(sec));
 
     return () => {
+      window.removeEventListener('scroll', handleScrollDirection);
       observer.disconnect();
     };
   }, []);
@@ -53,7 +87,8 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
       {/* 1. SECCIÓN HERO & CARRUSEL (Fondo 1: Blanco Puro con Luces Ambientales Esmeralda) */}
       <section 
         id="section-hero" 
-        className="spectator-section spectator-section-hero is-visible w-full"
+        ref={heroRef}
+        className="spectator-section spectator-section-hero is-visible spectator-scroll-reveal reveal-from-bottom w-full"
       >
         <SpectatorHero
           onExploreStore={onExploreStore}
@@ -67,7 +102,7 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
       <section 
         id="section-showcase" 
         ref={showcaseRef}
-        className="spectator-section spectator-section-showcase spectator-scroll-reveal w-full"
+        className="spectator-section spectator-section-showcase spectator-scroll-reveal reveal-from-bottom w-full"
       >
         <SpectatorShowcase
           onExploreStore={onExploreStore}
@@ -81,7 +116,7 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
       <section 
         id="section-onboarding" 
         ref={onboardingRef}
-        className="spectator-section spectator-section-onboarding spectator-scroll-reveal w-full"
+        className="spectator-section spectator-section-onboarding spectator-scroll-reveal reveal-from-bottom w-full"
       >
         <SpectatorOnboardingBanner
           onExploreStore={onExploreStore}
@@ -95,7 +130,7 @@ export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
       <section 
         id="section-footer" 
         ref={footerRef}
-        className="spectator-section spectator-section-footer spectator-scroll-reveal w-full"
+        className="spectator-section spectator-section-footer spectator-scroll-reveal reveal-from-bottom w-full"
       >
         <SpectatorFooter
           onExploreStore={onExploreStore}
