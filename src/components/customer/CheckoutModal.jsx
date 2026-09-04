@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Truck, 
@@ -31,31 +31,49 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     showToast 
   } = useStore();
 
-  const isDeliveryEnabled = storeConfig.enableDelivery !== false;
+  const [step, setStep] = useState(1); // 1: Dirección y Entrega, 2: Método de Pago
+  const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
   const [deliveryType, setDeliveryType] = useState(isDeliveryEnabled ? 'delivery' : 'pickup'); // 'delivery' | 'pickup'
 
   const effectiveDeliveryType = isDeliveryEnabled ? deliveryType : 'pickup';
 
+  const condominiums = storeConfig?.condominiums && storeConfig.condominiums.length > 0
+    ? storeConfig.condominiums
+    : [{ id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C'], deliveryFee: 0, estTime: '10-15 min' }];
+
   const [customerName, setCustomerName] = useState('Vecino Ejemplo');
-  const [customerPhone, setCustomerPhone] = useState('+56 9 8765 1234');
-  const [condoName, setCondoName] = useState(selectedLocation.condominium);
-  const [tower, setTower] = useState(selectedLocation.tower);
-  const [apartment, setApartment] = useState(selectedLocation.apartment || 'Depto 302');
-  const [notes, setNotes] = useState(selectedLocation.notes || 'Dejar en conserjería o timbrar en el depto.');
+  const [customerPhone, setCustomerPhone] = useState('+591 72125280');
+  const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
+  const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
+  const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Depto 302');
+  const [notes, setNotes] = useState(selectedLocation?.notes || 'Dejar en conserjería o timbrar en el depto.');
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card'
-  const [cashAmount, setCashAmount] = useState('10.00');
+  const [cashAmount, setCashAmount] = useState('50.00');
   const [copiedBank, setCopiedBank] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep(1);
+    }
+  }, [isOpen]);
 
   if (!isOpen || cart.length === 0) return null;
 
-  const currentCondoObj = storeConfig.condominiums.find(c => c.name === condoName) || storeConfig.condominiums[0];
+  const currentCondoObj = condominiums.find(c => c.name === condoName) || condominiums[0];
   const finalDeliveryFee = effectiveDeliveryType === 'delivery' ? actualDeliveryFee : 0;
-  const currency = storeConfig.currencySymbol || 'Bs.';
+  const currency = storeConfig?.currencySymbol || 'Bs.';
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
 
+  const bankDetails = storeConfig?.bankDetails || {
+    bank: 'Banco Unión / Billetera Simple QR',
+    accountNumber: '1000-2495-8120',
+    holder: 'Minimarket Saas S.R.L.',
+    aliasQR: 'MINIMARKET-SAAS.PAGO'
+  };
+
   const handleCopyBankInfo = () => {
-    const text = `Banco: ${storeConfig.bankDetails.bank}\nCuenta: ${storeConfig.bankDetails.accountNumber}\nTitular: ${storeConfig.bankDetails.holder}\nRUT: ${storeConfig.bankDetails.rut}\nAlias QR: ${storeConfig.bankDetails.aliasQR}`;
+    const text = `Banco: ${bankDetails.bank || 'Banco Unión'}\nCuenta: ${bankDetails.accountNumber || ''}\nTitular: ${bankDetails.holder || ''}\nAlias QR: ${bankDetails.aliasQR || ''}`;
     navigator.clipboard?.writeText(text);
     setCopiedBank(true);
     showToast('Datos bancarios copiados al portapapeles');
@@ -266,8 +284,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         }}
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
                       >
-                        {storeConfig.condominiums.map(c => (
-                          <option key={c.id} value={c.name}>{c.name} (${c.deliveryFee.toFixed(2)})</option>
+                        {condominiums.map(c => (
+                          <option key={c.id} value={c.name}>{c.name} ({currency} {c.deliveryFee.toFixed(2)})</option>
                         ))}
                       </select>
                     </div>
@@ -396,18 +414,18 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                           </div>
                         )}
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-slate-800">{storeConfig.bankDetails.bank}</span>
+                          <span className="font-bold text-slate-800">{bankDetails.bank}</span>
                           <button
                             type="button"
                             onClick={handleCopyBankInfo}
-                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md"
+                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors cursor-pointer"
                           >
                             <Copy className="w-3 h-3" />
                             <span>{copiedBank ? '¡Copiado!' : 'Copiar Datos'}</span>
                           </button>
                         </div>
-                        <p className="text-slate-600 text-[11px]">Cuenta: <strong>{storeConfig.bankDetails.accountNumber}</strong></p>
-                        <p className="text-slate-600 text-[11px]">Titular: {storeConfig.bankDetails.holder}</p>
+                        <p className="text-slate-600 text-[11px]">Cuenta: <strong>{bankDetails.accountNumber}</strong></p>
+                        <p className="text-slate-600 text-[11px]">Titular: {bankDetails.holder}</p>
                       </div>
                     )}
                   </div>
@@ -438,32 +456,32 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-600">
                   <span>Productos ({cart.reduce((a, b) => a + b.quantity, 0)} unidades):</span>
-                  <span className="font-bold">${cartSubtotal.toFixed(2)}</span>
+                  <span className="font-bold">{currency} {cartSubtotal.toFixed(2)}</span>
                 </div>
 
                 <div className="flex justify-between text-slate-600">
                   <span>Entrega ({deliveryType === 'delivery' ? `Delivery en ${condoName}` : 'Retiro en Tienda'}):</span>
                   <span className="font-bold text-slate-900">
-                    {finalDeliveryFee === 0 ? 'GRATIS' : `$${finalDeliveryFee.toFixed(2)}`}
+                    {finalDeliveryFee === 0 ? 'GRATIS' : `${currency} ${finalDeliveryFee.toFixed(2)}`}
                   </span>
                 </div>
 
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 font-bold">
                     <span>Descuento VeciPuntos:</span>
-                    <span>-${appliedCoupon.discount.toFixed(2)}</span>
+                    <span>-{currency} {appliedCoupon.discount.toFixed(2)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 text-sm font-black text-slate-900">
                   <span>Total Final:</span>
-                  <span className="text-lg font-black text-emerald-700">${finalTotal.toFixed(2)}</span>
+                  <span className="text-lg font-black text-emerald-700">{currency} {finalTotal.toFixed(2)}</span>
                 </div>
 
                 {paymentMethod === 'cash' && parseFloat(cashAmount) > finalTotal && (
                   <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg font-bold flex justify-between">
                     <span>Vuelto que llevará el repartidor:</span>
-                    <span>${changeToReturn}</span>
+                    <span>{currency} {changeToReturn}</span>
                   </div>
                 )}
               </div>
