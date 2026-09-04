@@ -1,17 +1,17 @@
 /* Estilos especializados para SpectatorShowcase */
 
 .spectator-showcase-panel {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.07);
 }
 
 .spectator-tab-active {
   background: #047857;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25);
+  box-shadow: 0 4px 14px rgba(4, 120, 87, 0.3);
 }
 
 .spectator-phone-frame {
@@ -31,6 +31,13 @@
 }
 
 .spectator-kanban-frame {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+  transition: all 0.3s ease;
+}
+
+.spectator-kanban-frame:hover {
+  box-shadow: 0 24px 48px -12px rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
 }

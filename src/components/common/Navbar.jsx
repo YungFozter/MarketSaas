@@ -122,35 +122,43 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           
-          {/* Logo y Nombre del Negocio / Plataforma */}
+          {/* Logo Oficial MarketSaaS / Nombre del Negocio */}
           <button 
             onClick={() => setViewMode('spectator')}
-            className="flex items-center gap-2 sm:gap-3 min-w-0 text-left cursor-pointer group"
+            className="flex items-center min-w-0 text-left cursor-pointer group focus:outline-none"
             title="Ir a la pantalla informativa de MarketSaaS"
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-50 shrink-0 group-hover:scale-105 transition-transform">
-              {viewMode === 'spectator' ? <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-100" /> : <Store className="w-4 h-4 sm:w-5 sm:h-5" />}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
-                  {viewMode === 'spectator' ? 'MarketSaaS' : storeConfig.name}
-                </span>
-                {viewMode !== 'spectator' ? (
-                  <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    Abierto
-                  </span>
-                ) : (
-                  <span className="hidden md:inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">
-                    SaaS Hiperlocal
-                  </span>
-                )}
+            {viewMode === 'spectator' ? (
+              <div className="flex items-center py-1">
+                <img 
+                  src="/logoCompleto.png" 
+                  alt="MarketSaaS - La evolución digital de tus ventas" 
+                  className="h-9 sm:h-12 w-auto object-contain mix-blend-multiply transition-transform group-hover:scale-[1.02]"
+                />
               </div>
-              <p className="text-[11px] text-slate-500 hidden sm:block truncate">
-                {viewMode === 'spectator' ? 'Plataforma para Tiendas de Barrio y Condominios' : storeConfig.tagline}
-              </p>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img 
+                  src="/iconoPestana.png" 
+                  alt="MarketSaaS" 
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-xs shrink-0 group-hover:scale-105 transition-transform"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-extrabold text-sm sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
+                      {storeConfig.name}
+                    </span>
+                    <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                      Abierto
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 hidden sm:block truncate">
+                    {storeConfig.tagline}
+                  </p>
+                </div>
+              </div>
+            )}
           </button>
 
           {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
@@ -179,17 +187,30 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
           {/* Acciones del Navbar */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {viewMode === 'spectator' ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                {/* Botón rápido Explorar Tienda Vecino en Navbar */}
+                <button
+                  onClick={() => setViewMode('customer')}
+                  className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3.5 py-2 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
+                  title="Explorar catálogo y experiencia de compra"
+                >
+                  <ShoppingBag className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                  <span>Ver Tienda Demo</span>
+                </button>
+
+                {/* Botón Principal de Acceso Dueños Mejorado */}
                 <button
                   onClick={() => {
                     if (currentUser) setViewMode('admin');
                     else if (onOpenAuthModal) onOpenAuthModal();
                     else if (onRequestAdminAccess) onRequestAdminAccess();
                   }}
-                  className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="relative group overflow-hidden px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 hover:from-emerald-950 hover:to-slate-900 border border-slate-700/80 shadow-xs hover:shadow-md hover:shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  title={currentUser ? 'Ir a panel de administración' : 'Iniciar sesión o registrar tu tienda'}
                 >
-                  <LogIn className="w-4 h-4 text-emerald-400" />
-                  <span>{currentUser ? 'Mi Panel' : 'Acceso Dueños'}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <LogIn className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+                  <span>{currentUser ? 'Mi Panel Minimarket' : 'Acceso Dueños'}</span>
                 </button>
               </div>
             ) : viewMode === 'customer' ? (

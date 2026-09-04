@@ -11,6 +11,7 @@ import {
   Search, 
   MapPin, 
   Volume2, 
+  VolumeX,
   FileSpreadsheet, 
   Layers, 
   ShieldCheck, 
@@ -18,14 +19,24 @@ import {
   Minus,
   BatteryCharging,
   Signal,
-  Wifi
+  Wifi,
+  Bell,
+  Clock,
+  TrendingUp,
+  PackageCheck,
+  Truck,
+  Lock,
+  Check,
+  PhoneCall,
+  Receipt,
+  Users
 } from 'lucide-react';
 import './SpectatorShowcase.css';
 
 export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
   const [activeTab, setActiveTab] = useState('residents'); // 'residents' | 'merchants' | 'condos'
 
-  // Estado interactivo dentro del simulador de smartphone
+  // Estado interactivo dentro del simulador de smartphone (Para Residentes)
   const [milkQuantity, setMilkQuantity] = useState(1);
   const [breadQuantity, setBreadQuantity] = useState(0);
 
@@ -35,24 +46,82 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
   const totalCartPrice = (milkQuantity * milkPrice) + (breadQuantity * breadPrice);
   const totalVeciPoints = (milkQuantity * 8) + (breadQuantity * 5);
 
+  // Estado interactivo dentro del simulador de Kanban (Para Comerciantes)
+  const [soundActive, setSoundActive] = useState(true);
+  const [merchantOrders, setMerchantOrders] = useState([
+    {
+      id: '1042',
+      time: 'Hace 2 min',
+      tower: 'Torre A • Depto 904',
+      items: 'Pan batido (1kg) + Leche 1L + Huevos (12)',
+      price: 5800,
+      status: 'pending',
+      badge: 'QR Pagado',
+      buyer: 'Camila Rojas'
+    },
+    {
+      id: '1044',
+      time: 'Hace 5 min',
+      tower: 'Torre B • Depto 301',
+      items: 'Bebida 1.5L + Snack Papas Lays',
+      price: 3400,
+      status: 'pending',
+      badge: 'Efectivo',
+      buyer: 'Ignacio Silva'
+    },
+    {
+      id: '1040',
+      time: 'Hace 8 min',
+      tower: 'Torre C • Depto 201',
+      items: 'Abarrotes fin de mes & Frutas',
+      price: 12600,
+      status: 'packing',
+      progress: 75,
+      badge: 'Transferencia',
+      buyer: 'Patricia Mena'
+    },
+    {
+      id: '1038',
+      time: 'Hace 14 min',
+      tower: 'Torre B • Depto 502',
+      items: 'Pack Desayuno Familiar',
+      price: 6500,
+      status: 'delivering',
+      rider: 'Carlos (A pie • 2 min)',
+      badge: 'En ruta',
+      buyer: 'Rodrigo Gómez'
+    }
+  ]);
+
+  const handleAdvanceOrder = (orderId) => {
+    setMerchantOrders(prev => prev.map(order => {
+      if (order.id === orderId) {
+        if (order.status === 'pending') return { ...order, status: 'packing', progress: 50 };
+        if (order.status === 'packing') return { ...order, status: 'delivering', rider: 'Carlos (A pie • 3 min)' };
+        if (order.status === 'delivering') return { ...order, status: 'completed' };
+      }
+      return order;
+    }));
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
       
       {/* Encabezado de Sección */}
       <div className="text-center mb-8 sm:mb-12">
-        <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/80 px-3.5 py-1 rounded-full">
-          Experiencia Integrada
+        <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-3.5 py-1 rounded-full border border-emerald-200">
+          Experiencia Ecosistémica 360°
         </span>
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-2 tracking-tight">
-          Una sola solución para cada participante del barrio
+        <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-2.5 mb-2 tracking-tight">
+          Una sola plataforma para cada participante del barrio
         </h2>
-        <p className="text-xs sm:text-sm lg:text-base text-slate-600 max-w-xl mx-auto">
-          Selecciona una perspectiva para ver cómo simplificamos las compras de última hora en condominios.
+        <p className="text-xs sm:text-sm lg:text-base text-slate-600 max-w-2xl mx-auto">
+          Descubre cómo MarketSaaS transforma las compras vecinales, potencia a los minimarkets locales y brinda seguridad a las comunidades residenciales.
         </p>
 
-        {/* Pestañas Segmentadas */}
+        {/* Selector Segmentado de Perspectivas */}
         <div className="flex justify-center mt-6">
-          <div className="inline-flex p-1.5 rounded-2xl bg-slate-200/80 backdrop-blur-md shadow-2xs gap-1 max-w-full overflow-x-auto">
+          <div className="inline-flex p-1.5 rounded-2xl bg-slate-200/90 backdrop-blur-md shadow-2xs gap-1.5 max-w-full overflow-x-auto border border-slate-300/60">
             <button
               onClick={() => setActiveTab('residents')}
               className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
@@ -86,141 +155,120 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
         </div>
       </div>
 
-      {/* 1. TAB: PARA RESIDENTES */}
+      {/* =========================================================================
+          1. PERSPECTIVA: PARA RESIDENTES (Simulador Interactivo Smartphone)
+          ========================================================================= */}
       {activeTab === 'residents' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
           
-          {/* Columna Izquierda: Lista de Beneficios */}
+          {/* Columna Izquierda: Beneficios del Vecino */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>Experiencia Móvil de Alta Velocidad</span>
+            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span>Experiencia de Compra Hiperlocal en 60 Segundos</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Pide tus esenciales sin salir de la torre ni pagar de más
+            <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              Pide lo que te falta sin salir de tu departamento
             </h3>
 
-            <div className="space-y-4 sm:space-y-5">
-              
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 shrink-0 flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5" />
+            <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
+              ¿Olvidaste el pan para la once o la leche del desayuno? Pide en el minimarket de la esquina desde tu celular y recíbelo en conserjería o en tu puerta en menos de lo que tarda un delivery tradicional.
+            </p>
+
+            <div className="space-y-3.5">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5 font-bold text-xs">
+                  ✓
                 </div>
                 <div>
-                  <div className="text-sm sm:text-base font-bold text-slate-900">Catálogo visual e intuitivo</div>
-                  <div className="text-xs sm:text-sm text-slate-500">Bebidas heladas, lácteos, pan recién horneado y abarrotes categorizados para comprar en menos de 60 segundos.</div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Precios Justos de Barrio:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Sin tarifas ocultas de servicio ni recargos inflados por plataformas intermediarias.</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 shrink-0 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5 font-bold text-xs">
+                  ✓
                 </div>
                 <div>
-                  <div className="text-sm sm:text-base font-bold text-slate-900">Cierre en 1 toque por WhatsApp</div>
-                  <div className="text-xs sm:text-sm text-slate-500">El pedido se pre-formatea con tu torre, departamento, método de pago y el desglose de productos exacto.</div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Club de VeciPuntos:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Acumula puntos canjeables en cada compra para obtener descuentos directos en tu minimarket.</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 shrink-0 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 mt-0.5 font-bold text-xs">
+                  ✓
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm sm:text-base font-bold text-slate-900">Programa VeciPuntos</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold">+5% Retorno</span>
-                  </div>
-                  <div className="text-xs sm:text-sm text-slate-500">Acumula puntos en cada compra para canjear por descuentos automáticos o entregas bonificadas.</div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Pago con QR o Transferencia:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Paga de forma rápida y segura por tu app de banco favorita o en efectivo al recibir.</span>
                 </div>
               </div>
-
-              <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 shrink-0 flex items-center justify-center">
-                  <PlusCircle className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <div className="text-sm sm:text-base font-bold text-slate-900">Botón "Pídelo si no está"</div>
-                  <div className="text-xs sm:text-sm text-slate-500">¿Te falta un ingrediente especial? Sugiérelo en un toque y tu almacenero lo añade al inventario vecinal.</div>
-                </div>
-              </div>
-
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <button
                 onClick={onExploreStore}
-                className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-bold text-xs sm:text-sm hover:gap-3 transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
               >
-                <span>Ver simulación completa de compra</span>
-                <ArrowRight className="w-4 h-4" />
+                <ShoppingBag className="w-4 h-4" />
+                <span>Explorar Tienda en Vivo</span>
               </button>
             </div>
           </div>
 
-          {/* Columna Derecha: Mockup Interactivo de Smartphone */}
+          {/* Columna Derecha: Smartphone Mockup Interactivo */}
           <div className="w-full lg:w-1/2 flex justify-center">
-            <div className="spectator-phone-frame w-full max-w-[330px] p-2.5 rounded-[2.8rem] shadow-2xl">
-              
-              <div className="spectator-phone-screen w-full rounded-[2.2rem] overflow-hidden text-slate-900 flex flex-col h-[540px] relative">
+            <div className="spectator-phone-frame w-[310px] sm:w-[340px] h-[580px] rounded-[44px] p-3 shadow-2xl relative">
+              <div className="spectator-phone-screen w-full h-full rounded-[34px] overflow-hidden flex flex-col bg-white text-slate-800">
                 
                 {/* Status Bar */}
-                <div className="h-6 bg-slate-100 flex items-center justify-between px-5 text-[10px] text-slate-500 select-none">
-                  <span className="font-bold">09:41</span>
-                  <div className="w-12 h-3.5 bg-slate-900 rounded-full"></div>
+                <div className="px-5 pt-3 pb-1 flex justify-between items-center text-[10px] text-slate-500 bg-white">
+                  <span className="font-bold">9:41</span>
                   <div className="flex items-center gap-1.5">
                     <Signal className="w-3 h-3" />
                     <Wifi className="w-3 h-3" />
-                    <BatteryCharging className="w-3.5 h-3.5" />
+                    <BatteryCharging className="w-3 h-3" />
                   </div>
                 </div>
 
-                {/* Header de la Tienda en Móvil */}
-                <div className="p-3 bg-slate-50/80 border-b border-slate-200/80 flex items-center justify-between">
+                {/* Header App Tienda */}
+                <div className="px-4 py-2 bg-emerald-700 text-white flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                      LA
+                    <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center">
+                      <Store className="w-3.5 h-3.5 text-white" />
                     </div>
-                    <div className="text-left">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-extrabold text-slate-900 leading-tight">Los Andes</span>
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold">
-                          <span className="w-1 h-1 rounded-full bg-emerald-500 animate-ping"></span>
-                          Abierto
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-slate-500 text-[10px]">
-                        <MapPin className="w-2.5 h-2.5 text-emerald-600" />
-                        <span>Torre B - Depto 402</span>
-                      </div>
+                    <div className="text-left leading-tight">
+                      <span className="text-xs font-bold block">Minimarket Don Vecino</span>
+                      <span className="text-[9px] text-emerald-200">Abierto • Torre A / Depto 904</span>
                     </div>
                   </div>
-                  <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
-                    <Search className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-
-                {/* Chips de Categorías en Móvil */}
-                <div className="px-3 pt-2 pb-1 flex gap-1.5 overflow-x-auto text-[10px]">
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold whitespace-nowrap shadow-xs">
-                    🔥 Rápidos
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold whitespace-nowrap">
-                    Bebidas
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold whitespace-nowrap">
-                    Lácteos
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold whitespace-nowrap">
-                    Snacks
+                  <span className="text-[10px] bg-emerald-800 px-2 py-0.5 rounded-full font-bold text-emerald-200">
+                    15-30 min
                   </span>
                 </div>
 
-                {/* Lista de Productos Interactivos */}
-                <div className="p-3 space-y-2 flex-1 overflow-y-auto text-left">
+                {/* Interactive Body Cart Simulator */}
+                <div className="flex-1 p-3.5 space-y-2.5 overflow-y-auto text-left">
                   
-                  {/* Item 1: Marraqueta */}
+                  {/* Buscador Mock */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                    <input 
+                      type="text" 
+                      readOnly 
+                      placeholder="Buscar pan, leche, bebidas..." 
+                      className="w-full bg-slate-100 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-600 pointer-events-none"
+                    />
+                  </div>
+
+                  <div className="text-[11px] font-bold text-slate-700 pt-1">
+                    Productos Agregados al Carrito:
+                  </div>
+
+                  {/* Item 1: Pan Amasado */}
                   <div className="bg-slate-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-slate-200/60 shadow-2xs">
                     <img 
                       src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80" 
@@ -228,18 +276,14 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Marraqueta Crujiente (1/2 kg)</div>
-                      <div className="text-[10px] text-slate-400">Horneado hace 25 min</div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-900 truncate">Pan Crujiente (1kg)</span>
+                        <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">+5 VP</span>
+                      </div>
+                      <div className="text-[10px] text-slate-400">Recién horneado</div>
                       <div className="text-xs font-black text-emerald-700 mt-0.5">$1.190</div>
                     </div>
-                    {breadQuantity === 0 ? (
-                      <button
-                        onClick={() => setBreadQuantity(1)}
-                        className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs hover:bg-emerald-700 cursor-pointer active:scale-95 transition-transform"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
+                    {breadQuantity > 0 ? (
                       <div className="flex items-center gap-1 bg-slate-200/80 px-1 py-0.5 rounded-lg text-xs font-bold">
                         <button onClick={() => setBreadQuantity(q => Math.max(0, q - 1))} className="w-5 h-5 rounded bg-white text-slate-700 flex items-center justify-center cursor-pointer">
                           <Minus className="w-2.5 h-2.5" />
@@ -249,6 +293,10 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
                           <Plus className="w-2.5 h-2.5" />
                         </button>
                       </div>
+                    ) : (
+                      <button onClick={() => setBreadQuantity(1)} className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold cursor-pointer hover:bg-emerald-700">
+                        + Agregar
+                      </button>
                     )}
                   </div>
 
@@ -261,7 +309,7 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
-                        <span className="text-xs font-bold text-slate-900 truncate">Leche Entera Natural 1L</span>
+                        <span className="text-xs font-bold text-slate-900 truncate">Leche Entera 1L</span>
                         <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">+8 VP</span>
                       </div>
                       <div className="text-[10px] text-slate-400">Refrigerada a 4°C</div>
@@ -279,11 +327,11 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
                   </div>
 
                   {/* Aviso de Despacho Vecinal Gratis */}
-                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-2">
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                     <div className="text-[10px]">
-                      <span className="font-bold text-amber-900 block uppercase">Despacho Vecinal Gratis</span>
-                      <span className="text-slate-600">Tu pedido califica para entrega prioritaria en conserjería.</span>
+                      <span className="font-bold text-amber-900 block uppercase">Despacho Vecinal Prioritario</span>
+                      <span className="text-slate-600">Llega directo a conserjería con sello de entrega.</span>
                     </div>
                   </div>
 
@@ -312,41 +360,71 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
         </div>
       )}
 
-      {/* 2. TAB: PARA COMERCIANTES */}
+      {/* =========================================================================
+          2. PERSPECTIVA: PARA COMERCIANTES (Tablero Kanban de Despacho Interactivo)
+          ========================================================================= */}
       {activeTab === 'merchants' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
           
+          {/* Columna Izquierda: Motor Comercial del Locatario */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold">
+            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               <Store className="w-4 h-4 text-emerald-600" />
-              <span>Tablero de Operación Ágil</span>
+              <span>Suite Operativa para Minimarkets y Almacenes</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Control total de despachos, stock y caja diaria sin fricción
+            <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              Control total de despachos, stock y caja diaria sin comisiones
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              Diseñado para el comerciante ocupado: actualiza stock desde tu celular, recibe alertas sonoras cuando ingresa una orden y gestiona el flujo de entregas a las torres en segundos.
+              Diseñado para el comerciante ocupado: actualiza stock desde tu celular, recibe alertas sonoras ante cada orden y despacha a conserjerías o puertas en minutos sin intermediarios abusivos.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <Volume2 className="w-5 h-5 text-emerald-600 mb-1" />
-                <div className="text-sm font-bold text-slate-900">Alerta Sonora</div>
-                <div className="text-xs text-slate-500">Aviso instantáneo ante cada compra confirmada por WhatsApp.</div>
+            {/* Tarjetas de Funcionalidades Clave para el Locatario */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-300 transition-all group">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 mb-2 group-hover:scale-110 transition-transform">
+                  <Volume2 className="w-4 h-4" />
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">Alerta Sonora</div>
+                <div className="text-[11px] text-slate-500 mt-1 leading-snug">Aviso acústico al recibir el pedido de WhatsApp.</div>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <FileSpreadsheet className="w-5 h-5 text-amber-600 mb-1" />
-                <div className="text-sm font-bold text-slate-900">Cierre Contable</div>
-                <div className="text-xs text-slate-500">Exporta reportes de ventas y conciliación a Excel con un clic.</div>
+
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-300 transition-all group">
+                <div className="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700 mb-2 group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">Stock Flash</div>
+                <div className="text-[11px] text-slate-500 mt-1 leading-snug">Pausa o activa productos agotados en 1 toque.</div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs hover:border-emerald-300 transition-all group">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 mb-2 group-hover:scale-110 transition-transform">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div className="text-xs sm:text-sm font-bold text-slate-900">Cierre Contable</div>
+                <div className="text-[11px] text-slate-500 mt-1 leading-snug">Exporta reportes diarios de ventas y QR a Excel.</div>
               </div>
             </div>
 
-            <div className="pt-2">
+            {/* Badges de Confianza Locataria */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600 font-semibold">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Check className="w-3.5 h-3.5 text-emerald-600" /> 0% Comisiones por Pedido
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Check className="w-3.5 h-3.5 text-emerald-600" /> Pedidos Directos a WhatsApp
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <Check className="w-3.5 h-3.5 text-emerald-600" /> Pagos Directos a tu Cuenta
+              </span>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <button
                 onClick={onGoToMerchant}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer"
               >
                 <Layers className="w-4 h-4" />
                 <span>Ver Tablero de Despachos en Vivo</span>
@@ -354,156 +432,380 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
             </div>
           </div>
 
-          {/* Columna Derecha: Mockup Kanban de Despachos */}
+          {/* Columna Derecha: Mockup Interactivo del Tablero Kanban */}
           <div className="w-full lg:w-1/2">
-            <div className="spectator-kanban-frame w-full p-4 sm:p-5 rounded-2xl shadow-inner space-y-3 text-left">
+            <div className="spectator-kanban-frame w-full rounded-2xl shadow-xl overflow-hidden border border-slate-200 text-left bg-slate-50">
               
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-xs sm:text-sm font-extrabold text-slate-900">Flujo de Despacho Activo</span>
+              {/* Barra Superior estilo macOS / Terminal POS */}
+              <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-2 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-200 ml-1">
+                    Panel Minimarket • "Almacén Don Vecino"
+                  </span>
                 </div>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  8 Pedidos Hoy
+
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setSoundActive(!soundActive)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                      soundActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
+                    }`}
+                    title="Alternar alertas sonoras de pedidos"
+                  >
+                    {soundActive ? <Volume2 className="w-3 h-3 text-emerald-400 animate-pulse" /> : <VolumeX className="w-3 h-3" />}
+                    <span>Sonido {soundActive ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    Caja Abierta
+                  </span>
+                </div>
+              </div>
+
+              {/* Ticker de Métricas en Vivo de la Tienda */}
+              <div className="px-4 py-2 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between text-xs text-slate-600">
+                <div className="flex items-center gap-4">
+                  <span className="font-bold text-slate-900 flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" /> 18 Pedidos Hoy
+                  </span>
+                  <span className="text-slate-400 hidden sm:inline">•</span>
+                  <span className="font-bold text-emerald-700 hidden sm:inline">$168.400 CLP</span>
+                </div>
+                <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-slate-400" /> Despacho Promedio: <strong>12 min</strong>
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              {/* Columnas Kanban Responsivas */}
+              <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 
-                {/* Columna 1: Pendiente */}
-                <div className="bg-white p-2.5 rounded-xl border border-amber-200 shadow-2xs space-y-2">
-                  <div className="flex items-center justify-between text-amber-700 text-[10px] font-bold uppercase">
-                    <span>🟡 PENDIENTES (1)</span>
+                {/* 1. Columna: Pendientes */}
+                <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/80 space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-amber-200/60">
+                    <span className="text-[11px] font-extrabold text-amber-800 uppercase flex items-center gap-1">
+                      🟡 Pendientes ({merchantOrders.filter(o => o.status === 'pending').length})
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">
+                      Nuevos
+                    </span>
                   </div>
-                  <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-100">
-                    <div className="flex justify-between items-center font-bold text-slate-900">
-                      <span>#1042</span>
-                      <span className="text-[9px] text-slate-400">Hace 2 min</span>
-                    </div>
-                    <div className="text-[11px] text-slate-600 mt-0.5">Torre A • Depto 904</div>
-                    <div className="text-[11px] font-black text-emerald-700 mt-1">$4.200 (3 items)</div>
+
+                  <div className="space-y-2">
+                    {merchantOrders.filter(o => o.status === 'pending').map(order => (
+                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs space-y-1.5 text-left">
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                          <span className="text-[9px] text-slate-400 flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" /> {order.time}
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+                        
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            {order.badge}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => handleAdvanceOrder(order.id)}
+                          className="w-full mt-1.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                        >
+                          <span>Pasar a Empaque</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Columna 2: En Empaque */}
-                <div className="bg-white p-2.5 rounded-xl border border-blue-200 shadow-2xs space-y-2">
-                  <div className="flex items-center justify-between text-blue-700 text-[10px] font-bold uppercase">
-                    <span>🔵 EN EMPAQUE (2)</span>
+                {/* 2. Columna: En Empaque */}
+                <div className="bg-blue-50/50 p-2.5 rounded-xl border border-blue-200/80 space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-blue-200/60">
+                    <span className="text-[11px] font-extrabold text-blue-800 uppercase flex items-center gap-1">
+                      🔵 En Empaque ({merchantOrders.filter(o => o.status === 'packing').length})
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-200 text-blue-900">
+                      Bolsas
+                    </span>
                   </div>
-                  <div className="p-2 rounded-lg bg-blue-50/60 border border-blue-100">
-                    <div className="flex justify-between items-center font-bold text-slate-900">
-                      <span>#1040</span>
-                      <span className="text-[9px] text-slate-400">Hace 8 min</span>
-                    </div>
-                    <div className="text-[11px] text-slate-600 mt-0.5">Torre C • Depto 201</div>
-                    <div className="text-[11px] font-black text-emerald-700 mt-1">$8.900 (Pan + Leche)</div>
+
+                  <div className="space-y-2">
+                    {merchantOrders.filter(o => o.status === 'packing').map(order => (
+                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-blue-200 shadow-2xs space-y-1.5 text-left">
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                          <span className="text-[9px] text-blue-600 font-bold">Armando bolsa</span>
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+                        
+                        {/* Progress Bar */}
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-blue-500 h-full rounded-full transition-all" style={{ width: `${order.progress || 70}%` }} />
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-[9px] text-slate-400">{order.buyer}</span>
+                        </div>
+
+                        <button
+                          onClick={() => handleAdvanceOrder(order.id)}
+                          className="w-full mt-1.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                        >
+                          <Truck className="w-3 h-3" />
+                          <span>Despachar a Torre</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Columna 3: En Camino */}
-                <div className="bg-white p-2.5 rounded-xl border border-purple-200 shadow-2xs space-y-2">
-                  <div className="flex items-center justify-between text-purple-700 text-[10px] font-bold uppercase">
-                    <span>🟣 EN CAMINO (1)</span>
+                {/* 3. Columna: En Camino */}
+                <div className="bg-purple-50/50 p-2.5 rounded-xl border border-purple-200/80 space-y-2">
+                  <div className="flex items-center justify-between pb-1 border-b border-purple-200/60">
+                    <span className="text-[11px] font-extrabold text-purple-800 uppercase flex items-center gap-1">
+                      🟣 En Camino ({merchantOrders.filter(o => o.status === 'delivering').length})
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-200 text-purple-900">
+                      En ruta
+                    </span>
                   </div>
-                  <div className="p-2 rounded-lg bg-purple-50/60 border border-purple-100">
-                    <div className="flex justify-between items-center font-bold text-slate-900">
-                      <span>#1038</span>
-                      <span className="text-[9px] text-slate-400">A conserjería</span>
-                    </div>
-                    <div className="text-[11px] text-slate-600 mt-0.5">Torre B • Depto 502</div>
-                    <div className="text-[11px] font-black text-emerald-700 mt-1">Repartidor asignado</div>
+
+                  <div className="space-y-2">
+                    {merchantOrders.filter(o => o.status === 'delivering').map(order => (
+                      <div key={order.id} className="p-2.5 rounded-xl bg-white border border-purple-200 shadow-2xs space-y-1.5 text-left">
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-slate-900 text-xs">#{order.id}</span>
+                          <span className="text-[9px] text-purple-700 font-extrabold bg-purple-100 px-1.5 py-0.2 rounded">
+                            {order.rider || 'Repartidor'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
+                        <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
+
+                        <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5">
+                            <ShieldCheck className="w-3 h-3" /> Con acuse
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => handleAdvanceOrder(order.id)}
+                          className="w-full mt-1.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-extrabold cursor-pointer transition-all flex items-center justify-center gap-1"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>Finalizar Entrega</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
               </div>
+
+              {/* Barra Inferior Informativa de Automatización */}
+              <div className="px-4 py-2 bg-slate-900 text-slate-300 text-[11px] flex items-center justify-between border-t border-slate-800">
+                <span className="flex items-center gap-1.5">
+                  <MessageSquare className="w-3 h-3 text-emerald-400" />
+                  Notificación WhatsApp enviada automáticamente al comprador con código de retiro.
+                </span>
+                <span className="text-emerald-400 font-bold hidden sm:inline">100% Sincronizado</span>
+              </div>
+
             </div>
           </div>
 
         </div>
       )}
 
-      {/* 3. TAB: PARA CONDOMINIOS */}
+      {/* =========================================================================
+          3. PERSPECTIVA: PARA CONDOMINIOS (Hub Inteligente de Conserjería)
+          ========================================================================= */}
       {activeTab === 'condos' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
           
+          {/* Columna Izquierda: Seguridad y Beneficios para el Edificio */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Seguridad y Vida Comunitaria</span>
+            <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              <Building2 className="w-4 h-4 text-emerald-600" />
+              <span>Seguridad Integral & Ecosistema de Edificios Conectados</span>
             </div>
 
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Menos motos externas, mayor tranquilidad para tu edificio
+            <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              Menos motos foráneas, conserjería ordenada y mayor seguridad
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              Reemplaza el flujo constante de repartidores foráneos por entregas consolidadas realizadas por personal verificado del barrio o directo a conserjería con registro digital.
+              Reemplaza el flujo constante y riesgoso de repartidores foráneos por entregas consolidadas y amigables de minimarkets de tu propio barrio. Acceso coordinado con conserjería y cero citófonos vulnerados.
             </p>
 
-            <ul className="space-y-3 text-xs sm:text-sm text-slate-600">
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Acceso controlado sin códigos de citófono vulnerados.</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Promoción de la economía circular entre residentes y comercios vecinos.</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Coordinación directa con administración para casilleros y recepción.</span>
-              </li>
-            </ul>
+            {/* 3 Pilares Residenciales */}
+            <div className="space-y-3.5">
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Seguridad Perimetral Reforzada:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm leading-snug">
+                    Repartidores acreditados localmente con credencial vecinal. Cero desconocidos merodeando portones o pasillos.
+                  </span>
+                </div>
+              </div>
 
-            <div className="pt-2">
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700 shrink-0 font-bold text-xs">
+                  <PackageCheck className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Recepción Digital en Conserjería:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm leading-snug">
+                    El conserje recibe paquetes identificados con código QR y el residente es notificado al instante para retirar sin desorden.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0 font-bold text-xs">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Convenios & Economía Circular:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm leading-snug">
+                    Despacho gratis prioritario para toda la comunidad y fortalecimiento directo del comercio de proximidad del barrio.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <button
                 onClick={onExploreStore}
-                className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-bold text-xs sm:text-sm hover:underline cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
               >
-                <span>Conoce los convenios para comunidades residenciales</span>
+                <span>Conoce los Convenios para Comunidades</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Columna Derecha: Auditoría Comunitaria Mensual */}
+          {/* Columna Derecha: Conserjería Digital Hub & Auditoría */}
           <div className="w-full lg:w-1/2">
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4 text-left">
-              <div className="text-sm sm:text-base font-extrabold text-slate-900">Auditoría Comunitaria Mensual</div>
+            <div className="spectator-kanban-frame w-full rounded-2xl shadow-xl overflow-hidden border border-slate-200 text-left bg-slate-50">
               
-              <div className="space-y-3">
-                
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>Reducción de delivery foráneo vehicular</span>
-                    <span className="font-extrabold text-emerald-700">-68%</span>
+              {/* Header Conserjería Central */}
+              <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
+                    <Building className="w-4 h-4" />
                   </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="bg-emerald-600 h-full rounded-full transition-all duration-1000" style={{ width: '68%' }}></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>Entregas exitosas en conserjería</span>
-                    <span className="font-extrabold text-emerald-700">99.4%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="bg-teal-500 h-full rounded-full transition-all duration-1000" style={{ width: '99.4%' }}></div>
+                  <div>
+                    <span className="text-xs font-extrabold text-white block">Conserjería Central - Condominio Las Lilas</span>
+                    <span className="text-[10px] text-slate-400">Torres A, B y C • 148 Departamentos Conectados</span>
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>Satisfacción vecinal registrada</span>
-                    <span className="font-extrabold text-amber-600">4.9 / 5.0 ⭐</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="bg-amber-400 h-full rounded-full transition-all duration-1000" style={{ width: '96%' }}></div>
-                  </div>
-                </div>
-
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Turno Activo
+                </span>
               </div>
+
+              {/* 3 KPI Cards de Impacto Residencial */}
+              <div className="p-3.5 grid grid-cols-3 gap-2 bg-slate-100/80 border-b border-slate-200 text-center">
+                <div className="p-2.5 rounded-xl bg-white border border-emerald-200 shadow-2xs">
+                  <div className="text-lg sm:text-2xl font-black text-emerald-700">-68%</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Tráfico Foráneo</div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-teal-200 shadow-2xs">
+                  <div className="text-lg sm:text-2xl font-black text-teal-700">14 min</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Entrega Promedio</div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs">
+                  <div className="text-lg sm:text-2xl font-black text-amber-600">4.9/5 ⭐</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Satisfacción Vecinal</div>
+                </div>
+              </div>
+
+              {/* Registro en Tiempo Real de Encomiendas en Recepción */}
+              <div className="p-3.5 space-y-2.5">
+                <div className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
+                  <span>Recepción Digital de Encomiendas</span>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Registro Seguro QR
+                  </span>
+                </div>
+
+                {/* Paquete 1 */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                      <PackageCheck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate">Torre A • Depto 704</div>
+                      <div className="text-[10px] text-slate-500">Minimarket San Jorge (3 bolsas) • Recibido en mesón</div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200 shrink-0">
+                    Casillero A-12
+                  </span>
+                </div>
+
+                {/* Paquete 2 */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700 shrink-0">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate">Torre B • Depto 302</div>
+                      <div className="text-[10px] text-slate-500">Almacén Vecinal • Entregado en mano a residente</div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 text-[10px] font-black border border-blue-200 shrink-0">
+                    Entregado OK
+                  </span>
+                </div>
+
+                {/* Paquete 3 */}
+                <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 truncate">Torre C • Depto 1105</div>
+                      <div className="text-[10px] text-slate-500">Botillería & Market La Esquina (a 120m)</div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 text-[10px] font-black border border-amber-200 shrink-0">
+                    En Camino (3 min)
+                  </span>
+                </div>
+              </div>
+
+              {/* Garantía de Privacidad y Cero Vulnerabilidad */}
+              <div className="px-4 py-2.5 bg-slate-900 text-slate-300 text-[11px] flex items-center gap-2 border-t border-slate-800">
+                <Lock className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="leading-tight">
+                  <strong className="text-white font-bold">Privacidad 100% Protegida:</strong> Los repartidores nunca tienen acceso a teléfonos personales ni códigos de citófono.
+                </span>
+              </div>
+
             </div>
           </div>
 
