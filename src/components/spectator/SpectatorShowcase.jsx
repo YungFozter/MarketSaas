@@ -3,6 +3,7 @@ import {
   ShoppingBag, 
   Store, 
   Building2, 
+  Building, 
   CheckCircle2, 
   MessageSquare, 
   Sparkles, 

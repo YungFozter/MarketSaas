@@ -15,7 +15,8 @@ import {
   PhoneCall,
   LogIn,
   LogOut,
-  UserCheck
+  UserCheck,
+  TrendingUp
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './Navbar.css';
