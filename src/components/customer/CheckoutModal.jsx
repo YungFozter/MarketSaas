@@ -12,7 +12,8 @@ import {
   ShieldCheck, 
   Sparkles, 
   Copy, 
-  Clock 
+  Clock,
+  MessageCircle 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './CheckoutModal.css';
@@ -80,9 +81,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     setTimeout(() => setCopiedBank(false), 3000);
   };
 
-  const handleSubmitOrder = (e) => {
-    e.preventDefault();
-
+  const handleSubmitOrder = (shouldOpenWa = false) => {
     if (!customerName.trim() || !customerPhone.trim()) {
       showToast('Por favor completa tu nombre y teléfono para coordinar la entrega.', 'warning');
       return;
@@ -109,10 +108,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
     });
 
-    // Abrir WhatsApp con el comprobante pre-formateado directo al negocio
-    if (newOrder && storeConfig.whatsapp) {
+    // Solo abrir WhatsApp si el usuario explícitamente desea probarlo
+    if (shouldOpenWa && newOrder && storeConfig?.whatsapp) {
       const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency}${(i.price * i.quantity).toFixed(2)})`).join('\n');
-      const waText = `🛒 *NUEVO PEDIDO #${newOrder.id}*\n` +
+      const waText = `🛒 *NUEVO PEDIDO #${newOrder.id} (MODO DEMO)*\n` +
         `👤 *Cliente:* ${customerName}\n` +
         `📱 *Teléfono:* ${customerPhone}\n` +
         `📍 *Ubicación:* ${condoName} - ${tower} (${apartment})\n` +
@@ -157,6 +156,17 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Banner Informativo de Modo Demostración */}
+        <div className="bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-b border-amber-500/25 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs shrink-0">
+          <div className="flex items-center gap-2 text-amber-950 font-medium">
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+            <span><strong className="font-bold text-amber-900">Modo Demostración:</strong> Estás probando la experiencia de compra. No se realizará ningún cobro real.</span>
+          </div>
+          <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-900 font-black text-[10px] tracking-wide uppercase shrink-0">
+            Simulador
+          </span>
         </div>
 
         {/* Contenido del Checkout */}
@@ -486,24 +496,36 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 )}
               </div>
 
-              {/* Botones de Navegación */}
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-4 py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all flex items-center gap-1.5"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Volver</span>
-                </button>
+              {/* Botones de Navegación y Confirmación */}
+              <div className="space-y-2.5 pt-2">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-4 py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Volver</span>
+                  </button>
 
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitOrder(false)}
+                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>Simular Confirmación (Ver Tracking en Vivo)</span>
+                  </button>
+                </div>
+
+                {/* Opción secundaria para probar WhatsApp opcionalmente */}
                 <button
                   type="button"
-                  onClick={handleSubmitOrder}
-                  className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center gap-2"
+                  onClick={() => handleSubmitOrder(true)}
+                  className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span>Confirmar y Enviar Pedido</span>
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Opcional: Confirmar y Probar Mensaje en WhatsApp</span>
                 </button>
               </div>
             </div>

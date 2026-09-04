@@ -21,6 +21,8 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
 
   if (!order) return null;
 
+  const currency = storeConfig?.currencySymbol || 'Bs.';
+
   // Estados: pending -> preparing -> on_the_way -> delivered
   const stages = [
     { key: 'pending', title: 'Recibido', desc: 'Tu tienda ya recibió el pedido', icon: Store },
@@ -44,9 +46,10 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
 
   // Generar link de WhatsApp directo para hablar con el dueño sobre este pedido
   const waMessage = encodeURIComponent(
-    `¡Hola ${storeConfig.name}! Quiero consultar por mi pedido #${order.id} a nombre de ${order.customer.name} para ${order.customer.condominium} - ${order.customer.tower}.`
+    `¡Hola ${storeConfig?.name || 'Tienda'}! Consulta sobre pedido #${order.id} (Modo Demo) a nombre de ${order.customer?.name || 'Vecino'}.`
   );
-  const waUrl = `https://wa.me/${storeConfig.whatsapp}?text=${waMessage}`;
+  const cleanWa = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
+  const waUrl = `https://wa.me/${cleanWa}?text=${waMessage}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
@@ -71,10 +74,21 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Banner Informativo de Demostración */}
+        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-b border-emerald-500/20 px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-emerald-950 font-medium shrink-0">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Simulación de Seguimiento en Tiempo Real (Modo Demostración)
+          </span>
+          <span className="text-[10px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
+            Sin cobro real
+          </span>
         </div>
 
         <div className="p-4 sm:p-8 space-y-5 overflow-y-auto flex-1">
@@ -154,7 +168,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   <span className="font-semibold text-slate-800">
                     <span className="font-extrabold text-emerald-700">{it.quantity}x</span> {it.name}
                   </span>
-                  <span className="font-bold text-slate-900">${(it.price * it.quantity).toFixed(2)}</span>
+                  <span className="font-bold text-slate-900">{currency} {(it.price * it.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -162,21 +176,21 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
             <div className="pt-3 border-t border-slate-200 space-y-1 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>{currency} {order.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Envío:</span>
-                <span>{order.deliveryFee === 0 ? 'GRATIS' : `$${order.deliveryFee.toFixed(2)}`}</span>
+                <span>{order.deliveryFee === 0 ? 'GRATIS' : `${currency} ${order.deliveryFee.toFixed(2)}`}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-emerald-700 font-bold">
                   <span>Descuento:</span>
-                  <span>-${order.discount.toFixed(2)}</span>
+                  <span>-{currency} {order.discount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between items-baseline pt-1.5 border-t border-slate-200 text-sm font-black text-slate-900">
                 <span>Total:</span>
-                <span className="text-emerald-700">${order.total.toFixed(2)}</span>
+                <span className="text-emerald-700">{currency} {order.total.toFixed(2)}</span>
               </div>
             </div>
 
