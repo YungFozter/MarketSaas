@@ -183,33 +183,33 @@ export const Navbar = ({
         <div 
           className={`relative transition-all duration-300 ${
             isScrolled
-              ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-4 sm:px-6 ring-1 ring-black/5'
-              : 'bg-white border-b border-slate-100 shadow-none px-4 sm:px-6 lg:px-8'
+              ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
+              : 'bg-white border-b border-slate-100 shadow-none px-3 sm:px-6 lg:px-8'
           }`}
         >
-          <div className={`flex items-center justify-between gap-4 transition-all duration-300 ${
+          <div className={`flex items-center justify-between gap-2 sm:gap-4 transition-all duration-300 ${
             isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-18'
           }`}>
           
           {/* Logo y Marca Oficial MarketSaaS en Código Vectorial (Sin imágenes de fondo beige) */}
           <button 
             onClick={() => setViewMode('spectator')}
-            className="flex items-center gap-3 min-w-0 text-left cursor-pointer group focus:outline-none"
+            className="flex items-center gap-2 sm:gap-3 shrink-0 text-left cursor-pointer group focus:outline-none"
             title="Ir a la pantalla informativa de MarketSaaS"
           >
             {viewMode === 'spectator' ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2 sm:gap-2.5">
                 {/* Isotipo Moderno con Flecha de Crecimiento */}
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white shadow-md shadow-slate-900/10 group-hover:border-emerald-500/50 transition-all shrink-0">
-                  <div className="flex items-center justify-center font-black text-base text-emerald-400 tracking-tighter">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white shadow-md shadow-slate-900/10 group-hover:border-emerald-500/50 transition-all shrink-0">
+                  <div className="flex items-center justify-center font-black text-sm sm:text-base text-emerald-400 tracking-tighter">
                     M<span className="text-sky-400">S</span>
-                    <TrendingUp className="w-3.5 h-3.5 text-sky-400 -ml-0.5 -mt-2" />
+                    <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-sky-400 -ml-0.5 -mt-1.5 sm:-mt-2" />
                   </div>
                 </div>
 
                 <div className="flex flex-col text-left">
                   <div className="flex items-center gap-1.5 leading-tight">
-                    <span className="font-extrabold text-xl sm:text-2xl text-slate-950 tracking-tight">
+                    <span className="font-extrabold text-lg sm:text-xl md:text-2xl text-slate-950 tracking-tight">
                       Market<span className="text-sky-600">SaaS</span>
                     </span>
                     <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[9px] font-extrabold border border-sky-200 uppercase tracking-wider">
@@ -223,12 +223,12 @@ export const Navbar = ({
               </div>
             ) : (
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0 group-hover:scale-105 transition-transform">
-                  <Store className="w-5 h-5" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0 group-hover:scale-105 transition-transform">
+                  <Store className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
+                    <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">
                       {storeConfig.name}
                     </span>
                     <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
@@ -270,13 +270,13 @@ export const Navbar = ({
           )}
 
           {/* Acciones del Navbar (Lado Derecho) */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {viewMode === 'spectator' ? (
-              <div className="flex items-center gap-2 sm:gap-2.5">
+              <div className="flex items-center gap-1.5 sm:gap-2.5">
                 {/* Botón rápido Explorar Tienda Vecino en Navbar */}
                 <button
                   onClick={() => setViewMode('customer')}
-                  className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3.5 py-2.5 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
+                  className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
                   title="Explorar catálogo y experiencia de compra"
                 >
                   <ShoppingBag className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
@@ -290,12 +290,12 @@ export const Navbar = ({
                     else if (onOpenAuthModal) onOpenAuthModal();
                     else if (onRequestAdminAccess) onRequestAdminAccess();
                   }}
-                  className="relative group overflow-hidden px-4 py-2 sm:px-4.5 sm:py-2.5 rounded-xl font-extrabold text-xs sm:text-sm text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 hover:from-emerald-950 hover:to-slate-900 border border-slate-700/80 shadow-xs hover:shadow-md hover:shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+                  className="relative group overflow-hidden px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl font-bold sm:font-extrabold text-[11px] sm:text-xs md:text-sm text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 hover:from-emerald-950 hover:to-slate-900 border border-slate-700/80 shadow-xs hover:shadow-md hover:shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap"
                   title={currentUser ? 'Ir a panel de administración' : 'Iniciar sesión o registrar tu tienda'}
                 >
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  <LogIn className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
-                  <span>{currentUser ? 'Mi Panel Minimarket' : 'Acceso Dueños'}</span>
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                  <span>{currentUser ? 'Mi Panel' : 'Acceso Dueños'}</span>
                 </button>
               </div>
             ) : viewMode === 'customer' ? (
@@ -371,10 +371,10 @@ export const Navbar = ({
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-1.5 rounded-xl text-slate-600 hover:bg-slate-100"
+              className="lg:hidden p-1.5 sm:p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer border border-slate-200/80 ml-1 shrink-0"
               aria-label="Abrir menú de navegación"
             >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileMenuOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
         </div>
