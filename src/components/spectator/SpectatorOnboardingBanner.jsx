@@ -4,7 +4,7 @@ import './SpectatorOnboardingBanner.css';
 
 export const SpectatorOnboardingBanner = ({ onExploreStore, onScrollToAuth }) => {
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
       <div className="spectator-cta-card p-6 sm:p-10 lg:p-12 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
         
         <div className="space-y-2 text-left max-w-xl">
@@ -41,6 +41,6 @@ export const SpectatorOnboardingBanner = ({ onExploreStore, onScrollToAuth }) =>
         </div>
 
       </div>
-    </section>
+    </div>
   );
 };

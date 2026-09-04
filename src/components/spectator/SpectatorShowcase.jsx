@@ -36,7 +36,7 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
   const totalVeciPoints = (milkQuantity * 8) + (breadQuantity * 5);
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
       
       {/* Encabezado de Sección */}
       <div className="text-center mb-8 sm:mb-12">
@@ -510,6 +510,6 @@ export const SpectatorShowcase = ({ onExploreStore, onGoToMerchant }) => {
         </div>
       )}
 
-    </section>
+    </div>
   );
 };

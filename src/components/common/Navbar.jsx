@@ -45,7 +45,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
     <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm transition-all">
       {/* Barra superior de Promoción y Confianza */}
       <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-4 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-end gap-2">
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
           <div className="flex items-center gap-2 shrink-0">
             {/* Si está autenticado, mostrar badge del dueño */}
             {currentUser && (
