@@ -13,9 +13,9 @@ export const SpectatorOnboardingBanner = ({ onExploreStore, onScrollToAuth }) =>
             Pruébalo en 60 Segundos
           </div>
 
-          <h3 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
             ¿Listo para conectar tu condominio o tu minimarket?
-          </h3>
+          </h2>
 
           <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
             Explora la tienda demo con productos precargados o solicita el alta de tu almacén con tu propio catálogo sin costo inicial de instalación.

@@ -286,7 +286,10 @@ export const SpectatorShowcase = ({
                   <div className="bg-slate-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-slate-200/60 shadow-2xs">
                     <img 
                       src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80" 
-                      alt="Pan fresco" 
+                      alt="Pan fresco horneado" 
+                      width="48"
+                      height="48"
+                      loading="lazy"
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">
@@ -318,7 +321,10 @@ export const SpectatorShowcase = ({
                   <div className="bg-slate-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-slate-200/60 shadow-2xs">
                     <img 
                       src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=120&auto=format&fit=crop&q=80" 
-                      alt="Leche natural" 
+                      alt="Leche natural pasteurizada" 
+                      width="48"
+                      height="48"
+                      loading="lazy"
                       className="w-12 h-12 rounded-lg object-cover"
                     />
                     <div className="flex-1 min-w-0">

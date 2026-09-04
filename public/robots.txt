@@ -1,0 +1,8 @@
+﻿# Robots.txt for MarketSaaS (https://marketsaas.onrender.com)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /*?*view=admin
+
+# Sitemaps
+Sitemap: https://marketsaas.onrender.com/sitemap.xml

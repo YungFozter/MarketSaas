@@ -40,9 +40,9 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth, onGoToAdmin })
 
           {/* Columna 2: Navegación Rápida */}
           <div className="space-y-3.5 md:col-span-3">
-            <div className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
               Navegación Rápida
-            </div>
+            </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
               <li>
                 <button
@@ -81,9 +81,9 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth, onGoToAdmin })
 
           {/* Columna 3: Soporte & Comunidad */}
           <div className="space-y-3.5 md:col-span-4">
-            <div className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
               Soporte & Legal
-            </div>
+            </h4>
             <ul className="space-y-2.5 text-xs sm:text-sm text-slate-400">
               <li>
                 <span className="flex items-center gap-2 hover:text-slate-300 transition-colors cursor-default">

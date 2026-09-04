@@ -97,9 +97,7 @@ export const Navbar = ({
           {/* Lado Izquierdo: Anuncio de Confianza & Estado en Vivo */}
           <div className="hidden sm:flex items-center gap-2 text-slate-300 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="text-white font-extrabold text-[11px] tracking-tight">Red Hiperlocal Operativa</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-300 text-[11px]">Entregas a Conserjería en 15-30 min</span>
+            <span className="text-white font-extrabold text-[11px] tracking-tight">Red Disponible 24 horas</span>
             <span className="text-slate-600">•</span>
             <span className="text-emerald-400 font-bold text-[11px]">0% Comisiones Abusivas</span>
           </div>
