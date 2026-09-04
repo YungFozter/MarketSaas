@@ -28,12 +28,12 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
         <h1 className="text-xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-2.5">
           Todo lo de tu despensa <br className="hidden sm:inline" />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-200 to-teal-100">
-            a precio justo y en tu puerta
+            a precio justo y productos de calidad
           </span>
         </h1>
 
         <p className="text-xs sm:text-base text-emerald-100/90 mb-5 max-w-xl font-normal leading-relaxed">
-          Sin hacer filas ni cargar bolsas pesadas. Pide hoy y tu pedido llega directo a tu departamento o casa en minutos.
+          Pide fácil desde tu celular y ahorra tiempo. Tu canasta lista para retiro rápido en local o entrega según la disponibilidad de tu tienda.
         </p>
 
         {/* Barra de Búsqueda Destacada */}
@@ -77,7 +77,7 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
               <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">
                 {storeConfig.enableDelivery !== false
                   ? `Desde ${currency} ${storeConfig.defaultDeliveryFee.toFixed(2)}`
-                  : 'Sin costo de envío'}
+                  : 'Envíos según cada Tienda'}
               </p>
             </div>
           </div>

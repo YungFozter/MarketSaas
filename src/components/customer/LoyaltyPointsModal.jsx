@@ -113,8 +113,7 @@ export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
                 <span><strong>Cada comercio es independiente:</strong> La tienda decide si activa el programa de VeciPuntos y si ofrece servicio de entrega a domicilio o solo retiro en local.</span>
               </li>
               <li className="flex items-start gap-1.5">
-                <span className="text-amber-600 font-bold">•</span>
-                <span><strong>Cupón de Envío:</strong> El cupón de <em>"Delivery Gratis"</em> requiere que la tienda tenga activo el servicio de reparto. {isDeliveryActive ? 'Esta tienda tiene envíos activos.' : 'Actualmente esta tienda opera únicamente para Retiro en Tienda.'}</span>
+                <span>Cupón de Envío: El cupón de "Delivery Gratis" requiere que la tienda tenga activo el servicio de reparto.</span>
               </li>
             </ul>
           </div>
