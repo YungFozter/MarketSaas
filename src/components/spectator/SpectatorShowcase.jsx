@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import orderNotificationSound from '../../../mp3/Notificacion de orden de compra.mp3';
 import {
   ShoppingBag,
   Store,
@@ -61,7 +62,42 @@ export const SpectatorShowcase = ({
   const totalVeciPoints = (milkQuantity * 8) + (breadQuantity * 5);
 
   // Estado interactivo dentro del simulador de Kanban (Para Comerciantes)
-  const [soundActive, setSoundActive] = useState(true);
+  const [soundActive, setSoundActive] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  const handleToggleSound = () => {
+    setSoundActive(prev => {
+      const next = !prev;
+      if (next) {
+        try {
+          if (!audioRef.current) {
+            audioRef.current = new Audio(orderNotificationSound);
+          }
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(err => {
+            console.warn('Audio playback warning:', err);
+          });
+        } catch (e) {
+          console.warn('Audio error:', e);
+        }
+      } else {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+      }
+      return next;
+    });
+  };
   const [merchantOrders, setMerchantOrders] = useState([
     {
       id: '1042',
@@ -462,7 +498,8 @@ export const SpectatorShowcase = ({
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setSoundActive(!soundActive)}
+                    type="button"
+                    onClick={handleToggleSound}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${soundActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
                       }`}
                     title="Alternar alertas sonoras de pedidos"
