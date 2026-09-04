@@ -54,8 +54,8 @@ export const SpectatorShowcase = ({
   const [milkQuantity, setMilkQuantity] = useState(1);
   const [breadQuantity, setBreadQuantity] = useState(0);
 
-  const breadPrice = 1190;
-  const milkPrice = 1450;
+  const breadPrice = 1.00;
+  const milkPrice = 8.00;
   const totalCartItems = milkQuantity + breadQuantity;
   const totalCartPrice = (milkQuantity * milkPrice) + (breadQuantity * breadPrice);
   const totalVeciPoints = (milkQuantity * 8) + (breadQuantity * 5);
@@ -67,8 +67,8 @@ export const SpectatorShowcase = ({
       id: '1042',
       time: 'Hace 2 min',
       tower: 'Torre A • Depto 904',
-      items: 'Pan batido (1kg) + Leche 1L + Huevos (12)',
-      price: 5800,
+      items: 'Pan Marraqueta + Leche Pil 1L + Huevos (12)',
+      price: 28.50,
       status: 'pending',
       badge: 'QR Pagado',
       buyer: 'Camila Rojas'
@@ -77,8 +77,8 @@ export const SpectatorShowcase = ({
       id: '1044',
       time: 'Hace 5 min',
       tower: 'Torre B • Depto 301',
-      items: 'Bebida 1.5L + Snack Papas Lays',
-      price: 3400,
+      items: 'Bebida 2L + Papas Fritas',
+      price: 18.00,
       status: 'pending',
       badge: 'Efectivo',
       buyer: 'Ignacio Silva'
@@ -88,7 +88,7 @@ export const SpectatorShowcase = ({
       time: 'Hace 8 min',
       tower: 'Torre C • Depto 201',
       items: 'Abarrotes fin de mes & Frutas',
-      price: 12600,
+      price: 85.00,
       status: 'packing',
       progress: 75,
       badge: 'Transferencia',
@@ -99,7 +99,7 @@ export const SpectatorShowcase = ({
       time: 'Hace 14 min',
       tower: 'Torre B • Depto 502',
       items: 'Pack Desayuno Familiar',
-      price: 6500,
+      price: 35.00,
       status: 'delivering',
       rider: 'Carlos (A pie • 2 min)',
       badge: 'En ruta',
@@ -298,7 +298,7 @@ export const SpectatorShowcase = ({
                         <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">+5 VP</span>
                       </div>
                       <div className="text-[10px] text-slate-400">Recién horneado</div>
-                      <div className="text-xs font-black text-emerald-700 mt-0.5">$1.190</div>
+                      <div className="text-xs font-black text-emerald-700 mt-0.5">1.00 Bs.</div>
                     </div>
                     {breadQuantity > 0 ? (
                       <div className="flex items-center gap-1 bg-slate-200/80 px-1 py-0.5 rounded-lg text-xs font-bold">
@@ -333,7 +333,7 @@ export const SpectatorShowcase = ({
                         <span className="px-1 py-0.2 rounded bg-amber-400 text-slate-950 text-[8px] font-black">+8 VP</span>
                       </div>
                       <div className="text-[10px] text-slate-400">Refrigerada a 4°C</div>
-                      <div className="text-xs font-black text-emerald-700 mt-0.5">$1.450</div>
+                      <div className="text-xs font-black text-emerald-700 mt-0.5">8.00 Bs.</div>
                     </div>
                     <div className="flex items-center gap-1 bg-slate-200/80 px-1 py-0.5 rounded-lg text-xs font-bold">
                       <button onClick={() => setMilkQuantity(q => Math.max(1, q - 1))} className="w-5 h-5 rounded bg-white text-slate-700 flex items-center justify-center cursor-pointer">
@@ -369,7 +369,7 @@ export const SpectatorShowcase = ({
                         <div className="text-[9px] opacity-90">+{totalVeciPoints} VeciPuntos</div>
                       </div>
                     </div>
-                    <span className="text-xs font-black">${totalCartPrice.toLocaleString('es-CL')}</span>
+                    <span className="text-xs font-black">Bs. {totalCartPrice.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -390,15 +390,15 @@ export const SpectatorShowcase = ({
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               <Store className="w-4 h-4 text-emerald-600" />
-              <span>Suite Operativa para Minimarkets y Almacenes</span>
+              <span>Sistema Operativo para Tiendas y Almacenes</span>
             </div>
 
             <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Control total de despachos, stock y caja diaria sin comisiones
+              Control total de despachos, stock y caja diaria.
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              Diseñado para el comerciante ocupado: actualiza stock desde tu celular, recibe alertas sonoras ante cada orden y despacha a conserjerías o puertas en minutos sin intermediarios abusivos.
+              Diseñado para el comerciante ocupado: actualiza stock desde tu celular, recibe alertas sonoras ante cada orden y  administra tus ventas .
             </p>
 
             {/* Tarjetas de Funcionalidades Clave para el Locatario */}
@@ -431,13 +431,7 @@ export const SpectatorShowcase = ({
             {/* Badges de Confianza Locataria */}
             <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-600 font-semibold">
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <Check className="w-3.5 h-3.5 text-emerald-600" /> 0% Comisiones por Pedido
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
                 <Check className="w-3.5 h-3.5 text-emerald-600" /> Pedidos Directos a WhatsApp
-              </span>
-              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                <Check className="w-3.5 h-3.5 text-emerald-600" /> Pagos Directos a tu Cuenta
               </span>
             </div>
 
@@ -480,11 +474,6 @@ export const SpectatorShowcase = ({
                     {soundActive ? <Volume2 className="w-3 h-3 text-emerald-400 animate-pulse" /> : <VolumeX className="w-3 h-3" />}
                     <span>Sonido {soundActive ? 'ON' : 'OFF'}</span>
                   </button>
-
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Caja Abierta
-                  </span>
                 </div>
               </div>
 
@@ -495,7 +484,7 @@ export const SpectatorShowcase = ({
                     <TrendingUp className="w-3.5 h-3.5 text-emerald-600" /> 18 Pedidos Hoy
                   </span>
                   <span className="text-slate-400 hidden sm:inline">•</span>
-                  <span className="font-bold text-emerald-700 hidden sm:inline">$168.400 CLP</span>
+                  <span className="font-bold text-emerald-700 hidden sm:inline">Bs. 1.260</span>
                 </div>
                 <span className="text-[11px] text-slate-500 flex items-center gap-1">
                   <Clock className="w-3 h-3 text-slate-400" /> Despacho Promedio: <strong>12 min</strong>
@@ -529,7 +518,7 @@ export const SpectatorShowcase = ({
                         <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
                         
                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                             {order.badge}
                           </span>
@@ -574,7 +563,7 @@ export const SpectatorShowcase = ({
                         </div>
 
                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
                           <span className="text-[9px] text-slate-400">{order.buyer}</span>
                         </div>
 
@@ -614,7 +603,7 @@ export const SpectatorShowcase = ({
                         <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
 
                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                          <span className="text-xs font-black text-emerald-700">${order.price.toLocaleString('es-CL')}</span>
+                          <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
                           <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-0.5">
                             <ShieldCheck className="w-3 h-3" /> Con acuse
                           </span>
