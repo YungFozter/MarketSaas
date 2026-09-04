@@ -48,7 +48,8 @@ export const StoreProvider = ({ children }) => {
               id: 'prod-1',
               name: 'Pil Leche Fresca Natural 946 ml',
               category: 'Lácteos & Huevos',
-              price: 1.25,
+              price: 8.00,
+              originalPrice: 8.50,
               unit: 'Bolsa 946 ml',
               image: '/products/leche-pil.png',
               description: 'Leche fluida ultrapasteurizada y homogeneizada Pil, con 2.7% de materia grasa natural. Nutritiva y fresca, ideal para el desayuno familiar y recetas diarias.',
@@ -381,7 +382,7 @@ export const StoreProvider = ({ children }) => {
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-04-v5';
+  const CURRENT_SCHEMA_VER = '2026-09-04-v6-bolivian-prices';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
