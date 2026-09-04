@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  Store, 
-  MapPin, 
-  Clock, 
-  Phone, 
-  MessageCircle, 
-  ShieldCheck, 
-  Sparkles, 
-  ShoppingBag, 
-  HelpCircle, 
-  Banknote, 
-  QrCode, 
+import {
+  Store,
+  MapPin,
+  Clock,
+  Phone,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  ShoppingBag,
+  HelpCircle,
+  Banknote,
+  QrCode,
   CreditCard,
   CheckCircle2
 } from 'lucide-react';
@@ -21,22 +21,23 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
 
   const storeName = storeConfig?.name || 'Minimarket Saas';
   const tagline = storeConfig?.tagline || 'Tu tienda de confianza a pasos de tu puerta';
-  const address = storeConfig?.address?.includes('Calle Los Sauces') 
-    ? 'Direccion según cada Tienda' 
+  const address = storeConfig?.address?.includes('Calle Los Sauces')
+    ? 'Direccion según cada Tienda'
     : (storeConfig?.address || 'Direccion según cada Tienda');
-  const schedule = storeConfig?.schedule?.includes('08:00 AM') 
-    ? 'Horarios de Atención según cada Tienda' 
+  const schedule = storeConfig?.schedule?.includes('08:00 AM')
+    ? 'Horarios de Atención según cada Tienda'
     : (storeConfig?.schedule || 'Horarios de Atención según cada Tienda');
   const phone = storeConfig?.phone || '+591 72125280';
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
-  const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hola ${storeName}, tengo una consulta sobre mi pedido.`)}`;
+  const merchantWaMessage = "¡Hola!. Me gustaría crear mi Tienda Digital en MarketSaaS. 🚀 Quisiera recibir información sobre cómo activar mi propio minimarket online, digitalizar mi catálogo y comenzar a recibir pedidos por WhatsApp. 🛒📦";
+  const merchantWaUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(merchantWaMessage)}`;
 
   return (
     <footer className="bg-slate-900 text-white border-t border-slate-800 pt-12 pb-8 px-4 sm:px-6 lg:px-8 mt-12 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Fila Superior: Identidad y Contacto Directo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-slate-800/80">
-          
+
           {/* Columna 1: Datos de la Tienda */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -68,18 +69,6 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
                 <span className="leading-snug">{schedule}</span>
               </div>
             </div>
-
-            <div className="pt-2">
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-950/40 transition-all transform hover:-translate-y-0.5"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Contactar por WhatsApp</span>
-              </a>
-            </div>
           </div>
 
           {/* Columna 2: Métodos de Pago & Seguridad */}
@@ -103,14 +92,14 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
                 <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
                 <div>
                   <strong className="text-slate-100 block">Transferencia / QR Digital</strong>
-                  <span className="text-[10px] text-slate-400">Simple QR Banco Unión y billeteras</span>
+                  <span className="text-[10px] text-slate-400">Simple QR Banco de Preferencia</span>
                 </div>
               </li>
               <li className="flex items-center gap-2 bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
                 <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
                 <div>
                   <strong className="text-slate-100 block">Tarjeta Débito / Crédito</strong>
-                  <span className="text-[10px] text-slate-400">POS Móvil inalámbrico en conserjería</span>
+                  <span className="text-[10px] text-slate-400">Para tiendas con equipo especializado</span>
                 </div>
               </li>
             </ul>
@@ -167,6 +156,38 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Garantía de frescura y atención personalizada de barrio.</span>
             </div>
+          </div>
+        </div>
+
+        {/* Sección: ¿Quieres contar con tu propia Tienda Digital? Contáctanos */}
+        <div className="py-8 my-4 border-b border-slate-800/80 flex flex-col items-center text-center justify-center space-y-3 bg-gradient-to-b from-slate-800/40 to-slate-900/90 p-6 sm:p-8 rounded-3xl border border-emerald-500/20 shadow-xl">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+            <span>MarketSaaS para Comercios & Emprendedores</span>
+          </div>
+
+          <div className="max-w-2xl space-y-1">
+            <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
+              ¿Quieres contar con tu propia Tienda Digital?
+            </h3>
+            <p className="text-sm font-extrabold text-emerald-400 tracking-wide uppercase">
+              Contáctanos
+            </p>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed pt-1">
+              Digitaliza tu catálogo, gestiona tus ventas en tiempo real y recibe pedidos organizados directo a tu WhatsApp en minutos.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <a
+              href={merchantWaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-950/60 transition-all transform hover:-translate-y-0.5 hover:shadow-emerald-500/30"
+            >
+              <MessageCircle className="w-5 h-5 fill-slate-950 text-slate-950" />
+              <span>Contactar por WhatsApp</span>
+            </a>
           </div>
         </div>
 
