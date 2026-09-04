@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
-import { 
-  ShoppingBag, 
-  Store, 
-  Building2, 
-  Building, 
-  CheckCircle2, 
-  MessageSquare, 
-  Sparkles, 
-  PlusCircle, 
-  ArrowRight, 
-  Search, 
-  MapPin, 
-  Volume2, 
+import {
+  ShoppingBag,
+  Store,
+  Building2,
+  Building,
+  CheckCircle2,
+  MessageSquare,
+  Sparkles,
+  PlusCircle,
+  ArrowRight,
+  Search,
+  MapPin,
+  Volume2,
   VolumeX,
-  FileSpreadsheet, 
-  Layers, 
-  ShieldCheck, 
-  Plus, 
+  FileSpreadsheet,
+  Layers,
+  ShieldCheck,
+  Plus,
   Minus,
   BatteryCharging,
   Signal,
@@ -34,8 +34,8 @@ import {
 } from 'lucide-react';
 import './SpectatorShowcase.css';
 
-export const SpectatorShowcase = ({ 
-  onExploreStore, 
+export const SpectatorShowcase = ({
+  onExploreStore,
   onGoToMerchant,
   activeTab: controlledTab,
   onTabChange
@@ -120,7 +120,7 @@ export const SpectatorShowcase = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
-      
+
       {/* Encabezado de Sección */}
       <div className="text-center mb-8 sm:mb-12">
         <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-3.5 py-1 rounded-full border border-emerald-200">
@@ -138,9 +138,8 @@ export const SpectatorShowcase = ({
           <div className="inline-flex p-1.5 rounded-2xl bg-slate-200/90 backdrop-blur-md shadow-2xs gap-1.5 max-w-full overflow-x-auto border border-slate-300/60">
             <button
               onClick={() => handleTabChange('residents')}
-              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                activeTab === 'residents' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === 'residents' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <span>🛍️</span>
               <span>Para Residentes</span>
@@ -148,9 +147,8 @@ export const SpectatorShowcase = ({
 
             <button
               onClick={() => handleTabChange('merchants')}
-              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                activeTab === 'merchants' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === 'merchants' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <span>🏪</span>
               <span>Para Comerciantes</span>
@@ -158,9 +156,8 @@ export const SpectatorShowcase = ({
 
             <button
               onClick={() => handleTabChange('condos')}
-              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-                activeTab === 'condos' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === 'condos' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               <span>🏢</span>
               <span>Para Condominios</span>
@@ -174,7 +171,7 @@ export const SpectatorShowcase = ({
           ========================================================================= */}
       {activeTab === 'residents' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
-          
+
           {/* Columna Izquierda: Beneficios del Vecino */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -237,7 +234,7 @@ export const SpectatorShowcase = ({
           <div className="w-full lg:w-1/2 flex justify-center">
             <div className="spectator-phone-frame w-[310px] sm:w-[340px] h-[580px] rounded-[44px] p-3 shadow-2xl relative">
               <div className="spectator-phone-screen w-full h-full rounded-[34px] overflow-hidden flex flex-col bg-white text-slate-800">
-                
+
                 {/* Status Bar */}
                 <div className="px-5 pt-3 pb-1 flex justify-between items-center text-[10px] text-slate-500 bg-white">
                   <span className="font-bold">9:41</span>
@@ -266,14 +263,14 @@ export const SpectatorShowcase = ({
 
                 {/* Interactive Body Cart Simulator */}
                 <div className="flex-1 p-3.5 space-y-2.5 overflow-y-auto text-left">
-                  
+
                   {/* Buscador Mock */}
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-                    <input 
-                      type="text" 
-                      readOnly 
-                      placeholder="Buscar pan, leche, bebidas..." 
+                    <input
+                      type="text"
+                      readOnly
+                      placeholder="Buscar pan, leche, bebidas..."
                       className="w-full bg-slate-100 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-600 pointer-events-none"
                     />
                   </div>
@@ -284,9 +281,9 @@ export const SpectatorShowcase = ({
 
                   {/* Item 1: Pan Amasado */}
                   <div className="bg-slate-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-slate-200/60 shadow-2xs">
-                    <img 
-                      src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80" 
-                      alt="Pan fresco horneado" 
+                    <img
+                      src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=120&auto=format&fit=crop&q=80"
+                      alt="Pan fresco horneado"
                       width="48"
                       height="48"
                       loading="lazy"
@@ -319,9 +316,9 @@ export const SpectatorShowcase = ({
 
                   {/* Item 2: Leche Entera */}
                   <div className="bg-slate-50 rounded-xl p-2 flex items-center justify-between gap-2 border border-slate-200/60 shadow-2xs">
-                    <img 
-                      src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=120&auto=format&fit=crop&q=80" 
-                      alt="Leche natural pasteurizada" 
+                    <img
+                      src="https://images.unsplash.com/photo-1550583724-b2692b85b150?w=120&auto=format&fit=crop&q=80"
+                      alt="Leche natural pasteurizada"
                       width="48"
                       height="48"
                       loading="lazy"
@@ -385,7 +382,7 @@ export const SpectatorShowcase = ({
           ========================================================================= */}
       {activeTab === 'merchants' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
-          
+
           {/* Columna Izquierda: Motor Comercial del Locatario */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -449,7 +446,7 @@ export const SpectatorShowcase = ({
           {/* Columna Derecha: Mockup Interactivo del Tablero Kanban */}
           <div className="w-full lg:w-1/2">
             <div className="spectator-kanban-frame w-full rounded-2xl shadow-xl overflow-hidden border border-slate-200 text-left bg-slate-50">
-              
+
               {/* Barra Superior estilo macOS / Terminal POS */}
               <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-2 border-b border-slate-800">
                 <div className="flex items-center gap-2.5">
@@ -464,11 +461,10 @@ export const SpectatorShowcase = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => setSoundActive(!soundActive)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
-                      soundActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
-                    }`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${soundActive ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400'
+                      }`}
                     title="Alternar alertas sonoras de pedidos"
                   >
                     {soundActive ? <Volume2 className="w-3 h-3 text-emerald-400 animate-pulse" /> : <VolumeX className="w-3 h-3" />}
@@ -493,7 +489,7 @@ export const SpectatorShowcase = ({
 
               {/* Columnas Kanban Responsivas */}
               <div className="p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                
+
                 {/* 1. Columna: Pendientes */}
                 <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/80 space-y-2">
                   <div className="flex items-center justify-between pb-1 border-b border-amber-200/60">
@@ -516,7 +512,7 @@ export const SpectatorShowcase = ({
                         </div>
                         <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
                         <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
-                        
+
                         <div className="flex justify-between items-center pt-1 border-t border-slate-100">
                           <span className="text-xs font-black text-emerald-700">Bs. {order.price.toFixed(2)}</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -556,7 +552,7 @@ export const SpectatorShowcase = ({
                         </div>
                         <div className="text-[11px] font-bold text-slate-800 truncate">{order.tower}</div>
                         <div className="text-[10px] text-slate-500 leading-tight line-clamp-1">{order.items}</div>
-                        
+
                         {/* Progress Bar */}
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                           <div className="bg-blue-500 h-full rounded-full transition-all" style={{ width: `${order.progress || 70}%` }} />
@@ -629,7 +625,6 @@ export const SpectatorShowcase = ({
                   <MessageSquare className="w-3 h-3 text-emerald-400" />
                   Notificación WhatsApp enviada automáticamente al comprador con código de retiro.
                 </span>
-                <span className="text-emerald-400 font-bold hidden sm:inline">100% Sincronizado</span>
               </div>
 
             </div>
@@ -643,7 +638,7 @@ export const SpectatorShowcase = ({
           ========================================================================= */}
       {activeTab === 'condos' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
-          
+
           {/* Columna Izquierda: Seguridad y Beneficios para el Edificio */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
@@ -712,7 +707,7 @@ export const SpectatorShowcase = ({
           {/* Columna Derecha: Conserjería Digital Hub & Auditoría */}
           <div className="w-full lg:w-1/2">
             <div className="spectator-kanban-frame w-full rounded-2xl shadow-xl overflow-hidden border border-slate-200 text-left bg-slate-50">
-              
+
               {/* Header Conserjería Central */}
               <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2.5">
