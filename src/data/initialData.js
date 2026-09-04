@@ -99,16 +99,16 @@ export const initialProducts = [
   {
     id: 'prod-7',
     code: '78012345007',
-    name: 'Fideos Spaghetti Pasta Italiana 500g',
+    name: 'Fideos Lazzaroni Cortos 1 Kg',
     category: 'Abarrotes',
     price: 1.15,
     originalPrice: 1.30,
     costPrice: 0.70,
     stock: 30,
     minStock: 8,
-    unit: 'Paquete 500g',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=600&auto=format&fit=crop&q=80',
-    description: 'Pasta de sémola de trigo candeal al dente en 8 minutos.',
+    unit: 'Bolsa 1 Kg',
+    image: '/products/fideos-lazzaroni.png',
+    description: 'Pasta corta de sémola de trigo seleccionada Lazzaroni, ideal para sopas y guisos.',
     badge: 'Básico Diario',
     isPopular: false
   },
@@ -147,16 +147,16 @@ export const initialProducts = [
   {
     id: 'prod-10',
     code: '78012345010',
-    name: 'Agua Mineral de Manantial Sin Gas 2L',
+    name: 'Agua Vital 500 ml',
     category: 'Bebidas & Licores',
-    price: 1.20,
-    originalPrice: 1.40,
-    costPrice: 0.65,
+    price: 0.80,
+    originalPrice: 1.00,
+    costPrice: 0.45,
     stock: 36,
     minStock: 10,
-    unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=600&auto=format&fit=crop&q=80',
-    description: 'Agua purificada de vertiente natural, baja en sodio y refrescante.',
+    unit: 'Botella 500 ml',
+    image: '/products/agua-vital.jpg',
+    description: 'Agua mineral pura Vital 500 ml sin gas, hidratación fresca y pura para el día.',
     badge: 'Hidratación',
     isPopular: true
   },
@@ -246,7 +246,7 @@ export const presetBanners = [
 ];
 
 export const initialStoreConfig = {
-  name: 'Minimarket Don Pepe & VeciStore',
+  name: 'Minimarket Saas',
   tagline: 'Tu tienda de confianza a pasos de tu puerta',
   address: 'Calle Los Sauces #420 (Junto al acceso principal)',
   themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'
@@ -257,10 +257,10 @@ export const initialStoreConfig = {
   bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
   qrImageUrl: '',
   condominiums: [
-    { id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C', 'Casas 1-50'], deliveryFee: 5.00, estTime: '10-15 min' },
-    { id: 'c2', name: 'Condominio Altos del Valle', towers: ['Torre 1', 'Torre 2', 'Torre 3'], deliveryFee: 7.00, estTime: '12-18 min' },
-    { id: 'c3', name: 'Edificio Vista Sol', towers: ['Piso 1-12'], deliveryFee: 5.00, estTime: '8-12 min' },
-    { id: 'c4', name: 'Barrio Central (Casas)', towers: ['Sector Norte', 'Sector Sur'], deliveryFee: 8.00, estTime: '15-20 min' }
+    { id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C', 'Casas 1-50'], deliveryFee: 0.00, estTime: '10-15 min' },
+    { id: 'c2', name: 'Condominio Altos del Valle', towers: ['Torre 1', 'Torre 2', 'Torre 3'], deliveryFee: 0.00, estTime: '12-18 min' },
+    { id: 'c3', name: 'Edificio Vista Sol', towers: ['Piso 1-12'], deliveryFee: 0.00, estTime: '8-12 min' },
+    { id: 'c4', name: 'Barrio Central (Casas)', towers: ['Sector Norte', 'Sector Sur'], deliveryFee: 0.00, estTime: '15-20 min' }
   ],
   categories: [
     'Lácteos & Huevos',
@@ -274,7 +274,7 @@ export const initialStoreConfig = {
   coupons: [
     { id: 'coup-1', code: 'VECINO10', discount: 10.00, minSubtotal: 50.00, description: 'Descuento 10 Bs. para vecinos en compras mayores a 50 Bs.' }
   ],
-  defaultDeliveryFee: 5.00,
+  defaultDeliveryFee: 0.00,
   freeDeliveryThreshold: 80.00,
   phone: '+591 72125280',
   whatsapp: '59172125280',
@@ -291,8 +291,8 @@ export const initialStoreConfig = {
   bankDetails: {
     bank: 'Banco Unión / Billetera Simple QR',
     accountNumber: '1000-2495-8120',
-    holder: 'José Don Pepe Almacén S.R.L.',
-    aliasQR: 'MINIMARKET-DONPEPE.PAGO'
+    holder: 'Minimarket Saas S.R.L.',
+    aliasQR: 'MINIMARKET-SAAS.PAGO'
   }
 };
 

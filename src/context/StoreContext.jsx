@@ -38,13 +38,67 @@ export const StoreProvider = ({ children }) => {
   // 2. Productos
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
-    return saved ? JSON.parse(saved) : initialProducts;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map(prod => {
+          if (prod.id === 'prod-7' || prod.name?.toLowerCase().includes('spaghetti')) {
+            return {
+              ...prod,
+              id: 'prod-7',
+              name: 'Fideos Lazzaroni Cortos 1 Kg',
+              category: 'Abarrotes',
+              price: 1.15,
+              unit: 'Bolsa 1 Kg',
+              image: '/products/fideos-lazzaroni.png',
+              description: 'Pasta corta de sémola de trigo seleccionada Lazzaroni, ideal para sopas y guisos.'
+            };
+          }
+          if (prod.id === 'prod-10' || prod.name?.toLowerCase().includes('manantial') || prod.name?.toLowerCase().includes('vital')) {
+            return {
+              ...prod,
+              id: 'prod-10',
+              name: 'Agua Vital 500 ml',
+              category: 'Bebidas & Licores',
+              price: 0.80,
+              unit: 'Botella 500 ml',
+              image: '/products/agua-vital.jpg',
+              description: 'Agua mineral pura Vital 500 ml sin gas, hidratación fresca y pura para el día.'
+            };
+          }
+          return prod;
+        });
+      } catch (e) {
+        return initialProducts;
+      }
+    }
+    return initialProducts;
   });
 
   // 3. Configuración de Tienda
   const [storeConfig, setStoreConfigState] = useState(() => {
     const saved = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
-    return saved ? JSON.parse(saved) : initialStoreConfig;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (!parsed.name || parsed.name.includes('Don Pepe') || parsed.name.includes('VeciStore')) {
+          parsed.name = 'Minimarket Saas';
+        }
+        if (parsed.defaultDeliveryFee === undefined || parsed.defaultDeliveryFee === 5.00) {
+          parsed.defaultDeliveryFee = 0.00;
+        }
+        if (Array.isArray(parsed.condominiums)) {
+          parsed.condominiums = parsed.condominiums.map(c => ({
+            ...c,
+            deliveryFee: c.deliveryFee === 5.00 || c.deliveryFee === 7.00 || c.deliveryFee === 8.00 ? 0.00 : c.deliveryFee
+          }));
+        }
+        return { ...initialStoreConfig, ...parsed };
+      } catch (e) {
+        return initialStoreConfig;
+      }
+    }
+    return initialStoreConfig;
   });
 
   const setStoreConfig = (newConfigData) => {
@@ -396,10 +450,11 @@ export const StoreProvider = ({ children }) => {
   }, 0);
 
   // Tarifa de delivery calculada según el condominio seleccionado
-  const currentCondo = storeConfig.condominiums.find(c => c.name === selectedLocation.condominium);
-  const deliveryFeeBase = currentCondo ? currentCondo.deliveryFee : storeConfig.defaultDeliveryFee;
-  const isFreeDelivery = cartSubtotal >= storeConfig.freeDeliveryThreshold;
-  const actualDeliveryFee = isFreeDelivery ? 0 : deliveryFeeBase;
+  const isDeliveryEnabled = storeConfig.enableDelivery === true;
+  const currentCondo = storeConfig.condominiums?.find(c => c.name === selectedLocation.condominium);
+  const deliveryFeeBase = isDeliveryEnabled ? (currentCondo ? (currentCondo.deliveryFee ?? storeConfig.defaultDeliveryFee ?? 0) : (storeConfig.defaultDeliveryFee ?? 0)) : 0;
+  const isFreeDelivery = !isDeliveryEnabled || (storeConfig.freeDeliveryThreshold > 0 && cartSubtotal >= storeConfig.freeDeliveryThreshold);
+  const actualDeliveryFee = (!isDeliveryEnabled || isFreeDelivery) ? 0 : deliveryFeeBase;
 
   // Total final
   const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;

@@ -71,26 +71,28 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
               </button>
             </div>
 
-            {/* Barra de Progreso de Envío Gratis */}
-            <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
-              <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                <span className="flex items-center gap-1.5 text-slate-700">
-                  <Truck className="w-4 h-4 text-emerald-600" />
-                  {isFreeDelivery ? (
-                    <span className="text-emerald-700 font-extrabold">¡Envío GRATIS alcanzado!</span>
-                  ) : (
-                    <span>Agrega <strong>{currency} {remainingForFree.toFixed(2)}</strong> para delivery gratis</span>
-                  )}
-                </span>
-                <span className="text-emerald-700 font-black">{Math.round(progressPercent)}%</span>
+            {/* Barra de Progreso de Envío Gratis (si delivery está habilitado) */}
+            {storeConfig?.enableDelivery && (
+              <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <Truck className="w-4 h-4 text-emerald-600" />
+                    {isFreeDelivery ? (
+                      <span className="text-emerald-700 font-extrabold">¡Envío GRATIS alcanzado!</span>
+                    ) : (
+                      <span>Agrega <strong>{currency} {remainingForFree.toFixed(2)}</strong> para delivery gratis</span>
+                    )}
+                  </span>
+                  <span className="text-emerald-700 font-black">{Math.round(progressPercent)}%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-500 rounded-full ${isFreeDelivery ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-400 to-emerald-500'}`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full transition-all duration-500 rounded-full ${isFreeDelivery ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-400 to-emerald-500'}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Lista de Ítems */}
@@ -204,18 +206,27 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                   <span className="font-semibold text-slate-800">{currency} {cartSubtotal.toFixed(2)}</span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="flex items-center gap-1">
-                    <span>Envío a {selectedLocation.condominium}</span>
-                  </span>
-                  <span className="font-semibold text-slate-800">
-                    {isFreeDelivery ? (
-                      <span className="text-emerald-600 font-bold">GRATIS</span>
-                    ) : (
-                      `+${currency} ${actualDeliveryFee.toFixed(2)}`
-                    )}
-                  </span>
-                </div>
+                {storeConfig?.enableDelivery ? (
+                  <div className="flex justify-between items-center">
+                    <span className="flex items-center gap-1">
+                      <span>Envío a {selectedLocation.condominium}</span>
+                    </span>
+                    <span className="font-semibold text-slate-800">
+                      {isFreeDelivery || actualDeliveryFee === 0 ? (
+                        <span className="text-emerald-600 font-bold">GRATIS</span>
+                      ) : (
+                        `+${currency} ${actualDeliveryFee.toFixed(2)}`
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center text-slate-500">
+                    <span>Modalidad</span>
+                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Retiro en Tienda (Gratis)
+                    </span>
+                  </div>
+                )}
 
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 font-semibold">

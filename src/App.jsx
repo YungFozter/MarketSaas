@@ -11,6 +11,7 @@ import { OrderTrackingModal } from './components/customer/OrderTrackingModal';
 import { LoyaltyPointsModal } from './components/customer/LoyaltyPointsModal';
 import { RequestProductModal } from './components/customer/RequestProductModal';
 import { LocationModal } from './components/customer/LocationModal';
+import { CustomerFooter } from './components/customer/CustomerFooter';
 import { AuthModal } from './components/auth/AuthModal';
 import './App.css';
 
@@ -66,17 +67,26 @@ const AppContent = () => {
         )}
       </div>
 
-      {/* Footer Limpio y Elegante (Solo para Tienda y Admin, Espectador incluye su footer enriquecido) */}
-      {viewMode !== 'spectator' && (
+      {/* Footer según la vista activa */}
+      {viewMode === 'customer' && (
+        <CustomerFooter
+          onOpenCart={() => setIsCartOpen(true)}
+          onOpenPoints={() => setIsPointsOpen(true)}
+          onOpenRequests={() => setIsRequestsOpen(true)}
+          onOpenLocationModal={() => setIsLocationOpen(true)}
+        />
+      )}
+
+      {viewMode === 'admin' && (
         <footer className="bg-white border-t border-slate-200/90 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center sm:text-left text-slate-600">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
-                MarketSaaS
+                MarketSaaS Panel Admin
               </span>
               <span className="text-slate-300 font-light">•</span>
               <span className="text-xs sm:text-sm font-semibold text-slate-600">
-                Sistema Hiperlocal para Tiendas de Barrio y Condominios
+                Gestión de Inventario, Pedidos y Clientes
               </span>
             </div>
             <p className="text-xs font-medium text-slate-400">

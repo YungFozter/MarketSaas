@@ -36,6 +36,7 @@ export const Navbar = ({
     setViewMode, 
     cart, 
     cartTotal, 
+    cartSubtotal,
     cartSavings, 
     selectedLocation, 
     veciPoints, 
@@ -332,7 +333,7 @@ export const Navbar = ({
                 >
                   <ShoppingBag className="w-4 h-4" />
                   <span className="hidden sm:inline">Carrito</span>
-                  <span className="font-extrabold">{storeConfig.currencySymbol || 'Bs.'} {cartTotal.toFixed(2)}</span>
+                  <span className="font-extrabold">{storeConfig.currencySymbol || 'Bs.'} {cartSubtotal.toFixed(2)}</span>
 
                   {totalCartItems > 0 && (
                     <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] sm:text-[11px] flex items-center justify-center shadow-md animate-bounce-gentle">
