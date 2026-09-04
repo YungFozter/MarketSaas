@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import orderNotificationSound from '../../../mp3/Notificacion de orden de compra.mp3';
 import {
   ShoppingBag,
@@ -59,8 +60,16 @@ export const SpectatorShowcase = ({
         setIsCondoModalOpen(false);
       }
     };
+    if (isCondoModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isCondoModalOpen]);
 
   const handleTabChange = (tab) => {
@@ -874,13 +883,13 @@ export const SpectatorShowcase = ({
       )}
 
       {/* Modal: Beneficios para Condominios & Edificios */}
-      {isCondoModalOpen && (
+      {isCondoModalOpen && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn overflow-y-auto"
           onClick={() => setIsCondoModalOpen(false)}
         >
           <div 
-            className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
+            className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[85vh] flex flex-col my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1009,7 +1018,8 @@ export const SpectatorShowcase = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

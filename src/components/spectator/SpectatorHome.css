@@ -58,8 +58,7 @@
   opacity: 1 !important;
   filter: none !important;
   transform: none !important;
-  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-  will-change: opacity, transform;
+  transition: opacity 0.5s ease-out;
 }
 
 /* Estado visible y transiciones directas */
