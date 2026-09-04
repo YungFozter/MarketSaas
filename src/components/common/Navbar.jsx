@@ -83,15 +83,15 @@ export const Navbar = ({
   };
 
   return (
-    <header 
-      className={`sticky top-0 z-40 w-full transition-all duration-300 ease-in-out ${
-        isScrolled
-          ? 'bg-white/90 backdrop-blur-md shadow-md shadow-slate-900/5 border-b border-slate-200/80'
-          : 'bg-white border-b border-slate-100 shadow-none'
-      }`}
-    >
-      {/* Barra superior de Promoción y Confianza Rediseñada */}
-      <div className="bg-slate-950 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800/80">
+    <header className="sticky top-0 z-40 w-full pointer-events-none transition-all duration-300">
+      {/* Barra superior de Promoción y Confianza Rediseñada (Se colapsa suavemente al scrollear) */}
+      <div 
+        className={`w-full bg-slate-950 text-white text-[11px] sm:text-xs border-b border-slate-800/80 pointer-events-auto transition-all duration-300 overflow-hidden ${
+          isScrolled 
+            ? 'max-h-0 opacity-0 py-0 border-none' 
+            : 'max-h-16 py-1.5 px-3 sm:px-6 opacity-100'
+        }`}
+      >
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
           
           {/* Lado Izquierdo: Anuncio de Confianza & Estado en Vivo */}
@@ -173,9 +173,24 @@ export const Navbar = ({
         </div>
       </div>
 
-      {/* Navegación Principal */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-18 gap-4">
+      {/* Cápsula Flotante Despegada / Dynamic Island */}
+      <div 
+        className={`pointer-events-auto transition-all duration-300 ease-out ${
+          isScrolled 
+            ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-2 sm:pt-2.5' 
+            : 'w-full px-0 pt-0'
+        }`}
+      >
+        <div 
+          className={`relative transition-all duration-300 ${
+            isScrolled
+              ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-4 sm:px-6 ring-1 ring-black/5'
+              : 'bg-white border-b border-slate-100 shadow-none px-4 sm:px-6 lg:px-8'
+          }`}
+        >
+          <div className={`flex items-center justify-between gap-4 transition-all duration-300 ${
+            isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-18'
+          }`}>
           
           {/* Logo y Marca Oficial MarketSaaS en Código Vectorial (Sin imágenes de fondo beige) */}
           <button 
@@ -467,17 +482,18 @@ export const Navbar = ({
             )}
           </div>
         )}
-      </div>
 
-      {/* Indicador de brillo y progreso dinámico al scrollear */}
-      {isScrolled && (
-        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-slate-100/60 overflow-hidden pointer-events-none">
-          <div 
-            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500 transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-            style={{ width: `${scrollProgress}%` }}
-          />
+        {/* Indicador de brillo y progreso dinámico al scrollear */}
+        {isScrolled && (
+          <div className="absolute bottom-0 left-4 right-4 h-[2px] bg-slate-100/60 overflow-hidden pointer-events-none rounded-full">
+            <div 
+              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500 transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+              style={{ width: `${scrollProgress}%` }}
+            />
+          </div>
+        )}
         </div>
-      )}
+      </div>
     </header>
   );
 };
