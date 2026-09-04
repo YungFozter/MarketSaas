@@ -248,7 +248,7 @@ export const presetBanners = [
 export const initialStoreConfig = {
   name: 'Minimarket Saas',
   tagline: 'Tu tienda de confianza a pasos de tu puerta',
-  address: 'Calle Los Sauces #420 (Junto al acceso principal)',
+  address: 'Direccion según cada Tienda',
   themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'
   currencySymbol: 'Bs.',
   adminEmail: 'admin@tienda.com',
@@ -278,7 +278,7 @@ export const initialStoreConfig = {
   freeDeliveryThreshold: 80.00,
   phone: '+591 72125280',
   whatsapp: '59172125280',
-  schedule: 'Lunes a Domingo: 08:00 AM - 10:30 PM',
+  schedule: 'Horarios de Atención según cada Tienda',
   isOpen: true,
   enableDelivery: false,
   enablePoints: true,

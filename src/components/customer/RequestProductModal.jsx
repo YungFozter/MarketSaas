@@ -4,10 +4,10 @@ import { useStore } from '../../context/StoreContext';
 import './RequestProductModal.css';
 
 export const RequestProductModal = ({ isOpen, onClose }) => {
-  const { productRequests, submitProductRequest, voteProductRequest, selectedLocation } = useStore();
+  const { productRequests, submitProductRequest, voteProductRequest } = useStore();
   const [productName, setProductName] = useState('');
   const [notes, setNotes] = useState('');
-  const [customerName, setCustomerName] = useState(`${selectedLocation.tower} - ${selectedLocation.apartment}`);
+  const [customerName, setCustomerName] = useState('');
 
   if (!isOpen) return null;
 
@@ -15,9 +15,10 @@ export const RequestProductModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (!productName.trim()) return;
 
-    submitProductRequest(customerName, productName, notes);
+    submitProductRequest(customerName.trim() || 'Vecino (Demostración)', productName, notes);
     setProductName('');
     setNotes('');
+    setCustomerName('');
   };
 
   return (
@@ -26,18 +27,23 @@ export const RequestProductModal = ({ isOpen, onClose }) => {
         className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header con Indicador de Modo Demostración */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-teal-700 to-emerald-700 text-white flex items-center justify-between shrink-0">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-bold mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Buzón Comunitario</span>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-xs font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Buzón Comunitario</span>
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wide bg-emerald-950/60 text-emerald-200 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
+                Modo Demostración
+              </span>
             </div>
             <h2 className="text-lg sm:text-xl font-extrabold tracking-tight">
               ¿Falta algún producto en la tienda?
             </h2>
             <p className="text-[11px] sm:text-xs text-emerald-100 mt-0.5">
-              Pídelo al dueño para que lo traiga en el próximo pedido.
+              Espacio de muestra interactiva: los vecinos sugieren productos directamente al dueño del minimarket.
             </p>
           </div>
           <button

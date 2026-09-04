@@ -164,6 +164,12 @@ export const StoreProvider = ({ children }) => {
         if (!parsed.name || parsed.name.includes('Don Pepe') || parsed.name.includes('VeciStore')) {
           parsed.name = 'Minimarket Saas';
         }
+        if (!parsed.address || parsed.address.includes('Calle Los Sauces')) {
+          parsed.address = 'Direccion según cada Tienda';
+        }
+        if (!parsed.schedule || parsed.schedule.includes('08:00 AM')) {
+          parsed.schedule = 'Horarios de Atención según cada Tienda';
+        }
         if (parsed.defaultDeliveryFee === undefined || parsed.defaultDeliveryFee === 5.00) {
           parsed.defaultDeliveryFee = 0.00;
         }
@@ -1003,6 +1009,7 @@ export const StoreProvider = ({ children }) => {
         saveProduct,
         deleteProduct,
         veciPoints,
+        setVeciPoints,
         productRequests,
         submitProductRequest,
         voteProductRequest,

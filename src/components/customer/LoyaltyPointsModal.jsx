@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Sparkles, 
@@ -17,10 +17,18 @@ import { useStore } from '../../context/StoreContext';
 import './LoyaltyPointsModal.css';
 
 export const LoyaltyPointsModal = ({ isOpen, onClose }) => {
-  const { veciPoints, redeemPoints, appliedCoupon, storeConfig } = useStore();
+  const { veciPoints, setVeciPoints, redeemPoints, appliedCoupon, storeConfig } = useStore();
   const [showFaq, setShowFaq] = useState(false);
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isDeliveryActive = storeConfig?.enableDelivery === true;
+
+  // En modo demostración, asegurar que siempre al abrir la ventana tenga 340 Puntos
+  // para permitir interactuar libremente con los cupones de prueba
+  useEffect(() => {
+    if (isOpen && setVeciPoints) {
+      setVeciPoints(340);
+    }
+  }, [isOpen, setVeciPoints]);
 
   if (!isOpen) return null;
 

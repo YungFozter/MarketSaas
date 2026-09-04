@@ -9,38 +9,33 @@ import {
   Sparkles, 
   ShoppingBag, 
   HelpCircle, 
-  Building2, 
   Banknote, 
   QrCode, 
   CreditCard,
-  Truck,
   CheckCircle2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
-export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
+export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => {
   const { storeConfig } = useStore();
 
   const storeName = storeConfig?.name || 'Minimarket Saas';
   const tagline = storeConfig?.tagline || 'Tu tienda de confianza a pasos de tu puerta';
-  const address = storeConfig?.address || 'Calle Los Sauces #420 (Junto al acceso principal)';
-  const schedule = storeConfig?.schedule || 'Lunes a Domingo: 08:00 AM - 10:30 PM';
+  const address = storeConfig?.address?.includes('Calle Los Sauces') 
+    ? 'Direccion según cada Tienda' 
+    : (storeConfig?.address || 'Direccion según cada Tienda');
+  const schedule = storeConfig?.schedule?.includes('08:00 AM') 
+    ? 'Horarios de Atención según cada Tienda' 
+    : (storeConfig?.schedule || 'Horarios de Atención según cada Tienda');
   const phone = storeConfig?.phone || '+591 72125280';
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
   const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Hola ${storeName}, tengo una consulta sobre mi pedido.`)}`;
-
-  const condominiums = storeConfig?.condominiums || [
-    { name: 'Condominio Las Palmas' },
-    { name: 'Condominio Altos del Valle' },
-    { name: 'Edificio Vista Sol' },
-    { name: 'Barrio Central' }
-  ];
 
   return (
     <footer className="bg-slate-900 text-white border-t border-slate-800 pt-12 pb-8 px-4 sm:px-6 lg:px-8 mt-12 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Fila Superior: Identidad y Contacto Directo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-10 border-b border-slate-800/80">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-slate-800/80">
           
           {/* Columna 1: Datos de la Tienda */}
           <div className="space-y-4">
@@ -87,33 +82,7 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpe
             </div>
           </div>
 
-          {/* Columna 2: Cobertura & Condominios Vecinos */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-emerald-400" />
-              <span>Cobertura Hiperlocal</span>
-            </h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Atendemos de forma prioritaria a los vecinos de la zona y condominios registrados:
-            </p>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {condominiums.map((condo, idx) => (
-                <span 
-                  key={idx}
-                  className="text-[11px] font-semibold bg-slate-800 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700/80 flex items-center gap-1"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  {condo.name}
-                </span>
-              ))}
-            </div>
-            <div className="pt-2 text-[11px] text-slate-400 flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Entregas rápidas directo a conserjería o retiro en tienda.</span>
-            </div>
-          </div>
-
-          {/* Columna 3: Métodos de Pago & Seguridad */}
+          {/* Columna 2: Métodos de Pago & Seguridad */}
           <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -147,7 +116,7 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpe
             </ul>
           </div>
 
-          {/* Columna 4: Accesos Rápidos del Vecino */}
+          {/* Columna 3: Accesos Rápidos del Vecino */}
           <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-400" />
@@ -192,19 +161,6 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpe
                   <span className="text-[10px] text-cyan-400 font-bold">Solicitar →</span>
                 </button>
               )}
-
-              {onOpenLocationModal && (
-                <button
-                  onClick={onOpenLocationModal}
-                  className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 text-slate-200 transition-colors border border-slate-700/60"
-                >
-                  <span className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Cambiar mi Condominio</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400">Elegir →</span>
-                </button>
-              )}
             </div>
 
             <div className="pt-2 p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2 text-[11px] text-slate-400">
@@ -228,8 +184,6 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpe
             <span className="text-slate-400 font-medium">
               Potenciado por <strong className="text-emerald-400 font-extrabold">MarketSaaS</strong>
             </span>
-            <span className="text-slate-700">|</span>
-            <span className="text-slate-400">Red Hiperlocal Conectada</span>
           </div>
         </div>
       </div>
