@@ -20,9 +20,19 @@ export const StoreProvider = ({ children }) => {
   const [merchantStore, setMerchantStore] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 1. Vista actual: 'spectator', 'customer' o 'admin'
+  // 1. Vista actual: Al abrir el enlace principal (https://marketsaas.onrender.com),
+  // SIEMPRE la primera pantalla es la Informativa ("Vista Espectador").
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem(`marketsaas_${tenantSlug}_viewMode`) || 'spectator';
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('view') && ['spectator', 'customer', 'admin'].includes(params.get('view'))) {
+        return params.get('view');
+      }
+      if (params.get('store') || params.get('tenant')) {
+        return 'customer';
+      }
+    }
+    return 'spectator';
   });
 
   // 2. Productos

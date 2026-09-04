@@ -126,26 +126,36 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
           
-          {/* Logo y Nombre del Negocio */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-50 shrink-0">
-              <Store className="w-4 h-4 sm:w-5 sm:h-5" />
+          {/* Logo y Nombre del Negocio / Plataforma */}
+          <button 
+            onClick={() => setViewMode('spectator')}
+            className="flex items-center gap-2 sm:gap-3 min-w-0 text-left cursor-pointer group"
+            title="Ir a la pantalla informativa de MarketSaaS"
+          >
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 ring-2 ring-emerald-50 shrink-0 group-hover:scale-105 transition-transform">
+              {viewMode === 'spectator' ? <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-100" /> : <Store className="w-4 h-4 sm:w-5 sm:h-5" />}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm sm:text-lg text-slate-900 tracking-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-none">
-                  {storeConfig.name}
+                <span className="font-extrabold text-sm sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
+                  {viewMode === 'spectator' ? 'MarketSaaS' : storeConfig.name}
                 </span>
-                <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                  Abierto
-                </span>
+                {viewMode !== 'spectator' ? (
+                  <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    Abierto
+                  </span>
+                ) : (
+                  <span className="hidden md:inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md shrink-0">
+                    SaaS Hiperlocal
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-500 hidden sm:block truncate">
-                {storeConfig.tagline}
+                {viewMode === 'spectator' ? 'Plataforma para Tiendas de Barrio y Condominios' : storeConfig.tagline}
               </p>
             </div>
-          </div>
+          </button>
 
           {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
           {viewMode === 'customer' && storeConfig.enableDelivery !== false && (
