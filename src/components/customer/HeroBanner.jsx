@@ -18,9 +18,7 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
         <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 mb-3.5 shadow-xs max-w-full">
           <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
           <span className="truncate">
-            {storeConfig.enableDelivery !== false
-              ? `¡Delivery Express a tu puerta en ${selectedLocation.condominium}!`
-              : '🛍️ Atención y Retiro en Tienda Local'}
+            🛍️ Catálogo de Barrio • Retiro en Local y Envíos según cada Tienda
           </span>
         </div>
 
@@ -72,12 +70,10 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
             </div>
             <div className="min-w-0">
               <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">
-                {storeConfig.enableDelivery !== false ? 'Delivery Express' : 'Retiro en Local'}
+                Retiro en Local
               </p>
               <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">
-                {storeConfig.enableDelivery !== false
-                  ? `Desde ${currency} ${storeConfig.defaultDeliveryFee.toFixed(2)}`
-                  : 'Envíos según cada Tienda'}
+                Envíos según cada Tienda
               </p>
             </div>
           </div>

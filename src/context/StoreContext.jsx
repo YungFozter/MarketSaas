@@ -380,6 +380,23 @@ export const StoreProvider = ({ children }) => {
     localStorage.setItem(`marketsaas_${tenantSlug}_viewMode`, viewMode);
   }, [viewMode, tenantSlug]);
 
+  // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
+  const CURRENT_SCHEMA_VER = '2026-09-04-v5';
+  useEffect(() => {
+    try {
+      const storedVer = localStorage.getItem('marketsaas_catalog_version');
+      if (storedVer !== CURRENT_SCHEMA_VER) {
+        localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
+        setProducts(initialProducts);
+        setStoreConfigState(initialStoreConfig);
+        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts));
+        localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
+      }
+    } catch (e) {
+      console.warn('Error syncing catalog version:', e);
+    }
+  }, [tenantSlug]);
+
   useEffect(() => {
     localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(products));
   }, [products, tenantSlug]);
