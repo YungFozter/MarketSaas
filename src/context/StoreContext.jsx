@@ -56,13 +56,27 @@ export const StoreProvider = ({ children }) => {
               badge: 'Ahorro Pack'
             };
           }
-          if (prod.id === 'prod-7' || prod.name?.toLowerCase().includes('spaghetti')) {
+          if (prod.id === 'prod-2' || prod.name?.toLowerCase().includes('huevos')) {
+            return {
+              ...prod,
+              id: 'prod-2',
+              name: 'Huevos de 2da (Medio Maple 15u)',
+              category: 'Lácteos & Huevos',
+              price: 15.00,
+              originalPrice: 16.50,
+              unit: 'Medio Maple 15 unidades',
+              description: 'Huevos frescos seleccionados, tamaño mediano con yema dorada natural garantizada.',
+              badge: 'Frescura Garantizada'
+            };
+          }
+          if (prod.id === 'prod-7' || prod.name?.toLowerCase().includes('spaghetti') || prod.name?.toLowerCase().includes('lazzaroni')) {
             return {
               ...prod,
               id: 'prod-7',
               name: 'Fideos Lazzaroni Cortos 1 Kg',
               category: 'Abarrotes',
-              price: 1.15,
+              price: 15.50,
+              originalPrice: 15.80,
               unit: 'Bolsa 1 Kg',
               image: '/products/fideos-lazzaroni.png',
               description: 'Pasta corta de sémola de trigo seleccionada Lazzaroni, ideal para sopas y guisos.'
@@ -87,7 +101,8 @@ export const StoreProvider = ({ children }) => {
               id: 'prod-10',
               name: 'Agua Vital sin Gas 600 ml',
               category: 'Bebidas & Licores',
-              price: 0.80,
+              price: 5.00,
+              originalPrice: 5.50,
               unit: 'Botella 600 ml',
               image: '/products/agua-vital-600ml.png',
               description: 'Agua purificada de mesa Vital sin gas en botella de 600 ml. Hidratación pura, ligera y refrescante para cualquier momento del día.',
@@ -100,7 +115,8 @@ export const StoreProvider = ({ children }) => {
               id: 'prod-11',
               name: 'Soda Coca-Cola 2 L',
               category: 'Bebidas & Licores',
-              price: 2.50,
+              price: 13.00,
+              originalPrice: 13.00,
               unit: 'Botella 2L',
               image: '/products/coca-cola-2l.png',
               description: 'Bebida gaseosa Coca-Cola Sabor Original en botella familiar de 2 Litros. El refresco ideal para acompañar tus comidas y compartir en familia.',
@@ -111,9 +127,10 @@ export const StoreProvider = ({ children }) => {
             return {
               ...prod,
               id: 'prod-12',
-              name: 'Papas Lays Clásicas Bolsa Pequeña',
+              name: 'Papas Lays Clásicas Bolsa Pequeña 70g',
               category: 'Snacks & Golosinas',
-              price: 1.50,
+              price: 5.50,
+              originalPrice: 5.50,
               unit: 'Bolsa 70g',
               image: '/products/lays-clasicas.png',
               description: 'Papas fritas Lay\'s Clásicas crocantes con el toque justo de sal en práctica bolsa de 70g. El snack perfecto para disfrutar a cualquier hora.',
@@ -126,7 +143,8 @@ export const StoreProvider = ({ children }) => {
               id: 'prod-13',
               name: 'Detergente Omo Limon Con Jabón 1.8K',
               category: 'Limpieza & Hogar',
-              price: 4.90,
+              price: 51.30,
+              originalPrice: 53.10,
               unit: 'Bolsa 1.8 Kg',
               image: '/products/omo-limon-1.8k.png',
               description: 'Detergente en polvo Omo Limón con bicarbonato y fórmula con el poder del jabón en bolsa de 1.8 kg. Remueve las manchas más difíciles en el primer lavado dejando un aroma fresco.',
@@ -139,7 +157,8 @@ export const StoreProvider = ({ children }) => {
               id: 'prod-14',
               name: 'Nacional Selecto Papel Higienico Th 3D X 6 Unidades',
               category: 'Limpieza & Hogar',
-              price: 3.50,
+              price: 19.00,
+              originalPrice: 19.70,
               unit: 'Pack 6 rollos x 30m',
               image: '/products/papel-nacional-selecto-6u.jpg',
               description: 'Papel higiénico Nacional Selecto Triple Hoja con tecnología 3D acolchonada en pack de 6 unidades x 30 metros. Máxima suavidad, resistencia y rendimiento para el hogar.',
@@ -401,7 +420,7 @@ export const StoreProvider = ({ children }) => {
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-04-v7-tomatoes';
+  const CURRENT_SCHEMA_VER = '2026-09-04-v8-vecino-pricing';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
