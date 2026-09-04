@@ -183,11 +183,11 @@ export const SpectatorShowcase = ({
             </div>
 
             <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Pide lo que te falta sin salir de tu departamento
+              Pida lo que te falta sin salir de casa.
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              ¿Olvidaste el pan para la once o la leche del desayuno? Pide en el minimarket de la esquina desde tu celular y recíbelo en conserjería o en tu puerta en menos de lo que tarda un delivery tradicional.
+              ¿Olvidaste el pan, o la leche del desayuno? Revisa si en el minimarket de tu preferencia o el más cercano tienen lo que buscas y ahorra tiempo en encontrar una tienda con lo que necesitas.
             </p>
 
             <div className="space-y-3.5">
@@ -196,8 +196,8 @@ export const SpectatorShowcase = ({
                   ✓
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Precios Justos de Barrio:</strong>
-                  <span className="text-slate-500 text-xs sm:text-sm">Sin tarifas ocultas de servicio ni recargos inflados por plataformas intermediarias.</span>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Precios Justos en tiempo Real</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Sin sorpresas y con conocimiento sobre precios reales a cada momento.</span>
                 </div>
               </div>
 
@@ -207,7 +207,7 @@ export const SpectatorShowcase = ({
                 </div>
                 <div>
                   <strong className="text-slate-900 text-xs sm:text-sm block">Club de VeciPuntos:</strong>
-                  <span className="text-slate-500 text-xs sm:text-sm">Acumula puntos canjeables en cada compra para obtener descuentos directos en tu minimarket.</span>
+                  <span className="text-slate-500 text-xs sm:text-sm">Acumula puntos canjeables en cada compra para obtener descuentos directos en tu tienda favorita. (Puntos disponibles según decisión de cada tienda)</span>
                 </div>
               </div>
 
@@ -216,8 +216,8 @@ export const SpectatorShowcase = ({
                   ✓
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Pago con QR o Transferencia:</strong>
-                  <span className="text-slate-500 text-xs sm:text-sm">Paga de forma rápida y segura por tu app de banco favorita o en efectivo al recibir.</span>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Paga en efectivo o con QR:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Paga de forma rápida y segura por tu app de banco favorita o en efectivo.</span>
                 </div>
               </div>
             </div>

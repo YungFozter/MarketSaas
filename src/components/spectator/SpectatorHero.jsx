@@ -12,15 +12,6 @@ export const SpectatorHero = ({ onExploreStore, onScrollToAuth }) => {
 
       <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-3 sm:pt-5 sm:pb-5 flex flex-col items-center text-center">
         
-        {/* Insignia Shimmer */}
-        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/90 backdrop-blur-md shadow-2xs border border-slate-200/80 mb-2 sm:mb-2.5 animate-fade-in-up">
-          <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-          <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-            Plataforma SaaS Hiperlocal para Barrios y Condominios
-          </span>
-        </div>
-
         {/* Título Principal H1 */}
         <h1 className="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-extrabold tracking-tight text-slate-900 max-w-4xl leading-tight mb-2 sm:mb-2.5">
           El comercio de cercanía, <br className="hidden sm:inline" />
@@ -29,8 +20,7 @@ export const SpectatorHero = ({ onExploreStore, onScrollToAuth }) => {
 
         {/* Subtítulo */}
         <p className="text-xs sm:text-sm lg:text-[15px] text-slate-600 max-w-2xl mb-3 sm:mb-4 leading-normal">
-          Entregas hiperlocales en minutos, pedidos directos a WhatsApp, catálogo dinámico en tiempo real y{' '}
-          <strong className="text-slate-900 font-bold">0% de comisiones abusivas</strong> para minimarkets y almacenes comunitarios.
+          La plataforma moderna que impulsa el comercio de cercanía y empodera a los minimarkets de barrio. Unimos tecnología intuitiva, pedidos ágiles y confianza comunitaria para que vecinos y comerciantes disfruten de una experiencia digital rápida, humana y eficiente.
         </p>
 
         {/* Botones CTA Principales */}
