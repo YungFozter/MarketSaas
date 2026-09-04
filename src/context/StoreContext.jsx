@@ -68,6 +68,19 @@ export const StoreProvider = ({ children }) => {
               description: 'Pasta corta de sémola de trigo seleccionada Lazzaroni, ideal para sopas y guisos.'
             };
           }
+          if (prod.id === 'prod-9' || prod.name?.toLowerCase().includes('tomate')) {
+            return {
+              ...prod,
+              id: 'prod-9',
+              name: 'Tomates Frescos',
+              category: 'Frutas & Verduras',
+              price: 5.00,
+              originalPrice: 5.00,
+              unit: 'Por Onza',
+              description: 'Tomates frescos y jugosos seleccionados por onza, ideales para ensaladas frescas, salsas caseras y preparaciones diarias.',
+              badge: 'Directo del Campo'
+            };
+          }
           if (prod.id === 'prod-10' || prod.name?.toLowerCase().includes('manantial') || prod.name?.toLowerCase().includes('vital')) {
             return {
               ...prod,
@@ -382,7 +395,7 @@ export const StoreProvider = ({ children }) => {
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-04-v6-bolivian-prices';
+  const CURRENT_SCHEMA_VER = '2026-09-04-v7-tomatoes';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
