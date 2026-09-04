@@ -15,7 +15,7 @@ import { useStore } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
-  const { orders, storeConfig } = useStore();
+  const { orders, storeConfig, updateOrderStatus, showToast } = useStore();
 
   const order = orders.find(o => o.id === orderId);
 
@@ -119,22 +119,31 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   const isCurrent = idx === currentIndex;
 
                   return (
-                    <div key={st.key} className="relative z-10 flex flex-col items-center">
+                    <button 
+                      key={st.key} 
+                      type="button"
+                      onClick={() => {
+                        updateOrderStatus(order.id, st.key);
+                        showToast?.(`Estado actualizado: ${st.title}`);
+                      }}
+                      className="relative z-10 flex flex-col items-center cursor-pointer group focus:outline-hidden"
+                      title={`Simular paso: ${st.title}`}
+                    >
                       <div 
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-md ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-md group-hover:scale-110 ${
                           isDone
                             ? isCurrent
                               ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 scale-110'
                               : 'bg-emerald-500 text-white'
-                            : 'bg-white text-slate-400 border-2 border-slate-200'
+                            : 'bg-white text-slate-400 border-2 border-slate-200 group-hover:border-emerald-400 group-hover:text-emerald-600'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className={`text-[11px] mt-2 font-bold whitespace-nowrap ${isCurrent ? 'text-emerald-800' : isDone ? 'text-slate-700' : 'text-slate-400'}`}>
+                      <span className={`text-[11px] mt-2 font-bold whitespace-nowrap transition-colors ${isCurrent ? 'text-emerald-800 font-extrabold' : isDone ? 'text-slate-700' : 'text-slate-400 group-hover:text-emerald-700'}`}>
                         {st.title}
                       </span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -146,13 +155,45 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   <div>
                     <p className="font-extrabold text-xs sm:text-sm">{stages[currentIndex].desc}</p>
                     <p className="text-[11px] text-emerald-700 font-medium">
-                      Destino: {order.customer.condominium} - {order.customer.tower}, {order.customer.apartment}
+                      Destino: Calle C, Casa 27
                     </p>
                   </div>
                 </div>
                 <span className="text-xs font-black text-emerald-800 bg-white px-2.5 py-1 rounded-xl shadow-2xs">
                   {order.deliveryType === 'delivery' ? 'Delivery' : 'Retiro'}
                 </span>
+              </div>
+
+              {/* Controles Interactivos de Simulación de Etapas (Modo Demostración) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-left w-full sm:w-auto">
+                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    Simulador de Etapas (Modo Demo):
+                  </p>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Haz clic para simular el avance de este pedido en tiempo real:
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
+                  {stages.map((st, idx) => (
+                    <button
+                      key={st.key}
+                      type="button"
+                      onClick={() => {
+                        updateOrderStatus(order.id, st.key);
+                        showToast?.(`Estado actualizado: ${st.title}`);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                        order.status === st.key
+                          ? 'bg-emerald-600 text-white shadow-xs scale-102 ring-2 ring-emerald-500/20'
+                          : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300'
+                      }`}
+                    >
+                      {idx + 1}. {st.title}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

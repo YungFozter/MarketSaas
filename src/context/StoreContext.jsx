@@ -233,7 +233,7 @@ export const StoreProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : {
       condominium: initialStoreConfig.condominiums[0].name,
       tower: initialStoreConfig.condominiums[0].towers[0],
-      apartment: 'Depto 302',
+      apartment: 'Casa 27',
       notes: ''
     };
   });

@@ -46,7 +46,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
   const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
-  const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Depto 302');
+  const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Casa 27');
   const [notes, setNotes] = useState(selectedLocation?.notes || 'Dejar en conserjería o timbrar en el depto.');
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card'
   const [cashAmount, setCashAmount] = useState('50.00');
