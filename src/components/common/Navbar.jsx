@@ -43,23 +43,33 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm transition-all">
-      {/* Barra superior de Promoción y Confianza */}
-      <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-4 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Si está autenticado, mostrar badge del dueño */}
+      {/* Barra superior de Promoción y Confianza Rediseñada */}
+      <div className="bg-slate-950 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
+          
+          {/* Lado Izquierdo: Anuncio de Confianza & Estado en Vivo */}
+          <div className="hidden sm:flex items-center gap-2 text-slate-300 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="text-white font-extrabold text-[11px] tracking-tight">Red Hiperlocal Operativa</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-300 text-[11px]">Entregas a Conserjería en 15-30 min</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-emerald-400 font-bold text-[11px]">0% Comisiones Abusivas</span>
+          </div>
+
+          {/* Lado Derecho: Switch de Modos y Badge de Usuario */}
+          <div className="flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto">
             {currentUser && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-100 bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-800 truncate max-w-[170px]">
+              <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-100 bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-800 truncate max-w-[170px]">
                 <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="truncate">{merchantStore?.name || currentUser.email}</span>
               </span>
             )}
 
-            {/* Switch de Modo Espectador / Cliente / Administrador */}
-            <div className="flex items-center bg-slate-800/90 p-0.5 rounded-xl border border-slate-700/80">
+            <div className="flex items-center bg-slate-900 p-0.5 rounded-xl border border-slate-700/80 shadow-xs">
               <button
                 onClick={() => setViewMode('spectator')}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'spectator'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
@@ -67,13 +77,12 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 title="Conoce MarketSaaS y vista informativa"
               >
                 <span>✨</span>
-                <span className="hidden sm:inline">Info Plataforma</span>
-                <span className="sm:hidden">Info</span>
+                <span>Info Plataforma</span>
               </button>
 
               <button
                 onClick={() => setViewMode('customer')}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'customer'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
@@ -81,8 +90,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 title="Ver tienda en vivo como cliente"
               >
                 <span>🛍️</span>
-                <span className="hidden sm:inline">Vista Vecino</span>
-                <span className="sm:hidden">Tienda</span>
+                <span>Vista Vecino</span>
               </button>
 
               <button
@@ -97,7 +105,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                     setViewMode('admin');
                   }
                 }}
-                className={`px-2 py-0.5 sm:px-3 sm:py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'admin'
                     ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
                     : 'text-slate-300 hover:text-white'
@@ -105,8 +113,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
                 title="Panel de administración del comerciante"
               >
                 <span>🏪</span>
-                <span className="hidden sm:inline">Panel Minimarket</span>
-                <span className="sm:hidden">Dueño</span>
+                <span>Panel Minimarket</span>
                 {activeOrdersCount > 0 && (
                   <span className="bg-rose-500 text-white px-1.5 rounded-full text-[9px] animate-pulse">
                     {activeOrdersCount}
@@ -115,37 +122,52 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               </button>
             </div>
           </div>
+
         </div>
       </div>
 
       {/* Navegación Principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+        <div className="flex items-center justify-between h-16 sm:h-18 gap-4">
           
-          {/* Logo Oficial MarketSaaS / Nombre del Negocio */}
+          {/* Logo y Marca Oficial MarketSaaS en Código Vectorial (Sin imágenes de fondo beige) */}
           <button 
             onClick={() => setViewMode('spectator')}
-            className="flex items-center min-w-0 text-left cursor-pointer group focus:outline-none"
+            className="flex items-center gap-3 min-w-0 text-left cursor-pointer group focus:outline-none"
             title="Ir a la pantalla informativa de MarketSaaS"
           >
             {viewMode === 'spectator' ? (
-              <div className="flex items-center py-1">
-                <img 
-                  src="/logoCompleto.png" 
-                  alt="MarketSaaS - La evolución digital de tus ventas" 
-                  className="h-9 sm:h-12 w-auto object-contain mix-blend-multiply transition-transform group-hover:scale-[1.02]"
-                />
+              <div className="flex items-center gap-2.5">
+                {/* Isotipo Moderno con Flecha de Crecimiento */}
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white shadow-md shadow-slate-900/10 group-hover:border-emerald-500/50 transition-all shrink-0">
+                  <div className="flex items-center justify-center font-black text-base text-emerald-400 tracking-tighter">
+                    M<span className="text-sky-400">S</span>
+                    <TrendingUp className="w-3.5 h-3.5 text-sky-400 -ml-0.5 -mt-2" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col text-left">
+                  <div className="flex items-center gap-1.5 leading-tight">
+                    <span className="font-extrabold text-xl sm:text-2xl text-slate-950 tracking-tight">
+                      Market<span className="text-sky-600">SaaS</span>
+                    </span>
+                    <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[9px] font-extrabold border border-sky-200 uppercase tracking-wider">
+                      Plataforma
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-semibold tracking-tight hidden sm:block">
+                    La evolución digital de tus ventas.
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-2.5 min-w-0">
-                <img 
-                  src="/iconoPestana.png" 
-                  alt="MarketSaaS" 
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain shadow-xs shrink-0 group-hover:scale-105 transition-transform"
-                />
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0 group-hover:scale-105 transition-transform">
+                  <Store className="w-5 h-5" />
+                </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-extrabold text-sm sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
+                    <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight truncate max-w-[130px] xs:max-w-[170px] sm:max-w-none">
                       {storeConfig.name}
                     </span>
                     <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
@@ -160,6 +182,54 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
               </div>
             )}
           </button>
+
+          {/* Menú Central Coherente (Enlaces de Navegación de la Plataforma en Vista Espectador) */}
+          {viewMode === 'spectator' && (
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5">
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Solución
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('section-showcase');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Para Residentes
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('section-showcase');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Para Comerciantes
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('section-showcase');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Para Condominios
+              </button>
+              <button
+                onClick={() => {
+                  const el = document.getElementById('section-onboarding');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Cómo Empezar
+              </button>
+            </nav>
+          )}
 
           {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
           {viewMode === 'customer' && storeConfig.enableDelivery !== false && (
@@ -184,21 +254,21 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
             </div>
           )}
 
-          {/* Acciones del Navbar */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Acciones del Navbar (Lado Derecho) */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {viewMode === 'spectator' ? (
               <div className="flex items-center gap-2 sm:gap-2.5">
                 {/* Botón rápido Explorar Tienda Vecino en Navbar */}
                 <button
                   onClick={() => setViewMode('customer')}
-                  className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3.5 py-2 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
+                  className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3.5 py-2.5 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
                   title="Explorar catálogo y experiencia de compra"
                 >
                   <ShoppingBag className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
                   <span>Ver Tienda Demo</span>
                 </button>
 
-                {/* Botón Principal de Acceso Dueños Mejorado */}
+                {/* Botón Principal de Acceso Dueños */}
                 <button
                   onClick={() => {
                     if (currentUser) setViewMode('admin');
