@@ -52,37 +52,21 @@
 }
 
 /* --------------------------------------------------------------------------
-   Animaciones de Scroll Reveal Bidireccional Continuo (Subiendo o Bajando)
+   Animaciones de Scroll Suaves (Siempre visibles con fallback seguro)
    -------------------------------------------------------------------------- */
 .spectator-scroll-reveal {
-  opacity: 0;
-  filter: blur(4px);
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              filter 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform, filter;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  will-change: opacity, transform;
 }
 
-/* Al scrollear hacia abajo: la sección entra emergiendo desde abajo con impulso hacia arriba */
-.spectator-scroll-reveal.reveal-from-bottom {
-  transform: translateY(38px) scale(0.985);
-}
-
-/* Al scrollear hacia arriba: la sección entra emergiendo desde arriba con impulso hacia abajo */
-.spectator-scroll-reveal.reveal-from-top {
-  transform: translateY(-38px) scale(0.985);
-}
-
-/* Por defecto antes de registrar dirección */
-.spectator-scroll-reveal:not(.reveal-from-top):not(.reveal-from-bottom) {
-  transform: translateY(38px) scale(0.985);
-}
-
-/* Estado visible al entrar en el viewport (tanto bajando como subiendo) */
+/* Estado visible y transiciones directas */
 .spectator-scroll-reveal.is-visible {
   opacity: 1 !important;
-  transform: translateY(0) scale(1) !important;
-  filter: blur(0) !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 /* Costura / Divisor luminoso para suavizar la transición entre fondos */

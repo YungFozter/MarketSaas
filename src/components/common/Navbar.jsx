@@ -83,10 +83,10 @@ export const Navbar = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full pointer-events-none transition-all duration-300">
+    <header className="sticky top-0 z-40 w-full transition-all duration-300">
       {/* Barra superior de Promoción y Confianza Rediseñada (Se colapsa suavemente al scrollear) */}
       <div 
-        className={`w-full bg-slate-950 text-white text-[11px] sm:text-xs border-b border-slate-800/80 pointer-events-auto transition-all duration-300 overflow-hidden ${
+        className={`w-full bg-slate-950 text-white text-[11px] sm:text-xs border-b border-slate-800/80 transition-all duration-300 overflow-hidden ${
           isScrolled 
             ? 'max-h-0 opacity-0 py-0 border-none' 
             : 'max-h-16 py-1.5 px-3 sm:px-6 opacity-100'
@@ -175,7 +175,7 @@ export const Navbar = ({
 
       {/* Cápsula Flotante Despegada / Dynamic Island */}
       <div 
-        className={`pointer-events-auto transition-all duration-300 ease-out ${
+        className={`transition-all duration-300 ease-out ${
           isScrolled 
             ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-2 sm:pt-2.5' 
             : 'w-full px-0 pt-0'

@@ -51,35 +51,25 @@ export const SpectatorHome = ({
 
     window.addEventListener('scroll', handleScrollDirection, { passive: true });
 
-    // IntersectionObserver continuo: se activa tanto al entrar como al salir
-    // para repetir las transiciones fluidas en todo momento al subir o bajar
+    // IntersectionObserver seguro: añade visibilidad suave sin ocultar contenido
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Aplicar clase direccional según el sentido del scroll
-            if (scrollDirection === 'down') {
-              entry.target.classList.remove('reveal-from-top');
-              entry.target.classList.add('reveal-from-bottom');
-            } else {
-              entry.target.classList.remove('reveal-from-bottom');
-              entry.target.classList.add('reveal-from-top');
-            }
             entry.target.classList.add('is-visible');
-          } else {
-            // Al salir completamente del viewport, retirar visibilidad para reiniciar
-            // la animación la próxima vez que el usuario regrese navegando
-            entry.target.classList.remove('is-visible');
           }
         });
       },
       {
-        threshold: 0.08,
-        rootMargin: '0px 0px -20px 0px'
+        threshold: 0.01,
+        rootMargin: '50px 0px 50px 0px'
       }
     );
 
-    sections.forEach((sec) => observer.observe(sec));
+    sections.forEach((sec) => {
+      sec.classList.add('is-visible');
+      observer.observe(sec);
+    });
 
     return () => {
       window.removeEventListener('scroll', handleScrollDirection);
@@ -93,7 +83,7 @@ export const SpectatorHome = ({
       <section 
         id="section-hero" 
         ref={heroRef}
-        className="spectator-section spectator-section-hero is-visible spectator-scroll-reveal reveal-from-bottom w-full"
+        className="spectator-section spectator-section-hero is-visible spectator-scroll-reveal w-full"
       >
         <SpectatorHero
           onExploreStore={onExploreStore}
@@ -107,7 +97,7 @@ export const SpectatorHome = ({
       <section 
         id="section-showcase" 
         ref={showcaseRef}
-        className="spectator-section spectator-section-showcase spectator-scroll-reveal reveal-from-bottom w-full scroll-mt-20"
+        className="spectator-section spectator-section-showcase is-visible spectator-scroll-reveal w-full scroll-mt-20"
       >
         <SpectatorShowcase
           activeTab={activeShowcaseTab}
@@ -123,7 +113,7 @@ export const SpectatorHome = ({
       <section 
         id="section-onboarding" 
         ref={onboardingRef}
-        className="spectator-section spectator-section-onboarding spectator-scroll-reveal reveal-from-bottom w-full"
+        className="spectator-section spectator-section-onboarding is-visible spectator-scroll-reveal w-full"
       >
         <SpectatorOnboardingBanner
           onExploreStore={onExploreStore}
@@ -137,7 +127,7 @@ export const SpectatorHome = ({
       <section 
         id="section-footer" 
         ref={footerRef}
-        className="spectator-section spectator-section-footer spectator-scroll-reveal reveal-from-bottom w-full"
+        className="spectator-section spectator-section-footer is-visible spectator-scroll-reveal w-full"
       >
         <SpectatorFooter
           onExploreStore={onExploreStore}
