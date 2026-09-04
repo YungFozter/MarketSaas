@@ -91,7 +91,7 @@ export const ProductModal = ({ product, onClose }) => {
             <div className="space-y-1.5 mb-4 sm:mb-6 text-[11px] sm:text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <div className="flex items-center gap-2">
                 <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-                <span>Disponible para entrega en <strong>{selectedLocation.condominium}</strong></span>
+                <span>Disponible para entrega segun disponibilidad de cada tienda</span>
               </div>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />

@@ -42,6 +42,19 @@ export const StoreProvider = ({ children }) => {
       try {
         const parsed = JSON.parse(saved);
         return parsed.map(prod => {
+          if (prod.id === 'prod-1' || prod.name?.toLowerCase().includes('leche entera') || prod.name?.toLowerCase().includes('pil leche')) {
+            return {
+              ...prod,
+              id: 'prod-1',
+              name: 'Pil Leche Fresca Natural 946 ml',
+              category: 'Lácteos & Huevos',
+              price: 1.25,
+              unit: 'Bolsa 946 ml',
+              image: '/products/leche-pil.png',
+              description: 'Leche fluida ultrapasteurizada y homogeneizada Pil, con 2.7% de materia grasa natural. Nutritiva y fresca, ideal para el desayuno familiar y recetas diarias.',
+              badge: 'Ahorro Pack'
+            };
+          }
           if (prod.id === 'prod-7' || prod.name?.toLowerCase().includes('spaghetti')) {
             return {
               ...prod,
