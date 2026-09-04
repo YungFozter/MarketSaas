@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Store, 
   ShoppingBag, 
@@ -47,6 +47,24 @@ export const Navbar = ({
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 20);
+
+      const winHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (winHeight > 0) {
+        setScrollProgress(Math.min(100, Math.max(0, (scrollY / winHeight) * 100)));
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way').length;
@@ -65,7 +83,13 @@ export const Navbar = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm transition-all">
+    <header 
+      className={`sticky top-0 z-40 w-full transition-all duration-300 ease-in-out ${
+        isScrolled
+          ? 'bg-white/90 backdrop-blur-md shadow-md shadow-slate-900/5 border-b border-slate-200/80'
+          : 'bg-white border-b border-slate-100 shadow-none'
+      }`}
+    >
       {/* Barra superior de Promoción y Confianza Rediseñada */}
       <div className="bg-slate-950 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-6 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
@@ -206,60 +230,7 @@ export const Navbar = ({
             )}
           </button>
 
-          {/* Menú Central Coherente (Enlaces de Navegación de la Plataforma en Vista Espectador) */}
-          {viewMode === 'spectator' && (
-            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80">
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all cursor-pointer whitespace-nowrap"
-              >
-                Solución
-              </button>
-              <button
-                onClick={() => handleTabNavigation('residents')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeSpectatorTab === 'residents'
-                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                }`}
-              >
-                Para Residentes
-              </button>
-              <button
-                onClick={() => handleTabNavigation('merchants')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeSpectatorTab === 'merchants'
-                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                }`}
-              >
-                Para Comerciantes
-              </button>
-              <button
-                onClick={() => handleTabNavigation('condos')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  activeSpectatorTab === 'condos'
-                    ? 'bg-white text-emerald-700 font-black shadow-xs border border-slate-200/80'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                }`}
-              >
-                Para Condominios
-              </button>
-              <button
-                onClick={() => {
-                  const el = document.getElementById('section-onboarding');
-                  if (el) {
-                    const yOffset = -75;
-                    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                    window.scrollTo({ top: y, behavior: 'smooth' });
-                  }
-                }}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all cursor-pointer whitespace-nowrap"
-              >
-                Cómo Empezar
-              </button>
-            </nav>
-          )}
+
 
           {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
           {viewMode === 'customer' && storeConfig.enableDelivery !== false && (
@@ -399,52 +370,16 @@ export const Navbar = ({
           <div className="lg:hidden py-3 border-t border-slate-200 space-y-2.5 animate-fadeIn">
             {/* Navegación Espectador / Tienda en Móvil */}
             {viewMode === 'spectator' ? (
-              <div className="space-y-2">
-                <button
-                  onClick={() => {
-                    setViewMode('customer');
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
-                >
-                  <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
-                  <span>Explorar Tienda de Demostración</span>
-                </button>
-
-                {/* Accesos directos a perspectivas en móvil */}
-                <div className="grid grid-cols-3 gap-1.5 pt-1">
-                  <button
-                    onClick={() => handleTabNavigation('residents')}
-                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
-                      activeSpectatorTab === 'residents'
-                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    🛍️ Residentes
-                  </button>
-                  <button
-                    onClick={() => handleTabNavigation('merchants')}
-                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
-                      activeSpectatorTab === 'merchants'
-                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    🏪 Comerciantes
-                  </button>
-                  <button
-                    onClick={() => handleTabNavigation('condos')}
-                    className={`py-2 px-1.5 rounded-xl text-[11px] font-bold text-center transition-all ${
-                      activeSpectatorTab === 'condos'
-                        ? 'bg-emerald-50 text-emerald-800 font-extrabold border border-emerald-300 shadow-2xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    🏢 Condominios
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => {
+                  setViewMode('customer');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
+              >
+                <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
+                <span>Explorar Tienda de Demostración</span>
+              </button>
             ) : (
               <button
                 onClick={() => {
@@ -533,6 +468,16 @@ export const Navbar = ({
           </div>
         )}
       </div>
+
+      {/* Indicador de brillo y progreso dinámico al scrollear */}
+      {isScrolled && (
+        <div className="absolute bottom-0 left-0 w-full h-[2px] bg-slate-100/60 overflow-hidden pointer-events-none">
+          <div 
+            className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500 transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+      )}
     </header>
   );
 };
