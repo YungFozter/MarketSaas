@@ -1,51 +1,12 @@
-/* Estilos especializados para la Vista Espectador y Panel de Acceso */
+/* Estilos para el contenedor orquestador SpectatorHome */
 
-.spectator-hero-bg {
-  background-color: #f8fafc;
+.spectator-page-wrapper {
+  background-color: #faf8ff;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.07) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(245, 158, 11, 0.05) 0px, transparent 50%);
-}
-
-.spectator-grid-pattern {
-  background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-.spectator-glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
-}
-
-.spectator-glass-card:hover {
-  border-color: rgba(16, 185, 129, 0.3);
-  box-shadow: 0 20px 35px -10px rgba(16, 185, 129, 0.1), 0 8px 10px -4px rgba(15, 23, 42, 0.03);
-}
-
-.spectator-auth-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(203, 213, 225, 0.8);
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
-}
-
-.spectator-gradient-text {
-  background: linear-gradient(135deg, #0f172a 0%, #065f46 60%, #047857 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.spectator-pill-active {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-}
-
-.spectator-badge-glow {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.06) 0px, transparent 45%),
+    radial-gradient(at 100% 0%, rgba(14, 165, 233, 0.05) 0px, transparent 45%),
+    radial-gradient(at 50% 100%, rgba(245, 158, 11, 0.04) 0px, transparent 50%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }

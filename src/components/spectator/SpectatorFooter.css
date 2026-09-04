@@ -1,0 +1,8 @@
+/* Estilos para SpectatorFooter */
+
+.spectator-footer-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #e2e8f0;
+}

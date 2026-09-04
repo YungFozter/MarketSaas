@@ -1,0 +1,36 @@
+/* Estilos especializados para SpectatorShowcase */
+
+.spectator-showcase-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.05);
+}
+
+.spectator-tab-active {
+  background: #047857;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.25);
+}
+
+.spectator-phone-frame {
+  background: #0f172a;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.spectator-phone-screen {
+  background: #ffffff;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.spectator-whatsapp-pill {
+  background: #25d366;
+  color: #ffffff;
+  box-shadow: 0 8px 20px -4px rgba(37, 211, 102, 0.4);
+}
+
+.spectator-kanban-frame {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}

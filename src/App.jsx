@@ -61,23 +61,25 @@ const AppContent = () => {
         )}
       </div>
 
-      {/* Footer Limpio y Elegante */}
-      <footer className="bg-white border-t border-slate-200/90 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center sm:text-left text-slate-600">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
-              MarketSaaS
-            </span>
-            <span className="text-slate-300 font-light">•</span>
-            <span className="text-xs sm:text-sm font-semibold text-slate-600">
-              Sistema Hiperlocal para Tiendas de Barrio y Condominios
-            </span>
+      {/* Footer Limpio y Elegante (Solo para Tienda y Admin, Espectador incluye su footer enriquecido) */}
+      {viewMode !== 'spectator' && (
+        <footer className="bg-white border-t border-slate-200/90 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center sm:text-left text-slate-600">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
+                MarketSaaS
+              </span>
+              <span className="text-slate-300 font-light">•</span>
+              <span className="text-xs sm:text-sm font-semibold text-slate-600">
+                Sistema Hiperlocal para Tiendas de Barrio y Condominios
+              </span>
+            </div>
+            <p className="text-xs font-medium text-slate-400">
+              © {new Date().getFullYear()} MarketSaaS. Todos los derechos reservados.
+            </p>
           </div>
-          <p className="text-xs font-medium text-slate-400">
-            © {new Date().getFullYear()} MarketSaaS. Todos los derechos reservados.
-          </p>
-        </div>
-      </footer>
+        </footer>
+      )}
 
       {/* Modales Globales */}
       <CartDrawer

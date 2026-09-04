@@ -1,0 +1,53 @@
+/* Estilos especializados para SpectatorHero */
+
+.spectator-hero-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.spectator-ambient-glow-1 {
+  position: absolute;
+  top: -8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(780px, 90vw);
+  height: 360px;
+  background: radial-gradient(circle, rgba(78, 222, 163, 0.22) 0%, rgba(62, 182, 134, 0.15) 50%, transparent 70%);
+  border-radius: 9999px;
+  filter: blur(64px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.spectator-ambient-glow-2 {
+  position: absolute;
+  top: 20rem;
+  right: -6rem;
+  width: 24rem;
+  height: 24rem;
+  background: radial-gradient(circle, rgba(254, 166, 25, 0.12) 0%, transparent 70%);
+  border-radius: 9999px;
+  filter: blur(64px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.spectator-gradient-title {
+  background: linear-gradient(135deg, #047857 0%, #006c49 50%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.spectator-metric-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spectator-metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px -6px rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}

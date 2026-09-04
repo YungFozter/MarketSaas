@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"neutral-text-muted":"#64748b","secondary-container":"#fea619","tertiary-container":"#3eb686","secondary-fixed":"#ffddb8","secondary":"#855300","on-tertiary":"#ffffff","on-tertiary-container":"#00422c","accent-gold-light":"#fef3c7","surface-bright":"#faf8ff","surface-container-low":"#f2f3ff","tertiary-fixed":"#85f8c4","primary-fixed-dim":"#4edea3","surface-container":"#eaedff","primary-700":"#047857","tertiary-fixed-dim":"#68dba9","on-error-container":"#93000a","on-secondary-container":"#684000","on-error":"#ffffff","inverse-surface":"#283044","neutral-card":"#ffffff","surface-tint":"#006c49","on-secondary-fixed":"#2a1700","on-primary-fixed":"#002113","on-secondary-fixed-variant":"#653e00","on-primary":"#ffffff","surface-dim":"#d2d9f4","status-pending":"#f59e0b","on-tertiary-fixed":"#002114","status-completed":"#10b981","primary-50":"#ecfdf5","on-secondary":"#ffffff","neutral-subtle":"#f1f5f9","outline-variant":"#bbcabf","background":"#faf8ff","status-delivering":"#8b5cf6","on-tertiary-fixed-variant":"#005137","surface-container-highest":"#dae2fd","inverse-on-surface":"#eef0ff","secondary-fixed-dim":"#ffb95f","neutral-card-dark":"#1e293b","on-primary-container":"#00422b","inverse-primary":"#4edea3","status-preparing":"#3b82f6","neutral-surface":"#f8fafc","tertiary":"#006c4a","primary-container":"#10b981","surface-container-lowest":"#ffffff","error":"#ba1a1a","on-surface-variant":"#3c4a42","primary":"#006c49","on-primary-fixed-variant":"#005236","primary-fixed":"#6ffbbe","whatsapp-green":"#25d366","on-background":"#131b2e","surface-container-high":"#e2e7ff","status-danger":"#ef4444","surface":"#faf8ff","on-surface":"#131b2e","surface-variant":"#dae2fd","outline":"#6c7a71","error-container":"#ffdad6"},borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},spacing:{"space-xs":"4px","space-2xl":"24px","space-sm":"8px","space-md":"12px","touch-target-min":"44px","space-3xl":"32px","gutter-mobile":"12px","max-content-width":"1280px","gutter-desktop":"24px","space-xl":"20px","gutter-tablet":"16px","space-lg":"16px"},fontFamily:{"body-lg":["Plus Jakarta Sans"],"label-lg":["Plus Jakarta Sans"],"headline-sm":["Outfit"],"body-sm":["Plus Jakarta Sans"],"headline-lg":["Outfit"],"headline-lg-mobile":["Outfit"],"headline-md":["Outfit"],"display-hero-mobile":["Outfit"],"label-md":["Plus Jakarta Sans"],"display-hero":["Outfit"],"label-badge":["Plus Jakarta Sans"],"body-md":["Plus Jakarta Sans"]},fontSize:{"body-lg":["16px",{lineHeight:"24px",fontWeight:"500"}],"label-lg":["14px",{lineHeight:"18px",letterSpacing:"0.01em",fontWeight:"700"}],"headline-sm":["16px",{lineHeight:"22px",fontWeight:"600"}],"body-sm":["12px",{lineHeight:"16px",fontWeight:"400"}],"headline-lg":["30px",{lineHeight:"36px",letterSpacing:"-0.02em",fontWeight:"700"}],"headline-lg-mobile":["24px",{lineHeight:"30px",letterSpacing:"-0.015em",fontWeight:"700"}],"headline-md":["20px",{lineHeight:"26px",letterSpacing:"-0.01em",fontWeight:"700"}],"display-hero-mobile":["32px",{lineHeight:"38px",letterSpacing:"-0.02em",fontWeight:"800"}],"label-md":["12px",{lineHeight:"16px",fontWeight:"700"}],"display-hero":["48px",{lineHeight:"54px",letterSpacing:"-0.03em",fontWeight:"800"}],"label-badge":["10px",{lineHeight:"12px",letterSpacing:"0.04em",fontWeight:"800"}],"body-md":["14px",{lineHeight:"20px",fontWeight:"500"}]}}}}</script></head><body class="bg-neutral-surface font-body-md text-on-surface antialiased"><header class="fixed top-0 left-0 w-full z-50 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full bg-surface-container-highest/60 backdrop-blur-md"><div class="max-w-max-content-width mx-auto px-gutter-desktop h-10 flex items-center justify-between text-on-surface-variant font-label-md text-label-md"><div class="flex items-center gap-space-sm"><span class="inline-flex items-center px-space-sm py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-badge text-label-badge uppercase tracking-wider">Red Hyperlocal</span><span>Conecta condominios y minimarkets al instante por WhatsApp</span></div><div class="hidden md:flex items-center gap-space-lg"><span class="flex items-center gap-space-xs text-status-completed"><span class="material-symbols-outlined text-[14px]">verified</span>Entregas en 15-30 min</span><span class="text-outline-variant">|</span><span class="flex items-center gap-space-xs text-secondary"><span class="material-symbols-outlined text-[14px]">stars</span>Programa VeciPuntos Activo</span></div></div></div><div class="h-20 bg-surface/85 backdrop-blur-xl"><div class="max-w-max-content-width mx-auto px-gutter-desktop h-full flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md min-w-max"><img alt="MarketSaaS Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UhfAJRAeocPvAplz1jZn1Sfspd6KtCFd8i1lDLJQYd6P840wrzHILXZhSYy23llyjC1257UeBJXEcFooYUhuw6p6PvatZ06NN69QoRhK1SljmeODQjFo4hGEaI-8K7AOJwewRJWP_ZurKJdreQORZy2gybLeaO3mDBiPqmSB1NKDUTH-BUo9cg2xGpjns1T2UQJ0MNTyqotih_VobA_RHN1ObRjxjJVUUhlFc734-3zdvR1I6N2NywnfU"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">MarketSaaS</span><span class="font-body-sm text-body-sm text-neutral-text-muted leading-tight">Plataforma Hiperlocal</span></div></div><nav class="hidden lg:flex items-center bg-surface-container-low/70 p-1.5 rounded-full backdrop-blur-md" data-active-classes="bg-primary-container text-on-primary-container font-bold rounded-full shadow-sm"><a aria-current="page" class="px-space-lg py-2 transition-all flex items-center gap-1.5 bg-primary-container text-on-primary-container font-bold rounded-full shadow-sm" data-path="plataforma-info" href="#"><span>✨</span> Info Plataforma</a><a class="px-space-lg py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-1.5" data-path="tienda-cliente" href="#"><span>🛍️</span> Vista Vecino</a><a class="px-space-lg py-2 rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-1.5" data-path="panel-comercio" href="#"><span>🏪</span> Panel Minimarket</a></nav><div class="flex items-center gap-space-md"><a class="hidden sm:inline-flex items-center px-space-lg h-11 rounded-xl bg-surface-container-high/80 text-on-surface font-label-md text-label-md hover:bg-surface-container-highest hover:text-on-surface transition-all" data-path="tienda-cliente" href="#">Explorar Tienda Demo</a><a class="inline-flex items-center px-space-lg h-11 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-700 transition-all shadow-[0_4px_12px_rgba(0,108,73,0.25)]" data-path="acceso" href="#">Iniciar Sesión / Acceso</a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-[120px] bg-neutral-surface min-h-[calc(100vh-280px)]"><div class="flex flex-col w-full">
+<!-- AMBIENT GLOW DECORATIONS -->
+<div class="relative w-full overflow-hidden">
+<div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[780px] h-[360px] bg-gradient-to-tr from-primary-fixed-dim/20 via-tertiary-container/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10"></div>
+<div class="absolute top-80 -right-24 w-96 h-96 bg-secondary-container/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+<!-- 1. HERO SECTION -->
+<section class="max-w-max-content-width mx-auto px-gutter-mobile sm:px-gutter-tablet lg:px-gutter-desktop pt-space-xl pb-space-3xl flex flex-col items-center text-center">
+<!-- Glow Shimmer Badge -->
+<div class="inline-flex items-center gap-space-sm px-space-md py-1.5 rounded-full bg-surface-container-lowest/90 backdrop-blur-md shadow-sm mb-space-lg">
+<span class="inline-flex items-center justify-center w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary">✨ Plataforma SaaS Hiperlocal para Barrios y Condominios</span>
+</div>
+<!-- Main Heading H1 -->
+<h1 class="font-display-hero text-display-hero max-w-4xl tracking-tight text-on-surface mb-space-lg">
+        El comercio de cercanía, <br class="hidden sm:inline"/>
+<span class="bg-gradient-to-r from-primary-700 via-primary to-primary-container bg-clip-text text-transparent">digitalizado y a tu puerta</span>
+</h1>
+<!-- Subtitle -->
+<p class="font-body-lg text-body-lg text-neutral-text-muted max-w-2xl mb-space-2xl">
+        Entregas hiperlocales en minutos, pedidos directos a WhatsApp, catálogo dinámico en tiempo real y <span class="font-semibold text-on-surface">0% de comisiones abusivas</span> para minimarkets y almacenes comunitarios.
+      </p>
+<!-- CTA Buttons -->
+<div class="flex flex-col sm:flex-row items-center gap-space-md w-full sm:w-auto mb-space-3xl">
+<a class="w-full sm:w-auto h-12 px-space-2xl rounded-xl bg-gradient-to-r from-primary-container to-primary-700 text-on-primary font-label-lg text-label-lg shadow-md hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-space-sm" data-path="tienda-cliente" href="#">
+<span class="material-symbols-outlined text-[20px]">shopping_bag</span>
+<span>Explorar Tienda Demo</span>
+</a>
+<a class="w-full sm:w-auto h-12 px-space-2xl rounded-xl bg-surface-container-lowest/90 backdrop-blur-md text-on-surface font-label-lg text-label-lg shadow-sm hover:bg-surface-container-high transition-all flex items-center justify-center gap-space-sm" data-path="acceso" href="#">
+<span class="material-symbols-outlined text-primary text-[20px]">storefront</span>
+<span>Acceso a Dueños</span>
+</a>
+</div>
+<!-- Ticker Metrics: 4 Glassmorphism Cards -->
+<div class="w-full grid grid-cols-2 lg:grid-cols-4 gap-space-md sm:gap-space-lg">
+<!-- Metric 1 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl p-space-lg text-left shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="w-10 h-10 rounded-xl bg-primary-50 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">bolt</span>
+</span>
+<span class="font-label-badge text-label-badge text-primary uppercase font-bold tracking-wider">Prioridad</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface mb-0.5">⚡ 15 min</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Entrega a tu torre (Conserjería o puerta directa)</div>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl p-space-lg text-left shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="w-10 h-10 rounded-xl bg-accent-gold-light text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">savings</span>
+</span>
+<span class="font-label-badge text-label-badge text-secondary uppercase font-bold tracking-wider">Trato Justo</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface mb-0.5">💰 0%</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Comisiones abusivas. Trato directo vecino-comercio</div>
+</div>
+</div>
+<!-- Metric 3 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl p-space-lg text-left shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="w-10 h-10 rounded-xl bg-primary-50 text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">sync</span>
+</span>
+<span class="font-label-badge text-label-badge text-tertiary uppercase font-bold tracking-wider">En Vivo</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface mb-0.5">🔄 100%</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Stock y precios actualizados en tiempo real</div>
+</div>
+</div>
+<!-- Metric 4 -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl p-space-lg text-left shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-space-sm">
+<span class="w-10 h-10 rounded-xl bg-surface-container text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">domain</span>
+</span>
+<span class="font-label-badge text-label-badge text-on-surface-variant uppercase font-bold tracking-wider">SaaS</span>
+</div>
+<div>
+<div class="font-headline-lg text-headline-lg text-on-surface mb-0.5">🏢 Multi-Tenant</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Subdominio propio y canal directo por WhatsApp</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- 2. DEMOSTRADOR INTERACTIVO 3 DIMENSIONES -->
+<section class="max-w-max-content-width mx-auto px-gutter-mobile sm:px-gutter-tablet lg:px-gutter-desktop py-space-3xl w-full">
+<div class="text-center mb-space-2xl">
+<span class="font-label-badge text-label-badge uppercase tracking-wider text-primary bg-primary-50 px-3 py-1 rounded-full">Experiencia Integrada</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mt-space-sm mb-space-xs">Una sola solución para cada participante del barrio</h2>
+<p class="font-body-md text-body-md text-neutral-text-muted max-w-xl mx-auto">Selecciona una perspectiva para ver cómo simplificamos las compras de última hora en condominios.</p>
+</div>
+<!-- Segmented Tab Controls -->
+<div class="flex justify-center mb-space-2xl">
+<div class="inline-flex p-1.5 rounded-2xl bg-surface-container-low/80 backdrop-blur-md shadow-sm gap-1">
+<button class="tab-btn active px-space-lg py-2.5 rounded-xl font-label-md text-label-md transition-all flex items-center gap-2 bg-primary text-on-primary shadow-sm" id="tab-btn-residents" onclick="switchTab('residents')">
+<span>🛍️</span>
+<span>Para Residentes</span>
+</button>
+<button class="tab-btn px-space-lg py-2.5 rounded-xl font-label-md text-label-md text-neutral-text-muted hover:text-on-surface transition-all flex items-center gap-2" id="tab-btn-merchants" onclick="switchTab('merchants')">
+<span>🏪</span>
+<span>Para Comerciantes</span>
+</button>
+<button class="tab-btn px-space-lg py-2.5 rounded-xl font-label-md text-label-md text-neutral-text-muted hover:text-on-surface transition-all flex items-center gap-2" id="tab-btn-condos" onclick="switchTab('condos')">
+<span>🏢</span>
+<span>Para Condominios</span>
+</button>
+</div>
+</div>
+<!-- TAB 1: PARA RESIDENTES -->
+<div class="tab-panel flex flex-col lg:flex-row items-center gap-space-2xl bg-surface-container-lowest/85 backdrop-blur-xl p-space-xl lg:p-space-3xl rounded-3xl shadow-sm" id="tab-content-residents">
+<!-- Left Column: Feature List -->
+<div class="w-full lg:w-1/2 space-y-space-xl">
+<div class="inline-flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span>Experiencia Móvil de Alta Velocidad</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Pide tus esenciales sin salir de la torre ni pagar de más</h3>
+<div class="space-y-space-lg">
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-primary-50 text-primary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">category</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Catálogo visual e intuitivo</div>
+<div class="font-body-md text-body-md text-neutral-text-muted">Bebidas heladas, lácteos, pan recién horneado y abarrotes categorizados para comprar en menos de 60 segundos.</div>
+</div>
+</div>
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-primary-50 text-whatsapp-green flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Cierre en 1 toque por WhatsApp</div>
+<div class="font-body-md text-body-md text-neutral-text-muted">El pedido se pre-formatea con tu torre, departamento, método de pago y el desglose de productos exacto.</div>
+</div>
+</div>
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-accent-gold-light text-secondary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">stars</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">Programa VeciPuntos</span>
+<span class="px-2 py-0.5 rounded-full bg-status-pending text-on-primary font-label-badge text-label-badge">+5% Retorno</span>
+</div>
+<div class="font-body-md text-body-md text-neutral-text-muted">Acumula puntos en cada compra para canjear por descuentos automáticos o entregas bonificadas.</div>
+</div>
+</div>
+<div class="flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+</div>
+<div>
+<div class="font-headline-sm text-headline-sm text-on-surface">Botón "Pídelo si no está"</div>
+<div class="font-body-md text-body-md text-neutral-text-muted">¿Te falta un ingrediente especial? Sugiérelo en un toque y tu almacenero lo añade al inventario vecinal.</div>
+</div>
+</div>
+</div>
+<div class="pt-space-sm">
+<a class="inline-flex items-center gap-2 text-primary font-label-lg text-label-lg hover:gap-3 transition-all" data-path="tienda-cliente" href="#">
+<span>Ver simulación completa de compra</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Right Column: Interactive Smartphone Mockup -->
+<div class="w-full lg:w-1/2 flex justify-center">
+<div class="w-full max-w-[340px] bg-neutral-card-dark p-3 rounded-[3rem] shadow-2xl">
+<!-- Phone Screen -->
+<div class="w-full bg-surface-container-lowest rounded-[2.3rem] overflow-hidden text-on-surface flex flex-col h-[580px] shadow-inner relative">
+<!-- Screen Top Notch & Status Bar -->
+<div class="h-6 bg-surface-container flex items-center justify-between px-6 text-[10px] text-neutral-text-muted">
+<span>09:41</span>
+<div class="w-14 h-3 bg-neutral-card-dark rounded-full"></div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[11px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[11px]">battery_full</span>
+</div>
+</div>
+<!-- Store App Header inside Phone -->
+<div class="p-3 bg-surface-container-low/70 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold text-sm">
+                  LA
+                </div>
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Los Andes</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-badge text-label-badge">
+<span class="w-1.5 h-1.5 rounded-full bg-status-completed animate-ping"></span>
+                      Abierto
+                    </span>
+</div>
+<div class="flex items-center gap-1 text-neutral-text-muted font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[12px] text-primary">location_on</span>
+<span>Torre B - Depto 402</span>
+</div>
+</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-neutral-text-muted text-[16px]">search</span>
+</div>
+</div>
+<!-- Categories Chips inside Phone -->
+<div class="px-3 pt-2.5 pb-1 flex gap-1.5 overflow-x-auto">
+<span class="px-3 py-1 rounded-full bg-primary text-on-primary font-label-badge text-label-badge whitespace-nowrap">🔥 Rápidos</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-neutral-text-muted font-label-badge text-label-badge whitespace-nowrap">Bebidas</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-neutral-text-muted font-label-badge text-label-badge whitespace-nowrap">Lácteos</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-neutral-text-muted font-label-badge text-label-badge whitespace-nowrap">Snacks</span>
+</div>
+<!-- Product Card List inside Phone -->
+<div class="p-3 space-y-2.5 flex-1 overflow-y-auto">
+<!-- Item 1 -->
+<div class="bg-surface-container-low rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-sm">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Fresh sourdough artisan bread with crispy golden crust placed on a minimalist slate counter with natural warm kitchen sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfJwbt2WPvek1VjWMayBM5vXsieeyNQMQLxV9G8uISTdKeIUzMVHNdcbSGgGFb-w8oiW9-2mhfuFVHboNzyanLBDUltBfpHXFlE2t0bl54J5SeHYU4_UE2ez7nmjQvSTPFq2m9SLyDQLzxr2EASGjZRmQpFKh46pFLg3kYrjHberwLwQaVk41842SvAZNhDAZ2Z-t4wVFbNyfDTK52Z-1cXBrsHdX-KTdXCTLw_d9GGWOmuj8yTxNp"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Marraqueta Crujiente (1/2 kg)</span>
+</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Horneado hace 25 min</div>
+<div class="font-label-lg text-label-lg text-primary mt-0.5">$1.190</div>
+</div>
+<button class="w-8 h-8 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-low rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-sm">
+<img class="w-14 h-14 rounded-xl object-cover" data-alt="Cold refreshing bottle of premium milk with water condensation droplets on clean glass surface with soft green backlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoI-2g5KOAMshS6Btu4wn4YayGKqhEs3ijd8pJQogdqUzh6iR-ZYvGLtYhhmrO4My6FAbzcDr9cojbP4Vu3AywPZksWTB3hzPukHtUKW1rQAkZZnPa21mg2fnS48Da9CuUferTWfSpiV638XykLj1Wv4amEUmlDoRUGF2BRgPtos9jYE5EZo_WaXEyxQ5cMXfYlFflkF8E8qxCZKH6CTORkHgt_66kjEDIvPkhCewS8KktV8b82CW5"/>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Leche Entera Natural 1L</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary text-on-secondary font-label-badge text-label-badge">+8 VP</span>
+</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Refrigerada a 4°C</div>
+<div class="font-label-lg text-label-lg text-primary mt-0.5">$1.450</div>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-1.5 py-1 rounded-lg">
+<button class="w-5 h-5 rounded bg-surface text-neutral-text-muted flex items-center justify-center text-xs">-</button>
+<span class="font-bold text-xs">1</span>
+<button class="w-5 h-5 rounded bg-primary text-on-primary flex items-center justify-center text-xs">+</button>
+</div>
+</div>
+<!-- Item 3 Promo -->
+<div class="p-2.5 rounded-2xl bg-accent-gold-light/60 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">bolt</span>
+<div class="text-left">
+<div class="font-label-badge text-label-badge text-secondary uppercase font-bold">Despacho Vecinal Gratis</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Tu pedido califica para entrega prioritaria en conserjería.</div>
+</div>
+</div>
+</div>
+<!-- Sticky Floating Cart Pill inside Phone -->
+<div class="p-3 bg-surface-container-lowest/90 backdrop-blur-md">
+<div class="w-full bg-whatsapp-green text-on-primary px-3.5 py-2.5 rounded-2xl flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-2">
+<span class="w-6 h-6 rounded-full bg-on-primary/20 flex items-center justify-center text-xs font-bold">1</span>
+<div class="text-left">
+<div class="font-label-md text-label-md leading-none">Pedir por WhatsApp</div>
+<div class="font-body-sm text-body-sm opacity-90">+8 VeciPuntos</div>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm">$1.450</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 2: PARA COMERCIANTES -->
+<div class="tab-panel hidden flex-col lg:flex-row items-center gap-space-2xl bg-surface-container-lowest/85 backdrop-blur-xl p-space-xl lg:p-space-3xl rounded-3xl shadow-sm" id="tab-content-merchants">
+<div class="w-full lg:w-1/2 space-y-space-xl">
+<div class="inline-flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[20px]">dashboard_customize</span>
+<span>Tablero de Operación Ágil</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Control total de despachos, stock y caja diaria sin fricción</h3>
+<p class="font-body-md text-body-md text-neutral-text-muted">
+          Diseñado para el locatario ocupado: actualiza stock desde tu celular, recibe alertas sonoras cuando ingresa una orden y gestiona el flujo de entregas a las torres en segundos.
+        </p>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="p-space-md rounded-2xl bg-surface-container-low">
+<span class="material-symbols-outlined text-primary text-[24px] mb-1">volume_up</span>
+<div class="font-headline-sm text-headline-sm text-on-surface">Alerta Sonora</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Aviso instantáneo ante cada compra confirmada por WhatsApp.</div>
+</div>
+<div class="p-space-md rounded-2xl bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-[24px] mb-1">receipt_long</span>
+<div class="font-headline-sm text-headline-sm text-on-surface">Cierre Contable</div>
+<div class="font-body-sm text-body-sm text-neutral-text-muted">Exporta reportes de ventas y conciliación a Excel con un clic.</div>
+</div>
+</div>
+<div class="pt-space-sm">
+<a class="inline-flex items-center gap-2 px-space-xl py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-700 transition-all shadow-md" data-path="panel-comercio" href="#">
+<span class="material-symbols-outlined text-[18px]">view_kanban</span>
+<span>Ver Tablero de Despachos en Vivo</span>
+</a>
+</div>
+</div>
+<!-- Kanban Mockup Visual -->
+<div class="w-full lg:w-1/2">
+<div class="w-full bg-surface-container-low p-space-lg rounded-2xl shadow-inner space-y-space-md">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-completed"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Flujo de Despacho Activo</span>
+</div>
+<span class="font-label-badge text-label-badge px-2.5 py-1 rounded-full bg-primary-50 text-primary">8 Pedidos Hoy</span>
+</div>
+<div class="grid grid-cols-3 gap-space-sm">
+<!-- Col 1: Pendiente -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between text-status-pending">
+<span class="font-label-badge text-label-badge font-bold">🟡 PENDIENTES (1)</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-low text-left">
+<div class="flex justify-between items-center text-xs font-bold text-on-surface">
+<span>#1042</span>
+<span class="text-neutral-text-muted text-[10px]">Hace 2 min</span>
+</div>
+<div class="text-[11px] text-neutral-text-muted mt-1">Torre A • Depto 904</div>
+<div class="text-[11px] font-medium text-primary mt-1">$4.200 (3 items)</div>
+</div>
+</div>
+<!-- Col 2: Preparando -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between text-status-preparing">
+<span class="font-label-badge text-label-badge font-bold">🔵 EN EMPAQUE (2)</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-low text-left">
+<div class="flex justify-between items-center text-xs font-bold text-on-surface">
+<span>#1040</span>
+<span class="text-neutral-text-muted text-[10px]">Hace 8 min</span>
+</div>
+<div class="text-[11px] text-neutral-text-muted mt-1">Torre C • Depto 201</div>
+<div class="text-[11px] font-medium text-primary mt-1">$8.900 (Pan + Queso)</div>
+</div>
+</div>
+<!-- Col 3: En Camino -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl flex flex-col gap-2">
+<div class="flex items-center justify-between text-status-delivering">
+<span class="font-label-badge text-label-badge font-bold">🟣 EN CAMINO (1)</span>
+</div>
+<div class="p-2 rounded-lg bg-surface-container-low text-left">
+<div class="flex justify-between items-center text-xs font-bold text-on-surface">
+<span>#1038</span>
+<span class="text-neutral-text-muted text-[10px]">A conserjería</span>
+</div>
+<div class="text-[11px] text-neutral-text-muted mt-1">Torre B • Depto 502</div>
+<div class="text-[11px] font-medium text-status-completed mt-1">Repartidor asignado</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 3: PARA CONDOMINIOS -->
+<div class="tab-panel hidden flex-col lg:flex-row items-center gap-space-2xl bg-surface-container-lowest/85 backdrop-blur-xl p-space-xl lg:p-space-3xl rounded-3xl shadow-sm" id="tab-content-condos">
+<div class="w-full lg:w-1/2 space-y-space-xl">
+<div class="inline-flex items-center gap-2 text-primary font-label-md text-label-md">
+<span class="material-symbols-outlined text-[20px]">shield</span>
+<span>Seguridad y Vida Comunitaria</span>
+</div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Menos motos externas, mayor tranquilidad para tu edificio</h3>
+<p class="font-body-md text-body-md text-neutral-text-muted">
+          Reemplaza el flujo constante de repartidores foráneos por entregas consolidadas realizadas por personal verificado del barrio o directo a conserjería con registro digital.
+        </p>
+<ul class="space-y-space-sm font-body-md text-body-md text-neutral-text-muted">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span>Acceso controlado sin códigos de citófono vulnerados.</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span>Promoción de la economía circular entre residentes y comercios vecinos.</span>
+</li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+<span>Coordinación directa con administración para casilleros y recepción.</span>
+</li>
+</ul>
+<div class="pt-space-sm">
+<a class="inline-flex items-center gap-2 text-primary font-label-lg text-label-lg hover:underline" data-path="plataforma-info" href="#">
+<span>Conoce los convenios para comunidades residenciales</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<div class="w-full lg:w-1/2">
+<div class="bg-surface-container-low p-space-xl rounded-2xl space-y-space-md text-left">
+<div class="font-headline-sm text-headline-sm text-on-surface">Auditoría Comunitaria Mensual</div>
+<div class="space-y-space-sm">
+<div>
+<div class="flex justify-between text-body-sm text-neutral-text-muted mb-1">
+<span>Reducción de delivery foráneo vehicular</span>
+<span class="font-bold text-primary">-68%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm text-neutral-text-muted mb-1">
+<span>Entregas exitosas en conserjería</span>
+<span class="font-bold text-primary">99.4%</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-tertiary-container h-full rounded-full" style="width: 99.4%;"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm text-neutral-text-muted mb-1">
+<span>Satisfacción vecinal registrada</span>
+<span class="font-bold text-secondary">4.9 / 5.0 ⭐</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full rounded-full" style="width: 96%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. PANEL DE ACCESO RÁPIDO / ONBOARDING PREVIEW -->
+<section class="max-w-max-content-width mx-auto px-gutter-mobile sm:px-gutter-tablet lg:px-gutter-desktop pb-space-3xl w-full">
+<div class="bg-gradient-to-br from-surface-container-lowest to-surface-container-low p-space-xl sm:p-space-2xl rounded-3xl shadow-sm flex flex-col md:flex-row items-center justify-between gap-space-xl">
+<div class="space-y-space-xs text-left max-w-xl">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary font-label-badge text-label-badge uppercase font-bold">
+          Pruébalo en 60 Segundos
+        </div>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">¿Listo para conectar tu condominio o tu minimarket?</h3>
+<p class="font-body-md text-body-md text-neutral-text-muted">
+          Explora la tienda demo con productos precargados o solicita el alta de tu almacén con tu propio catálogo sin costo inicial de instalación.
+        </p>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-space-md w-full md:w-auto">
+<a class="w-full sm:w-auto h-12 px-space-xl rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2" data-path="tienda-cliente" href="#">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span>Probar como Vecino</span>
+</a>
+<a class="w-full sm:w-auto h-12 px-space-xl rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-700 transition-all shadow-md flex items-center justify-center gap-2" data-path="acceso" href="#">
+<span class="material-symbols-outlined text-[18px]">add_business</span>
+<span>Registrar mi Tienda (Paso 1)</span>
+</a>
+</div>
+</div>
+</section>
+</div>
+<script>
+  function switchTab(tabId) {
+    // Hide all panels
+    const panels = document.querySelectorAll('.tab-panel');
+    panels.forEach(p => p.classList.add('hidden'));
+
+    // Reset button styles
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(b => {
+      b.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+      b.classList.add('text-neutral-text-muted');
+    });
+
+    // Activate selected
+    const activePanel = document.getElementById('tab-content-' + tabId);
+    if (activePanel) {
+      activePanel.classList.remove('hidden');
+    }
+
+    const activeBtn = document.getElementById('tab-btn-' + tabId);
+    if (activeBtn) {
+      activeBtn.classList.remove('text-neutral-text-muted');
+      activeBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+    }
+  }
+</script></main><footer class="w-full bg-surface-container-lowest/90 backdrop-blur-md mt-space-3xl"><div class="max-w-max-content-width mx-auto px-gutter-desktop py-space-3xl"><div class="grid grid-cols-1 md:grid-cols-4 gap-space-2xl pb-space-2xl"><div class="space-y-space-md md:col-span-2 pr-space-xl"><div class="flex items-center gap-space-md"><img alt="MarketSaaS Logo" class="h-7 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UhfAJRAeocPvAplz1jZn1Sfspd6KtCFd8i1lDLJQYd6P840wrzHILXZhSYy23llyjC1257UeBJXEcFooYUhuw6p6PvatZ06NN69QoRhK1SljmeODQjFo4hGEaI-8K7AOJwewRJWP_ZurKJdreQORZy2gybLeaO3mDBiPqmSB1NKDUTH-BUo9cg2xGpjns1T2UQJ0MNTyqotih_VobA_RHN1ObRjxjJVUUhlFc734-3zdvR1I6N2NywnfU"/><span class="font-headline-sm text-headline-sm text-on-surface">MarketSaaS</span></div><p class="font-body-md text-body-md text-neutral-text-muted max-w-md">Infraestructura de comercio hiperlocal para condominios, barrios cerrados y minimarkets de proximidad. Automatización por WhatsApp y entrega prioritaria a conserjería.</p><div class="inline-flex items-center gap-space-sm px-space-md py-space-xs rounded-lg bg-primary-50 text-primary font-label-md text-label-md"><span class="material-symbols-outlined text-[18px]">verified_user</span><span>Sello de Confianza Vecinal y Garantía de Entrega</span></div></div><div class="space-y-space-sm"><div class="font-label-lg text-label-lg text-on-surface">Navegación Rápida</div><ul class="space-y-space-xs font-body-md text-body-md text-neutral-text-muted"><li><a class="hover:text-primary transition-colors" data-path="plataforma-info" href="#">Sobre la Solución</a></li><li><a class="hover:text-primary transition-colors" data-path="tienda-cliente" href="#">Catálogo en Vivo</a></li><li><a class="hover:text-primary transition-colors" data-path="panel-comercio" href="#">Tablero Kanban Despacho</a></li><li><a class="hover:text-primary transition-colors" data-path="acceso" href="#">Ingreso Locatarios</a></li></ul></div><div class="space-y-space-sm"><div class="font-label-lg text-label-lg text-on-surface">Soporte &amp; Legal</div><ul class="space-y-space-xs font-body-md text-body-md text-neutral-text-muted"><li><a class="hover:text-primary transition-colors" href="#">Canal de Conserjería</a></li><li><a class="hover:text-primary transition-colors" href="#">Pautas de Comunidad</a></li><li><a class="hover:text-primary transition-colors" href="#">Privacidad de Edificios</a></li><li><a class="hover:text-primary transition-colors" href="#">Términos de Servicio</a></li></ul></div></div><div class="pt-space-xl flex flex-col sm:flex-row items-center justify-between gap-space-md text-neutral-text-muted font-body-sm text-body-sm"><p>© 2024 MarketSaaS Inc. Plataforma SaaS Hiperlocal para Barrios y Condominios.</p><div class="flex items-center gap-space-lg"><span>Pagos con Webpay &amp; Transferencia</span><span>Integración WhatsApp Business</span></div></div></div></footer></body></html>
