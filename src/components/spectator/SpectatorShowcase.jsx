@@ -648,15 +648,15 @@ export const SpectatorShowcase = ({
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
               <Building2 className="w-4 h-4 text-emerald-600" />
-              <span>Seguridad Integral & Ecosistema de Edificios Conectados</span>
+              <span>Conectividad & Beneficios para Condominios</span>
             </div>
 
             <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Menos motos foráneas, conserjería ordenada y mayor seguridad
+              Organización, comodidad y entregas eficientes para tu Condominio
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              Reemplaza el flujo constante y riesgoso de repartidores foráneos por entregas consolidadas y amigables de minimarkets de tu propio barrio. Acceso coordinado con conserjería y cero citófonos vulnerados.
+              Conecta tu edificio o condominio con las tiendas y minimarkets de tu zona. Facilita que los residentes reciban sus pedidos de forma ágil, coordinada y ordenada, optimizando los tiempos de entrega y mejorando la convivencia comunitaria.
             </p>
 
             {/* 3 Pilares Residenciales */}
@@ -666,9 +666,9 @@ export const SpectatorShowcase = ({
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Seguridad Perimetral Reforzada:</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Coordinación y Entregas Claras:</strong>
                   <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    Repartidores acreditados localmente con credencial vecinal. Cero desconocidos merodeando portones o pasillos.
+                    Cada pedido incluye los datos exactos del vecino (torre, bloque y departamento) para un ingreso y entrega ágil, transparente y sin confusiones.
                   </span>
                 </div>
               </div>
@@ -678,9 +678,9 @@ export const SpectatorShowcase = ({
                   <PackageCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Recepción Digital en Conserjería:</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Recepción Ordenada en Conserjería:</strong>
                   <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    El conserje recibe paquetes identificados con código QR y el residente es notificado al instante para retirar sin desorden.
+                    Facilita la labor de recepción en portería gracias a paquetes claramente identificados y avisos directos para que los residentes retiren sin demoras.
                   </span>
                 </div>
               </div>
@@ -690,9 +690,9 @@ export const SpectatorShowcase = ({
                   <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Convenios & Economía Circular:</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Conexión con el Comercio Cercano:</strong>
                   <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    Despacho gratis prioritario para toda la comunidad y fortalecimiento directo del comercio de proximidad del barrio.
+                    Acceso instantáneo a los catálogos de tiendas del entorno, facilitando compras rápidas de despensa sin salir del condominio y potenciando el abastecimiento diario.
                   </span>
                 </div>
               </div>
@@ -703,7 +703,7 @@ export const SpectatorShowcase = ({
                 onClick={onExploreStore}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
               >
-                <span>Conoce los Convenios para Comunidades</span>
+                <span>Conoce los Beneficios para Comunidades</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
