@@ -16,19 +16,14 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth, onGoToAdmin })
                 <Store className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="font-extrabold text-lg sm:text-xl text-white tracking-tight flex items-center gap-2">
+                <span className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
                   MarketSaaS
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800/80">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    v2.4 Hiperlocal
-                  </span>
                 </span>
-                <span className="text-[11px] text-slate-400 font-medium">Comercio de proximidad para condominios</span>
               </div>
             </div>
 
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-md">
-              Infraestructura tecnológica integral diseñada para conectar minimarkets de barrio con residentes y conserjerías. Automatización de inventarios en tiempo real y 0% de comisiones abusivas.
+              La plataforma moderna que impulsa el comercio de cercanía y empodera a los minimarkets de barrio. Unimos tecnología intuitiva, pedidos ágiles y confianza comunitaria para que vecinos y comerciantes disfruten de una experiencia digital rápida, humana y eficiente.
             </p>
 
             {/* Sello de Confianza Vecinal y Garantía */}
