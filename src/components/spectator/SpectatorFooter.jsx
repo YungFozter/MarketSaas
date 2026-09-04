@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, ShieldCheck, Sparkles, CheckCircle2, Lock, ArrowUpRight, Heart } from 'lucide-react';
+import { Store, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import './SpectatorFooter.css';
 
 export const SpectatorFooter = ({ onExploreStore, onScrollToAuth, onGoToAdmin }) => {
@@ -109,22 +109,11 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth, onGoToAdmin })
 
         </div>
 
-        {/* Fila Inferior Rediseñada sin Integración WhatsApp Business */}
+        {/* Fila Inferior */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-center sm:text-left">
           <p className="text-slate-400">
             © {new Date().getFullYear()} <strong className="text-slate-200 font-semibold">MarketSaaS Inc.</strong> Plataforma SaaS Hiperlocal para Barrios y Condominios.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2.5">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-[11px] font-medium">
-              <Lock className="w-3 h-3 text-emerald-400" />
-              <span>Transacciones Cifradas</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-[11px] font-medium">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Pagos con QR & Transferencia</span>
-            </div>
-          </div>
         </div>
 
       </div>
