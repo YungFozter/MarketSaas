@@ -1,0 +1,88 @@
+/* Estilos para el Carrusel de Descripciones del Sistema (SpectatorCarousel) */
+
+.spectator-carousel-container {
+  position: relative;
+  width: 100%;
+}
+
+.spectator-carousel-viewport {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  padding: 8px 4px 16px 4px;
+}
+
+.spectator-carousel-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.spectator-carousel-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px -8px rgba(15, 23, 42, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.spectator-carousel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px -8px rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.spectator-carousel-nav-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.spectator-carousel-nav-btn:hover {
+  background: #ffffff;
+  color: #059669;
+  border-color: #10b981;
+  transform: scale(1.06);
+  box-shadow: 0 8px 18px rgba(16, 185, 129, 0.18);
+}
+
+.spectator-carousel-nav-btn:active {
+  transform: scale(0.96);
+}
+
+.spectator-carousel-dot {
+  height: 6px;
+  border-radius: 9999px;
+  background: #cbd5e1;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.spectator-carousel-dot.active {
+  width: 24px;
+  background: #059669;
+}
+
+.spectator-carousel-dot:not(.active) {
+  width: 8px;
+}
+
+.spectator-carousel-dot:not(.active):hover {
+  background: #94a3b8;
+}

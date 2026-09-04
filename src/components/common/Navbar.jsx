@@ -45,24 +45,7 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
     <header className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm transition-all">
       {/* Barra superior de Promoción y Confianza */}
       <div className="bg-slate-900 text-white text-[11px] sm:text-xs py-1.5 px-3 sm:px-4 border-b border-slate-800">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-4 font-medium min-w-0">
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0">
-              Red Hiperlocal
-            </span>
-            <span className="truncate text-slate-300 hidden xs:inline">
-              Conecta condominios y minimarkets al instante por WhatsApp
-            </span>
-            <span className="hidden md:flex items-center gap-3 text-slate-400 text-[11px]">
-              <span>•</span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <ShieldCheck className="w-3.5 h-3.5" /> Entregas en 15-30 min
-              </span>
-              <span>•</span>
-              <span className="text-amber-300">★ VeciPuntos Activo</span>
-            </span>
-          </div>
-
+        <div className="max-w-7xl mx-auto flex items-center justify-end gap-2">
           <div className="flex items-center gap-2 shrink-0">
             {/* Si está autenticado, mostrar badge del dueño */}
             {currentUser && (
@@ -198,19 +181,12 @@ export const Navbar = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocatio
             {viewMode === 'spectator' ? (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setViewMode('customer')}
-                  className="text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ShoppingBag className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden xs:inline">Ver Tienda Demo</span>
-                </button>
-                <button
                   onClick={() => {
                     if (currentUser) setViewMode('admin');
                     else if (onOpenAuthModal) onOpenAuthModal();
                     else if (onRequestAdminAccess) onRequestAdminAccess();
                   }}
-                  className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-3 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-3.5 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-4 h-4 text-emerald-400" />
                   <span>{currentUser ? 'Mi Panel' : 'Acceso Dueños'}</span>

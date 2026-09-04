@@ -3,60 +3,45 @@ import { useStore } from '../../context/StoreContext';
 import { SpectatorHero } from './SpectatorHero';
 import { SpectatorShowcase } from './SpectatorShowcase';
 import { SpectatorOnboardingBanner } from './SpectatorOnboardingBanner';
-import { SpectatorAuthPanel } from './SpectatorAuthPanel';
 import { SpectatorFooter } from './SpectatorFooter';
 import './SpectatorHome.css';
 
 export const SpectatorHome = ({ onExploreStore, onOpenAuthModal }) => {
   const { setViewMode, currentUser } = useStore();
 
-  const handleScrollToAuth = () => {
-    const el = document.getElementById('panel-acceso');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleAuthAction = () => {
+    if (currentUser) {
+      setViewMode('admin');
     } else if (onOpenAuthModal) {
       onOpenAuthModal();
     }
   };
 
-  const handleGoToMerchant = () => {
-    if (currentUser) {
-      setViewMode('admin');
-    } else {
-      handleScrollToAuth();
-    }
-  };
-
   return (
     <div className="spectator-page-wrapper w-full">
-      {/* 1. Hero Section con gradientes y métricas ticker */}
+      {/* 1. Hero Section con gradientes y carrusel de descripciones */}
       <SpectatorHero
         onExploreStore={onExploreStore}
-        onScrollToAuth={handleScrollToAuth}
+        onScrollToAuth={handleAuthAction}
       />
 
       {/* 2. Demostrador interactivo en 3 dimensiones (Residentes, Comerciantes, Condominios) */}
       <SpectatorShowcase
         onExploreStore={onExploreStore}
-        onGoToMerchant={handleGoToMerchant}
+        onGoToMerchant={handleAuthAction}
       />
 
       {/* 3. Banner de conversión rápida Onboarding */}
       <SpectatorOnboardingBanner
         onExploreStore={onExploreStore}
-        onScrollToAuth={handleScrollToAuth}
+        onScrollToAuth={handleAuthAction}
       />
 
-      {/* 4. Panel de Acceso Integrado (Login / Registro 2 pasos) */}
-      <SpectatorAuthPanel
-        onExploreStore={onExploreStore}
-      />
-
-      {/* 5. Footer profesional de plataforma */}
+      {/* 4. Footer profesional de plataforma */}
       <SpectatorFooter
         onExploreStore={onExploreStore}
-        onScrollToAuth={handleScrollToAuth}
-        onGoToAdmin={handleGoToMerchant}
+        onScrollToAuth={handleAuthAction}
+        onGoToAdmin={handleAuthAction}
       />
     </div>
   );
