@@ -60,15 +60,45 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    
+    // Si borró todo o solo quedan partes del prefijo, dejamos vacío para que se vea el placeholder visual
+    if (!val || ['+', '+5', '+59', '+591', '+591 '].includes(val.trim())) {
+      setCustomerPhone('');
+      return;
+    }
+
+    // Extraer solo dígitos ingresados
+    let digits = val.replace(/[^0-9]/g, '');
+    
+    // Si los dígitos comienzan con el código de país 591, evitar duplicación
+    if (digits.startsWith('591')) {
+      digits = digits.slice(3);
+    }
+
+    // Máximo 8 dígitos habituales para celulares en Bolivia
+    digits = digits.slice(0, 8);
+
+    if (digits.length > 0) {
+      setCustomerPhone(`+591 ${digits}`);
+    } else {
+      setCustomerPhone('');
+    }
+  };
+
   const handleProceedToPayment = () => {
     if (!customerName.trim()) {
       showToast('Por favor escribe tu nombre completo.', 'warning');
       return;
     }
-    if (!customerPhone.trim()) {
+    
+    const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
+    if (!customerPhone.trim() || rawDigits.length < 7) {
       showToast('Por favor ingresa tu número de teléfono o WhatsApp.', 'warning');
       return;
     }
+    
     setStep(2);
   };
 
@@ -96,8 +126,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   };
 
   const handleSubmitOrder = (shouldOpenWa = false) => {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      showToast('Por favor completa tu nombre y teléfono para coordinar la entrega.', 'warning');
+    const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
+    if (!customerName.trim() || !customerPhone.trim() || rawDigits.length < 7) {
+      showToast('Por favor completa tu nombre y un teléfono válido para coordinar la entrega.', 'warning');
       return;
     }
 
@@ -277,8 +308,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     type="tel"
                     required
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Ej. +56 9 8765 4321"
+                    onChange={handlePhoneChange}
+                    placeholder="+591 12345678"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium text-xs sm:text-sm focus:border-emerald-500 focus:outline-hidden"
                   />
                 </div>
