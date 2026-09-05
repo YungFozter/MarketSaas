@@ -202,7 +202,7 @@ export const SpectatorShowcase = ({
                 }`}
             >
               <span>🛍️</span>
-              <span>Para Residentes</span>
+              <span>Para Clientes</span>
             </button>
 
             <button
