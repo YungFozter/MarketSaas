@@ -555,7 +555,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="px-4 py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    className="px-3 sm:px-4 py-3 sm:py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Volver</span>
@@ -564,10 +564,15 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={() => handleSubmitOrder(false)}
-                    className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="flex-1 py-3 sm:py-3.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center cursor-pointer text-center"
                   >
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>Simular Confirmación (Ver Tracking en Vivo)</span>
+                    <div className="inline-flex items-center justify-center gap-2 text-left sm:text-center">
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-white" />
+                      <span className="leading-tight">
+                        <span className="block sm:inline font-black">Simular Confirmación </span>
+                        <span className="block sm:inline text-[10px] sm:text-xs font-semibold text-emerald-100 sm:text-white sm:font-black">(Ver Tracking en Vivo)</span>
+                      </span>
+                    </div>
                   </button>
                 </div>
 
