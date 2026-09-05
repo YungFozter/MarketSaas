@@ -68,7 +68,6 @@ export const Navbar = ({
   }, []);
 
   const totalCartItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const activeOrdersCount = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way').length;
 
   const handleTabNavigation = (tab) => {
     if (onSelectSpectatorTab) {
@@ -160,11 +159,6 @@ export const Navbar = ({
               >
                 <span>🏪</span>
                 <span>Panel Minimarket</span>
-                {activeOrdersCount > 0 && (
-                  <span className="bg-rose-500 text-white px-1.5 rounded-full text-[9px] animate-pulse">
-                    {activeOrdersCount}
-                  </span>
-                )}
               </button>
             </div>
           </div>
