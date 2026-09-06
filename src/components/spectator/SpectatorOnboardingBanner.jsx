@@ -14,11 +14,11 @@ export const SpectatorOnboardingBanner = ({ onExploreStore, onScrollToAuth }) =>
           </div>
 
           <h2 className="text-xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            ¿Listo para conectar tu condominio o tu minimarket?
+            ¿Listo para digitalizar tu minimarket y conectar con tus vecinos?
           </h2>
 
           <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-            Explora la tienda demo con productos precargados o solicita el alta de tu almacén con tu propio catálogo sin costo inicial de instalación.
+            Experimenta cómo compran los vecinos en la tienda demo o regístrate para digitalizar tu propio negocio. Te brindamos asesoría inicial personalizada y puesta en marcha 100% gratuita.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export const SpectatorOnboardingBanner = ({ onExploreStore, onScrollToAuth }) =>
             className="w-full sm:w-auto h-12 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <Store className="w-4 h-4 text-emerald-100" />
-            <span>Registrar mi Tienda (Paso 1)</span>
+            <span>Digitalizar mi Tienda Gratis</span>
           </button>
         </div>
 
