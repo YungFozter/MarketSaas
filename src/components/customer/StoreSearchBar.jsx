@@ -3,8 +3,6 @@ import {
   Search, 
   MapPin, 
   ArrowRight, 
-  Bike, 
-  Zap, 
   QrCode, 
   Star, 
   Gift,
@@ -36,20 +34,6 @@ export const StoreSearchBar = ({
       baseClass: 'filter-pill-emerald'
     },
     {
-      id: 'freeDelivery',
-      label: 'Delivery Gratis',
-      icon: <Bike className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />,
-      activeClass: 'filter-pill-active',
-      baseClass: 'filter-pill-glass'
-    },
-    {
-      id: 'fastPickup',
-      label: 'Retiro Inmediato (5-10 min)',
-      icon: <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />,
-      activeClass: 'filter-pill-active',
-      baseClass: 'filter-pill-glass'
-    },
-    {
       id: 'acceptsQr',
       label: 'Aceptan QR / Simple',
       icon: <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />,
@@ -58,7 +42,7 @@ export const StoreSearchBar = ({
     },
     {
       id: 'topRated',
-      label: 'Mejor Calificadas (4.8+)',
+      label: 'Mejor Calificadas',
       icon: <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />,
       activeClass: 'filter-pill-active',
       baseClass: 'filter-pill-glass'
@@ -123,7 +107,6 @@ export const StoreSearchBar = ({
               className="w-full sm:w-auto appearance-none flex items-center justify-between gap-1.5 px-3.5 py-2 pr-7 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
               title="Filtrar minimarkets por condominio o zona de cobertura"
             >
-              <option value="all">📍 Todas las Zonas ▾</option>
               {zoneOptions.map((zone) => (
                 <option key={zone} value={zone}>
                   📍 {zone}

@@ -9,7 +9,11 @@ import {
   ExternalLink,
   Compass,
   ShoppingBag,
-  Sparkles
+  Sparkles,
+  Pin,
+  Settings2,
+  X,
+  Check
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
@@ -53,6 +57,67 @@ export const NeighborhoodMap = ({
 
   const [activeLocationType, setActiveLocationType] = useState('store'); // 'store' | 'user' | 'zone'
 
+  // Manejo de tiendas fijadas (Favoritas) guardadas en localStorage (máximo 3)
+  const [pinnedSlugs, setPinnedSlugs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_pinned_store_slugs');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.slice(0, 3);
+        }
+      }
+    } catch (e) {
+      console.error('Error al leer tiendas fijadas:', e);
+    }
+    // Por defecto fijamos hasta las 3 primeras tiendas
+    return stores.slice(0, 3).map((s) => s.slug);
+  });
+
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinFeedbackMessage, setPinFeedbackMessage] = useState(null);
+
+  const showFeedback = (msg) => {
+    setPinFeedbackMessage(msg);
+    setTimeout(() => {
+      setPinFeedbackMessage(null);
+    }, 3200);
+  };
+
+  const togglePinStore = (storeSlug) => {
+    setPinnedSlugs((prev) => {
+      let updated;
+      if (prev.includes(storeSlug)) {
+        if (prev.length <= 1) {
+          showFeedback('Debes mantener al menos 1 tienda fijada en accesos rápidos.');
+          return prev;
+        }
+        updated = prev.filter((slug) => slug !== storeSlug);
+        showFeedback('Tienda retirada de tus accesos rápidos fijados.');
+      } else {
+        if (prev.length >= 3) {
+          showFeedback('Límite de 3 alcanzado. Desmarca una tienda primero.');
+          return prev;
+        }
+        updated = [...prev, storeSlug];
+        showFeedback('¡Tienda fijada con éxito en tu mapa!');
+      }
+      try {
+        localStorage.setItem('marketsaas_pinned_store_slugs', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  };
+
+  // Tiendas actualmente fijadas para los chips superiores
+  const pinnedStores = useMemo(() => {
+    return pinnedSlugs
+      .map((slug) => stores.find((s) => s.slug === slug))
+      .filter(Boolean);
+  }, [stores, pinnedSlugs]);
+
   // Si cambia la tienda seleccionada desde el directorio
   useEffect(() => {
     if (selectedStore?.googleMapsCoordinates) {
@@ -61,7 +126,7 @@ export const NeighborhoodMap = ({
     }
   }, [selectedStore]);
 
-  // Si cambia el filtro de zona desde el selector "Todas las Zonas"
+  // Si cambia el filtro de zona desde el selector de zona
   useEffect(() => {
     if (selectedZone && ZONE_COORDINATES[selectedZone]) {
       setCurrentCoords(ZONE_COORDINATES[selectedZone]);
@@ -107,7 +172,6 @@ export const NeighborhoodMap = ({
   // Construcción de la URL de Google Maps Embed interactivo con coordenadas precisas
   const googleMapsEmbedUrl = useMemo(() => {
     const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
-    // Utilizar coordenadas exactas garantiza centrado perfecto sin ambigüedades
     return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
   }, [currentCoords, mapType, zoomLevel]);
 
@@ -144,8 +208,8 @@ export const NeighborhoodMap = ({
           <span>Mi Torre ({userLocation.tower})</span>
         </button>
 
-        {/* Chips de Minimarkets */}
-        {stores.map((s) => {
+        {/* Chips de Minimarkets Fijados (Hasta 3) */}
+        {pinnedStores.map((s) => {
           const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
           return (
             <button
@@ -158,15 +222,35 @@ export const NeighborhoodMap = ({
                   : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
               }`}
             >
+              <Pin className={`w-3 h-3 ${isSelected ? 'fill-white text-white' : 'fill-amber-500 text-amber-500'}`} />
               <Store className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-              <span className="truncate max-w-[140px] sm:max-w-none">{s.name}</span>
+              <span className="truncate max-w-[130px] sm:max-w-none">{s.name}</span>
               <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
               </span>
             </button>
           );
         })}
+
+        {/* Botón para Gestionar / Editar Tiendas Fijadas */}
+        <button
+          type="button"
+          onClick={() => setIsPinModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md bg-white/95 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition-all cursor-pointer shrink-0"
+          title="Configura hasta 3 tiendas favoritas fijadas en el mapa"
+        >
+          <Settings2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Fijadas ({pinnedSlugs.length}/3)</span>
+        </button>
       </div>
+
+      {/* Toast Notificación de Feedback sutil sobre el mapa */}
+      {pinFeedbackMessage && !isPinModalOpen && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-slate-700/80 flex items-center gap-1.5 pointer-events-none transition-all">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>{pinFeedbackMessage}</span>
+        </div>
+      )}
 
       {/* 3. CARD FLOTANTE INTERACTIVA DE LA TIENDA SELECCIONADA */}
       {activeStore && (
@@ -191,10 +275,30 @@ export const NeighborhoodMap = ({
                 </div>
               </div>
 
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                En vivo
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Botón directo de Fijar/Desfijar */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePinStore(activeStore.slug);
+                  }}
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all cursor-pointer shrink-0 ${
+                    pinnedSlugs.includes(activeStore.slug)
+                      ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                  title={pinnedSlugs.includes(activeStore.slug) ? 'Quitar de accesos rápidos fijados' : 'Fijar en accesos rápidos del mapa (máx. 3)'}
+                >
+                  <Pin className={`w-2.5 h-2.5 ${pinnedSlugs.includes(activeStore.slug) ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+                  <span>{pinnedSlugs.includes(activeStore.slug) ? 'Fijada' : 'Fijar'}</span>
+                </button>
+
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  En vivo
+                </span>
+              </div>
             </div>
 
             {/* Dirección y Distancia */}
@@ -231,6 +335,109 @@ export const NeighborhoodMap = ({
               </a>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL GESTIONAR TIENDAS FIJADAS (MÁXIMO 3) */}
+      {isPinModalOpen && (
+        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm sm:max-w-md overflow-hidden flex flex-col">
+            {/* Cabecera del modal */}
+            <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/90">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <Pin className="w-4 h-4 fill-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xs sm:text-sm text-slate-900">Tiendas Fijadas en tu Mapa</h3>
+                  <p className="text-[11px] text-slate-500">Hasta 3 minimarkets favoritos rápidos</p>
+                </div>
+              </div>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                pinnedSlugs.length === 3 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}>
+                {pinnedSlugs.length} de 3
+              </span>
+            </div>
+
+            {/* Aviso dinámico si existe feedback */}
+            {pinFeedbackMessage && (
+              <div className="bg-amber-50 border-b border-amber-200 text-amber-900 text-xs px-3.5 py-2 font-medium flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>{pinFeedbackMessage}</span>
+              </div>
+            )}
+
+            {/* Lista de minimarkets */}
+            <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+              {stores.map((store) => {
+                const isPinned = pinnedSlugs.includes(store.slug);
+                const isLimitReached = !isPinned && pinnedSlugs.length >= 3;
+
+                return (
+                  <div 
+                    key={store.id} 
+                    className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 ${
+                      isPinned 
+                        ? 'bg-amber-50/40 border-amber-200 shadow-xs' 
+                        : 'bg-white border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200">
+                        <img 
+                          src={store.imageUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'} 
+                          alt={store.name} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1">
+                          <h4 className="font-bold text-xs text-slate-900 truncate">{store.name}</h4>
+                          {isPinned && <Pin className="w-2.5 h-2.5 text-amber-500 fill-amber-500 shrink-0" />}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 truncate">
+                          <span>{store.condominium || store.address}</span>
+                          <span>•</span>
+                          <span className="font-semibold text-slate-700">{store.distanceMeters ? `a ${store.distanceMeters}m` : 'Cerca'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => togglePinStore(store.slug)}
+                      disabled={isLimitReached}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+                        isPinned
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-xs active:scale-95'
+                          : isLimitReached
+                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 active:scale-95'
+                      }`}
+                      title={isLimitReached ? 'Límite de 3 tiendas alcanzado. Desmarca otra primero.' : ''}
+                    >
+                      {isPinned ? '✓ Fijada' : isLimitReached ? 'Límite' : '+ Fijar'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pie del modal */}
+            <div className="p-3 border-t border-slate-100 bg-slate-50/80 flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-[11px] text-slate-500">
+                Se guarda en tu navegador automáticamente.
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsPinModalOpen(false)}
+                className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

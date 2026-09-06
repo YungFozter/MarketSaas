@@ -21,11 +21,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
   // Estados de búsqueda, filtros y ordenación
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedZone, setSelectedZone] = useState('all');
+  const [selectedZone, setSelectedZone] = useState('Condominio Las Palmas');
   const [activeFilters, setActiveFilters] = useState({
     openNow: true,
-    freeDelivery: false,
-    fastPickup: false,
     acceptsQr: false,
     topRated: false,
     hasPoints: false
@@ -69,14 +67,12 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       }
 
       // 2. Filtro de Zona / Condominio
-      if (selectedZone !== 'all' && store.condominium !== selectedZone) {
+      if (selectedZone && selectedZone !== 'all' && store.condominium !== selectedZone) {
         return false;
       }
 
       // 3. Filtros Rápidos (Pills)
       if (activeFilters.openNow && !store.isOpen) return false;
-      if (activeFilters.freeDelivery && !store.hasFreeDelivery) return false;
-      if (activeFilters.fastPickup && !store.hasPickup) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
       if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
       if (activeFilters.hasPoints && !store.pointsReward) return false;
