@@ -7,8 +7,7 @@ import {
   HelpCircle,
   Banknote,
   QrCode,
-  CreditCard,
-  CheckCircle2
+  CreditCard
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -20,141 +19,89 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
   const merchantWaUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(merchantWaMessage)}`;
 
   return (
-    <footer className="bg-slate-900 text-white border-t border-slate-800 pt-12 pb-8 px-4 sm:px-6 lg:px-8 mt-12 transition-colors">
-      <div className="max-w-7xl mx-auto">
-        {/* Fila Superior: Métodos de Pago y Accesos del Vecino */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10 border-b border-slate-800/80">
-
-          {/* Columna 2: Métodos de Pago & Seguridad */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+    <footer className="bg-slate-900 text-white border-t border-slate-800 pt-8 pb-6 px-4 sm:px-6 lg:px-8 mt-12 transition-colors">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Fila Principal Compacta: Métodos de Pago y Accesos Rápidos */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-800/80">
+          
+          {/* Métodos de Pago Compactos */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 text-xs text-slate-300">
+            <span className="font-bold text-slate-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Métodos de Pago</span>
-            </h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Paga como te sea más cómodo al recibir tu pedido o al retirar:
-            </p>
-            <ul className="space-y-2 text-xs text-slate-300">
-              <li className="flex items-center gap-2 bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
-                <Banknote className="w-4 h-4 text-emerald-400 shrink-0" />
-                <div>
-                  <strong className="text-slate-100 block">Efectivo</strong>
-                  <span className="text-[10px] text-slate-400">Pago contra entrega con vuelto exacto</span>
-                </div>
-              </li>
-              <li className="flex items-center gap-2 bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
-                <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
-                <div>
-                  <strong className="text-slate-100 block">Transferencia / QR Digital</strong>
-                  <span className="text-[10px] text-slate-400">Simple QR Banco de Preferencia</span>
-                </div>
-              </li>
-              <li className="flex items-center gap-2 bg-slate-800/60 p-2 rounded-xl border border-slate-700/50">
-                <CreditCard className="w-4 h-4 text-amber-400 shrink-0" />
-                <div>
-                  <strong className="text-slate-100 block">Tarjeta Débito / Crédito</strong>
-                  <span className="text-[10px] text-slate-400">Para tiendas con equipo especializado</span>
-                </div>
-              </li>
-            </ul>
+              Pagos Aceptados:
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 border border-slate-700/60 text-xs">
+                <Banknote className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Efectivo</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 border border-slate-700/60 text-xs">
+                <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+                <span>QR Simple</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 border border-slate-700/60 text-xs">
+                <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                <span>Tarjeta POS</span>
+              </span>
+            </div>
           </div>
 
-          {/* Columna 3: Accesos Rápidos del Vecino */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Accesos para Vecinos</span>
-            </h4>
-            <div className="space-y-2 text-xs">
-              {onOpenCart && (
-                <button
-                  onClick={onOpenCart}
-                  className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 text-slate-200 transition-colors border border-slate-700/60"
-                >
-                  <span className="flex items-center gap-2">
-                    <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Ver mi Canasta</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400">Abrir →</span>
-                </button>
-              )}
+          {/* Accesos Rápidos para Vecinos */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {onOpenCart && (
+              <button
+                onClick={onOpenCart}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Mi Canasta</span>
+              </button>
+            )}
 
-              {onOpenPoints && (
-                <button
-                  onClick={onOpenPoints}
-                  className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 text-slate-200 transition-colors border border-slate-700/60"
-                >
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Canjear VeciPuntos</span>
-                  </span>
-                  <span className="text-[10px] text-amber-400 font-bold">Mis Puntos →</span>
-                </button>
-              )}
+            {onOpenPoints && (
+              <button
+                onClick={onOpenPoints}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>VeciPuntos</span>
+              </button>
+            )}
 
-              {onOpenRequests && (
-                <button
-                  onClick={onOpenRequests}
-                  className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700/80 text-slate-200 transition-colors border border-slate-700/60"
-                >
-                  <span className="flex items-center gap-2">
-                    <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>¿Falta un producto? Pídelo</span>
-                  </span>
-                  <span className="text-[10px] text-cyan-400 font-bold">Solicitar →</span>
-                </button>
-              )}
-            </div>
-
-            <div className="pt-2 p-2.5 rounded-xl bg-slate-800/40 border border-slate-700/40 flex items-center gap-2 text-[11px] text-slate-400">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Garantía de frescura y atención personalizada de barrio.</span>
-            </div>
+            {onOpenRequests && (
+              <button
+                onClick={onOpenRequests}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Pedir Producto</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Sección: ¿Quieres contar con tu propia Tienda Digital? Contáctanos */}
-        <div className="py-8 my-4 border-b border-slate-800/80 flex flex-col items-center text-center justify-center space-y-3 bg-gradient-to-b from-slate-800/40 to-slate-900/90 p-6 sm:p-8 rounded-3xl border border-emerald-500/20 shadow-xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-            <span>MarketSaaS para Comercios & Emprendedores</span>
-          </div>
-
-          <div className="max-w-2xl space-y-1">
-            <h3 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-              ¿Quieres contar con tu propia Tienda Digital?
-            </h3>
-            <p className="text-sm font-extrabold text-emerald-400 tracking-wide uppercase">
-              Contáctanos
-            </p>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed pt-1">
-              Digitaliza tu catálogo, gestiona tus ventas en tiempo real y recibe pedidos organizados directo a tu WhatsApp en minutos.
-            </p>
-          </div>
-
-          <div className="pt-2">
-            <a
-              href={merchantWaUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-950/60 transition-all transform hover:-translate-y-0.5 hover:shadow-emerald-500/30"
-            >
-              <MessageCircle className="w-5 h-5 fill-slate-950 text-slate-950" />
-              <span>Contactar por WhatsApp</span>
-            </a>
-          </div>
+        {/* Línea Sutil para Comercios */}
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400 text-center py-1">
+          <span>¿Tienes una tienda de barrio o minimarket?</span>
+          <a
+            href={merchantWaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Digitaliza tu tienda con MarketSaaS →</span>
+          </a>
         </div>
 
         {/* Barra Inferior de Copyright & Legal */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <span>© {new Date().getFullYear()} Todos los derechos reservados</span>
+            <span>© {new Date().getFullYear()} MarketSaaS. Todos los derechos reservados.</span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px]">
-            <span className="text-slate-400 font-medium">
-              Potenciado por <strong className="text-emerald-400 font-extrabold">MarketSaaS</strong>
-            </span>
+          <div className="flex items-center gap-2 text-[11px] text-slate-400">
+            <span>Conectando vecinos con sus comercios locales</span>
           </div>
         </div>
       </div>
