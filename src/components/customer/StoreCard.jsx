@@ -9,7 +9,8 @@ import {
   Package, 
   Sparkles,
   ShoppingBag,
-  Award
+  Award,
+  CheckCircle2
 } from 'lucide-react';
 import './StoreCard.css';
 
@@ -17,6 +18,7 @@ export const StoreCard = ({
   store, 
   variant = 'compact', // 'featured' | 'compact'
   onSelect, 
+  onClaimStore,
   currencySymbol = 'Bs.' 
 }) => {
   if (!store) return null;
@@ -67,14 +69,31 @@ export const StoreCard = ({
                     <Store className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                      {store.name}
-                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                        {store.name}
+                      </h3>
+                      {store.isVerified && (
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Oficial
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-500 flex items-center gap-1 truncate mt-0.5">
                       <span>{store.address}</span>
                       <span>•</span>
                       <span>{store.reviewsCount || 100} pedidos</span>
                     </p>
+                    {onClaimStore && (
+                      <button 
+                        type="button" 
+                        onClick={(e) => { e.stopPropagation(); onClaimStore(); }}
+                        className="text-[11px] text-slate-400 hover:text-emerald-700 underline text-left mt-0.5 cursor-pointer block"
+                      >
+                        ¿Eres el dueño de este local? Reclámalo gratis
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -170,9 +189,14 @@ export const StoreCard = ({
         {/* Info y Calificación */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
-              {store.name}
-            </h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
+                {store.name}
+              </h3>
+              {store.isVerified && (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Verificada" />
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-0.5 text-xs">
               <span className="flex items-center text-amber-600 font-bold">
                 <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-0.5" />
@@ -197,15 +221,27 @@ export const StoreCard = ({
         </div>
       </div>
 
-      {/* Botón Ver Catálogo */}
-      <button
-        type="button"
-        onClick={() => onSelect(store.slug)}
-        className="mt-3.5 w-full h-10 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
-      >
-        <span>Ver Catálogo</span>
-        <ArrowRight className="w-3.5 h-3.5" />
-      </button>
+      {/* Botón Ver Catálogo y Enlace para Reclamar */}
+      <div className="mt-3.5 flex flex-col gap-1.5">
+        <button
+          type="button"
+          onClick={() => onSelect(store.slug)}
+          className="w-full h-10 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+        >
+          <span>Ver Catálogo</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+
+        {onClaimStore && (
+          <button 
+            type="button" 
+            onClick={(e) => { e.stopPropagation(); onClaimStore(); }}
+            className="text-[10px] text-slate-400 hover:text-emerald-700 underline text-center w-full cursor-pointer py-0.5"
+          >
+            ¿Dueño de este local? Reclámalo
+          </button>
+        )}
+      </div>
     </article>
   );
 };

@@ -3,6 +3,7 @@ import { useStore } from '../../context/StoreContext';
 import { StoreSearchBar } from './StoreSearchBar';
 import { NeighborhoodMap } from './NeighborhoodMap';
 import { StoreCard } from './StoreCard';
+import { calculateDistanceMeters, formatDistance } from '../../utils/geoUtils';
 import { 
   Store, 
   Sparkles, 
@@ -12,12 +13,24 @@ import {
   PlusCircle, 
   Building2,
   SlidersHorizontal,
-  ChevronDown
+  ChevronDown,
+  Navigation
 } from 'lucide-react';
 import './StoreDirectory.css';
 
+// Punto de referencia inicial: Plaza Metropolitana 24 de Septiembre (Centro de Santa Cruz de la Sierra)
+const DEFAULT_REFERENCE_COORDS = {
+  lat: -17.78335,
+  lng: -63.18214,
+  name: 'Plaza 24 de Septiembre'
+};
+
 export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   const { stores, selectedLocation, goToStore } = useStore();
+
+  // Estados de geolocalización del usuario
+  const [userCoords, setUserCoords] = useState(DEFAULT_REFERENCE_COORDS);
+  const [hasUserGps, setHasUserGps] = useState(false);
 
   // Estados de búsqueda, filtros y ordenación
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,6 +42,14 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   });
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
+
+  // Notificación de nueva ubicación GPS detectada
+  const handleUserLocationChange = (coords) => {
+    if (coords && coords.lat && coords.lng) {
+      setUserCoords(coords);
+      setHasUserGps(true);
+    }
+  };
 
   // Alternar filtro rápido
   const handleToggleFilter = (filterId) => {
@@ -45,9 +66,27 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }
   };
 
+  // Enriquecer tiendas con cálculo de distancia real en base a userCoords
+  const storesWithDistance = useMemo(() => {
+    return stores.map((store) => {
+      const coords = store.googleMapsCoordinates || DEFAULT_REFERENCE_COORDS;
+      const meters = calculateDistanceMeters(
+        userCoords.lat,
+        userCoords.lng,
+        coords.lat,
+        coords.lng
+      );
+      return {
+        ...store,
+        distanceMeters: meters,
+        distance: formatDistance(meters)
+      };
+    });
+  }, [stores, userCoords]);
+
   // Filtrado reactivo de tiendas
   const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
+    return storesWithDistance.filter((store) => {
       // 1. Filtro de Texto (Búsqueda por nombre, dirección, productos destacados o categoría)
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase().trim();
@@ -71,13 +110,13 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
       return true;
     });
-  }, [stores, searchQuery, activeFilters]);
+  }, [storesWithDistance, searchQuery, activeFilters]);
 
-  // Ordenación de tiendas
+  // Ordenación de tiendas por cercanía a la ubicación del cliente
   const sortedStores = useMemo(() => {
     const list = [...filteredStores];
     if (sortBy === 'nearest') {
-      list.sort((a, b) => (a.distanceMeters || 999) - (b.distanceMeters || 999));
+      list.sort((a, b) => (a.distanceMeters ?? 999999) - (b.distanceMeters ?? 999999));
     } else if (sortBy === 'rating') {
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'fastest') {
@@ -86,9 +125,11 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     return list;
   }, [filteredStores, sortBy]);
 
-  // Separación para la cuadrícula Bento: Tienda destacada (primera) vs Secundarias
-  const featuredStore = sortedStores.find((s) => s.isFeatured) || sortedStores[0];
-  const secondaryStores = sortedStores.filter((s) => s.id !== featuredStore?.id);
+  // Separación para la cuadrícula Bento:
+  // Tarjeta Destacada Principal (a la izquierda): la tienda más cercana a la ubicación del usuario
+  const featuredStore = sortedStores[0] || null;
+  // Tarjetas Secundarias (a la derecha): las siguientes tiendas más cercanas
+  const secondaryStores = sortedStores.slice(1);
 
   const handleStoreNavigation = (slug) => {
     if (onSelectStore) {
@@ -134,11 +175,12 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         {/* Canvas de Google Maps */}
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
           <NeighborhoodMap
-            stores={stores}
-            selectedStore={stores.find((s) => s.slug === selectedStoreSlug)}
+            stores={storesWithDistance}
+            selectedStore={storesWithDistance.find((s) => s.slug === selectedStoreSlug)}
             selectedZone="all"
             onSelectStore={(slug) => setSelectedStoreSlug(slug)}
             onEnterStore={handleStoreNavigation}
+            onUserLocationChange={handleUserLocationChange}
             userLocation={selectedLocation}
           />
         </div>
@@ -148,11 +190,25 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       <section id="stores-grid-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {/* Cabecera de Conteo y Ordenación */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200">
-          <div className="flex items-center gap-2.5">
-            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight font-headline">
-              {sortedStores.length} {sortedStores.length === 1 ? 'minimarket disponible' : 'minimarkets disponibles'} en tu sector
-            </h2>
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping mt-1.5 sm:mt-0 shrink-0" />
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight font-headline">
+                {sortedStores.length} {sortedStores.length === 1 ? 'tienda cercana' : 'tiendas cercanas'} a tu ubicación
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                {hasUserGps ? (
+                  <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    <Navigation className="w-3 h-3 text-emerald-600 inline" />
+                    Distancias calculadas con tu ubicación GPS en tiempo real
+                  </span>
+                ) : (
+                  <span>
+                    📍 Distancias calculadas desde Centro de Santa Cruz (pulsa <strong>"Mi Ubicación"</strong> en el mapa para usar tu GPS)
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto bg-white px-3 py-1.5 rounded-xl shadow-xs border border-slate-200">
@@ -179,23 +235,20 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               No se encontraron minimarkets con los filtros actuales
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-              Prueba cambiando la zona seleccionada o desactivando algunos de los filtros rápidos.
+              Prueba cambiando los términos de búsqueda o desactivando algunos de los filtros rápidos.
             </p>
             <button
               type="button"
               onClick={() => {
                 setSearchQuery('');
-                setSelectedZone('all');
                 setActiveFilters({
                   openNow: false,
-                  freeDelivery: false,
-                  fastPickup: false,
                   acceptsQr: false,
                   topRated: false,
                   hasPoints: false
                 });
               }}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
             >
               Restablecer Filtros
             </button>
@@ -209,6 +262,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   store={featuredStore}
                   variant="featured"
                   onSelect={handleStoreNavigation}
+                  onClaimStore={onOpenAuthModal}
                 />
               </div>
             )}
@@ -221,6 +275,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   store={store}
                   variant="compact"
                   onSelect={handleStoreNavigation}
+                  onClaimStore={onOpenAuthModal}
                 />
               ))}
 

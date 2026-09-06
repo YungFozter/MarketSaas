@@ -393,17 +393,126 @@ export const initialProductRequests = [
   }
 ];
 
-// Directorio de Minimarkets y Tiendas de Proximidad
+// Directorio de Minimarkets y Tiendas de Proximidad en Santa Cruz de la Sierra
 export const initialStores = [
   {
     id: 'store-1',
+    slug: 'amarket-equipetrol',
+    name: 'Amarket - Equipetrol',
+    tagline: 'Minimarket y conveniencia 24/7 en el corazón de Equipetrol',
+    address: 'Av. San Martín esquina Calle 5 Este',
+    condominium: 'Equipetrol',
+    rating: 4.9,
+    reviewsCount: 310,
+    ordersCount: 310,
+    isOpen: true,
+    statusBadge: 'Abierto 24 Horas',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '10-15 min',
+    freeDeliveryThreshold: 60.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+30 VeciPuntos',
+    category: 'Tienda de Conveniencia',
+    totalStockItems: 520,
+    isVerified: true,
+    isClaimed: true,
+    perks: [
+      { id: 'p1', text: '⚡ Despacho 10-15 min', highlight: true },
+      { id: 'p2', text: '🛵 Envío Gratis > Bs. 60' },
+      { id: 'p3', text: '📦 520 productos en stock' }
+    ],
+    featuredProducts: [
+      { id: 'fp-1', name: 'Pil Leche Natural 946ml', price: 8.00, emoji: '🥛' },
+      { id: 'fp-2', name: 'Coca-Cola 2L', price: 13.00, emoji: '🥤' },
+      { id: 'fp-3', name: 'Paceña 6pk Lata', price: 42.00, emoji: '🍺' }
+    ],
+    googleMapsQuery: 'Amarket Equipetrol, Av. San Martin, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7682, lng: -63.1935 }
+  },
+  {
+    id: 'store-2',
+    slug: 'tiendas-tia-palmas',
+    name: 'Tiendas Tía - Las Palmas / 2do Anillo',
+    tagline: 'Tu vecina de confianza con precios de barrio',
+    address: 'Av. Grigotá y 2do Anillo (Frente a Las Palmas)',
+    condominium: 'Las Palmas / 2do Anillo',
+    rating: 4.8,
+    reviewsCount: 245,
+    ordersCount: 245,
+    isOpen: true,
+    statusBadge: 'Abierto • Cierra 23:00',
+    imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '12-18 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+20 VeciPuntos',
+    category: 'Minimarket & Abarrotes',
+    totalStockItems: 410,
+    isVerified: true,
+    isClaimed: true,
+    perks: [
+      { id: 'p1', text: '🛵 Delivery express' },
+      { id: 'p2', text: '💳 QR Simple & Efectivo' },
+      { id: 'p3', text: '🧺 Retiro en Caja' }
+    ],
+    featuredProducts: [
+      { id: 'fp-4', name: 'Pan Marraqueta x10', price: 10.00, emoji: '🥖' },
+      { id: 'fp-5', name: 'Huevos 15u', price: 15.00, emoji: '🥚' },
+      { id: 'fp-6', name: 'Queso Chaqueño 500g', price: 28.00, emoji: '🧀' }
+    ],
+    googleMapsQuery: 'Tiendas Tia Grigota, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7965, lng: -63.1985 }
+  },
+  {
+    id: 'store-3',
+    slug: 'tadah-market-sirari',
+    name: 'Tadah Market - Sirari',
+    tagline: 'Snacks importados, café de especialidad y despensa fresca',
+    address: 'Barrio Sirari, Calle Los Claveles esquina Canal Isuto',
+    condominium: 'Sirari / Equipetrol Norte',
+    rating: 4.9,
+    reviewsCount: 188,
+    ordersCount: 188,
+    isOpen: true,
+    statusBadge: 'Abierto Ahora',
+    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '15 min',
+    freeDeliveryThreshold: 80.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+25 VeciPuntos',
+    category: 'Gourmet & Delicatessen',
+    totalStockItems: 380,
+    isVerified: true,
+    isClaimed: true,
+    perks: [
+      { id: 'p1', text: '☕ Café & Bakery fresco' },
+      { id: 'p2', text: '🛵 Envío en 15m' },
+      { id: 'p3', text: '💳 Pago QR Simple' }
+    ],
+    featuredProducts: [
+      { id: 'fp-7', name: 'Cuñapé Horneado (bolsa 6u)', price: 18.00, emoji: '🫓' },
+      { id: 'fp-8', name: 'Café Grano Nescafé', price: 90.00, emoji: '☕' },
+      { id: 'fp-9', name: 'Agua Vital 2L', price: 7.00, emoji: '💧' }
+    ],
+    googleMapsQuery: 'Tadah Market Sirari Canal Isuto, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7615, lng: -63.1895 }
+  },
+  {
+    id: 'store-4',
     slug: 'don-vecino',
     name: 'Minimarket Don Vecino',
-    tagline: 'Tu tienda de confianza a pasos de tu puerta',
+    tagline: 'Tu tienda barrial de confianza a pasos de tu puerta',
     address: 'Calle Los Sauces, frente a Torre B',
     condominium: 'Condominio Las Palmas',
-    distance: 'A 120m de tu torre',
-    distanceMeters: 120,
     rating: 4.9,
     reviewsCount: 142,
     ordersCount: 142,
@@ -418,79 +527,29 @@ export const initialStores = [
     hasFastDelivery: true,
     pointsReward: '+20 VeciPuntos',
     category: 'Minimarket & Abarrotes',
-    isFeatured: true,
     totalStockItems: 340,
+    isVerified: true,
+    isClaimed: true,
     perks: [
-      { id: 'p1', text: 'Despacho 10-15 min', icon: 'Zap', highlight: true },
-      { id: 'p2', text: 'Envío Gratis > Bs. 50', icon: 'Truck' },
-      { id: 'p3', text: '340 productos en stock', icon: 'Package' }
+      { id: 'p1', text: '⚡ Despacho 10-15 min', highlight: true },
+      { id: 'p2', text: '🛵 Envío Gratis > Bs. 50' },
+      { id: 'p3', text: '📦 340 productos en stock' }
     ],
     featuredProducts: [
-      { id: 'fp-1', name: 'Leche Fresca 1L', price: 8.00, emoji: '🥛' },
-      { id: 'fp-2', name: 'Coca-Cola 2L', price: 13.00, emoji: '🥤' },
-      { id: 'fp-3', name: 'Huevos 15u', price: 15.00, emoji: '🥚' }
+      { id: 'fp-10', name: 'Leche Fresca 1L', price: 8.00, emoji: '🥛' },
+      { id: 'fp-11', name: 'Arroz Selección 1Kg', price: 9.50, emoji: '🌾' },
+      { id: 'fp-12', name: 'Huevos 15u', price: 15.00, emoji: '🥚' }
     ],
     googleMapsQuery: 'Condominio Las Palmas, Calle Los Sauces, Santa Cruz de la Sierra, Bolivia',
-    googleMapsCoordinates: { lat: -17.7942, lng: -63.2031 },
-    mapPosition: {
-      leftPercent: 28,
-      bottomPixels: 42,
-      label: 'Acera Oeste',
-      badge: 'Stock Live'
-    }
+    googleMapsCoordinates: { lat: -17.7942, lng: -63.2031 }
   },
   {
-    id: 'store-2',
-    slug: 'la-pradera',
-    name: 'Abarrotes & Delicatessen La Pradera',
-    tagline: 'Gourmet y despensa selecta de proximidad',
-    address: 'Condominio Altos del Valle',
-    condominium: 'Condominio Altos del Valle',
-    distance: 'A 350m • Condominio Altos del Valle',
-    distanceMeters: 350,
-    rating: 4.8,
-    reviewsCount: 89,
-    ordersCount: 89,
-    isOpen: true,
-    statusBadge: 'Abierto • Listo en 15 min',
-    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
-    deliveryTime: '15 min',
-    freeDeliveryThreshold: null,
-    hasFreeDelivery: false,
-    acceptsQr: true,
-    hasPickup: true,
-    hasFastDelivery: true,
-    pointsReward: null,
-    category: 'Delicatessen',
-    isFeatured: false,
-    totalStockItems: 220,
-    perks: [
-      { id: 'p1', text: '🛵 Delivery propio' },
-      { id: 'p2', text: '💳 QR Simple' },
-      { id: 'p3', text: '🧺 Retiro en Caja' }
-    ],
-    featuredProducts: [
-      { id: 'fp-4', name: 'Queso Gouda 250g', price: 24.00, emoji: '🧀' },
-      { id: 'fp-5', name: 'Pan Baguette', price: 6.00, emoji: '🥖' }
-    ],
-    googleMapsQuery: 'Condominio Altos del Valle, Santa Cruz de la Sierra, Bolivia',
-    googleMapsCoordinates: { lat: -17.7885, lng: -63.1978 },
-    mapPosition: {
-      leftPercent: 72,
-      topPercent: 50,
-      label: 'Altos del Valle',
-      badge: '350m'
-    }
-  },
-  {
-    id: 'store-3',
-    slug: 'express-24-7',
-    name: 'Licorería & Express 24/7',
-    tagline: 'Bebidas frías, hielo y snacks toda la noche',
-    address: 'Av. Principal #104',
-    condominium: 'Barrio Central (Casas)',
-    distance: 'A 500m • Av. Principal #104',
-    distanceMeters: 500,
+    id: 'store-5',
+    slug: 'express-monseñor-rivero',
+    name: 'Licorería & Express Monseñor Rivero',
+    tagline: 'Bebidas frías, hielo y snacks toda la noche en el Cristo',
+    address: 'Av. Monseñor Rivero #320 (Zona El Cristo)',
+    condominium: 'El Cristo / Centro Norte',
     rating: 4.7,
     reviewsCount: 215,
     ordersCount: 215,
@@ -505,24 +564,20 @@ export const initialStores = [
     hasFastDelivery: true,
     pointsReward: null,
     category: 'Bebidas & Licores',
-    isFeatured: false,
-    totalStockItems: 180,
+    totalStockItems: 290,
+    isVerified: true,
+    isClaimed: true,
     perks: [
       { id: 'p1', text: '⚡ Despacho Express 10m' },
-      { id: 'p2', text: '❄️ Bebidas Frías' },
+      { id: 'p2', text: '❄️ Hielo y Bebidas Heladas' },
       { id: 'p3', text: '💳 Todos los medios' }
     ],
     featuredProducts: [
-      { id: 'fp-6', name: 'Cerveza Huari 6pk', price: 42.00, emoji: '🍺' },
-      { id: 'fp-7', name: 'Bolsa Hielo 3kg', price: 10.00, emoji: '🧊' }
+      { id: 'fp-13', name: 'Cerveza Huari 6pk', price: 42.00, emoji: '🍺' },
+      { id: 'fp-14', name: 'Bolsa Hielo 3kg', price: 10.00, emoji: '🧊' },
+      { id: 'fp-15', name: 'Papas Lays Clásicas', price: 12.00, emoji: '🥔' }
     ],
-    googleMapsQuery: 'Av. Principal, Santa Cruz de la Sierra, Bolivia',
-    googleMapsCoordinates: { lat: -17.7995, lng: -63.2085 },
-    mapPosition: {
-      leftPercent: 88,
-      bottomPixels: 30,
-      label: 'Av. Principal',
-      badge: '24 Horas'
-    }
+    googleMapsQuery: 'Av. Monseñor Rivero, El Cristo, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7712, lng: -63.1818 }
   }
 ];

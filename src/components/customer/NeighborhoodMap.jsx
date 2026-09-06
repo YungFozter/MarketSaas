@@ -37,6 +37,7 @@ export const NeighborhoodMap = ({
   selectedZone = 'all',
   onSelectStore,
   onEnterStore,
+  onUserLocationChange,
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
@@ -116,9 +117,11 @@ export const NeighborhoodMap = ({
 
   // Tiendas actualmente fijadas para los chips superiores
   const pinnedStores = useMemo(() => {
-    return pinnedSlugs
+    const list = pinnedSlugs
       .map((slug) => stores.find((s) => s.slug === slug))
       .filter(Boolean);
+    if (list.length > 0) return list;
+    return stores.slice(0, 3);
   }, [stores, pinnedSlugs]);
 
   // Si cambia la tienda seleccionada desde el directorio o los chips
@@ -177,6 +180,9 @@ export const NeighborhoodMap = ({
         setIsLocating(false);
         setIsRecentering(false);
         showFeedback('📍 Ubicación GPS detectada en tiempo real');
+        if (onUserLocationChange) {
+          onUserLocationChange(userCoords);
+        }
       },
       (error) => {
         console.warn('Geolocation error:', error);
