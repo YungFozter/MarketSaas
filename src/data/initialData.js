@@ -395,8 +395,153 @@ export const initialProductRequests = [
 
 // Directorio de Minimarkets y Tiendas de Proximidad en Santa Cruz de la Sierra
 export const initialStores = [
+  // --- Cadena Tiendas Tía (Múltiples Sucursales Reales en Santa Cruz) ---
   {
-    id: 'store-1',
+    id: 'store-tia-1',
+    slug: 'tiendas-tia-palmas',
+    name: 'Tiendas Tía - Las Palmas / 2do Anillo',
+    tagline: 'Tu vecina de confianza con precios de barrio',
+    address: 'Av. Grigotá y 2do Anillo (Frente a Las Palmas)',
+    condominium: 'Las Palmas / 2do Anillo',
+    rating: 4.8,
+    reviewsCount: 245,
+    ordersCount: 245,
+    isOpen: true,
+    statusBadge: 'Abierto • Cierra 23:00',
+    imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '12-18 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+20 VeciPuntos',
+    category: 'Supermercado de Conveniencia',
+    totalStockItems: 410,
+    isVerified: true,
+    perks: [
+      { id: 'p1', text: '🛵 Delivery express' },
+      { id: 'p2', text: '💳 QR Simple & Efectivo' },
+      { id: 'p3', text: '🧺 Retiro en Caja' }
+    ],
+    featuredProducts: [
+      { id: 'fp-4', name: 'Pan Marraqueta x10', price: 10.00, emoji: '🥖' },
+      { id: 'fp-5', name: 'Huevos 15u', price: 15.00, emoji: '🥚' },
+      { id: 'fp-6', name: 'Queso Chaqueño 500g', price: 28.00, emoji: '🧀' }
+    ],
+    googleMapsQuery: 'Tiendas Tia Grigota, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7965, lng: -63.1985 }
+  },
+  {
+    id: 'store-tia-2',
+    slug: 'tiendas-tia-equipetrol',
+    name: 'Tiendas Tía - Equipetrol',
+    tagline: 'Abarrotes, bebidas y panadería fresca en Equipetrol',
+    address: 'Av. San Martín esquina Calle 8 Este',
+    condominium: 'Equipetrol',
+    rating: 4.9,
+    reviewsCount: 198,
+    ordersCount: 198,
+    isOpen: true,
+    statusBadge: 'Abierto • Cierra 23:30',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '10-15 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+20 VeciPuntos',
+    category: 'Supermercado de Conveniencia',
+    totalStockItems: 430,
+    isVerified: true,
+    perks: [
+      { id: 'p1', text: '⚡ Entrega en 15m' },
+      { id: 'p2', text: '💳 QR Simple' },
+      { id: 'p3', text: '🍞 Pan Caliente Diario' }
+    ],
+    featuredProducts: [
+      { id: 'fp-t2-1', name: 'Pil Leche Natural 946ml', price: 8.00, emoji: '🥛' },
+      { id: 'fp-t2-2', name: 'Gaseosa Coca-Cola 2L', price: 13.00, emoji: '🥤' },
+      { id: 'fp-t2-3', name: 'Galletas Mabel\'s Surtidas', price: 6.50, emoji: '🍪' }
+    ],
+    googleMapsQuery: 'Tiendas Tia Equipetrol, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7665, lng: -63.1942 }
+  },
+  {
+    id: 'store-tia-3',
+    slug: 'tiendas-tia-santos-dumont',
+    name: 'Tiendas Tía - Santos Dumont / 3er Anillo',
+    tagline: 'Tu despensa de siempre con la mejor atención',
+    address: 'Av. Santos Dumont y 3er Anillo Interno',
+    condominium: 'Santos Dumont / Zona Sur',
+    rating: 4.7,
+    reviewsCount: 165,
+    ordersCount: 165,
+    isOpen: true,
+    statusBadge: 'Abierto Ahora',
+    imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '15-20 min',
+    freeDeliveryThreshold: 60.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+20 VeciPuntos',
+    category: 'Supermercado de Conveniencia',
+    totalStockItems: 390,
+    isVerified: true,
+    perks: [
+      { id: 'p1', text: '🛵 Delivery propio' },
+      { id: 'p2', text: '💳 Pagos QR y tarjeta' }
+    ],
+    featuredProducts: [
+      { id: 'fp-t3-1', name: 'Arroz Selección 1Kg', price: 9.50, emoji: '🌾' },
+      { id: 'fp-t3-2', name: 'Aceite Fino 900ml', price: 14.00, emoji: '🍾' },
+      { id: 'fp-t3-3', name: 'Huevos 15u Frescos', price: 15.00, emoji: '🥚' }
+    ],
+    googleMapsQuery: 'Tiendas Tia Santos Dumont, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.8080, lng: -63.1890 }
+  },
+  {
+    id: 'store-tia-4',
+    slug: 'tiendas-tia-cristo-redentor',
+    name: 'Tiendas Tía - Cristo Redentor / Banzer',
+    tagline: 'Gran surtido en carnes frías, lácteos y abarrotes',
+    address: 'Av. Cristo Redentor entre 2do y 3er Anillo',
+    condominium: 'Zona Norte / El Cristo',
+    rating: 4.8,
+    reviewsCount: 220,
+    ordersCount: 220,
+    isOpen: true,
+    statusBadge: 'Abierto • Cierra 23:00',
+    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '12-15 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+25 VeciPuntos',
+    category: 'Supermercado de Conveniencia',
+    totalStockItems: 460,
+    isVerified: true,
+    perks: [
+      { id: 'p1', text: '⚡ Entrega en 12m' },
+      { id: 'p2', text: '💳 QR Simple' }
+    ],
+    featuredProducts: [
+      { id: 'fp-t4-1', name: 'Paceña 6pk Lata', price: 42.00, emoji: '🍺' },
+      { id: 'fp-t4-2', name: 'Agua Vital 2L', price: 7.00, emoji: '💧' },
+      { id: 'fp-t4-3', name: 'Carne Molida Especial 1Kg', price: 38.00, emoji: '🥩' }
+    ],
+    googleMapsQuery: 'Tiendas Tia Cristo Redentor, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7640, lng: -63.1780 }
+  },
+
+  // --- Cadena Amarket (Múltiples Sucursales) ---
+  {
+    id: 'store-amarket-1',
     slug: 'amarket-equipetrol',
     name: 'Amarket - Equipetrol',
     tagline: 'Minimarket y conveniencia 24/7 en el corazón de Equipetrol',
@@ -418,7 +563,6 @@ export const initialStores = [
     category: 'Tienda de Conveniencia',
     totalStockItems: 520,
     isVerified: true,
-    isClaimed: true,
     perks: [
       { id: 'p1', text: '⚡ Despacho 10-15 min', highlight: true },
       { id: 'p2', text: '🛵 Envío Gratis > Bs. 60' },
@@ -433,44 +577,80 @@ export const initialStores = [
     googleMapsCoordinates: { lat: -17.7682, lng: -63.1935 }
   },
   {
-    id: 'store-2',
-    slug: 'tiendas-tia-palmas',
-    name: 'Tiendas Tía - Las Palmas / 2do Anillo',
-    tagline: 'Tu vecina de confianza con precios de barrio',
-    address: 'Av. Grigotá y 2do Anillo (Frente a Las Palmas)',
-    condominium: 'Las Palmas / 2do Anillo',
+    id: 'store-amarket-2',
+    slug: 'amarket-las-palmas',
+    name: 'Amarket - Las Palmas',
+    tagline: 'Conveniencia express y despensa para los vecinos de Las Palmas',
+    address: 'Calle Ibérica y Los Sauces',
+    condominium: 'Las Palmas',
     rating: 4.8,
-    reviewsCount: 245,
-    ordersCount: 245,
+    reviewsCount: 175,
+    ordersCount: 175,
     isOpen: true,
-    statusBadge: 'Abierto • Cierra 23:00',
+    statusBadge: 'Abierto 24 Horas',
     imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop&q=80',
-    deliveryTime: '12-18 min',
+    deliveryTime: '10-15 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+25 VeciPuntos',
+    category: 'Tienda de Conveniencia',
+    totalStockItems: 480,
+    isVerified: true,
+    perks: [
+      { id: 'p1', text: '⚡ 24 Horas Activo' },
+      { id: 'p2', text: '🛵 Despacho a Torre' },
+      { id: 'p3', text: '💳 QR Simple' }
+    ],
+    featuredProducts: [
+      { id: 'fp-am2-1', name: 'Hielo en Bolsa 3Kg', price: 10.00, emoji: '🧊' },
+      { id: 'fp-am2-2', name: 'Cerveza Corona 6pk', price: 55.00, emoji: '🍺' },
+      { id: 'fp-am2-3', name: 'Snack Pringles Original', price: 22.00, emoji: '🥔' }
+    ],
+    googleMapsQuery: 'Amarket Las Palmas, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7942, lng: -63.2031 }
+  },
+  {
+    id: 'store-amarket-3',
+    slug: 'amarket-busch',
+    name: 'Amarket - Av. Busch',
+    tagline: 'Cafetería, snacks y compras rápidas a cualquier hora',
+    address: 'Av. Busch entre 2do y 3er Anillo',
+    condominium: 'Zona Universitaria / Busch',
+    rating: 4.8,
+    reviewsCount: 230,
+    ordersCount: 230,
+    isOpen: true,
+    statusBadge: 'Abierto 24 Horas',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '15 min',
     freeDeliveryThreshold: 50.00,
     hasFreeDelivery: true,
     acceptsQr: true,
     hasPickup: true,
     hasFastDelivery: true,
     pointsReward: '+20 VeciPuntos',
-    category: 'Minimarket & Abarrotes',
-    totalStockItems: 410,
+    category: 'Tienda de Conveniencia',
+    totalStockItems: 490,
     isVerified: true,
-    isClaimed: true,
     perks: [
-      { id: 'p1', text: '🛵 Delivery express' },
-      { id: 'p2', text: '💳 QR Simple & Efectivo' },
-      { id: 'p3', text: '🧺 Retiro en Caja' }
+      { id: 'p1', text: '⚡ 24 Horas' },
+      { id: 'p2', text: '☕ Café Express' }
     ],
     featuredProducts: [
-      { id: 'fp-4', name: 'Pan Marraqueta x10', price: 10.00, emoji: '🥖' },
-      { id: 'fp-5', name: 'Huevos 15u', price: 15.00, emoji: '🥚' },
-      { id: 'fp-6', name: 'Queso Chaqueño 500g', price: 28.00, emoji: '🧀' }
+      { id: 'fp-am3-1', name: 'Café Cappuccino Vaso', price: 14.00, emoji: '☕' },
+      { id: 'fp-am3-2', name: 'Empanada de Queso Horneada', price: 8.00, emoji: '🥟' },
+      { id: 'fp-am3-3', name: 'Bebida Energizante Red Bull', price: 18.00, emoji: '⚡' }
     ],
-    googleMapsQuery: 'Tiendas Tia Grigota, Santa Cruz de la Sierra, Bolivia',
-    googleMapsCoordinates: { lat: -17.7965, lng: -63.1985 }
+    googleMapsQuery: 'Amarket Busch, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7780, lng: -63.1990 }
   },
+
+  // --- Cadena Tadah Market ---
   {
-    id: 'store-3',
+    id: 'store-tadah-1',
     slug: 'tadah-market-sirari',
     name: 'Tadah Market - Sirari',
     tagline: 'Snacks importados, café de especialidad y despensa fresca',
@@ -492,7 +672,6 @@ export const initialStores = [
     category: 'Gourmet & Delicatessen',
     totalStockItems: 380,
     isVerified: true,
-    isClaimed: true,
     perks: [
       { id: 'p1', text: '☕ Café & Bakery fresco' },
       { id: 'p2', text: '🛵 Envío en 15m' },
@@ -506,8 +685,10 @@ export const initialStores = [
     googleMapsQuery: 'Tadah Market Sirari Canal Isuto, Santa Cruz de la Sierra, Bolivia',
     googleMapsCoordinates: { lat: -17.7615, lng: -63.1895 }
   },
+
+  // --- Tiendas Locales de Barrio ---
   {
-    id: 'store-4',
+    id: 'store-vecino-1',
     slug: 'don-vecino',
     name: 'Minimarket Don Vecino',
     tagline: 'Tu tienda barrial de confianza a pasos de tu puerta',
@@ -529,7 +710,6 @@ export const initialStores = [
     category: 'Minimarket & Abarrotes',
     totalStockItems: 340,
     isVerified: true,
-    isClaimed: true,
     perks: [
       { id: 'p1', text: '⚡ Despacho 10-15 min', highlight: true },
       { id: 'p2', text: '🛵 Envío Gratis > Bs. 50' },
@@ -544,7 +724,7 @@ export const initialStores = [
     googleMapsCoordinates: { lat: -17.7942, lng: -63.2031 }
   },
   {
-    id: 'store-5',
+    id: 'store-express-1',
     slug: 'express-monseñor-rivero',
     name: 'Licorería & Express Monseñor Rivero',
     tagline: 'Bebidas frías, hielo y snacks toda la noche en el Cristo',
@@ -566,7 +746,6 @@ export const initialStores = [
     category: 'Bebidas & Licores',
     totalStockItems: 290,
     isVerified: true,
-    isClaimed: true,
     perks: [
       { id: 'p1', text: '⚡ Despacho Express 10m' },
       { id: 'p2', text: '❄️ Hielo y Bebidas Heladas' },

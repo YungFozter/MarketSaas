@@ -35,6 +35,7 @@ export const NeighborhoodMap = ({
   stores = [],
   selectedStore = null,
   selectedZone = 'all',
+  searchQuery = '',
   onSelectStore,
   onEnterStore,
   onUserLocationChange,
@@ -133,18 +134,12 @@ export const NeighborhoodMap = ({
     }
   }, [selectedStore]);
 
-  // Si cambia el filtro de zona desde el selector de zona (solo al interactuar, no en el montaje inicial)
+  // Si el usuario escribe en el buscador general, activamos modo búsqueda para mostrar todas las ubicaciones en el mapa
   useEffect(() => {
-    if (isFirstZoneEffect.current) {
-      isFirstZoneEffect.current = false;
-      return;
+    if (searchQuery && searchQuery.trim().length >= 2) {
+      setActiveLocationType('search');
     }
-    if (selectedZone && ZONE_COORDINATES[selectedZone]) {
-      setCurrentCoords(ZONE_COORDINATES[selectedZone]);
-      setActiveLocationType('zone');
-      setZoomLevel(15);
-    }
-  }, [selectedZone]);
+  }, [searchQuery]);
 
   // Controles de Zoom
   const handleZoomIn = () => {
@@ -220,22 +215,44 @@ export const NeighborhoodMap = ({
 
   // Enlace directo para navegación en la App oficial de Google Maps
   const externalGoogleMapsUrl = useMemo(() => {
+    if (searchQuery && searchQuery.trim().length >= 2 && activeLocationType !== 'store') {
+      const qText = searchQuery.trim();
+      const queryParam = qText.toLowerCase().includes('santa cruz') ? qText : `${qText} Santa Cruz de la Sierra`;
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParam)}`;
+    }
     return `https://www.google.com/maps/search/?api=1&query=${currentCoords.lat},${currentCoords.lng}`;
-  }, [currentCoords]);
+  }, [currentCoords, searchQuery, activeLocationType]);
 
-  // Construcción de la URL de Google Maps Embed interactivo con coordenadas precisas
+  // Construcción de la URL de Google Maps Embed interactivo con soporte de búsqueda multi-marcador
   const googleMapsEmbedUrl = useMemo(() => {
     const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
+
+    // 1. Si hay una búsqueda activa (ej. "Supermercado Tía", "Amarket", etc.) y no se ha seleccionado una tienda puntual
+    if (searchQuery && searchQuery.trim().length >= 2 && activeLocationType !== 'store') {
+      const qText = searchQuery.trim();
+      const queryParam = qText.toLowerCase().includes('santa cruz')
+        ? qText
+        : `${qText} Santa Cruz de la Sierra`;
+      return `https://maps.google.com/maps?q=${encodeURIComponent(queryParam)}&t=${mapTypeCode}&z=13&hl=es&ie=UTF8&output=embed`;
+    }
+
+    // 2. Si hay una tienda seleccionada específicamente
+    if (activeStore?.googleMapsCoordinates) {
+      const label = encodeURIComponent(activeStore.name);
+      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}+(${label})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
+    }
+
+    // 3. Ubicación del usuario o centro de la ciudad
     return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
-  }, [currentCoords, mapType, zoomLevel]);
+  }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType]);
 
   return (
     <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
       
-      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS CENTRADO EXACTO */}
+      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS CENTRADO EXACTO CON MARCADORES MÚLTIPLES */}
       <div className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`}>
         <iframe
-          key={`${currentCoords.lat}-${currentCoords.lng}-${mapType}-${zoomLevel}`}
+          key={`${searchQuery}-${activeLocationType}-${currentCoords.lat}-${currentCoords.lng}-${mapType}-${zoomLevel}`}
           title="Google Maps Hiperlocal MarketSaaS"
           src={googleMapsEmbedUrl}
           className="w-full h-full border-0 pointer-events-auto"

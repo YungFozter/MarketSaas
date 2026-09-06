@@ -175,9 +175,10 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         {/* Canvas de Google Maps */}
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
           <NeighborhoodMap
-            stores={storesWithDistance}
+            stores={sortedStores}
             selectedStore={storesWithDistance.find((s) => s.slug === selectedStoreSlug)}
             selectedZone="all"
+            searchQuery={searchQuery}
             onSelectStore={(slug) => setSelectedStoreSlug(slug)}
             onEnterStore={handleStoreNavigation}
             onUserLocationChange={handleUserLocationChange}
@@ -262,7 +263,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   store={featuredStore}
                   variant="featured"
                   onSelect={handleStoreNavigation}
-                  onClaimStore={onOpenAuthModal}
                 />
               </div>
             )}
@@ -275,7 +275,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   store={store}
                   variant="compact"
                   onSelect={handleStoreNavigation}
-                  onClaimStore={onOpenAuthModal}
                 />
               ))}
 

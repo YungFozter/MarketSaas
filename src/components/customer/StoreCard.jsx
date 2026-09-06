@@ -18,7 +18,6 @@ export const StoreCard = ({
   store, 
   variant = 'compact', // 'featured' | 'compact'
   onSelect, 
-  onClaimStore,
   currencySymbol = 'Bs.' 
 }) => {
   if (!store) return null;
@@ -85,15 +84,6 @@ export const StoreCard = ({
                       <span>•</span>
                       <span>{store.reviewsCount || 100} pedidos</span>
                     </p>
-                    {onClaimStore && (
-                      <button 
-                        type="button" 
-                        onClick={(e) => { e.stopPropagation(); onClaimStore(); }}
-                        className="text-[11px] text-slate-400 hover:text-emerald-700 underline text-left mt-0.5 cursor-pointer block"
-                      >
-                        ¿Eres el dueño de este local? Reclámalo gratis
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -221,27 +211,15 @@ export const StoreCard = ({
         </div>
       </div>
 
-      {/* Botón Ver Catálogo y Enlace para Reclamar */}
-      <div className="mt-3.5 flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={() => onSelect(store.slug)}
-          className="w-full h-10 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
-        >
-          <span>Ver Catálogo</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-
-        {onClaimStore && (
-          <button 
-            type="button" 
-            onClick={(e) => { e.stopPropagation(); onClaimStore(); }}
-            className="text-[10px] text-slate-400 hover:text-emerald-700 underline text-center w-full cursor-pointer py-0.5"
-          >
-            ¿Dueño de este local? Reclámalo
-          </button>
-        )}
-      </div>
+      {/* Botón Ver Catálogo */}
+      <button
+        type="button"
+        onClick={() => onSelect(store.slug)}
+        className="mt-3.5 w-full h-10 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+      >
+        <span>Ver Catálogo</span>
+        <ArrowRight className="w-3.5 h-3.5" />
+      </button>
     </article>
   );
 };
