@@ -261,8 +261,8 @@ export const NeighborhoodMap = ({
         />
       </div>
 
-      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y UBICACIÓN GPS */}
-      <div className="absolute top-3 left-3 sm:left-4 right-3 sm:right-4 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
+      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y UBICACIÓN GPS (ALINEADOS A LA DERECHA) */}
+      <div className="absolute top-3 right-3 sm:right-4 z-20 flex items-center justify-end gap-1.5 max-w-[calc(100%-1.5rem)] overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
         {/* Chip Mi Ubicación con GPS en tiempo real */}
         <button
           type="button"
