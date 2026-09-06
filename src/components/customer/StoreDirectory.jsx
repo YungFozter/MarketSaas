@@ -44,6 +44,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState({
     openNow: true,
+    registeredOnly: false,
     acceptsQr: false,
     topRated: false,
     hasPoints: false
@@ -120,6 +121,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
       // 2. Filtros Rápidos (Pills)
       if (activeFilters.openNow && !store.isOpen) return false;
+      if (activeFilters.registeredOnly && !store.isRegisteredStore) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
       if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
       if (activeFilters.hasPoints && !store.pointsReward) return false;
@@ -152,6 +154,14 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       onSelectStore(slug);
     } else if (goToStore) {
       goToStore(slug);
+    }
+  };
+
+  const handleViewStoreOnMap = (slug) => {
+    setSelectedStoreSlug(slug);
+    const mapElement = document.getElementById('map-directory-container');
+    if (mapElement) {
+      mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -189,7 +199,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         </div>
 
         {/* Canvas de Google Maps */}
-        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
+        <div id="map-directory-container" className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
           <NeighborhoodMap
             allStores={storesWithDistance}
             stores={storesWithDistance}
@@ -261,6 +271,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                 setSearchQuery('');
                 setActiveFilters({
                   openNow: false,
+                  registeredOnly: false,
                   acceptsQr: false,
                   topRated: false,
                   hasPoints: false
@@ -280,6 +291,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   store={featuredStore}
                   variant="featured"
                   onSelect={handleStoreNavigation}
+                  onViewOnMap={handleViewStoreOnMap}
                 />
               </div>
             )}
@@ -304,6 +316,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                     store={store}
                     variant="compact"
                     onSelect={handleStoreNavigation}
+                    onViewOnMap={handleViewStoreOnMap}
                   />
                 ))}
 

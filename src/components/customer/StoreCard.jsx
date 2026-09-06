@@ -18,6 +18,7 @@ export const StoreCard = ({
   store, 
   variant = 'compact', // 'featured' | 'compact'
   onSelect, 
+  onViewOnMap,
   currencySymbol = 'Bs.' 
 }) => {
   if (!store) return null;
@@ -51,11 +52,20 @@ export const StoreCard = ({
               </div>
             )}
 
-            {/* Distancia flotante inferior */}
-            <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 text-white text-xs font-bold drop-shadow">
+            {/* Distancia flotante inferior con acceso directo a centrar mapa */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onViewOnMap) onViewOnMap(store.slug);
+              }}
+              className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 bg-slate-950/85 hover:bg-emerald-950/95 backdrop-blur-md rounded-xl text-white text-xs font-bold drop-shadow cursor-pointer transition-colors border border-white/15"
+              title="Centrar y ver ubicación en el mapa interactivo"
+            >
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>{store.distance}</span>
-            </div>
+              <span className="text-[10px] text-emerald-300 font-semibold underline ml-0.5">Ver mapa</span>
+            </button>
           </div>
 
           {/* Detalles comerciales y mini catálogo a la derecha */}
@@ -72,7 +82,13 @@ export const StoreCard = ({
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                         {store.name}
                       </h3>
-                      {store.isVerified && (
+                      {store.isRegisteredStore && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300 shadow-2xs">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                          Tienda Registrada
+                        </span>
+                      )}
+                      {!store.isRegisteredStore && store.isVerified && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                           Oficial
@@ -171,9 +187,18 @@ export const StoreCard = ({
             {store.statusBadge || 'Abierto'}
           </div>
 
-          <div className="absolute bottom-2 left-2 text-white text-xs font-bold drop-shadow">
-            {store.distance}
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onViewOnMap) onViewOnMap(store.slug);
+            }}
+            className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-slate-950/85 hover:bg-emerald-950/95 backdrop-blur-sm rounded-lg text-white text-[11px] font-bold drop-shadow cursor-pointer border border-white/15 transition-colors"
+            title="Centrar y ver en el mapa interactivo"
+          >
+            <MapPin className="w-3 h-3 text-emerald-400" />
+            <span>{store.distance}</span>
+          </button>
         </div>
 
         {/* Info y Calificación */}
@@ -183,9 +208,14 @@ export const StoreCard = ({
               <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
                 {store.name}
               </h3>
-              {store.isVerified && (
+              {store.isRegisteredStore ? (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
+                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700" />
+                  Registrada
+                </span>
+              ) : store.isVerified ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Verificada" />
-              )}
+              ) : null}
             </div>
             <div className="flex items-center gap-2 mt-0.5 text-xs">
               <span className="flex items-center text-amber-600 font-bold">

@@ -13,7 +13,14 @@ import {
   Tag,
   AlertTriangle,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  MapPin,
+  Navigation,
+  Compass,
+  ExternalLink,
+  Crosshair,
+  CheckCircle2,
+  Map
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -73,8 +80,43 @@ export const StoreSettings = () => {
       'Snacks & Golosinas',
       'Limpieza & Hogar'
     ],
+    address: storeConfig?.address || '',
+    zone: storeConfig?.zone || storeConfig?.condominium || '',
+    reference: storeConfig?.reference || '',
+    latitude: storeConfig?.googleMapsCoordinates?.lat ?? storeConfig?.latitude ?? -17.78335,
+    longitude: storeConfig?.googleMapsCoordinates?.lng ?? storeConfig?.longitude ?? -63.18214,
     ...storeConfig 
   });
+
+  const [detectingGps, setDetectingGps] = useState(false);
+
+  const handleDetectGps = () => {
+    if (!navigator.geolocation) {
+      showToast('Tu navegador no admite geolocalización GPS.', 'error');
+      return;
+    }
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setDetectingGps(false);
+        const lat = parseFloat(pos.coords.latitude.toFixed(6));
+        const lng = parseFloat(pos.coords.longitude.toFixed(6));
+        setForm(prev => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          googleMapsCoordinates: { lat, lng }
+        }));
+        showToast(`¡Ubicación GPS detectada con éxito! (${lat}, ${lng})`, 'success');
+      },
+      (err) => {
+        setDetectingGps(false);
+        console.warn('Geolocation error:', err);
+        showToast('No se pudo obtener la ubicación GPS. Verifica los permisos de tu navegador o ingresa las coordenadas manualmente.', 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const [newCondoName, setNewCondoName] = useState('');
   const [newCondoFee, setNewCondoFee] = useState('5.00');
@@ -97,8 +139,20 @@ export const StoreSettings = () => {
   const handleSave = (e) => {
     e.preventDefault();
     const { adminPassword, admin_pin, ...safeConfig } = form;
-    setStoreConfig(safeConfig);
-    showToast('Configuración del negocio guardada exitosamente.', 'success');
+    const lat = parseFloat(form.latitude) || -17.78335;
+    const lng = parseFloat(form.longitude) || -63.18214;
+    const configToSave = {
+      ...safeConfig,
+      address: form.address || '',
+      zone: form.zone || '',
+      reference: form.reference || '',
+      googleMapsCoordinates: { lat, lng },
+      latitude: lat,
+      longitude: lng,
+      isRegisteredStore: true
+    };
+    setStoreConfig(configToSave);
+    showToast('¡Configuración y ubicación de tu tienda guardadas exitosamente!', 'success');
   };
 
   const handleFileUpload = async (e, field) => {
@@ -429,7 +483,191 @@ export const StoreSettings = () => {
         </div>
       </div>
 
-      {/* Gestor de Categorías de Productos de la Tienda */}
+      {/* Ubicación Física & Geolocalización en el Mapa Hiperlocal */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>Ubicación Física & Geolocalización en el Mapa Hiperlocal</span>
+            </h3>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Esta ubicación posicionará tu tienda en el mapa interactivo de la <strong>Vista Vecino</strong> y se usará para calcular la distancia y tiempos de entrega de tus clientes.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDetectGps}
+            disabled={detectingGps}
+            className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 text-xs font-extrabold border border-emerald-200 transition-all cursor-pointer shadow-2xs shrink-0 disabled:opacity-50"
+            title="Usar el GPS de tu dispositivo para fijar las coordenadas exactas de la tienda"
+          >
+            <Crosshair className={`w-3.5 h-3.5 ${detectingGps ? 'animate-spin text-emerald-600' : 'text-emerald-600'}`} />
+            <span>{detectingGps ? 'Detectando GPS...' : 'Detectar mi ubicación GPS'}</span>
+          </button>
+        </div>
+
+        {/* Campos de Dirección */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="sm:col-span-2">
+            <label className="text-xs font-bold text-slate-700 block mb-1">
+              Dirección exacta de la Tienda (Calle, Avenida y Número) *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="Ej. Av. San Martín #450, entre 3er y 4to anillo"
+              value={form.address || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">
+              Zona, Barrio o Condominio *
+            </label>
+            <input
+              type="text"
+              placeholder="Ej. Barrio Las Palmas / Equipetrol / Condominio Vista Sol"
+              value={form.zone || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, zone: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-700 block mb-1">
+              Punto de Referencia para el Vecino
+            </label>
+            <input
+              type="text"
+              placeholder="Ej. Frente a la plaza principal, portón verde al lado de la farmacia"
+              value={form.reference || ''}
+              onChange={(e) => setForm(prev => ({ ...prev, reference: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Coordenadas GPS & Mini Mapa */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Coordenadas Geográficas (Latitud & Longitud)</span>
+              </span>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Puedes ajustarlas manualmente o usar el botón de GPS para precisión satelital.
+              </p>
+            </div>
+
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${form.latitude},${form.longitude}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+            >
+              <span>Abrir en Google Maps</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-slate-600 block mb-1">Latitud GPS</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={form.latitude}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  setForm(prev => ({
+                    ...prev,
+                    latitude: val,
+                    googleMapsCoordinates: { lat: val, lng: parseFloat(prev.longitude) || -63.18214 }
+                  }));
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-600 block mb-1">Longitud GPS</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={form.longitude}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value) || 0;
+                  setForm(prev => ({
+                    ...prev,
+                    longitude: val,
+                    googleMapsCoordinates: { lat: parseFloat(prev.latitude) || -17.78335, lng: val }
+                  }));
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
+              />
+            </div>
+          </div>
+
+          {/* Atajos Rápidos de Zona */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+              Zonas de Referencia:
+            </span>
+            {[
+              { name: 'Centro / Plaza 24', lat: -17.78335, lng: -63.18214 },
+              { name: 'Equipetrol', lat: -17.7665, lng: -63.1942 },
+              { name: 'Las Palmas', lat: -17.7942, lng: -63.2031 },
+              { name: 'Grigotá', lat: -17.7965, lng: -63.1985 },
+              { name: 'Av. Busch', lat: -17.7780, lng: -63.1990 }
+            ].map((zone) => (
+              <button
+                key={zone.name}
+                type="button"
+                onClick={() => {
+                  setForm(prev => ({
+                    ...prev,
+                    latitude: zone.lat,
+                    longitude: zone.lng,
+                    zone: prev.zone || zone.name,
+                    googleMapsCoordinates: { lat: zone.lat, lng: zone.lng }
+                  }));
+                  showToast(`Coordenadas fijadas en: ${zone.name}`);
+                }}
+                className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-400 hover:text-emerald-700 transition-colors cursor-pointer shadow-2xs"
+              >
+                {zone.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Previsualización en Vivo de Google Maps */}
+          <div className="space-y-1.5 pt-2">
+            <div className="flex items-center justify-between text-[11px] text-slate-500">
+              <span className="font-bold text-slate-700 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Vista Previa del Pin en Google Maps:</span>
+              </span>
+              <span>{form.latitude}, {form.longitude}</span>
+            </div>
+
+            <div className="relative w-full h-52 sm:h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
+              <iframe
+                key={`${form.latitude}-${form.longitude}`}
+                title="Vista previa del mapa de la tienda"
+                src={`https://maps.google.com/maps?q=${form.latitude},${form.longitude}+(${encodeURIComponent(form.name || 'Mi Tienda')})&z=16&hl=es&ie=UTF8&output=embed`}
+                className="w-full h-full border-0 pointer-events-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
         <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
           <Tag className="w-4 h-4 text-emerald-600" />

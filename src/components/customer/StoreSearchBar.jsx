@@ -4,7 +4,9 @@ import {
   ArrowRight, 
   QrCode, 
   Star, 
-  Gift
+  Gift,
+  CheckCircle2,
+  Store
 } from 'lucide-react';
 import './StoreSearchBar.css';
 
@@ -23,6 +25,13 @@ export const StoreSearchBar = ({
       pulse: true,
       activeClass: 'filter-pill-active-emerald',
       baseClass: 'filter-pill-emerald'
+    },
+    {
+      id: 'registeredOnly',
+      label: 'Tiendas Registradas',
+      icon: <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />,
+      activeClass: 'filter-pill-active-emerald',
+      baseClass: 'filter-pill-glass'
     },
     {
       id: 'acceptsQr',

@@ -567,48 +567,58 @@ export const StoreProvider = ({ children }) => {
           setStores(prev => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
+              const coords = conf.googleMapsCoordinates || conf.coordinates || {
+                lat: conf.latitude ? parseFloat(conf.latitude) : (-17.78335 + ((idx + 1) * 0.005)),
+                lng: conf.longitude ? parseFloat(conf.longitude) : (-63.18214 - ((idx + 1) * 0.004))
+              };
               return {
                 id: rs.id || `remote-${idx}`,
                 slug: rs.tenant_id || rs.id,
-                name: rs.name || conf.name || 'Minimarket Barrial',
-                tagline: rs.slogan || conf.tagline || 'Tu tienda de confianza',
-                address: conf.address || 'En tu sector',
-                condominium: conf.condominiums?.[0]?.name || 'Condominio Las Palmas',
-                distance: `A ${(idx + 2) * 150}m de tu torre`,
-                distanceMeters: (idx + 2) * 150,
-                rating: 4.8,
-                reviewsCount: 45 + idx * 12,
-                ordersCount: 45 + idx * 12,
-                isOpen: rs.is_open !== false,
-                statusBadge: rs.is_open !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
-                imageUrl: conf.bannerUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
-                deliveryTime: '15-20 min',
+                name: rs.name || conf.name || 'Minimarket Registrado',
+                tagline: rs.slogan || conf.tagline || 'Tienda oficial registrada',
+                address: conf.address || 'Ubicación registrada',
+                condominium: conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz',
+                reference: conf.reference || '',
+                distance: `A ${(idx + 1) * 180}m`,
+                distanceMeters: (idx + 1) * 180,
+                rating: 4.9,
+                reviewsCount: 24 + idx * 8,
+                ordersCount: 24 + idx * 8,
+                isOpen: rs.is_open !== false && conf.isOpen !== false,
+                statusBadge: (rs.is_open !== false && conf.isOpen !== false) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+                imageUrl: conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+                deliveryTime: '10-20 min',
                 freeDeliveryThreshold: conf.freeDeliveryThreshold || null,
                 hasFreeDelivery: !!conf.freeDeliveryThreshold,
                 acceptsQr: true,
                 hasPickup: true,
-                hasFastDelivery: true,
+                hasFastDelivery: conf.enableDelivery !== false,
                 pointsReward: conf.enablePoints !== false ? '+20 VeciPuntos' : null,
-                category: 'Minimarket & Abarrotes',
-                isFeatured: false,
-                totalStockItems: 150,
+                category: 'Minimarket Registrado',
+                isFeatured: true,
+                isRegisteredStore: true,
+                isVerified: true,
+                totalStockItems: 120,
                 perks: [
-                  { id: 'p1', text: '🛵 Delivery disponible' },
-                  { id: 'p2', text: '💳 QR Simple' }
+                  { id: 'p1', text: '✅ Registrada en el sistema' },
+                  { id: 'p2', text: '🛵 Delivery disponible' },
+                  { id: 'p3', text: '💳 QR Simple' }
                 ],
                 featuredProducts: [],
+                googleMapsCoordinates: coords,
+                googleMapsQuery: `${rs.name || conf.name}, ${conf.address || ''}, Santa Cruz de la Sierra`,
                 mapPosition: {
                   leftPercent: 40 + ((idx * 18) % 45),
                   bottomPixels: 45 + ((idx * 25) % 60),
-                  label: rs.name || 'Minimarket',
-                  badge: 'Activo'
+                  label: rs.name || conf.name || 'Minimarket',
+                  badge: 'Registrada'
                 }
               };
             });
 
-            const existingSlugs = new Set(initialStores.map(s => s.slug));
-            const newUnique = remoteMapped.filter(r => !existingSlugs.has(r.slug));
-            return [...initialStores, ...newUnique];
+            const remoteSlugs = new Set(remoteMapped.map(s => s.slug));
+            const remaining = initialStores.filter(s => !remoteSlugs.has(s.slug));
+            return [...remoteMapped, ...remaining];
           });
         }
       } catch (err) {
@@ -617,6 +627,69 @@ export const StoreProvider = ({ children }) => {
     };
     fetchRemoteStores();
   }, []);
+
+  // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
+  useEffect(() => {
+    if (!tenantSlug || !storeConfig?.name) return;
+    setStores(prev => {
+      const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug);
+      const coords = storeConfig.googleMapsCoordinates || {
+        lat: parseFloat(storeConfig.latitude) || -17.78335,
+        lng: parseFloat(storeConfig.longitude) || -63.18214
+      };
+      const updatedCurrent = {
+        id: tenantSlug,
+        slug: tenantSlug,
+        name: storeConfig.name,
+        tagline: storeConfig.tagline || 'Tu tienda de confianza a pasos de tu puerta',
+        address: storeConfig.address || 'En tu sector',
+        condominium: storeConfig.zone || storeConfig.condominium || 'Santa Cruz',
+        reference: storeConfig.reference || '',
+        distance: 'En tu zona',
+        distanceMeters: 100,
+        rating: 5.0,
+        reviewsCount: 30,
+        ordersCount: 30,
+        isOpen: storeConfig.isOpen !== false,
+        statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+        imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+        deliveryTime: '10-15 min',
+        freeDeliveryThreshold: storeConfig.freeDeliveryThreshold || null,
+        hasFreeDelivery: !!storeConfig.freeDeliveryThreshold,
+        acceptsQr: true,
+        hasPickup: true,
+        hasFastDelivery: storeConfig.enableDelivery !== false,
+        pointsReward: storeConfig.enablePoints !== false ? '+20 VeciPuntos' : null,
+        category: 'Minimarket Registrado',
+        isFeatured: true,
+        isRegisteredStore: true,
+        isVerified: true,
+        totalStockItems: 100,
+        perks: [
+          { id: 'p1', text: '✅ Registrada en el sistema' },
+          { id: 'p2', text: '🛵 Delivery disponible' },
+          { id: 'p3', text: '💳 QR Simple' }
+        ],
+        featuredProducts: [],
+        googleMapsCoordinates: coords,
+        googleMapsQuery: `${storeConfig.name}, ${storeConfig.address || ''}, Santa Cruz de la Sierra`,
+        mapPosition: {
+          leftPercent: 50,
+          bottomPixels: 55,
+          label: storeConfig.name,
+          badge: 'Tu Tienda'
+        }
+      };
+
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], ...updatedCurrent };
+        return copy;
+      } else {
+        return [updatedCurrent, ...prev];
+      }
+    });
+  }, [storeConfig, tenantSlug]);
 
   // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {
