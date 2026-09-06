@@ -1,80 +1,102 @@
 ---
-name: MarketSaaS Merchant Cockpit & Store Operations
+name: Hyperlocal Glassmorphism
 colors:
-  surface: '#0f172a'
-  surface-dim: '#020617'
-  surface-bright: '#1e293b'
-  surface-container-lowest: '#0b0f19'
-  surface-container-low: '#131c31'
-  surface-container: '#1e293b'
-  surface-container-high: '#27354f'
-  surface-container-highest: '#334155'
-  on-surface: '#f8fafc'
-  on-surface-variant: '#94a3b8'
-  inverse-surface: '#f8fafc'
-  inverse-on-surface: '#0f172a'
-  outline: '#475569'
-  outline-variant: '#334155'
-  surface-tint: '#10b981'
-  primary: '#10b981'
-  on-primary: '#022c22'
-  primary-container: '#064e3b'
-  on-primary-container: '#6ee7b7'
-  inverse-primary: '#047857'
-  secondary: '#3b82f6'
-  on-secondary: '#172554'
-  secondary-container: '#1e3a8a'
-  on-secondary-container: '#bfdbfe'
-  tertiary: '#f59e0b'
-  on-tertiary: '#451a03'
-  tertiary-container: '#78350f'
-  on-tertiary-container: '#fde68a'
-  error: '#ef4444'
-  on-error: '#450a0a'
-  error-container: '#7f1d1d'
-  on-error-container: '#fecaca'
+  surface: '#faf8ff'
+  surface-dim: '#d2d9f4'
+  surface-bright: '#faf8ff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#f2f3ff'
+  surface-container: '#eaedff'
+  surface-container-high: '#e2e7ff'
+  surface-container-highest: '#dae2fd'
+  on-surface: '#131b2e'
+  on-surface-variant: '#3c4a42'
+  inverse-surface: '#283044'
+  inverse-on-surface: '#eef0ff'
+  outline: '#6c7a71'
+  outline-variant: '#bbcabf'
+  surface-tint: '#006c49'
+  primary: '#006c49'
+  on-primary: '#ffffff'
+  primary-container: '#10b981'
+  on-primary-container: '#00422b'
+  inverse-primary: '#4edea3'
+  secondary: '#855300'
+  on-secondary: '#ffffff'
+  secondary-container: '#fea619'
+  on-secondary-container: '#684000'
+  tertiary: '#006c4a'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#3eb686'
+  on-tertiary-container: '#00422c'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#6ffbbe'
+  primary-fixed-dim: '#4edea3'
+  on-primary-fixed: '#002113'
+  on-primary-fixed-variant: '#005236'
+  secondary-fixed: '#ffddb8'
+  secondary-fixed-dim: '#ffb95f'
+  on-secondary-fixed: '#2a1700'
+  on-secondary-fixed-variant: '#653e00'
+  tertiary-fixed: '#85f8c4'
+  tertiary-fixed-dim: '#68dba9'
+  on-tertiary-fixed: '#002114'
+  on-tertiary-fixed-variant: '#005137'
+  background: '#faf8ff'
+  on-background: '#131b2e'
+  surface-variant: '#dae2fd'
+  primary-dark: '#047857'
+  primary-soft: '#ecfdf5'
+  accent-gold-soft: '#fef3c7'
+  canvas-snow: '#f8fafc'
+  surface-neutral-subtle: '#f1f5f9'
+  text-muted: '#64748b'
+  surface-card-dark: '#1e293b'
   status-pending: '#f59e0b'
-  status-pending-bg: '#fef3c7'
-  status-pending-border: '#fde68a'
   status-preparing: '#3b82f6'
-  status-preparing-bg: '#eff6ff'
-  status-preparing-border: '#bfdbfe'
-  status-shipping: '#8b5cf6'
-  status-shipping-bg: '#f5f3ff'
-  status-shipping-border: '#ddd6fe'
+  status-delivering: '#8b5cf6'
   status-delivered: '#10b981'
-  status-delivered-bg: '#ecfdf5'
-  status-delivered-border: '#a7f3d0'
-  status-cancelled: '#ef4444'
-  status-cancelled-bg: '#fef2f2'
-  status-cancelled-border: '#fecaca'
-  pos-display-bg: '#020617'
-  pos-keypad-btn: '#1e293b'
-  pos-keypad-hover: '#334155'
+  status-danger: '#ef4444'
+  whatsapp-action: '#25d366'
 typography:
-  headline-hero:
+  display-hero:
     fontFamily: Outfit
     fontSize: 48px
     fontWeight: '800'
-    lineHeight: 56px
+    lineHeight: 54px
+    letterSpacing: -0.03em
+  display-hero-mobile:
+    fontFamily: Outfit
+    fontSize: 32px
+    fontWeight: '800'
+    lineHeight: 38px
     letterSpacing: -0.02em
   headline-lg:
     fontFamily: Outfit
-    fontSize: 32px
+    fontSize: 30px
     fontWeight: '700'
-    lineHeight: 40px
+    lineHeight: 36px
     letterSpacing: -0.02em
-  headline-md:
+  headline-lg-mobile:
     fontFamily: Outfit
     fontSize: 24px
     fontWeight: '700'
-    lineHeight: 32px
+    lineHeight: 30px
+    letterSpacing: -0.015em
+  headline-md:
+    fontFamily: Outfit
+    fontSize: 20px
+    fontWeight: '700'
+    lineHeight: 26px
     letterSpacing: -0.01em
   headline-sm:
     fontFamily: Outfit
-    fontSize: 18px
+    fontSize: 16px
     fontWeight: '600'
-    lineHeight: 26px
+    lineHeight: 22px
   body-lg:
     fontFamily: Plus Jakarta Sans
     fontSize: 16px
@@ -88,242 +110,142 @@ typography:
   body-sm:
     fontFamily: Plus Jakarta Sans
     fontSize: 12px
-    fontWeight: '500'
-    lineHeight: 18px
-  label-md:
+    fontWeight: '400'
+    lineHeight: 16px
+  label-lg:
     fontFamily: Plus Jakarta Sans
     fontSize: 14px
     fontWeight: '700'
-    lineHeight: 20px
-  label-sm:
+    lineHeight: 18px
+    letterSpacing: 0.01em
+  label-md:
     fontFamily: Plus Jakarta Sans
     fontSize: 12px
-    fontWeight: '600'
+    fontWeight: '700'
     lineHeight: 16px
-    letterSpacing: 0.02em
-  badge-micro:
+  label-badge:
     fontFamily: Plus Jakarta Sans
     fontSize: 10px
     fontWeight: '800'
-    lineHeight: 14px
-    letterSpacing: 0.05em
-  number-counter:
-    fontFamily: Outfit
-    fontSize: 28px
-    fontWeight: '800'
-    lineHeight: 34px
+    lineHeight: 12px
+    letterSpacing: 0.04em
 rounded:
-  sm: 0.375rem
+  sm: 0.25rem
   DEFAULT: 0.5rem
   md: 0.75rem
   lg: 1rem
-  xl: 1.25rem
-  2xl: 1.5rem
+  xl: 1.5rem
   full: 9999px
 spacing:
   touch-min: 44px
-  header-height: 64px
-  tab-bar-height: 52px
-  sidebar-width: 260px
-  kanban-col-min-width: 310px
+  gutter-mobile: 0.75rem
+  gutter-tablet: 1rem
+  gutter-desktop: 1.5rem
+  container-max: 1280px
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 0.75rem
+  space-lg: 1rem
+  space-xl: 1.25rem
+  space-2xl: 1.5rem
+  space-3xl: 2rem
 ---
 
-# Especificación Integral: Vista Dueño / Panel MiniMarket (Admin Cockpit)
+## Brand & Style
 
-Este documento define la totalidad de directrices, experiencia de usuario (UX), arquitectura de componentes, flujos operativos, esquema de datos y recursos técnicos necesarios para el **Panel de Control del Dueño de Minimarket** (`viewMode: 'admin'`) en MarketSaaS.
+The design system drives a multi-tenant hyperlocal commerce ecosystem built for residential towers, condominium communities, and neighborhood minimarkets. It balances the high-velocity operational ergonomics of modern quick-commerce software with the trustworthy, approachable warmth of buying from a familiar neighbor.
 
----
+The visual direction follows **Modern Clean Glassmorphism**:
+- Ultra-clean, luminous canvas anchored by an airy Snow Grey base (`#f8fafc`).
+- Translucent frosted glass panels featuring dual-layer backdrop blurs (`backdrop-blur-md` to `backdrop-blur-xl`) and hairline translucent borders that mirror contemporary architectural interiors.
+- A signature Emerald Green brand accent conveying freshness, inventory availability, and frictionless neighborhood logistics, elevated with Amber Gold tokens representing community rewards (VeciPuntos).
+- Purpose-built for high-speed touch interactions with tactile feedback, dedicated ergonomic tap zones (minimum 44px hit bounds), and rapid WhatsApp order-routing flows.
 
-## 1. Visión y Propósito Operativo
+## Colors
 
-### 1.1. Perfil del Usuario y Contexto Real
-El dueño de tienda o encargado de mostrador opera en un entorno físico de alto estrés y ritmo acelerado: atiende clientes presenciales, recibe llamadas, prepara bolsas para delivery y vigila su inventario.
+The color palette centers on functional clarity and high-contrast scanning across sunlight-lit mobile store aisles and fast-paced cashier terminals.
 
-**Objetivo Central del Panel:**
-Proveer un centro de comando táctico ("Cockpit") que requiera el **mínimo número de clics**, con feedback visual y acústico instantáneo, legible a 1 metro de distancia en tabletas o laptops de mostrador, y totalmente operable en smartphones de gama media.
+### Core Roles
+- **Primary (`#10b981`)**: Brand pulse. Applied to primary checkout CTA surfaces, online/open status pills, map store pins, and interactive progress bars.
+- **Secondary (`#f59e0b`)**: Gamification and community incentive engine. Powers VeciPuntos loyalty tags, customer star ratings, and pending operational alerts.
+- **Tertiary (`#059669`)**: Deep emerald for hover/active click feedback, text link hover states, and emphasized category headers.
+- **Neutral (`#0f172a`)**: Deep slate for high-priority typography, high-impact modal headers, and spectator navigation surfaces.
 
----
+### Operational State Tokens
+- **Kanban Pendiente**: `#f59e0b` paired with surface tint `#fef3c7`.
+- **Kanban Preparando**: `#3b82f6` paired with surface tint `#eff6ff`.
+- **Kanban En Camino**: `#8b5cf6` paired with surface tint `#f5f3ff`.
+- **Kanban Entregado**: `#10b981` paired with surface tint `#ecfdf5`.
+- **Critical Stock / Cerrado**: `#ef4444` paired with surface tint `#fef2f2`.
+- **WhatsApp Finalization**: `#25d366` reserved exclusively for direct customer-to-merchant conversational checkout handoff.
 
-## 2. Estructura de Navegación y Header Operativo
+## Typography
 
-### 2.1. Barra Superior Pegajosa (Sticky Operations Header)
-Permanece siempre visible en la parte superior con los controles críticos del negocio:
+The typography pairs **Outfit** for structural and architectural presence with **Plus Jakarta Sans** for mobile legibility.
 
-1. **Estado de Apertura en Vivo (`Switch isOpen`):**
-   - Toggle grande tipo pastilla: `[ 🟢 ABIERTO AHORA ]` / `[ 🔴 CERRADO TEMPORALMENTE ]`.
-   - Al cambiar a "Cerrado", la tienda se bloquea automáticamente en la Vista Vecino, impidiendo nuevos pedidos.
-2. **Control Acústico de Alertas (`Audio Alerts Controller`):**
-   - Botón con icono de bocina `Volume2` / `VolumeX`.
-   - Permite activar/silenciar el timbre auditivo (`Notificacion de orden de compra.mp3`).
-   - Botón secundario `[ Probar Sonido ]` para que el comerciante verifique que su altavoz o bluetooth está activo.
-3. **Selector Rápido de Sucursal / Nombre de la Tienda:**
-   - Muestra el nombre comercial actual (`storeConfig.name`) con acceso directo a ajustes.
-4. **Selector de Modo / Salida:**
-   - Botón para previsualizar la tienda como vecino `[ 👁️ Vista Vecino ]` y volver al panel.
+- **Headlines & Display (Outfit)**: Tight, geometric proportions bring a structured storefront aesthetic to hero titles, catalog category headlines, and cashier counters. Negative letter-spacing prevents visual bloat on narrow mobile viewports.
+- **Body & Controls (Plus Jakarta Sans)**: Generous counters and clear apertures provide instant readability across product listings, condo unit labels (e.g., *Torre B - Depto 402*), and live order status tickers.
+- **Numbers & Monetary Scans**: All unit prices, shopping basket running totals, and cash denomination buttons must employ `headline-md` or `headline-sm` with `fontWeight: 700` to minimize operational errors during counter sales.
 
-### 2.2. Barra de Módulos (Tab Navigation)
-Segmentada con iconos de alta visibilidad y contadores badge dinámicos:
-* 📊 **Dashboard:** Resumen métrico del día, ventas en Bs., horas pico y productos estrella.
-* 📦 **Pedidos en Vivo (Kanban):** Flujo de preparación y despacho con alertas sonoras (Badge con contador de pendientes).
-* 🛒 **Punto de Venta (POS):** Cobro rápido en mostrador con escaneo de código de barras.
-* 🏷️ **Inventario:** Catálogo completo, control de stock crítico y edición rápida de precios.
-* 🔔 **Peticiones de Vecinos:** Demandas de productos faltantes reportadas por residentes.
-* ⚙️ **Configuración:** Condominios atendidos, tarifas de delivery, montos mínimos, QR y horarios.
+## Layout & Spacing
 
----
+The system runs on a mobile-first, 4px/8px-aligned fluid grid transitioning into a balanced Bento split-screen model on desktop viewports.
 
-## 3. Especificación Detallada por Módulo
+### Breakpoints & Layout Adapters
+- **Mobile (< 640px)**: Single column with edge gutters of `12px` (`gutter-mobile`). Split views (Directory vs. Map) switch via a dual pill segmented toggle (`[📋 Tiendas] | [🗺️ Mapa]`). Floating bottom cart capsule anchored at `bottom: 16px`.
+- **Tablet (640px - 1023px)**: 2-to-3 column dynamic grid with `16px` gutters. Modals anchor as centered sheets constrained to `max-w-lg` or `max-w-2xl`.
+- **Desktop (≥ 1024px)**: 
+  - Store Directory utilizes a fixed-ratio split: 45% scrollable store/product inventory list on the left, paired with a 55% sticky interactive neighborhood map canvas on the right (`min-h-[650px]`).
+  - Maximum central content container bound to `1280px` with horizontal page margin padding `px-4 sm:px-6 lg:px-8`.
+  - Merchant Dashboard organizes into a 4-column responsive horizontal Kanban pipeline (`min-w-[280px]` per stage) with horizontal drag-scroll on intermediate displays.
 
-### 📊 Módulo 1: Dashboard de Control y Métricas Rápidas (`AdminDashboard`)
+All touch interaction surfaces adhere strictly to `touch-min` (`44px` height and width minimum) to ensure zero tap misses during outdoor handheld operation.
 
-#### A. Tarjetas de KPIs Operativos del Día (Top Metrics)
-1. **Ventas Totales del Día:** Cifra en Bs., comparativa porcentual vs. día anterior y total de órdenes cerradas.
-2. **Pedidos en Espera / Activos:** Contador en tiempo real resaltado en ámbar/azul.
-3. **Ticket Promedio:** Gasto medio por cliente (ej. 45.50 Bs.).
-4. **Alertas de Stock Crítico:** Cantidad de productos con stock menor al umbral mínimo (`stock <= minStock`).
+## Elevation & Depth
 
-#### B. Gráficos y Análisis Intuitivo
-* **Gráfico de Horas Pico (Bar Chart):** Distribución de pedidos por hora (ej. pico a las 13:00 y a las 20:00) para prever la necesidad de empaquetadores o repartidores.
-* **Top 5 Productos Más Vendidos:** Lista con foto miniatura, unidades despachadas y facturación total generada.
-* **Desglose de Métodos de Pago Recibidos:** Proporción entre Efectivo vs. QR Simple vs. Tarjeta POS.
+Visual depth is achieved through layered frosted-glass tiers, translucent acrylic surfaces, and slate-tinted ambient drop shadows rather than heavy structural divider borders.
 
----
+### Surface Elevation Hierarchy
+- **Level 1 (Foundation Canvas)**: Snow Grey (`#f8fafc`), flat base without shadow.
+- **Level 2 (Standard Content Cards)**: White card substrate with subtle boundary (`border: 1px solid #f1f5f9`), lifted by `box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04)`.
+- **Level 3 (Frosted Glass Panels & Sticky Headers)**: Translucent white `rgba(255, 255, 255, 0.85)` underpinned by `backdrop-filter: blur(16px)` and `-webkit-backdrop-filter: blur(16px)`. Bordered by a hairline translucent rim (`1px solid rgba(226, 232, 240, 0.8)`) and ambient shadow `box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.05)`.
+- **Level 4 (Flyout Drawers, Modals & Cart Capsules)**: High-opacity white `rgba(255, 255, 255, 0.96)` layered over an ambient backdrop dimming scrim (`rgba(15, 23, 42, 0.45)` with `backdrop-blur-sm`). Elevated by deep volumetric shadow `box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.22)`.
 
-### 📦 Módulo 2: Tablero Kanban de Pedidos en Vivo (`LiveOrdersBoard`)
+## Shapes
 
-Es el corazón operativo del comercio en horas pico.
+The geometric personality features soft, modern rounding that reinforces welcoming community commerce:
 
-#### A. Arquitectura de Columnas (4 Etapas Reactivas)
-1. 🟡 **Pendientes (Nuevos Pedidos):**
-   - Activa de inmediato el archivo de audio (`Notificacion de orden de compra.mp3`) de manera cíclica cada 15 segundos hasta ser atendido.
-   - Borde amarillo pulsante (`animate-pulse`).
-   - Muestra tiempo transcurrido desde el pedido (ej. "Hace 2 min").
-   - Botón CTA: `[ 🔵 Aceptar y Preparar ]`.
-2. 🔵 **En Preparación (En Mostrador):**
-   - Checklist interactivo de productos: el operario va marcando con un tap cada producto que coloca en la bolsa.
-   - Indicador de empaque: `3 de 5 productos listos`.
-   - Botón CTA: `[ 🟣 Despachar / Listo para Entrega ]`.
-3. 🟣 **En Camino / Listo para Retiro:**
-   - Si es **Delivery:** Muestra el condominio, torre y departamento destino, con botón para contactar al cliente o al repartidor.
-   - Si es **Retiro en Tienda:** Etiqueta distintiva `🏪 Retiro en Local`.
-   - Botón CTA: `[ 🟢 Confirmar Entrega ]`.
-4. 🟢 **Entregados / Historial del Día:**
-   - Lista consolidada de pedidos completados con detalles de pago y vuelto entregado.
-   - Opción para archivar o reimprimir comanda.
+- **Buttons, Text Inputs, and Dropdowns**: `rounded-xl` (`0.75rem` / `12px`), providing ergonomic tap boundaries.
+- **Product Cards, Store Tiles, and Kanban Columns**: `rounded-2xl` (`1rem` / `16px`), framing complex card metadata smoothly.
+- **Modals, Floating Drawers, and Interactive Map Enclosures**: `rounded-3xl` (`1.5rem` / `24px`), reflecting modern mobile OS bottom sheets.
+- **Status Badges, Filter Chips, Stepper Controls, and Mode Switchers**: `rounded-full` (`9999px`) for high-contrast scanning.
 
-#### B. Componentes Internos de la Tarjeta de Pedido
-* **Encabezado:** ID del pedido (ej. `#ORD-8492`), hora de registro, tipo de servicio (`🛵 Delivery` o `🏪 Retiro`).
-* **Datos del Vecino:** Nombre completo, teléfono con enlace directo a WhatsApp (`wa.me`) con mensaje contextual prefabricado (*"Hola Valeria, tu pedido #8492 de Amarket está listo y saliendo hacia la Torre B"*).
-* **Dirección Hiperlocal:** Condominio, Torre y Número de Depto.
-* **Desglose Financiero:** Subtotal, costo de envío, descuento de VeciPuntos y Total a Cobrar en Bs.
-* **Detalle de Pago:** Método seleccionado (Efectivo y monto con el que pagará para calcular el **Vuelto exacto**, QR o Tarjeta).
-* **Acciones Rápidas:**
-  - 🖨️ `Imprimir Comanda` (Formato ticket térmico de 58mm/80mm).
-  - 💬 `WhatsApp Directo`.
-  - ❌ `Rechazar / Cancelar Pedido` (Requiere motivo: Falta de stock, fuera de horario).
+## Components
 
----
+### Buttons
+- **Primary CTA**: Height `48px` minimum, `rounded-xl`, gradient surface `linear-gradient(135deg, #10b981 0%, #059669 100%)`, text `label-lg` white. Hover: brightness transition and `translate-y-[-1px]`. Active: `scale(0.98)`.
+- **WhatsApp Order Closing Button**: Height `52px`, `rounded-xl`, saturated WhatsApp green (`#25d366`), white bold text, displaying leading chat bubble icon and dynamic order total pinned to the trailing edge.
+- **Secondary & POS Quick-Cash**: Height `44px`, `rounded-xl`, surface `#f1f5f9`, slate text `#0f172a`, active border highlight in `#10b981`.
 
-### 🛒 Módulo 3: Punto de Venta para Mostrador (`PosTerminal`)
+### Category Chips & Mode Switchers
+- Height `40px` with `44px` transparent tap area, `rounded-full`, horizontal flex layout.
+- Inactive: Background `rgba(255, 255, 255, 0.9)`, border `1px solid #e2e8f0`, text `#64748b`.
+- Active: Background `#10b981`, border `1px solid #10b981`, white text, shadow `0 4px 12px rgba(16, 185, 129, 0.25)`.
 
-Diseñado para cobrar a vecinos que compran físicamente en el local con rapidez de supermercado.
+### Input Fields & Search Bars
+- Height `48px` (Search bar: `56px`), `rounded-xl` (Search bar: `rounded-2xl`), surface `#ffffff`, border `1.5px solid #e2e8f0`.
+- Focus state: Border color `#10b981` with ring halo `0 0 0 3px rgba(16, 185, 129, 0.15)`. Leading icon slot anchored in `#64748b`.
 
-#### A. Interfaz Dividida en 2 Secciones
-1. **Lado Izquierdo — Catálogo Táctil y Buscador:**
-   - Campo de búsqueda instantánea con compatibilidad para **Lector de Código de Barras USB o Bluetooth** (detecta `Enter` automático al escanear EAN-13).
-   - Cuadrícula de productos favoritos de alta rotación (Pan, Leche, Gaseosas, Hielo, Cigarrillos) con botones grandes para sumar con 1 tap.
-2. **Lado Derecho — Ticket Virtual y Cobro:**
-   - Lista de ítems en canasta con botones `+` / `-` y botón papelera.
-   - Subtotal, Descuentos aplicados y Total en Bs.
-   - **Calculador de Cambio / Vuelto:** Teclado numérico táctil en pantalla con botones de billetes bolivianos rápidos: `Bs. 10`, `Bs. 20`, `Bs. 50`, `Bs. 100`, `Bs. 200`. Calcula instantáneamente el cambio.
-   - Botones de cobro final: `[ Efectivo ]`, `[ Cobro QR ]`, `[ Tarjeta POS ]`.
-   - Al cerrar la venta: descuenta automáticamente del inventario general y emite ticket de venta.
+### Product & Storefront Cards
+- Frosted surface (`rgba(255, 255, 255, 0.85)`), `rounded-2xl`, border `1px solid rgba(226, 232, 240, 0.8)`.
+- Top-left badge: Discount pill (`#ef4444` background, white uppercase text).
+- Top-right badge: VeciPuntos multiplier (`#fef3c7` background, `#f59e0b` text and sparkles).
+- Stepper button: When `0`, display `+ Añadir` pill (`rounded-full`, `#ecfdf5` background, `#047857` text). When `> 0`, expand to inline numeric counter flanked by `-` and `+` touch circles.
 
----
+### Kanban Pipeline Cards (Merchant Dashboard)
+- Compact `rounded-xl` container with a `4px` left vertical status indicator rail corresponding to the active state color (`#f59e0b`, `#3b82f6`, `#8b5cf6`, or `#10b981`).
+- Apartment / Delivery destination in bold `headline-sm`, SKU checklist with toggleable completion states, and an instant one-tap state advancement button.
 
-### 🏷️ Módulo 4: Gestor de Inventario y Catálogo (`InventoryManager`)
-
-Control total sobre qué ven los vecinos en la tienda digital.
-
-#### A. Vista de Tabla y Cuadrícula
-* Filtros por categoría (`Lácteos`, `Bebidas`, `Snacks`, `Limpieza`, `Abarrotes`, etc.).
-* Filtro rápido por estado: `Todos`, `En Stock`, `Bajo Stock (< 5)`, `Agotados`.
-* Búsqueda en tiempo real por nombre, código de barras o SKU.
-* **Control de Stock Inline:** Botones de suma y resta rápida directamente en la tabla sin abrir el modal.
-* Switch de visibilidad en tienda (permite ocultar un producto temporalmente sin borrarlo).
-
-#### B. Modal de Alta y Edición de Producto
-* **Nombre del Producto:** Campo obligatorio.
-* **Categoría:** Dropdown con autocompletado y opción de crear nueva categoría.
-* **Precios:**
-  - Precio de Venta (Bs.) *.
-  - Precio de Costo (Bs.) (opcional, para métricas internas de ganancia bruta).
-* **Control de Existencias:**
-  - Stock actual.
-  - Stock mínimo de alerta.
-  - Unidad de medida (`Unidad`, `Kg`, `Litro`, `Paquete`, `Botella`).
-* **Código de Barras / SKU:** Input con botón para autogenerar código o escanear con pistola.
-* **Imagen del Producto:** Selector de imágenes locales o enlaces predefinidos optimizados con CDN.
-* **Configuraciones Especiales:**
-  - Switch `⭐ Producto Destacado / Favorito del Barrio`.
-  - Switch `🏷️ En Oferta / Promoción Especial` (permite ingresar precio anterior tachado).
-
----
-
-### 🔔 Módulo 5: Buzón de Solicitudes de Vecinos (`ProductRequestsAdmin`)
-
-Transforma la demanda insatisfecha en ventas garantizadas.
-
-* **Listado de Peticiones:** Muestra los productos que los vecinos pidieron mediante el botón `🔔 ¿Falta un producto? Pídelo`.
-* **Métricas de Demanda:** Agrupa solicitudes iguales (ej. *"Leche Deslactosada 1L — 4 vecinos interesados en Torre Las Palmas"*).
-* **Acciones del Dueño:**
-  - `[ ➕ Agregar al Catálogo ]`: Abre el formulario de nuevo producto con el nombre ya completado.
-  - `[ 💬 Avisar al Vecino por WhatsApp ]`: Notifica al vecino que su producto ya fue surtido y está listo para pedir.
-  - `[ Descartar ]`: Marca la solicitud como no viable.
-
----
-
-### ⚙️ Módulo 6: Configuración del Minimarket (`StoreSettings`)
-
-Controla los parámetros comerciales y de entrega.
-
-#### A. Identidad y Contacto
-* Nombre de la Tienda, Slogan, Logo y Foto de Portada.
-* Teléfono de contacto y **Número de WhatsApp de Pedidos** (formato internacional ej. `591XXXXXXXX`).
-* Dirección física del local y coordenadas GPS aproximadas.
-
-#### B. Cobertura Hiperlocal & Condominios
-* Selector multi-tag de condominios y barrios asignados.
-* Gestión de Torres/Bloques para facilitar la dirección al vecino en el checkout.
-
-#### C. Políticas de Delivery & Pedidos
-* Switch `Habilitar Envíos a Domicilio` (si se desactiva, la tienda opera solo para retiro en local).
-* Costo fijo de envío (ej. `5.00 Bs.`) o `0.00 Bs.` (Gratis).
-* **Monto Mínimo de Pedido (`minOrder`):** Monto mínimo para calificar a delivery (ej. `25.00 Bs.`).
-* **Umbral de Envío Gratis:** Monto a partir del cual el delivery es bonificado (ej. `80.00 Bs.`).
-
-#### D. Pasarela de Cobro QR Propia
-* Subida de imagen del **Código QR de Cobro** (Simple QR de cualquier banco de Bolivia: BNB, BCP, Mercantil, Fie, Unión, etc.).
-* Datos bancarios en texto: Banco, Número de Cuenta y Titular (con botón de copia rápida).
-
-#### E. Gamificación VeciPuntos
-* Switch `Activar Programa VeciPuntos`.
-* Ratio de acumulación: Puntos por cada Bs. comprado (default `1 Bs. = 1 punto`).
-* Configuración de recompensas canjeables (ej. 150 pts = Cupón de 10 Bs. de descuento).
-
----
-
-## 4. Recursos Técnicos y Assets Necesarios
-
-### 4.1. Archivos Multimedia
-* `public/audio/Notificacion de orden de compra.mp3`: Timbre de sonido nítido para ingreso de pedidos.
-* `public/images/defaults/store-cover-placeholder.webp`: Portada genérica para minimarkets.
-* `public/images/defaults/qr-placeholder.png`: Imagen de demostración para el pago QR.
-
-### 4.2. Librería de Iconos Requerida (`lucide-react`)
-`LayoutDashboard`, `Kanban`, `Receipt`, `Package`, `Settings`, `MessageSquare`, `TrendingUp`, `AlertTriangle`, `Volume2`, `VolumeX`, `Plus`, `Edit2`, `Trash2`, `CheckCircle2`, `Clock`, `Truck`, `Store`, `QrCode`, `Banknote`, `CreditCard`, `Printer`, `Barcode`, `Users`, `Flame`, `Sparkles`, `Search`, `Filter`, `ArrowRight`, `ExternalLink`.
-
-### 4.3. Reglas de Responsive Design y Dispositivos de Trabajo
-* **Tablets y Laptops de Mostrador (1024px+):** Vista dividida o Kanban en 4 columnas simultáneas horizontales.
-* **Smartphones (Mobile):** Kanban colapsable por pestañas de estado (`Pendientes (2)`, `Preparando (1)`, `En Camino (0)`), para facilitar el manejo con una mano mientras se atiende en mostrador.
-* **Control de Errores y Confirmaciones:** Modales de confirmación con doble verificación antes de eliminar productos o cancelar pedidos pagados.
+### Floating Mobile Cart Drawer & Bar
+- **Persistent Bottom Capsule**: Floating `16px` above viewport bottom on mobile, dark glass surface (`rgba(15, 23, 42, 0.94)` with `backdrop-blur-md`), `rounded-2xl`, displaying running total, counter badge, and forward arrow.
+- **Cart Drawer**: Slides smoothly (`cubic-bezier(0.16, 1, 0.3, 1)`) from bottom (mobile) or right (desktop), featuring VeciPuntos progress bar, delivery location selector, and WhatsApp order submission.

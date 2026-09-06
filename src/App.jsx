@@ -54,17 +54,19 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      {/* Barra de Navegación Principal */}
-      <Navbar
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenPoints={() => setIsPointsOpen(true)}
-        onOpenRequests={() => handleOpenRequests('')}
-        onOpenLocationModal={() => setIsLocationOpen(true)}
-        onRequestAdminAccess={() => setIsAuthModalOpen(true)}
-        onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        activeSpectatorTab={spectatorShowcaseTab}
-        onSelectSpectatorTab={setSpectatorShowcaseTab}
-      />
+      {/* Barra de Navegación Principal para Vista Espectador y Vecino */}
+      {viewMode !== 'admin' && (
+        <Navbar
+          onOpenCart={() => setIsCartOpen(true)}
+          onOpenPoints={() => setIsPointsOpen(true)}
+          onOpenRequests={() => handleOpenRequests('')}
+          onOpenLocationModal={() => setIsLocationOpen(true)}
+          onRequestAdminAccess={() => setIsAuthModalOpen(true)}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          activeSpectatorTab={spectatorShowcaseTab}
+          onSelectSpectatorTab={setSpectatorShowcaseTab}
+        />
+      )}
 
       {/* Contenido Principal según el Modo Activo */}
       <div className="flex-1">
@@ -102,25 +104,6 @@ const AppContent = () => {
           onOpenRequests={() => handleOpenRequests('')}
           onOpenLocationModal={() => setIsLocationOpen(true)}
         />
-      )}
-
-      {viewMode === 'admin' && (
-        <footer className="bg-white border-t border-slate-200/90 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 text-center sm:text-left text-slate-600">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
-                MarketSaaS Panel Admin
-              </span>
-              <span className="text-slate-300 font-light">•</span>
-              <span className="text-xs sm:text-sm font-semibold text-slate-600">
-                Gestión de Inventario, Pedidos y Clientes
-              </span>
-            </div>
-            <p className="text-xs font-medium text-slate-400">
-              © {new Date().getFullYear()} MarketSaaS. Todos los derechos reservados.
-            </p>
-          </div>
-        </footer>
       )}
 
       {/* Modales Globales */}

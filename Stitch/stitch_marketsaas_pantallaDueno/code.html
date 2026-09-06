@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-dark": "#047857",
+            "surface-bright": "#faf8ff",
+            "status-pending": "#f59e0b",
+            "outline-variant": "#bbcabf",
+            "surface-card-dark": "#1e293b",
+            "surface-container-high": "#e2e7ff",
+            "on-tertiary": "#ffffff",
+            "error-container": "#ffdad6",
+            "surface-tint": "#006c49",
+            "on-secondary": "#ffffff",
+            "primary": "#006c49",
+            "on-primary-fixed": "#002113",
+            "inverse-surface": "#283044",
+            "on-secondary-fixed-variant": "#653e00",
+            "whatsapp-action": "#25d366",
+            "on-error-container": "#93000a",
+            "accent-gold-soft": "#fef3c7",
+            "status-preparing": "#3b82f6",
+            "secondary-fixed": "#ffddb8",
+            "status-danger": "#ef4444",
+            "background": "#faf8ff",
+            "on-background": "#131b2e",
+            "on-primary": "#ffffff",
+            "status-delivering": "#8b5cf6",
+            "outline": "#6c7a71",
+            "surface-variant": "#dae2fd",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#eaedff",
+            "tertiary-container": "#3eb686",
+            "on-primary-fixed-variant": "#005236",
+            "primary-fixed": "#6ffbbe",
+            "on-tertiary-fixed-variant": "#005137",
+            "primary-fixed-dim": "#4edea3",
+            "surface-dim": "#d2d9f4",
+            "tertiary-fixed": "#85f8c4",
+            "on-secondary-fixed": "#2a1700",
+            "inverse-primary": "#4edea3",
+            "primary-container": "#10b981",
+            "on-surface-variant": "#3c4a42",
+            "tertiary-fixed-dim": "#68dba9",
+            "secondary-container": "#fea619",
+            "surface-neutral-subtle": "#f1f5f9",
+            "status-delivered": "#10b981",
+            "surface": "#faf8ff",
+            "secondary-fixed-dim": "#ffb95f",
+            "on-error": "#ffffff",
+            "on-primary-container": "#00422b",
+            "on-tertiary-container": "#00422c",
+            "primary-soft": "#ecfdf5",
+            "text-muted": "#64748b",
+            "secondary": "#855300",
+            "surface-container-low": "#f2f3ff",
+            "inverse-on-surface": "#eef0ff",
+            "error": "#ba1a1a",
+            "canvas-snow": "#f8fafc",
+            "surface-container-highest": "#dae2fd",
+            "on-secondary-container": "#684000",
+            "on-tertiary-fixed": "#002114",
+            "tertiary": "#006c4a",
+            "on-surface": "#131b2e"
+          },
+          fontFamily: {
+            "body-md": ["Plus Jakarta Sans"],
+            "headline-sm": ["Outfit"],
+            "headline-lg": ["Outfit"],
+            "headline-md": ["Outfit"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "label-badge": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "display-hero": ["Outfit"]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-canvas-snow font-body-md text-on-surface antialiased min-h-screen flex">
+<!-- ============================================== -->
+<!-- 1. MODERN VERTICAL LEFT SIDEBAR (w-64)         -->
+<!-- ============================================== -->
+<aside class="w-64 shrink-0 bg-surface-container-lowest border-r border-slate-200/80 flex flex-col justify-between h-screen sticky top-0 z-40">
+<!-- Top Brand & Store Selector -->
+<div>
+<div class="p-5 pb-4 border-b border-surface-neutral-subtle">
+<div class="flex items-center gap-3">
+<img alt="MarketSaaS Brand Logo" class="h-9 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XQCFzpIJvzkSzljw8qwk8zlghDZFDcWWDD3hqQyaAs-4YaP0rjkTATF1Uzqpr5UpWdNCE9DTf9qc05TNB5c_-CbEh9OuK-gob4Bhclyiyanw3itZBMTuxY75erwrXWse89mzVmpr8mOECQiNlMlb1fadYRPluREwiXDmleobFFc4uPCtziaV_yOR6Kq1N975PLDHyNYXHU1Km3Yw-ncBcTbRttQe_YbkHJ1BjeQlR-fL2w3W7-OlT3sCJz"/>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface tracking-tight leading-none">MarketSaaS</span>
+<span class="font-body-sm text-xs text-text-muted mt-0.5">Comercio Panel</span>
+</div>
+</div>
+<!-- Estado Tienda: Abierto / Cerrado -->
+<div class="mt-4 flex items-center justify-between p-1 bg-surface-neutral-subtle rounded-xl">
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-primary-soft text-primary-dark font-label-md text-xs font-bold transition-all shadow-xs" type="button">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            ABIERTO
+          </button>
+<button class="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-text-muted font-label-md text-xs font-medium hover:text-on-surface transition-all" type="button">
+            CERRADO
+          </button>
+</div>
+<!-- Sonido Pedidos Toggle Indicator -->
+<div class="mt-2.5 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-primary-soft/60 text-primary-dark text-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">volume_up</span>
+<span class="font-label-md font-semibold">Sonido Pedidos: ACTIVO</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="p-3 space-y-1.5">
+<a aria-current="page" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-primary-container text-on-primary-container font-label-lg font-bold shadow-xs transition-all" data-path="tablero-kanban" href="#">
+<span class="material-symbols-outlined text-[20px]">view_kanban</span>
+<span>Tablero Kanban</span>
+</a>
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-neutral-subtle font-label-lg font-medium transition-colors" data-path="terminal-pos" href="#">
+<span class="material-symbols-outlined text-[20px]">point_of_sale</span>
+<span>Terminal POS</span>
+</a>
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-neutral-subtle font-label-lg font-medium transition-colors" data-path="inventario" href="#">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span>
+<span>Inventario</span>
+</a>
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-neutral-subtle font-label-lg font-medium transition-colors" data-path="buzon-vecinos" href="#">
+<span class="material-symbols-outlined text-[20px]">mark_chat_unread</span>
+<span>Buzón Vecinos</span>
+</a>
+<a class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-neutral-subtle font-label-lg font-medium transition-colors" data-path="configuracion" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span>Configuración</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Store Info & User Profile -->
+<div class="p-3 border-t border-surface-neutral-subtle space-y-2">
+<!-- Vista Vecino Shortcut -->
+<a class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-surface-neutral-subtle text-on-surface hover:bg-surface-container font-label-md text-xs font-semibold transition-all" data-path="vista-vecino" href="#">
+<span class="material-symbols-outlined text-[17px] text-text-muted">visibility</span>
+<span>Vista Vecino</span>
+</a>
+<!-- Profile Card -->
+<div class="p-2.5 rounded-xl bg-surface-neutral-subtle/70 flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+<div class="min-w-0">
+<p class="font-label-md text-xs font-bold text-on-surface truncate">Don Vecino</p>
+<p class="font-body-sm text-[11px] text-text-muted truncate">Condominio Las Palmas</p>
+</div>
+</div>
+<a class="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error-container/20 transition-colors shrink-0" data-path="login" href="#" title="Cerrar Sesión">
+<span class="material-symbols-outlined text-[18px]">logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- ============================================== -->
+<!-- 2. MAIN WORKSPACE CONTENT AREA                 -->
+<!-- ============================================== -->
+<main class="flex-1 min-w-0 flex flex-col min-h-screen bg-canvas-snow">
+<!-- Top Workspace Sub-Header Bar (Sync status + CTA Actions) -->
+<header class="sticky top-0 z-30 bg-surface-container-lowest/90 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+<!-- Canal Supabase & Latencia Realtime -->
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2.5">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
+</span>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-sm font-semibold text-on-surface">Canal Supabase Realtime Conectado:</span>
+<span class="font-body-sm text-xs text-primary-dark font-semibold">Torres A, B, C &amp; Mostrador Principal</span>
+</div>
+</div>
+<div class="hidden sm:flex items-center gap-1.5 text-text-muted font-body-sm text-xs border-l border-slate-200 pl-3">
+<span class="material-symbols-outlined text-[15px] text-primary">sync</span>
+<span>Latencia: <strong class="text-on-surface">24ms</strong> • Modo Autónomo Activo</span>
+</div>
+</div>
+<!-- Quick Action CTA Buttons -->
+<div class="flex items-center gap-2.5">
+<button class="h-9 px-3 rounded-xl bg-surface-neutral-subtle hover:bg-slate-200 text-on-surface font-label-md text-xs font-semibold transition-all flex items-center gap-1.5 shadow-2xs" type="button">
+<span class="material-symbols-outlined text-[16px] text-text-muted">cloud_download</span>
+<span>Descargar Reporte (.CSV)</span>
+</button>
+<button class="h-9 px-3 rounded-xl bg-accent-gold-soft text-on-secondary-fixed-variant font-label-md text-xs font-semibold hover:bg-secondary-fixed transition-all flex items-center gap-1.5 shadow-2xs" id="btn-simular-pedido" type="button">
+<span class="material-symbols-outlined text-[18px] text-status-pending animate-bounce">notifications_active</span>
+<span>Simular Nuevo Pedido</span>
+<span class="px-1 py-0.2 rounded-full bg-status-pending text-surface-container-lowest font-label-badge text-[9px]">+1 Demo</span>
+</button>
+<button class="h-9 px-4 rounded-xl bg-gradient-to-r from-primary-container to-primary-dark text-surface-container-lowest font-label-md text-xs font-bold shadow-sm hover:shadow-md hover:brightness-105 active:scale-98 transition-all flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px]">point_of_sale</span>
+<span>+ Registrar Venta Rápida (POS)</span>
+</button>
+</div>
+</header>
+<!-- Content Workspace Container -->
+<div class="p-6 space-y-6 w-full max-w-[1600px] mx-auto">
+<!-- Section Title & Subhead -->
+<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
+<div class="flex items-baseline gap-3">
+<h1 class="font-headline-lg text-2xl lg:text-3xl text-on-surface tracking-tight font-bold">Panel de Control Don Vecino</h1>
+<span class="font-body-md text-sm text-text-muted">| Minimarket de Proximidad</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary-dark font-label-badge text-label-badge uppercase tracking-wider font-bold">Centro de Operaciones</span>
+<span class="text-text-muted text-xs">•</span>
+<span class="font-body-sm text-xs text-text-muted">Jornada Activa: Turno Tarde</span>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- 4. TOP METRIC CARDS (4 Glassmorphic KPIs)      -->
+<!-- ============================================== -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- KPI 1: Ventas del Día -->
+<div class="relative overflow-hidden rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-body-sm text-xs text-text-muted font-medium">Ventas del Día</span>
+<p class="font-headline-lg text-2xl text-on-surface tracking-tight font-bold">Bs. 1.845,50</p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">payments</span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark font-label-badge text-xs font-semibold">
+<span class="material-symbols-outlined text-[13px]">trending_up</span>
+              +18% vs ayer
+            </span>
+<span class="font-body-sm text-xs text-text-muted">38 pedidos cobrados</span>
+</div>
+<div class="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-primary-container"></div>
+</div>
+<!-- KPI 2: Pedidos Activos -->
+<div class="relative overflow-hidden rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-body-sm text-xs text-text-muted font-medium">Pedidos Activos</span>
+<p class="font-headline-lg text-2xl text-on-surface tracking-tight font-bold">7 en curso</p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-status-preparing/10 text-status-preparing flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">pending_actions</span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-1.5 text-text-muted font-body-sm text-xs">
+<span class="inline-block w-2 h-2 rounded-full bg-status-pending"></span>
+<span>2 pend.</span>
+<span class="text-outline-variant">•</span>
+<span class="inline-block w-2 h-2 rounded-full bg-status-preparing"></span>
+<span>3 empaque</span>
+<span class="text-outline-variant">•</span>
+<span class="inline-block w-2 h-2 rounded-full bg-status-delivering"></span>
+<span>2 en ruta</span>
+</div>
+<div class="absolute bottom-0 inset-x-0 h-1 bg-status-preparing"></div>
+</div>
+<!-- KPI 3: Ticket Promedio -->
+<div class="relative overflow-hidden rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-body-sm text-xs text-text-muted font-medium">Ticket Promedio</span>
+<p class="font-headline-lg text-2xl text-on-surface tracking-tight font-bold">Bs. 48,50</p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">shopping_basket</span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-neutral-subtle text-on-surface font-label-badge text-xs font-semibold">
+              4.2 items
+            </span>
+<span class="font-body-sm text-xs text-text-muted">Promedio por canasta</span>
+</div>
+<div class="absolute bottom-0 inset-x-0 h-1 bg-outline-variant"></div>
+</div>
+<!-- KPI 4: Alertas de Stock Crítico -->
+<div class="relative overflow-hidden rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="space-y-0.5">
+<span class="font-body-sm text-xs text-text-muted font-medium">Alertas de Stock</span>
+<p class="font-headline-lg text-2xl text-error tracking-tight font-bold">3 críticos</p>
+</div>
+<div class="w-10 h-10 rounded-xl bg-error-container/30 text-error flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">production_quantity_limits</span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-1 text-text-muted font-body-sm text-xs truncate">
+<span class="px-1.5 py-0.5 rounded bg-error/10 text-error font-label-badge text-[10px] font-bold">Leche 1L</span>
+<span class="px-1.5 py-0.5 rounded bg-error/10 text-error font-label-badge text-[10px] font-bold">Huevos 15u</span>
+<span class="px-1.5 py-0.5 rounded bg-error/10 text-error font-label-badge text-[10px] font-bold">Pan Marraqueta</span>
+</div>
+<div class="absolute bottom-0 inset-x-0 h-1 bg-error"></div>
+</div>
+</div>
+<!-- ============================================== -->
+<!-- 5. KANBAN BOARD (CENTRAL LIVE COMMAND CENTER)  -->
+<!-- ============================================== -->
+<section class="space-y-3.5">
+<!-- Subheader del Tablero -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md border border-slate-100 shadow-xs">
+<div class="flex items-center gap-3">
+<div class="w-3 h-3 rounded-full bg-primary-container animate-pulse"></div>
+<div>
+<h2 class="font-headline-md text-lg text-on-surface font-bold">Tablero de Despacho en Vivo</h2>
+<p class="font-body-sm text-xs text-text-muted">Sincronización en tiempo real con la app de vecinos y despachadores</p>
+</div>
+</div>
+<div class="flex items-center gap-2.5">
+<!-- Selector Condominio -->
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-neutral-subtle border border-slate-200">
+<span class="material-symbols-outlined text-[17px] text-primary">location_on</span>
+<select class="bg-transparent font-label-md text-xs text-on-surface outline-none cursor-pointer">
+<option>Condominio Las Palmas - Torres A, B y C</option>
+<option>Torre A - Paseo Central</option>
+<option>Torre B - Jardines Interiores</option>
+<option>Torre C - Área Recreativa</option>
+</select>
+</div>
+<!-- Filtro Vista Rápida -->
+<button class="p-2 rounded-xl bg-surface-neutral-subtle text-on-surface hover:bg-surface-container transition-colors" title="Filtrar pedidos" type="button">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+</button>
+</div>
+</div>
+<!-- 4 KANBAN COLUMNS -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+<!-- COLUMNA 1: 🟡 PENDIENTES -->
+<div class="rounded-2xl bg-surface-container-lowest/85 backdrop-blur-md p-3.5 space-y-3 shadow-xs border border-slate-100 flex flex-col">
+<div class="flex items-center justify-between pb-2.5 border-b border-surface-neutral-subtle">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-pending"></span>
+<h3 class="font-headline-sm text-sm font-bold text-on-surface">Pendientes</h3>
+<span class="px-2 py-0.2 rounded-full bg-status-pending/20 text-status-pending font-label-md text-xs font-bold">2</span>
+</div>
+<span class="material-symbols-outlined text-[17px] text-status-pending animate-pulse">volume_up</span>
+</div>
+<!-- Pedido #1042 -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-pending"></div>
+<div class="flex items-start justify-between gap-2 pl-2">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-base font-bold text-on-surface">#1042</span>
+<span class="px-1.5 py-0.5 rounded-full bg-status-pending/10 text-status-pending font-label-badge text-[10px] font-bold">Hace 3 min ⏱️</span>
+</div>
+<p class="font-label-md text-xs font-semibold text-on-surface mt-1">🏢 Torre A • Depto 904</p>
+<p class="font-body-sm text-[11px] text-text-muted">Condominio Las Palmas</p>
+</div>
+<span class="px-2 py-0.5 rounded-lg bg-surface-neutral-subtle font-label-badge text-[10px] font-bold text-on-surface">
+                  Delivery Puerta
+                </span>
+</div>
+<div class="pl-2 mt-2 pt-2 border-t border-surface-neutral-subtle flex items-center justify-between">
+<span class="font-body-sm text-xs font-semibold text-on-surface">Camila Rojas</span>
+<span class="font-body-sm text-xs text-text-muted">+56 9 1234 5678</span>
+</div>
+<div class="pl-2 mt-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-primary-soft text-primary-dark font-label-badge text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[13px]">qr_code_2</span>
+                  QR Simple (Comprobante adjunto)
+                </span>
+</div>
+<!-- Checklist SKUs -->
+<div class="pl-2 mt-2.5 p-2 rounded-xl bg-surface-neutral-subtle/70 space-y-1">
+<span class="font-label-badge text-[10px] text-text-muted uppercase tracking-wider block font-bold">Checklist de Artículos:</span>
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input class="w-3.5 h-3.5 rounded text-primary focus:ring-primary accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-sm text-xs text-on-surface flex-1">1x Leche Entera 1L</span>
+<span class="font-label-badge text-[10px] text-text-muted">Bs. 8.00</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input class="w-3.5 h-3.5 rounded text-primary focus:ring-primary accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-sm text-xs text-on-surface flex-1">2x Pan Marraqueta 1kg</span>
+<span class="font-label-badge text-[10px] text-text-muted">Bs. 14.00</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input class="w-3.5 h-3.5 rounded text-primary focus:ring-primary accent-primary cursor-pointer" type="checkbox"/>
+<span class="font-body-sm text-xs text-on-surface flex-1">1x Bebida 2L Coca-Cola</span>
+<span class="font-label-badge text-[10px] text-text-muted">Bs. 13.00</span>
+</label>
+</div>
+<div class="pl-2 mt-2.5 pt-2 border-t border-surface-neutral-subtle">
+<div class="flex items-baseline justify-between mb-2.5">
+<span class="font-body-sm text-xs text-text-muted">Total a Cobrar:</span>
+<span class="font-headline-md text-base text-on-surface font-bold">Bs. 35.00</span>
+</div>
+<div class="grid grid-cols-5 gap-1.5">
+<button class="col-span-3 h-9 rounded-xl bg-primary text-surface-container-lowest font-label-md text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-dark shadow-xs transition-all" type="button">
+<span>Aceptar y Preparar</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</button>
+<button class="col-span-1 h-9 rounded-xl bg-whatsapp-action/15 text-whatsapp-action hover:bg-whatsapp-action hover:text-white flex items-center justify-center transition-colors" title="Chat WhatsApp Vecino" type="button">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+</button>
+<button class="col-span-1 h-9 rounded-xl bg-surface-neutral-subtle text-on-surface-variant hover:bg-surface-container flex items-center justify-center transition-colors" title="Imprimir Comanda Térmica" type="button">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Pedido #1043 -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-pending"></div>
+<div class="flex items-start justify-between gap-2 pl-2">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-base font-bold text-on-surface">#1043</span>
+<span class="px-1.5 py-0.5 rounded-full bg-status-pending/10 text-status-pending font-label-badge text-[10px] font-bold">Hace 1 min ⚡</span>
+</div>
+<p class="font-label-md text-xs font-semibold text-on-surface mt-1">🏢 Torre C • Depto 201</p>
+</div>
+<span class="px-2 py-0.5 rounded-lg bg-surface-neutral-subtle font-label-badge text-[10px] font-bold text-on-surface">
+                  5 productos
+                </span>
+</div>
+<div class="pl-2 mt-2 pt-2 border-t border-surface-neutral-subtle flex items-center justify-between">
+<span class="font-body-sm text-xs font-semibold text-on-surface">Carlos Mendoza</span>
+<span class="font-headline-sm text-sm font-bold text-on-surface">Bs. 72.00</span>
+</div>
+<div class="pl-2 mt-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-secondary-fixed text-on-secondary-fixed font-label-badge text-[10px] font-bold">
+<span class="material-symbols-outlined text-[13px]">payments</span>
+                  Efectivo: Paga Bs. 100 (Vuelto: Bs. 28)
+                </span>
+</div>
+<div class="pl-2 mt-2.5 pt-2 border-t border-surface-neutral-subtle">
+<button class="w-full h-9 rounded-xl bg-primary text-surface-container-lowest font-label-md text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary-dark shadow-xs transition-all" type="button">
+<span>Aceptar y Preparar ➔</span>
+</button>
+</div>
+</div>
+</div>
+<!-- COLUMNA 2: 🔵 EN PREPARACIÓN -->
+<div class="rounded-2xl bg-surface-container-lowest/85 backdrop-blur-md p-3.5 space-y-3 shadow-xs border border-slate-100 flex flex-col">
+<div class="flex items-center justify-between pb-2.5 border-b border-surface-neutral-subtle">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-preparing"></span>
+<h3 class="font-headline-sm text-sm font-bold text-on-surface">En Preparación</h3>
+<span class="px-2 py-0.2 rounded-full bg-status-preparing/20 text-status-preparing font-label-md text-xs font-bold">3</span>
+</div>
+<span class="material-symbols-outlined text-[17px] text-text-muted">conveyor_belt</span>
+</div>
+<!-- Pedido #1040 -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-preparing"></div>
+<div class="pl-2 space-y-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-base font-bold text-on-surface">#1040</span>
+<p class="font-label-md text-xs font-semibold text-on-surface">Torre B • Depto 402</p>
+<p class="font-body-sm text-xs text-text-muted">Sebastián Pavez</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark font-label-badge text-[10px] font-bold">
+                    QR Pagado
+                  </span>
+</div>
+<!-- Progreso -->
+<div class="p-2 rounded-lg bg-surface-neutral-subtle">
+<div class="flex items-center justify-between font-label-badge text-[10px] text-text-muted mb-1">
+<span>Artículos verificados:</span>
+<span class="font-bold text-primary">3 / 4 listos (75%)</span>
+</div>
+<div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-0.5">
+<span class="font-body-sm text-xs text-text-muted">Total: <strong>Bs. 54.00</strong></span>
+<span class="font-body-sm text-xs text-text-muted">Canasta #2</span>
+</div>
+<button class="w-full h-9 rounded-xl bg-status-preparing text-surface-container-lowest font-label-md text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-blue-600 shadow-xs transition-all mt-1" type="button">
+<span>Despachar / Enviar Repartidor</span>
+<span class="material-symbols-outlined text-[15px]">pedal_bike</span>
+</button>
+</div>
+</div>
+<!-- Pedido #1039 (Retiro en Local) -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-preparing"></div>
+<div class="pl-2 space-y-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-base font-bold text-on-surface">#1039</span>
+<p class="font-label-md text-xs font-semibold text-on-surface">Torre A • Depto 105</p>
+<p class="font-body-sm text-xs text-text-muted">Lucía V. • Bs. 29.50</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-accent-gold-soft text-on-secondary-fixed font-label-badge text-[10px] font-bold">
+                    Retiro en Local
+                  </span>
+</div>
+<p class="font-body-sm text-xs text-text-muted">Empaquetado completado en caja mostrador.</p>
+<button class="w-full h-9 rounded-xl bg-surface-container text-on-surface font-label-md text-xs font-bold flex items-center justify-center gap-1 hover:bg-surface-container-high transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">store</span>
+<span>Listo para Retiro en Caja ➔</span>
+</button>
+</div>
+</div>
+<!-- Pedido #1041 (Compacto) -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-preparing"></div>
+<div class="pl-2 flex items-center justify-between">
+<div>
+<span class="font-headline-sm text-sm font-bold text-on-surface">#1041</span>
+<p class="font-body-sm text-xs text-text-muted">Torre C • Depto 803</p>
+</div>
+<span class="font-label-md text-xs font-bold text-on-surface">Bs. 88.00</span>
+</div>
+</div>
+</div>
+<!-- COLUMNA 3: 🟣 EN RUTA -->
+<div class="rounded-2xl bg-surface-container-lowest/85 backdrop-blur-md p-3.5 space-y-3 shadow-xs border border-slate-100 flex flex-col">
+<div class="flex items-center justify-between pb-2.5 border-b border-surface-neutral-subtle">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-delivering"></span>
+<h3 class="font-headline-sm text-sm font-bold text-on-surface">En Ruta</h3>
+<span class="px-2 py-0.2 rounded-full bg-status-delivering/20 text-status-delivering font-label-md text-xs font-bold">2</span>
+</div>
+<span class="material-symbols-outlined text-[17px] text-text-muted">two_wheeler</span>
+</div>
+<!-- Pedido #1038 -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-delivering"></div>
+<div class="pl-2 space-y-2">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-base font-bold text-on-surface">#1038</span>
+<p class="font-label-md text-xs font-semibold text-on-surface">Torre A • Depto 603</p>
+<p class="font-body-sm text-xs text-status-delivering font-medium">Salió hace 6 min 🛵</p>
+</div>
+<span class="font-headline-sm text-sm font-bold text-on-surface">Bs. 45.00</span>
+</div>
+<div class="p-2 rounded-xl bg-surface-neutral-subtle flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-card-dark text-white flex items-center justify-center font-bold text-[10px]">
+                    M
+                  </div>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-xs font-bold text-on-surface leading-none truncate">Mateo</p>
+<p class="font-body-sm text-[10px] text-text-muted leading-none mt-0.5 truncate">Moto Interna Condominio</p>
+</div>
+</div>
+<div class="space-y-1.5 pt-1">
+<button class="w-full h-9 rounded-xl bg-status-delivered text-surface-container-lowest font-label-md text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-emerald-600 shadow-xs transition-all" type="button">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Confirmar Entrega [✓]</span>
+</button>
+<button class="w-full h-8 rounded-xl bg-whatsapp-action/10 text-whatsapp-action font-label-md text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-whatsapp-action hover:text-white transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">chat</span>
+<span>Avisar que está abajo</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Pedido #1036 -->
+<div class="group relative rounded-xl bg-surface-container-lowest p-3 shadow-xs border border-slate-100 hover:shadow-md transition-all">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-status-delivering"></div>
+<div class="pl-2 space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-sm font-bold text-on-surface">#1036</span>
+<span class="font-label-badge text-[10px] text-text-muted">Hace 11 min</span>
+</div>
+<p class="font-label-md text-xs font-semibold text-on-surface">Torre C • Depto 1201</p>
+<p class="font-body-sm text-xs text-text-muted">Repartidor: Alex (A pie)</p>
+</div>
+</div>
+</div>
+<!-- COLUMNA 4: 🟢 ENTREGADOS HOY -->
+<div class="rounded-2xl bg-surface-container-lowest/85 backdrop-blur-md p-3.5 space-y-3 shadow-xs border border-slate-100 flex flex-col">
+<div class="flex items-center justify-between pb-2.5 border-b border-surface-neutral-subtle">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-status-delivered"></span>
+<h3 class="font-headline-sm text-sm font-bold text-on-surface">Entregados</h3>
+<span class="px-2 py-0.2 rounded-full bg-status-delivered/20 text-status-delivered font-label-md text-xs font-bold">31</span>
+</div>
+<span class="material-symbols-outlined text-[17px] text-text-muted">task_alt</span>
+</div>
+<!-- Pedido #1037 (Último completado) -->
+<div class="rounded-xl bg-surface-container-lowest p-3 shadow-xs border border-slate-100 space-y-1.5">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-sm font-bold text-on-surface">#1037</span>
+<span class="text-status-delivered material-symbols-outlined text-[15px]">check_circle</span>
+</div>
+<p class="font-body-sm text-xs font-semibold text-on-surface mt-0.5">Torre B • Depto 1102</p>
+</div>
+<span class="font-headline-sm text-sm font-bold text-on-surface">Bs. 62.00</span>
+</div>
+<div class="flex items-center justify-between text-text-muted font-body-sm text-xs pt-1 border-t border-surface-neutral-subtle">
+<span>Entregado hace 18 min</span>
+<span class="inline-flex items-center gap-0.5 text-secondary font-bold text-[11px]">
+                  ★ 5.0
+                </span>
+</div>
+</div>
+<!-- Pedido #1035 -->
+<div class="rounded-xl bg-surface-container-lowest p-3 shadow-xs border border-slate-100 flex items-center justify-between opacity-85 hover:opacity-100 transition-opacity">
+<div>
+<span class="font-label-md text-xs font-bold text-on-surface">#1035 • Torre A 304</span>
+<p class="font-body-sm text-[11px] text-text-muted">Bs. 19.50 • Efectivo</p>
+</div>
+<span class="font-label-badge text-[10px] text-status-delivered bg-primary-soft px-2 py-0.5 rounded-full font-bold">Exitoso</span>
+</div>
+<!-- Pedido #1034 -->
+<div class="rounded-xl bg-surface-container-lowest p-3 shadow-xs border border-slate-100 flex items-center justify-between opacity-85 hover:opacity-100 transition-opacity">
+<div>
+<span class="font-label-md text-xs font-bold text-on-surface">#1034 • Torre B 701</span>
+<p class="font-body-sm text-[11px] text-text-muted">Bs. 114.00 • QR</p>
+</div>
+<span class="font-label-badge text-[10px] text-status-delivered bg-primary-soft px-2 py-0.5 rounded-full font-bold">Exitoso</span>
+</div>
+<button class="w-full py-2 rounded-xl text-text-muted hover:text-on-surface font-label-md text-xs font-bold transition-colors text-center" type="button">
+              Ver los 31 completados ➔
+            </button>
+</div>
+</div>
+</section>
+<!-- ============================================== -->
+<!-- 6. BOTTOM BENTO GRID: OPERATIONAL MODULES      -->
+<!-- ============================================== -->
+<section class="space-y-3.5 pt-2">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-md text-lg text-on-surface font-bold">Accesos Modulares de Operación</h2>
+<span class="font-body-sm text-xs text-text-muted">Atajos de mostrador e inventario activo</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<!-- BENTO CARD 1: POS MOSTRADOR RÁPIDO -->
+<div class="rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 flex flex-col justify-between space-y-4">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-primary">point_of_sale</span>
+<h3 class="font-headline-sm text-base font-bold text-on-surface">POS Caja Mostrador</h3>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-soft text-primary-dark font-label-badge text-[10px] font-bold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                  Lector USB/BT Listo
+                </span>
+</div>
+<p class="font-body-sm text-xs text-text-muted">
+                Cobro presencial rápido a vecinos que bajan directamente al local.
+              </p>
+<!-- Billetes Rápidos -->
+<div class="space-y-1.5">
+<span class="font-label-badge text-[10px] text-text-muted uppercase tracking-wider font-bold">Cobro Rápido en Efectivo:</span>
+<div class="grid grid-cols-4 gap-1.5">
+<button class="h-9 rounded-xl bg-surface-neutral-subtle hover:bg-surface-container font-label-md text-xs font-bold text-on-surface transition-all" type="button">Bs. 10</button>
+<button class="h-9 rounded-xl bg-surface-neutral-subtle hover:bg-surface-container font-label-md text-xs font-bold text-on-surface transition-all" type="button">Bs. 20</button>
+<button class="h-9 rounded-xl bg-surface-neutral-subtle hover:bg-surface-container font-label-md text-xs font-bold text-on-surface transition-all" type="button">Bs. 50</button>
+<button class="h-9 rounded-xl bg-surface-neutral-subtle hover:bg-surface-container font-label-md text-xs font-bold text-on-surface transition-all" type="button">Bs. 100</button>
+</div>
+</div>
+<!-- Favoritos de mostrador -->
+<div class="space-y-1.5">
+<span class="font-label-badge text-[10px] text-text-muted uppercase tracking-wider font-bold">Favoritos de Mostrador:</span>
+<div class="flex flex-wrap gap-1.5">
+<button class="px-2.5 py-1 rounded-full bg-surface-neutral-subtle hover:bg-primary-soft hover:text-primary-dark font-label-md text-xs font-semibold text-on-surface transition-all" type="button">+ Pan Marraqueta</button>
+<button class="px-2.5 py-1 rounded-full bg-surface-neutral-subtle hover:bg-primary-soft hover:text-primary-dark font-label-md text-xs font-semibold text-on-surface transition-all" type="button">+ Leche Entera</button>
+<button class="px-2.5 py-1 rounded-full bg-surface-neutral-subtle hover:bg-primary-soft hover:text-primary-dark font-label-md text-xs font-semibold text-on-surface transition-all" type="button">+ Coca-Cola 2L</button>
+</div>
+</div>
+</div>
+<button class="w-full h-10 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high font-label-lg text-xs font-bold flex items-center justify-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[17px]">barcode_scanner</span>
+<span>Abrir Terminal de Cobro Completo</span>
+</button>
+</div>
+<!-- BENTO CARD 2: CONTROL DE INVENTARIO EXPRÉS -->
+<div class="rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 flex flex-col justify-between space-y-4">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-error">inventory_2</span>
+<h3 class="font-headline-sm text-base font-bold text-on-surface">Inventario Exprés</h3>
+</div>
+<span class="font-label-md text-xs font-semibold text-text-muted">348 SKUs Activos</span>
+</div>
+<p class="font-body-sm text-xs text-text-muted">
+                Productos con stock bajo que requieren reposición inmediata hoy:
+              </p>
+<div class="space-y-2">
+<!-- Item 1 -->
+<div class="p-2 rounded-xl bg-surface-neutral-subtle flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<img class="w-8 h-8 rounded-lg object-cover bg-white shrink-0" data-alt="Tetra pak milk carton 1 liter dairy product white clean grocery minimal packaging studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVs3TCRBRWxU0LjL4ToEk3_VMxjuGCEYmYAoCbd6Trjc83vSu15leiJ4Qb4Z8apfFqMADeMoCCT5HpHUmcMRb0juui7XS8cSBJPnaF1JeCdeqesPiOn2HjsSt3m2t6vw17q_DeDrbICJ99PgtoAdme3BWSY8rRetkQuLwtozuoc3KcXrYNpITZdllYP7W2q0Xe5VfSTJV4IYNGKjSJD1UgTcwhF91SEbosZEPLGZ8RRnD7h9cttdDJlg"/>
+<div class="min-w-0">
+<p class="font-label-md text-xs font-bold text-on-surface truncate">Leche Entera 1L</p>
+<p class="font-body-sm text-[11px] text-error font-bold">2 unid. restantes</p>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="w-6 h-6 rounded-lg bg-surface-container-lowest hover:bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs transition-colors" type="button">-</button>
+<span class="w-5 text-center font-bold text-xs">2</span>
+<button class="w-6 h-6 rounded-lg bg-primary-soft hover:bg-primary-container text-primary-dark flex items-center justify-center font-bold text-xs transition-colors" type="button">+</button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="p-2 rounded-xl bg-surface-neutral-subtle flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<img class="w-8 h-8 rounded-lg object-cover bg-white shrink-0" data-alt="Carton box of fresh brown farm eggs healthy breakfast ingredient close up bright supermarket aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAN_yZXmOzIjyamlLJHyuNKI6H_RFqjooFrO-sD98uH9z2ErmaIN6DeVercYRP4qQq9s9_iRRbuO30ngQyeArRxRko77blfyY0OsAWPNQqmY-OA6TTh1cTeKh-HvoAQWYroLq_iyOEVRuUuwCaNj4J9zUGiwbZi_HTnQjVwGz4Q98ktelqSsRv3xfFOHUZ1YlBDyY-4Ks6HKlcozGgYTzGJCQ_luuZFRpK-U6V0Z1ILv5PV_VP1RegmAA"/>
+<div class="min-w-0">
+<p class="font-label-md text-xs font-bold text-on-surface truncate">Huevos Granja 15u</p>
+<p class="font-body-sm text-[11px] text-error font-bold">1 pack restante</p>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="w-6 h-6 rounded-lg bg-surface-container-lowest hover:bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs transition-colors" type="button">-</button>
+<span class="w-5 text-center font-bold text-xs">1</span>
+<button class="w-6 h-6 rounded-lg bg-primary-soft hover:bg-primary-container text-primary-dark flex items-center justify-center font-bold text-xs transition-colors" type="button">+</button>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="p-2 rounded-xl bg-surface-neutral-subtle flex items-center justify-between gap-2">
+<div class="flex items-center gap-2.5 min-w-0">
+<img class="w-8 h-8 rounded-lg object-cover bg-white shrink-0" data-alt="Freshly baked crispy marraqueta artisan bread rolls warm golden crust bakery atmosphere soft illumination" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0Cm-pLATBWxG0IcBNc1_gOVHMGkhrPlkACxXAheaLd7LM-0aybq6p2jB-T0yMKtlj223CJyA9z7YIANNlyFsZcBbIzFTKgnXhf5rKc-VmxmR2FRQwZeZ6mUpvJEHgZuTlR19_E7Z0rEf-tx6fgZnUMxxgNelQQ9IzSiu0YJzuHF1o32nFK3ubbuC34Uf-GCKhjn2Bmug49fS6PezxkPXNKg5b3cUB2lfJmqQdtxNwoUFZl9299R0lDQ"/>
+<div class="min-w-0">
+<p class="font-label-md text-xs font-bold text-on-surface truncate">Pan Marraqueta</p>
+<p class="font-body-sm text-[11px] text-error font-bold">1.5 kg en canasta</p>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<button class="w-6 h-6 rounded-lg bg-surface-container-lowest hover:bg-surface-container flex items-center justify-center font-bold text-on-surface text-xs transition-colors" type="button">-</button>
+<span class="w-5 text-center font-bold text-xs">1</span>
+<button class="w-6 h-6 rounded-lg bg-primary-soft hover:bg-primary-container text-primary-dark flex items-center justify-center font-bold text-xs transition-colors" type="button">+</button>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full h-10 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high font-label-lg text-xs font-bold flex items-center justify-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[17px]">inventory</span>
+<span>Ver Catálogo Completo</span>
+</button>
+</div>
+<!-- BENTO CARD 3: BUZÓN DE SOLICITUDES DE VECINOS -->
+<div class="rounded-2xl bg-surface-container-lowest/90 backdrop-blur-md p-4 shadow-xs border border-slate-100 flex flex-col justify-between space-y-4">
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[22px] text-secondary">mark_chat_unread</span>
+<h3 class="font-headline-sm text-base font-bold text-on-surface">Buzón de Vecinos</h3>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-accent-gold-soft text-on-secondary-fixed font-label-badge text-[10px] font-bold">
+                  2 Peticiones Nuevas
+                </span>
+</div>
+<p class="font-body-sm text-xs text-text-muted">
+                Vecinos sugieren productos que quisieran comprar en el minimarket.
+              </p>
+<!-- Card Solicitud Destacada -->
+<div class="p-3 rounded-xl bg-gradient-to-br from-accent-gold-soft/30 to-surface-neutral-subtle space-y-2 border border-amber-100/50">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-label-md text-xs text-on-surface font-bold">Leche Sin Lactosa Descremada 1L</span>
+<p class="font-body-sm text-[11px] text-text-muted">Solicitado por 4 vecinos de Torre B</p>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-pending text-surface-container-lowest font-label-badge text-[9px] font-bold">
+                    Alta Demanda
+                  </span>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex -space-x-1 overflow-hidden">
+<div class="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-primary text-white text-[9px] flex items-center justify-center font-bold">TB</div>
+<div class="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-secondary text-white text-[9px] flex items-center justify-center font-bold">TA</div>
+<div class="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-surface-card-dark text-white text-[9px] flex items-center justify-center font-bold">+2</div>
+</div>
+<span class="font-body-sm text-xs text-text-muted italic">"Nos urge para los desayunos"</span>
+</div>
+<button class="w-full h-9 rounded-xl bg-primary text-surface-container-lowest font-label-md text-xs font-bold hover:bg-primary-dark shadow-xs flex items-center justify-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[15px]">add_circle</span>
+<span>Crear Producto en 1 Clic</span>
+</button>
+</div>
+<!-- Otra sugerencia secundaria -->
+<div class="p-2 rounded-xl bg-surface-neutral-subtle flex items-center justify-between">
+<div>
+<p class="font-label-md text-xs font-bold text-on-surface">Pilas AA x4 Duracell</p>
+<p class="font-body-sm text-[11px] text-text-muted">Torre A Depto 102</p>
+</div>
+<button class="p-1 rounded-lg text-text-muted hover:text-primary transition-colors" title="Añadir a lista de compras" type="button">
+<span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+</button>
+</div>
+</div>
+<button class="w-full h-10 rounded-xl bg-surface-container text-on-surface hover:bg-surface-container-high font-label-lg text-xs font-bold flex items-center justify-center gap-2 transition-all" type="button">
+<span class="material-symbols-outlined text-[17px]">forum</span>
+<span>Gestionar Todas las Sugerencias</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Sound synthesizer script for interactive demo -->
+<script>
+    (function() {
+      const btnSimular = document.getElementById('btn-simular-pedido');
+      if (!btnSimular) return;
+
+      btnSimular.addEventListener('click', () => {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            const ctx = new AudioContext();
+            const playTone = (freq, delay, dur) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+              gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+              gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(ctx.currentTime + delay);
+              osc.stop(ctx.currentTime + delay + dur);
+            };
+
+            playTone(587.33, 0.0, 0.4); // D5
+            playTone(880.00, 0.15, 0.5); // A5
+            playTone(1174.66, 0.35, 0.8); // D6
+          }
+        } catch (e) {
+          console.warn('Audio not available', e);
+        }
+
+        btnSimular.classList.add('ring-2', 'ring-primary');
+        setTimeout(() => {
+          btnSimular.classList.remove('ring-2', 'ring-primary');
+        }, 1000);
+      });
+    })();
+  </script>
+</body></html>
