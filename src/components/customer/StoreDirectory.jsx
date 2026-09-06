@@ -330,10 +330,10 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
             </div>
             <div className="space-y-1">
               <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 leading-snug font-headline">
-                ¿Tienes una tienda de barrio o minimarket en este condominio?
+                ¿Tienes una tienda de barrio o minimarket?
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
-                Publica tu tienda gratis en MarketSaaS y empieza a recibir pedidos directos por WhatsApp de tus vecinos con 0% de comisiones por transacción.
+                Únete a nuestra plataforma y da el salto digital. Te acompañamos paso a paso con asesoría inicial gratuita para configurar tu catálogo y conectar directamente con los vecinos de tu zona.
               </p>
             </div>
           </div>
