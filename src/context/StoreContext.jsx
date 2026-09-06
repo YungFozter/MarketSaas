@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests } from '../data/initialData';
+import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
 
@@ -11,7 +11,7 @@ export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || 'default';
+    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || 'don-vecino';
   };
   const [tenantSlug, setTenantSlug] = useState(getInitialTenantSlug);
 
@@ -34,6 +34,48 @@ export const StoreProvider = ({ children }) => {
     }
     return 'spectator';
   });
+
+  // 1.1. Sub-vista dentro del modo Vecino / Cliente ('directory' | 'storefront')
+  const [customerSubView, setCustomerSubView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('store') && params.get('store') !== 'default') {
+        return 'storefront';
+      }
+    }
+    return 'directory';
+  });
+
+  // Lista global de tiendas para el Directorio & Mapa Hiperlocal
+  const [stores, setStores] = useState(initialStores);
+  const [selectedStore, setSelectedStore] = useState(() => {
+    return initialStores.find(s => s.slug === tenantSlug) || initialStores[0];
+  });
+
+  const goToStore = (storeSlugOrId) => {
+    const foundStore = stores.find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId);
+    if (foundStore) {
+      setSelectedStore(foundStore);
+      setTenantSlug(foundStore.slug);
+      setStoreConfigState(prev => ({
+        ...prev,
+        name: foundStore.name,
+        tagline: foundStore.tagline || prev.tagline,
+        address: foundStore.address || prev.address
+      }));
+    }
+    setCustomerSubView('storefront');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const goToDirectory = () => {
+    setCustomerSubView('directory');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // 2. Productos
   const [products, setProducts] = useState(() => {
@@ -409,6 +451,73 @@ export const StoreProvider = ({ children }) => {
       supabase.removeChannel(productsChannel);
     };
   }, [tenantSlug]);
+
+  // Cargar tiendas registradas en Supabase y fusionarlas reactivamente con initialStores
+  useEffect(() => {
+    const fetchRemoteStores = async () => {
+      if (!supabase) return;
+      try {
+        const { data: remoteStores, error } = await supabase
+          .from('store_config')
+          .select('*');
+        if (error) {
+          console.warn('Error fetching stores from Supabase:', error);
+          return;
+        }
+        if (remoteStores && remoteStores.length > 0) {
+          setStores(prev => {
+            const remoteMapped = remoteStores.map((rs, idx) => {
+              const conf = rs.config || {};
+              return {
+                id: rs.id || `remote-${idx}`,
+                slug: rs.tenant_id || rs.id,
+                name: rs.name || conf.name || 'Minimarket Barrial',
+                tagline: rs.slogan || conf.tagline || 'Tu tienda de confianza',
+                address: conf.address || 'En tu sector',
+                condominium: conf.condominiums?.[0]?.name || 'Condominio Las Palmas',
+                distance: `A ${(idx + 2) * 150}m de tu torre`,
+                distanceMeters: (idx + 2) * 150,
+                rating: 4.8,
+                reviewsCount: 45 + idx * 12,
+                ordersCount: 45 + idx * 12,
+                isOpen: rs.is_open !== false,
+                statusBadge: rs.is_open !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+                imageUrl: conf.bannerUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+                deliveryTime: '15-20 min',
+                freeDeliveryThreshold: conf.freeDeliveryThreshold || null,
+                hasFreeDelivery: !!conf.freeDeliveryThreshold,
+                acceptsQr: true,
+                hasPickup: true,
+                hasFastDelivery: true,
+                pointsReward: conf.enablePoints !== false ? '+20 VeciPuntos' : null,
+                category: 'Minimarket & Abarrotes',
+                isFeatured: false,
+                totalStockItems: 150,
+                perks: [
+                  { id: 'p1', text: '🛵 Delivery disponible' },
+                  { id: 'p2', text: '💳 QR Simple' }
+                ],
+                featuredProducts: [],
+                mapPosition: {
+                  leftPercent: 40 + ((idx * 18) % 45),
+                  bottomPixels: 45 + ((idx * 25) % 60),
+                  label: rs.name || 'Minimarket',
+                  badge: 'Activo'
+                }
+              };
+            });
+
+            const existingSlugs = new Set(initialStores.map(s => s.slug));
+            const newUnique = remoteMapped.filter(r => !existingSlugs.has(r.slug));
+            return [...initialStores, ...newUnique];
+          });
+        }
+      } catch (err) {
+        console.warn('Could not sync remote stores:', err);
+      }
+    };
+    fetchRemoteStores();
+  }, []);
 
   // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {
@@ -1005,6 +1114,14 @@ export const StoreProvider = ({ children }) => {
         signOutMerchant,
         viewMode,
         setViewMode,
+        customerSubView,
+        setCustomerSubView,
+        stores,
+        setStores,
+        selectedStore,
+        setSelectedStore,
+        goToStore,
+        goToDirectory,
         products,
         setProducts,
         categories: initialCategories,

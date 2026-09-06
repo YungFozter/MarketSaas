@@ -3,6 +3,7 @@ import { StoreProvider, useStore } from './context/StoreContext';
 import { Navbar } from './components/common/Navbar';
 import { Toast } from './components/common/Toast';
 import { SpectatorHome } from './components/spectator/SpectatorHome';
+import { StoreDirectory } from './components/customer/StoreDirectory';
 import { CustomerHome } from './components/customer/CustomerHome';
 import { AdminHome } from './components/admin/AdminHome';
 import { CartDrawer } from './components/customer/CartDrawer';
@@ -16,7 +17,14 @@ import { AuthModal } from './components/auth/AuthModal';
 import './App.css';
 
 const AppContent = () => {
-  const { viewMode, setViewMode, activeTrackingOrderId, setActiveTrackingOrderId } = useStore();
+  const { 
+    viewMode, 
+    setViewMode, 
+    customerSubView, 
+    goToStore, 
+    activeTrackingOrderId, 
+    setActiveTrackingOrderId 
+  } = useStore();
 
   // Estados de Modales
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -56,12 +64,19 @@ const AppContent = () => {
             onSelectShowcaseTab={setSpectatorShowcaseTab}
           />
         ) : viewMode === 'customer' ? (
-          <CustomerHome
-            onOpenCart={() => setIsCartOpen(true)}
-            onOpenPoints={() => setIsPointsOpen(true)}
-            onOpenRequests={() => setIsRequestsOpen(true)}
-            onOpenLocationModal={() => setIsLocationOpen(true)}
-          />
+          customerSubView === 'directory' ? (
+            <StoreDirectory
+              onSelectStore={goToStore}
+              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            />
+          ) : (
+            <CustomerHome
+              onOpenCart={() => setIsCartOpen(true)}
+              onOpenPoints={() => setIsPointsOpen(true)}
+              onOpenRequests={() => setIsRequestsOpen(true)}
+              onOpenLocationModal={() => setIsLocationOpen(true)}
+            />
+          )
         ) : (
           <AdminHome onOpenAuthModal={() => setIsAuthModalOpen(true)} />
         )}

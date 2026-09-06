@@ -1,0 +1,82 @@
+/* Estilos de StoreSearchBar */
+.store-search-container {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+.store-search-glass-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.store-search-glass-card:focus-within {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+}
+
+.store-filters-ribbon {
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-pill-emerald {
+  background-color: rgba(236, 253, 245, 0.95);
+  backdrop-filter: blur(12px);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.filter-pill-emerald:hover {
+  background-color: rgba(209, 250, 229, 1);
+}
+
+.filter-pill-active-emerald {
+  background-color: #10b981;
+  color: #ffffff;
+  border: 1px solid #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+.filter-pill-glass {
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  color: #1e293b;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.filter-pill-glass:hover {
+  border-color: #10b981;
+  color: #047857;
+}
+
+.filter-pill-active {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 1px solid #0f172a;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+}
+
+.filter-pill-active svg {
+  color: #6ee7b7 !important;
+  fill: #6ee7b7 !important;
+}
+
+.filter-pill-amber {
+  background-color: rgba(254, 243, 199, 0.95);
+  backdrop-filter: blur(12px);
+  color: #92400e;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.filter-pill-amber:hover {
+  background-color: rgba(253, 230, 138, 1);
+}
+
+.filter-pill-active-amber {
+  background-color: #f59e0b;
+  color: #ffffff;
+  border: 1px solid #d97706;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.filter-pill-active-amber svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}

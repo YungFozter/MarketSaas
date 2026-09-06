@@ -392,3 +392,131 @@ export const initialProductRequests = [
     date: '2026-08-21'
   }
 ];
+
+// Directorio de Minimarkets y Tiendas de Proximidad
+export const initialStores = [
+  {
+    id: 'store-1',
+    slug: 'don-vecino',
+    name: 'Minimarket Don Vecino',
+    tagline: 'Tu tienda de confianza a pasos de tu puerta',
+    address: 'Calle Los Sauces, frente a Torre B',
+    condominium: 'Condominio Las Palmas',
+    distance: 'A 120m de tu torre',
+    distanceMeters: 120,
+    rating: 4.9,
+    reviewsCount: 142,
+    ordersCount: 142,
+    isOpen: true,
+    statusBadge: 'Abierto Ahora • Cierra 22:00',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '10-15 min',
+    freeDeliveryThreshold: 50.00,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: '+20 VeciPuntos',
+    category: 'Minimarket & Abarrotes',
+    isFeatured: true,
+    totalStockItems: 340,
+    perks: [
+      { id: 'p1', text: 'Despacho 10-15 min', icon: 'Zap', highlight: true },
+      { id: 'p2', text: 'Envío Gratis > Bs. 50', icon: 'Truck' },
+      { id: 'p3', text: '340 productos en stock', icon: 'Package' }
+    ],
+    featuredProducts: [
+      { id: 'fp-1', name: 'Leche Fresca 1L', price: 8.00, emoji: '🥛' },
+      { id: 'fp-2', name: 'Coca-Cola 2L', price: 13.00, emoji: '🥤' },
+      { id: 'fp-3', name: 'Huevos 15u', price: 15.00, emoji: '🥚' }
+    ],
+    mapPosition: {
+      leftPercent: 28,
+      bottomPixels: 42,
+      label: 'Acera Oeste',
+      badge: 'Stock Live'
+    }
+  },
+  {
+    id: 'store-2',
+    slug: 'la-pradera',
+    name: 'Abarrotes & Delicatessen La Pradera',
+    tagline: 'Gourmet y despensa selecta de proximidad',
+    address: 'Condominio Altos del Valle',
+    condominium: 'Condominio Altos del Valle',
+    distance: 'A 350m • Condominio Altos del Valle',
+    distanceMeters: 350,
+    rating: 4.8,
+    reviewsCount: 89,
+    ordersCount: 89,
+    isOpen: true,
+    statusBadge: 'Abierto • Listo en 15 min',
+    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '15 min',
+    freeDeliveryThreshold: null,
+    hasFreeDelivery: false,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: null,
+    category: 'Delicatessen',
+    isFeatured: false,
+    totalStockItems: 220,
+    perks: [
+      { id: 'p1', text: '🛵 Delivery propio' },
+      { id: 'p2', text: '💳 QR Simple' },
+      { id: 'p3', text: '🧺 Retiro en Caja' }
+    ],
+    featuredProducts: [
+      { id: 'fp-4', name: 'Queso Gouda 250g', price: 24.00, emoji: '🧀' },
+      { id: 'fp-5', name: 'Pan Baguette', price: 6.00, emoji: '🥖' }
+    ],
+    mapPosition: {
+      leftPercent: 72,
+      topPercent: 50,
+      label: 'Altos del Valle',
+      badge: '350m'
+    }
+  },
+  {
+    id: 'store-3',
+    slug: 'express-24-7',
+    name: 'Licorería & Express 24/7',
+    tagline: 'Bebidas frías, hielo y snacks toda la noche',
+    address: 'Av. Principal #104',
+    condominium: 'Barrio Central (Casas)',
+    distance: 'A 500m • Av. Principal #104',
+    distanceMeters: 500,
+    rating: 4.7,
+    reviewsCount: 215,
+    ordersCount: 215,
+    isOpen: true,
+    statusBadge: '24 Horas',
+    imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '10 min',
+    freeDeliveryThreshold: null,
+    hasFreeDelivery: false,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    pointsReward: null,
+    category: 'Bebidas & Licores',
+    isFeatured: false,
+    totalStockItems: 180,
+    perks: [
+      { id: 'p1', text: '⚡ Despacho Express 10m' },
+      { id: 'p2', text: '❄️ Bebidas Frías' },
+      { id: 'p3', text: '💳 Todos los medios' }
+    ],
+    featuredProducts: [
+      { id: 'fp-6', name: 'Cerveza Huari 6pk', price: 42.00, emoji: '🍺' },
+      { id: 'fp-7', name: 'Bolsa Hielo 3kg', price: 10.00, emoji: '🧊' }
+    ],
+    mapPosition: {
+      leftPercent: 88,
+      bottomPixels: 30,
+      label: 'Av. Principal',
+      badge: '24 Horas'
+    }
+  }
+];

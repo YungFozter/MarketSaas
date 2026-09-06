@@ -1,0 +1,8 @@
+/* Estilos del Contenedor de Directorio de Tiendas */
+.store-directory-wrapper {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+.store-directory-wrapper .font-headline {
+  font-family: 'Outfit', sans-serif;
+}

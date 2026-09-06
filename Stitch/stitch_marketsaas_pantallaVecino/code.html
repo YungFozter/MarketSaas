@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "background": "#f7f9fb", "on-tertiary-fixed": "#2a1700", "surface-dim": "#d8dadc", "on-background": "#191c1e", "error": "#ba1a1a", "neutral-slate-border": "#e2e8f0", "secondary-fixed-dim": "#bec6e0", "on-primary-fixed-variant": "#005236", "on-surface": "#191c1e", "neutral-slate-dark": "#1e293b", "tertiary-fixed": "#ffddb8", "surface-variant": "#e0e3e5", "surface-container-high": "#e6e8ea", "primary-emerald-hover": "#059669", "on-tertiary-container": "#523200", "secondary-container": "#dae2fd", "on-tertiary": "#ffffff", "neutral-slate-divider": "#f1f5f9", "on-primary-fixed": "#002113", "surface-bright": "#f7f9fb", "primary-emerald-surface": "#ecfdf5", "inverse-on-surface": "#eff1f3", "error-container": "#ffdad6", "primary-fixed": "#6ffbbe", "on-primary": "#ffffff", "on-error-container": "#93000a", "surface-container": "#eceef0", "on-tertiary-fixed-variant": "#653e00", "primary-container": "#10b981", "on-secondary-fixed": "#131b2e", "tertiary-container": "#e29100", "on-secondary-container": "#5c647a", "accent-amber-light": "#fef3c7", "secondary": "#565e74", "outline": "#6c7a71", "on-secondary": "#ffffff", "neutral-slate-muted": "#64748b", "outline-variant": "#bbcabf", "glass-panel-border": "rgba(226, 232, 240, 0.8)", "inverse-primary": "#4edea3", "primary-fixed-dim": "#4edea3", "surface-container-lowest": "#ffffff", "glass-panel-bg": "rgba(255, 255, 255, 0.85)", "surface-tint": "#006c49", "surface": "#f7f9fb", "secondary-fixed": "#dae2fd", "inverse-surface": "#2d3133", "glass-nav-bg": "rgba(255, 255, 255, 0.92)", "on-error": "#ffffff", "surface-container-low": "#f2f4f6", "feedback-danger": "#ef4444", "on-secondary-fixed-variant": "#3f465c", "on-surface-variant": "#3c4a42", "surface-container-highest": "#e0e3e5", "primary-emerald-dark": "#047857", "on-primary-container": "#00422b", "tertiary": "#855300", "tertiary-fixed-dim": "#ffb95f", "primary": "#006c49" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "gutter-sm": "1rem", "split-ratio-map": "55%", "margin-desktop": "2rem", "gutter-lg": "2rem", "split-ratio-list": "45%", "margin-tablet": "1.5rem", "search-height": "56px", "touch-min": "44px", "max-width-canvas": "1280px", "gutter-md": "1.5rem", "gutter-xs": "0.5rem", "gutter-xl": "3rem", "margin-mobile": "1rem", "nav-height": "72px" }, fontFamily: { "headline-md": ["Outfit"], "label-md": ["Plus Jakarta Sans"], "headline-sm": ["Outfit"], "headline-lg": ["Outfit"], "headline-lg-mobile": ["Outfit"], "body-sm": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-hero": ["Outfit"], "badge-micro": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-hero-mobile": ["Outfit"], "label-sm": ["Plus Jakarta Sans"] }, fontSize: { "headline-md": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "600" }], "label-md": ["14px", { lineHeight: "20px", fontWeight: "600" }], "headline-sm": ["18px", { lineHeight: "26px", fontWeight: "600" }], "headline-lg": ["36px", { lineHeight: "44px", letterSpacing: "-0.025em", fontWeight: "700" }], "headline-lg-mobile": ["24px", { lineHeight: "32px", letterSpacing: "-0.02em", fontWeight: "700" }], "body-sm": ["14px", { lineHeight: "20px", fontWeight: "500" }], "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }], "headline-hero": ["60px", { lineHeight: "68px", letterSpacing: "-0.02em", fontWeight: "800" }], "badge-micro": ["10px", { lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700" }], "body-md": ["16px", { lineHeight: "24px", fontWeight: "500" }], "headline-hero-mobile": ["36px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "800" }], "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased min-h-screen">
+<!-- NAVBAR -->
+<header class="fixed top-0 left-0 right-0 w-full z-50 bg-glass-nav-bg backdrop-blur-md border-b border-neutral-slate-border/80 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+<div class="h-[72px] max-w-7xl mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin-desktop flex items-center justify-between gap-4">
+<div class="flex items-center gap-3 flex-shrink-0">
+<img alt="MarketSaaS Logo" class="h-10 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Weg0hr-YlpY92AUqC9BwoHdbw43TXhl0SVUfr_77PDkV3sBLQRpxhapxoOtR-HAY9b_Lr7vkRrf-8tS7pnoBtSTYnVbs6AfAOqXhWwv16e_0LYUlDRaZhvIADAxJJnitP8Ylm8Kv7rz5UlZqcM7PExQzO749y7_GG9uAGGvTsoHc54AgikOAcTPaHD7qXiGNShbWbZQp2FqXE9ttVRivjLi9fF7qQ6XZjtZnm_GKPt2BOs8bCdbMT5muU"/>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-sm text-neutral-slate-dark tracking-tight leading-none">MarketSaaS</span>
+<span class="font-label-sm text-label-sm text-primary leading-tight">Red de Minimarkets de Proximidad</span>
+</div>
+</div>
+<nav class="hidden md:flex items-center bg-surface-container-low p-1 rounded-full border border-neutral-slate-border" data-active-classes="bg-primary-container text-on-primary font-bold shadow-sm">
+<a class="font-label-sm text-label-sm text-neutral-slate-muted hover:text-on-surface px-3 py-1.5 rounded-full transition-colors" data-path="info-plataforma" href="#">Info Plataforma</a>
+<a aria-current="page" class="px-3 py-1.5 rounded-full transition-colors bg-primary-container text-on-primary font-bold shadow-sm" data-path="vista-vecino" href="#">Vista Vecino</a>
+<a class="font-label-sm text-label-sm text-neutral-slate-muted hover:text-on-surface px-3 py-1.5 rounded-full transition-colors" data-path="panel-minimarket" href="#">Panel Minimarket</a>
+</nav>
+<div class="flex items-center gap-3 flex-shrink-0">
+<button class="flex items-center gap-2 h-10 px-3.5 bg-surface-container-lowest border border-neutral-slate-border rounded-xl shadow-xs hover:border-primary transition-colors cursor-pointer" type="button">
+<span class="material-symbols-outlined text-primary text-[18px]">shopping_bag</span>
+<span class="font-label-sm text-label-sm text-neutral-slate-dark hidden sm:inline">Canasta:</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">Bs. 0.00</span>
+</button>
+<button class="flex items-center gap-1.5 h-10 px-3 bg-surface-container-lowest border border-neutral-slate-border rounded-xl shadow-xs hover:border-primary transition-colors cursor-pointer" type="button">
+<span class="material-symbols-outlined text-primary text-[18px]">location_on</span>
+<span class="font-label-sm text-label-sm text-neutral-slate-dark font-semibold hidden md:inline truncate max-w-[140px]">Condominio Las Palmas</span>
+<span class="material-symbols-outlined text-neutral-slate-muted text-[16px]">expand_more</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-xs">
+<span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="w-full pt-[72px] bg-surface min-h-[calc(100vh-72px)]">
+<!-- TOP SECTION: HEADER INTRO -->
+<section class="w-full max-w-7xl mx-auto px-4 pt-6 pb-3">
+<div class="flex flex-col gap-1">
+<h1 class="font-headline-lg text-neutral-slate-dark tracking-tight leading-tight">
+      Encuentra tu minimarket más cercano en tiempo real
+    </h1>
+<p class="font-body-md text-neutral-slate-muted">
+      Compara precios, verifica disponibilidad y pide directo a tu puerta o retira en local sin comisiones.
+    </p>
+</div>
+</section>
+<!-- VARIANT 1: FULL-WIDTH MAP HERO SECTION WITH FLOATING SEARCH & CONTROLS -->
+<section class="w-full max-w-7xl mx-auto px-4 pb-6">
+<div class="relative w-full h-[460px] md:h-[480px] bg-surface-container-low rounded-3xl overflow-hidden shadow-xl border border-neutral-slate-border/70">
+<!-- SVG Map Canvas -->
+<div class="absolute inset-0 pointer-events-none opacity-90 overflow-hidden">
+<svg class="w-full h-full object-cover" fill="none" preserveaspectratio="xMidYMid slice" viewbox="0 0 1200 480" xmlns="http://www.w3.org/2000/svg">
+<rect fill="#EAEFF5" height="480" width="1200"></rect>
+<path d="M 80 30 Q 200 20 320 60 T 480 140 L 390 230 L 140 210 Z" fill="#D2E8D8" opacity="0.85"></path>
+<path d="M 820 180 Q 980 150 1100 200 L 1120 380 L 890 350 Z" fill="#D2E8D8" opacity="0.75"></path>
+<circle cx="240" cy="110" fill="#C1E0CA" opacity="0.9" r="42"></circle>
+<text fill="#005236" font-family="Outfit" font-size="11" font-weight="700" x="200" y="115">Parque Central</text>
+<!-- Condominio Las Palmas -->
+<rect fill="#F4F7FA" height="230" rx="16" stroke="#CBD5E1" stroke-dasharray="6 4" stroke-width="2" width="460" x="420" y="140"></rect>
+<text fill="#334155" font-family="Outfit" font-size="12" font-weight="800" letter-spacing="0.5" x="440" y="165">CONDOMINIO LAS PALMAS</text>
+<!-- Towers -->
+<g id="map-torre-a">
+<rect fill="#FFFFFF" height="60" rx="8" stroke="#94A3B8" stroke-width="1.5" width="60" x="450" y="185"></rect>
+<rect fill="#E2E8F0" height="46" rx="4" width="46" x="457" y="192"></rect>
+<text fill="#1E293B" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" x="462" y="219">Torre A</text>
+</g>
+<g id="map-torre-b">
+<rect fill="#FFFFFF" height="60" rx="8" stroke="#94A3B8" stroke-width="1.5" width="60" x="550" y="185"></rect>
+<rect fill="#E2E8F0" height="46" rx="4" width="46" x="557" y="192"></rect>
+<text fill="#1E293B" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" x="562" y="219">Torre B</text>
+</g>
+<g id="map-torre-c">
+<rect fill="#FFFFFF" height="60" rx="8" stroke="#94A3B8" stroke-width="1.5" width="60" x="650" y="185"></rect>
+<rect fill="#E2E8F0" height="46" rx="4" width="46" x="657" y="192"></rect>
+<text fill="#1E293B" font-family="Plus Jakarta Sans" font-size="11" font-weight="700" x="662" y="219">Torre C</text>
+</g>
+<!-- Piscina y Club Social -->
+<rect fill="#BAE6FD" height="50" opacity="0.8" rx="10" width="85" x="745" y="190"></rect>
+<text fill="#0369A1" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" x="758" y="220">Club Social</text>
+<!-- Streets -->
+<path d="M 0 410 L 1200 390" stroke="#FFFFFF" stroke-linecap="round" stroke-width="32"></path>
+<path d="M 0 410 L 1200 390" stroke="#CBD5E1" stroke-dasharray="8 8" stroke-width="2"></path>
+<text fill="#64748B" font-family="Outfit" font-size="12" font-weight="700" transform="rotate(-1, 50, 412)" x="50" y="412">AV. LAS PALMERAS</text>
+<path d="M 360 0 L 370 480" stroke="#FFFFFF" stroke-width="24"></path>
+<text fill="#64748B" font-family="Outfit" font-size="11" font-weight="600" transform="rotate(89, 380, 70)" x="380" y="70">CALLE LOS SAUCES</text>
+<path d="M 940 0 L 930 480" stroke="#FFFFFF" stroke-width="20"></path>
+<path d="M 480 250 C 480 300, 580 320, 680 300" opacity="0.6" stroke="#10B981" stroke-dasharray="3 3" stroke-width="2"></path>
+</svg>
+</div>
+<!-- FLOATING TOP BAR: Search & Filters inside Hero Map -->
+<div class="relative z-20 p-4 sm:p-5 flex flex-col gap-3 max-w-4xl mx-auto">
+<!-- Search Floating Glass Container -->
+<div class="bg-glass-panel-bg/95 backdrop-blur-xl rounded-2xl shadow-xl border border-glass-panel-border p-1.5 flex flex-col sm:flex-row items-center gap-2">
+<div class="flex items-center gap-2.5 flex-1 w-full px-3 py-1.5 text-on-surface">
+<span class="material-symbols-outlined text-primary text-[22px]">search</span>
+<input class="w-full bg-transparent font-body-sm text-body-sm text-neutral-slate-dark placeholder:text-neutral-slate-muted focus:outline-none" placeholder="¿Qué buscas hoy? (ej. Pan fresco, Leche, Bebidas, Don Pedro...)" type="text"/>
+</div>
+<div class="flex items-center gap-2 w-full sm:w-auto">
+<button class="flex-1 sm:flex-none flex items-center justify-between gap-1.5 px-3.5 py-2 bg-surface-container-low text-neutral-slate-dark rounded-xl font-label-sm text-label-sm font-semibold hover:bg-surface-container transition-colors cursor-pointer" type="button">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">location_on</span>
+<span>Condominio Las Palmas ▾</span>
+</span>
+</button>
+<button class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-5 py-2 bg-primary-container hover:bg-primary-emerald-hover text-on-primary font-label-md text-label-md rounded-xl shadow-md shadow-primary-container/25 transition-all cursor-pointer font-bold" type="button">
+<span>Buscar Tiendas</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Quick Filter Pills Floating Ribbon -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none justify-start sm:justify-center">
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-emerald-surface/95 backdrop-blur-md text-primary-emerald-dark font-label-sm text-label-sm font-bold rounded-full shadow-sm shrink-0 border border-primary-container/30 cursor-pointer" type="button">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span>Abiertas Ahora</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-glass-panel-bg/90 backdrop-blur-md text-neutral-slate-dark hover:text-primary font-label-sm text-label-sm font-semibold rounded-full shadow-sm shrink-0 transition-colors border border-glass-panel-border cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-neutral-slate-muted">moped</span>
+<span>Delivery Gratis</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-glass-panel-bg/90 backdrop-blur-md text-neutral-slate-dark hover:text-primary font-label-sm text-label-sm font-semibold rounded-full shadow-sm shrink-0 transition-colors border border-glass-panel-border cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">bolt</span>
+<span>Retiro Inmediato (5-10 min)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-glass-panel-bg/90 backdrop-blur-md text-neutral-slate-dark hover:text-primary font-label-sm text-label-sm font-semibold rounded-full shadow-sm shrink-0 transition-colors border border-glass-panel-border cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-neutral-slate-muted">qr_code_2</span>
+<span>Aceptan QR / Simple</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-glass-panel-bg/90 backdrop-blur-md text-neutral-slate-dark hover:text-primary font-label-sm text-label-sm font-semibold rounded-full shadow-sm shrink-0 transition-colors border border-glass-panel-border cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>Mejor Calificadas (4.8+)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1 bg-accent-amber-light/95 backdrop-blur-md text-on-tertiary-container font-label-sm text-label-sm font-bold rounded-full shadow-sm shrink-0 border border-tertiary-container/30 cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container">card_giftcard</span>
+<span>Club VeciPuntos</span>
+</button>
+</div>
+</div>
+<!-- MAP PINS & INTERACTION LAYER -->
+<!-- PIN 1: Minimarket Don Vecino (Active Selection with Popover) -->
+<div class="absolute left-[24%] md:left-[28%] bottom-[42px] z-20 -translate-x-1/2 pointer-events-auto">
+<!-- Expanded Popover Bubble -->
+<div class="w-60 bg-glass-panel-bg/95 backdrop-blur-xl p-2.5 rounded-xl shadow-xl mb-2 border border-glass-panel-border flex flex-col gap-1.5">
+<div class="flex items-center gap-2">
+<div class="w-7 h-7 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">storefront</span>
+</div>
+<div class="flex-1 min-w-0">
+<span class="font-headline-sm text-[12px] text-neutral-slate-dark font-bold block truncate">
+              Minimarket Don Vecino
+            </span>
+<div class="flex items-center gap-1 text-tertiary-container font-label-sm text-[10px] font-bold">
+<span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span>4.9</span>
+<span class="text-neutral-slate-muted font-normal">• 10-15 min</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-[10px] font-medium text-neutral-slate-dark bg-surface-container-low px-2 py-0.5 rounded">
+<span>📍 A 120m • Acera Oeste</span>
+<span class="text-primary font-bold">Stock Live</span>
+</div>
+</div>
+<!-- Pin Icon -->
+<div class="flex flex-col items-center">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-7 h-7 rounded-full bg-primary-container/40 animate-ping"></span>
+<div class="relative w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg cursor-pointer transform hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[18px]">shopping_cart</span>
+</div>
+</div>
+<div class="w-1.5 h-2 bg-primary rounded-b-full"></div>
+</div>
+</div>
+<!-- PIN 2: User Location (Torre A) -->
+<div class="absolute left-[46%] top-[56%] z-15 -translate-x-1/2 -translate-y-1/2">
+<div class="relative flex items-center justify-center">
+<span class="absolute w-9 h-9 rounded-full bg-secondary/30 animate-pulse"></span>
+<div class="w-3.5 h-3.5 rounded-full bg-secondary ring-4 ring-on-secondary shadow-md"></div>
+</div>
+<div class="absolute top-4 left-1/2 -translate-x-1/2 bg-neutral-slate-dark text-on-primary px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1">
+<span class="material-symbols-outlined text-[11px] text-primary-fixed">person_pin_circle</span>
+<span>Tú estás aquí (Torre A - 302)</span>
+</div>
+</div>
+<!-- PIN 3: La Pradera Pin -->
+<div class="absolute left-[72%] top-[50%] z-15 -translate-x-1/2 -translate-y-full">
+<div class="flex items-center gap-1.5 bg-surface-container-lowest/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg mb-1 cursor-pointer hover:bg-primary-emerald-surface transition-colors border border-neutral-slate-border/50">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+<span class="font-label-sm text-[11px] font-bold text-neutral-slate-dark whitespace-nowrap">La Pradera • 350m</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-7 h-7 rounded-full bg-surface-container-highest text-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-[15px]">store</span>
+</div>
+</div>
+</div>
+<!-- PIN 4: Express 24/7 Pin -->
+<div class="absolute left-[88%] bottom-[30px] z-15 -translate-x-1/2">
+<div class="flex items-center gap-1.5 bg-surface-container-lowest/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg mb-1 cursor-pointer hover:bg-tertiary-fixed transition-colors border border-neutral-slate-border/50">
+<span class="w-2 h-2 rounded-full bg-tertiary-container"></span>
+<span class="font-label-sm text-[11px] font-bold text-neutral-slate-dark whitespace-nowrap">Express 24/7 • 500m</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="w-7 h-7 rounded-full bg-neutral-slate-dark text-tertiary-fixed flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-[15px]">wine_bar</span>
+</div>
+</div>
+</div>
+<!-- MAP CONTROLS: Floating Bottom Overlays -->
+<div class="absolute bottom-3 left-3 sm:left-4 z-20 flex items-center gap-2">
+<div class="flex items-center gap-1.5 bg-glass-nav-bg backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-neutral-slate-dark font-label-sm text-[11px] font-semibold">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<span>GPS Activo • Radio 600m</span>
+</div>
+<button class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-glass-nav-bg backdrop-blur-md hover:bg-surface-container-lowest text-neutral-slate-dark font-label-sm text-[11px] font-bold rounded-full shadow-md transition-all cursor-pointer" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">my_location</span>
+<span>Re-centrar en mi torre</span>
+</button>
+</div>
+<div class="absolute bottom-3 right-3 sm:right-4 z-20 flex items-center gap-2">
+<div class="hidden sm:flex items-center bg-glass-nav-bg backdrop-blur-md p-0.5 rounded-xl shadow-md border border-glass-panel-border">
+<button class="px-2.5 py-1 rounded-lg bg-surface-container-lowest font-label-sm text-[11px] font-bold text-neutral-slate-dark shadow-xs cursor-pointer" type="button">
+          🗺️ Mapa
+        </button>
+<button class="px-2.5 py-1 rounded-lg font-label-sm text-[11px] text-neutral-slate-muted hover:text-neutral-slate-dark transition-colors cursor-pointer" type="button">
+          🛰️ Satélite
+        </button>
+</div>
+<div class="flex flex-col bg-glass-nav-bg backdrop-blur-md rounded-xl shadow-md overflow-hidden border border-glass-panel-border">
+<button class="w-7 h-7 flex items-center justify-center hover:bg-surface-container transition-colors text-neutral-slate-dark font-bold text-sm cursor-pointer" type="button">+</button>
+<div class="h-[1px] bg-neutral-slate-divider"></div>
+<button class="w-7 h-7 flex items-center justify-center hover:bg-surface-container transition-colors text-neutral-slate-dark font-bold text-sm cursor-pointer" type="button">−</button>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: STORE DIRECTORY QUEUE (HORIZONTAL MULTI-COLUMN BENTO GRID) -->
+<section class="w-full max-w-7xl mx-auto px-4 pb-10">
+<!-- Section Title & Sort Header -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-neutral-slate-divider">
+<div class="flex items-center gap-2.5">
+<span class="w-3 h-3 rounded-full bg-primary-container animate-ping"></span>
+<h2 class="font-headline-md text-headline-md text-neutral-slate-dark tracking-tight">
+        4 minimarkets disponibles en tu sector
+      </h2>
+</div>
+<div class="flex items-center gap-2 self-start sm:self-auto bg-surface-container-lowest px-3 py-1.5 rounded-xl shadow-xs border border-neutral-slate-border">
+<span class="font-label-sm text-label-sm text-neutral-slate-muted font-medium">Ordenar:</span>
+<select class="bg-transparent font-label-sm text-label-sm text-neutral-slate-dark font-semibold focus:outline-none cursor-pointer">
+<option>Más Cercanos</option>
+<option>Mejor Valorados</option>
+<option>Delivery Más Rápido</option>
+</select>
+</div>
+</div>
+<!-- MULTI-COLUMN BENTO GRID -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
+<!-- CARD 1: Expansive Featured Horizontal Card (8 Cols on Desktop) -->
+<article class="lg:col-span-8 bg-surface-container-lowest rounded-2xl shadow-lg hover:shadow-xl border border-neutral-slate-border/80 p-5 flex flex-col justify-between transition-all duration-300">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+<!-- Store Image on Left -->
+<div class="md:col-span-5 relative h-56 md:h-full min-h-[220px] rounded-xl overflow-hidden shadow-inner">
+<img alt="Minimarket Don Vecino Front" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida/AEtjO1Vv_iv5cMTguDTy9kY_tI7h3XIZ55Ga_higcTZRATvcyYeq5ByVst6q3yjW0UXmFXis4b1TLY9NI52QTqT5aw9bKjWoPdaU2dD0RN3EuQucRxnhiRg-z878iJMKGn9jKeXpsQL6KrTjMvSJL-n2ggPg87m_5BrnoDW-s_1T1h3cDRH2j8FGo_4KHKI3oW9WeeJeJ-w2a7rBnPLpwA8ewuUnVLPsYZx77MnHjEJpmJOPQdiXik0CKfRyhPg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-neutral-slate-dark/80 via-transparent to-black/20"></div>
+<!-- Floating Top Badges -->
+<div class="absolute top-2.5 left-2.5 flex items-center gap-1 px-2.5 py-1 bg-primary-emerald-dark/95 backdrop-blur-md rounded-full text-on-primary font-badge-micro text-badge-micro tracking-wider uppercase shadow-md">
+<span class="w-2 h-2 rounded-full bg-inverse-primary animate-pulse"></span>
+<span>Abierto Ahora • Cierra 22:00</span>
+</div>
+<div class="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 bg-tertiary-container text-on-primary font-badge-micro text-badge-micro tracking-wider uppercase rounded-full shadow-md">
+<span class="material-symbols-outlined text-[13px]">stars</span>
+<span>+20 VeciPuntos</span>
+</div>
+<!-- Distance Floating Tag -->
+<div class="absolute bottom-2.5 left-2.5 flex items-center gap-1 text-on-primary font-label-sm text-label-sm font-bold drop-shadow">
+<span class="material-symbols-outlined text-[16px] text-inverse-primary">near_me</span>
+<span>A 120m de tu torre</span>
+</div>
+</div>
+<!-- Store Details & Mini Catalog on Right -->
+<div class="md:col-span-7 flex flex-col justify-between h-full">
+<div>
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-xl bg-primary-emerald-surface flex items-center justify-center shrink-0 shadow-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">storefront</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-neutral-slate-dark font-bold leading-tight">
+                    Minimarket Don Vecino
+                  </h3>
+<p class="font-body-sm text-body-sm text-neutral-slate-muted flex items-center gap-1 truncate">
+<span>Calle Los Sauces, frente a Torre B</span>
+<span>•</span>
+<span>142 pedidos</span>
+</p>
+</div>
+</div>
+<span class="flex items-center gap-1 bg-accent-amber-light text-on-tertiary-container px-2.5 py-1 rounded-lg font-label-sm text-label-sm font-bold shrink-0 shadow-xs">
+<span class="material-symbols-outlined text-[15px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">star</span>
+                4.9
+              </span>
+</div>
+<!-- Perks Badges -->
+<div class="mt-3 flex flex-wrap gap-1.5">
+<span class="px-2.5 py-1 bg-primary-emerald-surface text-primary-emerald-dark font-label-sm text-[11px] font-bold rounded-lg flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">bolt</span> Despacho 10-15 min
+              </span>
+<span class="px-2.5 py-1 bg-surface-container text-neutral-slate-dark font-label-sm text-[11px] font-semibold rounded-lg">
+                Envío Gratis &gt; Bs. 50
+              </span>
+<span class="px-2.5 py-1 bg-surface-container text-neutral-slate-dark font-label-sm text-[11px] font-semibold rounded-lg">
+                340 productos en stock
+              </span>
+</div>
+<!-- Mini Catalog Strip -->
+<div class="mt-4 pt-3 border-t border-neutral-slate-divider">
+<span class="font-label-sm text-[11px] uppercase tracking-wider text-neutral-slate-muted font-bold block mb-2">
+                Productos más solicitados por vecinos
+              </span>
+<div class="grid grid-cols-3 gap-2">
+<div class="bg-surface-container-low p-2 rounded-xl flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="text-lg">🥛</span>
+<span class="font-label-sm text-label-sm font-bold text-primary">Bs. 8.00</span>
+</div>
+<span class="font-label-sm text-[11px] text-neutral-slate-dark font-medium truncate mt-1">Leche Fresca 1L</span>
+</div>
+<div class="bg-surface-container-low p-2 rounded-xl flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="text-lg">🥤</span>
+<span class="font-label-sm text-label-sm font-bold text-primary">Bs. 13.00</span>
+</div>
+<span class="font-label-sm text-[11px] text-neutral-slate-dark font-medium truncate mt-1">Coca-Cola 2L</span>
+</div>
+<div class="bg-surface-container-low p-2 rounded-xl flex flex-col justify-between hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="text-lg">🥚</span>
+<span class="font-label-sm text-label-sm font-bold text-primary">Bs. 15.00</span>
+</div>
+<span class="font-label-sm text-[11px] text-neutral-slate-dark font-medium truncate mt-1">Huevos 15u</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary CTA Button -->
+<button class="mt-5 w-full h-11 bg-primary-container hover:bg-primary-emerald-hover text-on-primary font-label-md text-label-md rounded-xl shadow-md shadow-primary-container/20 flex items-center justify-center gap-2 font-bold transition-all cursor-pointer" type="button">
+<span>Entrar a la Tienda y Comprar</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+<!-- RIGHT SUB-GRID: Card 2 & Card 3 (4 Cols on Desktop, stacked) -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- STORE CARD 2: La Pradera -->
+<article class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md border border-neutral-slate-border/80 p-4 flex flex-col justify-between transition-all duration-200">
+<div>
+<div class="relative h-28 w-full rounded-xl overflow-hidden">
+<img alt="Abarrotes La Pradera" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UWS43syT-vXU0e-l4rBzYHyb-BVd_V7eo3c1Z9SiTynEIITFfche-AZwxqn1_QK1xBm81KbYGmpf1g2_f34KyP0pO7F25oR0lPSx1YpNBTGdlhhdeQAotyl3MN8iHi6FPDeX-0C7Ze5X99IyHhbMrPP7DYXuXpG26hY8U0znw575wisesjCXBIFLiXccK1bRRP5Lyus0TG5iMQPlV9CAFmJtXaZWdmutmSmsHzfFv2hpvT-7_XBGTAQ0Y"/>
+<div class="absolute inset-0 bg-gradient-to-t from-neutral-slate-dark/60 via-transparent to-transparent"></div>
+<div class="absolute top-2 left-2 px-2 py-0.5 bg-neutral-slate-dark/80 backdrop-blur-sm rounded-full text-on-primary font-badge-micro text-badge-micro font-bold uppercase">
+              Abierto • Listo en 15 min
+            </div>
+<div class="absolute bottom-2 left-2 text-on-primary font-label-sm text-label-sm font-bold">
+              📍 A 350m • Condominio Altos del Valle
+            </div>
+</div>
+<div class="mt-3 flex items-start justify-between gap-2">
+<div>
+<h3 class="font-headline-sm text-[16px] text-neutral-slate-dark font-bold leading-snug">
+                Abarrotes &amp; Delicatessen La Pradera
+              </h3>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="flex items-center text-tertiary-container font-label-sm text-label-sm font-bold">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+                  4.8
+                </span>
+<span class="font-body-sm text-body-sm text-neutral-slate-muted">(89 pedidos)</span>
+</div>
+</div>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-neutral-slate-dark shrink-0">
+<span class="material-symbols-outlined text-[18px]">local_mall</span>
+</div>
+</div>
+<div class="mt-2.5 flex flex-wrap gap-1.5 text-neutral-slate-muted font-label-sm text-[11px] font-semibold">
+<span class="bg-surface-container px-2 py-0.5 rounded">🛵 Delivery propio</span>
+<span class="bg-surface-container px-2 py-0.5 rounded">💳 QR Simple</span>
+<span class="bg-surface-container px-2 py-0.5 rounded">🧺 Retiro en Caja</span>
+</div>
+</div>
+<button class="mt-3.5 w-full h-10 bg-primary-emerald-surface hover:bg-primary-container hover:text-on-primary text-primary font-label-sm text-label-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer" type="button">
+<span>Ver Catálogo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</article>
+<!-- STORE CARD 3: Licorería & Snacks 24/7 -->
+<article class="bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md border border-neutral-slate-border/80 p-4 flex flex-col justify-between transition-all duration-200">
+<div>
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shrink-0 shadow-xs">
+<span class="material-symbols-outlined text-[22px]">nightlife</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-[16px] text-neutral-slate-dark font-bold leading-snug">
+                  Licorería &amp; Express 24/7
+                </h3>
+<div class="flex items-center gap-2 mt-0.5 font-label-sm text-label-sm">
+<span class="flex items-center text-tertiary-container font-bold">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+                    4.7
+                  </span>
+<span class="text-neutral-slate-muted">•</span>
+<span class="text-neutral-slate-muted text-xs">📍 A 500m • Av. Principal #104</span>
+</div>
+</div>
+</div>
+<span class="px-2 py-0.5 bg-primary-emerald-surface text-primary-emerald-dark font-badge-micro text-badge-micro font-bold uppercase rounded-md shrink-0">
+              24 Horas
+            </span>
+</div>
+<div class="mt-3 flex flex-wrap gap-1.5 text-neutral-slate-muted font-label-sm text-[11px] font-semibold">
+<span class="bg-surface-container px-2 py-0.5 rounded">⚡ Despacho Express 10m</span>
+<span class="bg-surface-container px-2 py-0.5 rounded">❄️ Bebidas Frías</span>
+<span class="bg-surface-container px-2 py-0.5 rounded">💳 Todos los medios</span>
+</div>
+</div>
+<button class="mt-3.5 w-full h-10 bg-surface-container hover:bg-surface-variant text-neutral-slate-dark font-label-sm text-label-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer" type="button">
+<span>Ver Catálogo</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</article>
+</div>
+</div>
+</section>
+<!-- COMMUNITY CONVERSION / MERCHANT ONBOARDING BANNER -->
+<section class="w-full max-w-7xl mx-auto px-4 pb-12">
+<div class="bg-gradient-to-r from-primary-emerald-surface via-surface-container-lowest to-primary-emerald-surface rounded-2xl shadow-sm border border-neutral-slate-border/80 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+<div class="flex items-start gap-4 z-10">
+<div class="w-14 h-14 rounded-2xl bg-primary-container text-on-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary-container/30">
+<span class="material-symbols-outlined text-[32px]">store</span>
+</div>
+<div class="space-y-1">
+<h3 class="font-headline-md text-headline-md text-neutral-slate-dark leading-snug">
+          ¿Tienes una tienda de barrio o minimarket en este condominio?
+        </h3>
+<p class="font-body-md text-body-md text-neutral-slate-muted max-w-2xl">
+          Publica tu tienda gratis en MarketSaaS y empieza a recibir pedidos directos por WhatsApp de tus vecinos con 0% de comisiones por transacción.
+        </p>
+</div>
+</div>
+<div class="z-10 shrink-0 w-full md:w-auto">
+<a class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-emerald-dark hover:bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold shadow-md transition-all cursor-pointer" data-path="registrar-tienda" href="#">
+<span class="material-symbols-outlined text-[20px]">add_business</span>
+<span>Registrar mi Tienda Gratis</span>
+</a>
+</div>
+<div class="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-primary-container/10 pointer-events-none blur-2xl"></div>
+</div>
+</section>
+</main>
+<!-- FOOTER -->
+<footer class="w-full bg-neutral-slate-dark text-on-primary py-12 border-t border-neutral-slate-border/20">
+<div class="max-w-7xl mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin-desktop grid grid-cols-1 md:grid-cols-4 gap-8">
+<div class="space-y-3">
+<div class="flex items-center gap-2">
+<span class="font-headline-md text-headline-sm text-on-primary">MarketSaaS</span>
+</div>
+<p class="font-body-sm text-body-sm text-outline-variant">
+        La red logística hiperlocal que conecta condominios y vecinos con minimarkets de barrio en tiempo récord.
+      </p>
+</div>
+<div class="space-y-3">
+<h4 class="font-label-md text-label-md text-on-primary tracking-wide uppercase">Explorar</h4>
+<ul class="space-y-2 font-body-sm text-body-sm text-outline-variant">
+<li><a class="hover:text-on-primary transition-colors" data-path="directorio-minimarkets" href="#">Directorio de Minimarkets</a></li>
+<li><a class="hover:text-on-primary transition-colors" data-path="vista-vecino" href="#">Vista Vecino</a></li>
+<li><a class="hover:text-on-primary transition-colors" data-path="info-plataforma" href="#">Cómo Funciona</a></li>
+</ul>
+</div>
+<div class="space-y-3">
+<h4 class="font-label-md text-label-md text-on-primary tracking-wide uppercase">Aliados</h4>
+<ul class="space-y-2 font-body-sm text-body-sm text-outline-variant">
+<li><a class="hover:text-on-primary transition-colors" data-path="para-condominios" href="#">Para Condominios</a></li>
+<li><a class="hover:text-on-primary transition-colors" data-path="registrar-tienda" href="#">Registrar Tienda</a></li>
+<li><a class="hover:text-on-primary transition-colors" data-path="panel-minimarket" href="#">Portal de Comerciante</a></li>
+</ul>
+</div>
+<div class="space-y-3">
+<h4 class="font-label-md text-label-md text-on-primary tracking-wide uppercase">Soporte Vecinal</h4>
+<p class="font-body-sm text-body-sm text-outline-variant">
+        Atención directa e incidencias de pedidos por mensajería instantánea.
+      </p>
+<a class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-container hover:bg-primary-emerald-hover text-on-primary rounded-xl font-label-sm text-label-sm font-bold transition-all shadow-sm" href="#">
+<span class="material-symbols-outlined text-[18px]">chat</span>
+        WhatsApp Soporte
+      </a>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-margin-mobile md:px-margin-tablet lg:px-margin-desktop mt-10 pt-6 border-t border-neutral-slate-muted/20 flex flex-col sm:flex-row items-center justify-between gap-4 font-label-sm text-label-sm text-outline-variant">
+<span>© 2025 MarketSaaS Technologies. Todos los derechos reservados.</span>
+<span>Conectando comunidades urbanas con velocidad y calidez.</span>
+</div>
+</footer>
+</body></html>

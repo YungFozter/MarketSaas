@@ -1,0 +1,11 @@
+/* Estilos para StoreCard */
+.store-card-featured,
+.store-card-compact {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.store-card-featured h3,
+.store-card-compact h3 {
+  font-family: 'Outfit', sans-serif;
+}

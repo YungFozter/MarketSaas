@@ -1,0 +1,20 @@
+/* Estilos del Mapa Hiperlocal */
+.neighborhood-map-container {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.map-canvas-wrapper {
+  will-change: transform;
+}
+
+@keyframes mapRecenterBounce {
+  0% { transform: scale(1.1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.map-recenter-anim {
+  animation: mapRecenterBounce 0.5s ease-out;
+}

@@ -34,6 +34,8 @@ export const Navbar = ({
   const { 
     viewMode, 
     setViewMode, 
+    customerSubView,
+    goToDirectory,
     cart, 
     cartTotal, 
     cartSubtotal,
@@ -126,13 +128,16 @@ export const Navbar = ({
               </button>
 
               <button
-                onClick={() => setViewMode('customer')}
+                onClick={() => {
+                  setViewMode('customer');
+                  goToDirectory();
+                }}
                 className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'customer'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-300 hover:text-white'
                 }`}
-                title="Ver tienda en vivo como cliente"
+                title="Explorar directorio y mapa hiperlocal de minimarkets"
               >
                 <span>🛍️</span>
                 <span>Vista Vecino</span>
@@ -185,13 +190,19 @@ export const Navbar = ({
             isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-18'
           }`}>
           
-          {/* Logo y Marca Oficial MarketSaaS en Código Vectorial (Sin imágenes de fondo beige) */}
+          {/* Logo y Marca Oficial MarketSaaS en Código Vectorial */}
           <button 
-            onClick={() => setViewMode('spectator')}
+            onClick={() => {
+              if (viewMode === 'customer' && customerSubView === 'storefront') {
+                goToDirectory();
+              } else {
+                setViewMode('spectator');
+              }
+            }}
             className="flex items-center gap-2 sm:gap-3 shrink-0 text-left cursor-pointer group focus:outline-none"
-            title="Ir a la pantalla informativa de MarketSaaS"
+            title={viewMode === 'customer' && customerSubView === 'storefront' ? 'Volver al directorio y mapa' : 'Ir a la pantalla informativa de MarketSaaS'}
           >
-            {viewMode === 'spectator' ? (
+            {viewMode === 'spectator' || (viewMode === 'customer' && customerSubView === 'directory') ? (
               <div className="flex items-center gap-2 sm:gap-2.5">
                 {/* Isotipo Moderno con Flecha de Crecimiento */}
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-slate-950 via-slate-900 to-slate-800 border border-slate-700/80 flex items-center justify-center text-white shadow-md shadow-slate-900/10 group-hover:border-emerald-500/50 transition-all shrink-0">
@@ -206,12 +217,12 @@ export const Navbar = ({
                     <span className="font-extrabold text-lg sm:text-xl md:text-2xl text-slate-950 tracking-tight">
                       Market<span className="text-sky-600">SaaS</span>
                     </span>
-                    <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 text-[9px] font-extrabold border border-sky-200 uppercase tracking-wider">
-                      Plataforma
+                    <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[9px] font-extrabold border border-emerald-200 uppercase tracking-wider">
+                      {viewMode === 'customer' ? 'Vecinos' : 'Plataforma'}
                     </span>
                   </div>
                   <span className="text-[10px] text-slate-500 font-semibold tracking-tight hidden sm:block">
-                    La evolución digital de tus ventas.
+                    {viewMode === 'customer' ? 'Red de Minimarkets de Proximidad' : 'La evolución digital de tus ventas.'}
                   </span>
                 </div>
               </div>

@@ -8,7 +8,7 @@ import { useStore } from '../../context/StoreContext';
 import './CustomerHome.css';
 
 export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
-  const { products, selectedLocation, activeTrackingOrderId, setActiveTrackingOrderId } = useStore();
+  const { products, selectedLocation, activeTrackingOrderId, setActiveTrackingOrderId, goToDirectory, storeConfig } = useStore();
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +30,29 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
+      {/* Barra de Retorno al Directorio de Tiendas */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+        <button
+          type="button"
+          onClick={goToDirectory}
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 hover:text-emerald-700 transition-colors cursor-pointer group"
+          title="Regresar al mapa y directorio de tiendas"
+        >
+          <span className="p-1 rounded-lg bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100 transition-colors">
+            🗺️
+          </span>
+          <span className="group-hover:underline">Cambiar de Tienda / Ver Mapa</span>
+        </button>
+
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="hidden sm:inline">Comprando en:</span>
+          <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            {storeConfig.name}
+          </span>
+        </div>
+      </div>
+
       {/* Banner Superior Principal */}
       <HeroBanner 
         searchQuery={searchQuery}
