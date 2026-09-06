@@ -130,32 +130,30 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         </div>
       </section>
 
-      {/* 2. SECCIÓN HERO: MAPA VECTORIAL CON BARRA FLOTANTE DE BÚSQUEDA Y CONTROLES */}
+      {/* 2. SECCIÓN HERO: BARRA DE BÚSQUEDA Y GOOGLE MAPS INTERACTIVO */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
-        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
-          {/* Barra de Búsqueda y Filtros Flotantes Sobre el Mapa */}
-          <div className="absolute top-3 sm:top-4 left-3 sm:left-6 right-3 sm:right-6 z-30 pointer-events-auto">
-            <StoreSearchBar
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              selectedZone={selectedZone}
-              setSelectedZone={setSelectedZone}
-              activeFilters={activeFilters}
-              onToggleFilter={handleToggleFilter}
-              zoneOptions={zoneOptions}
-            />
-          </div>
+        {/* Barra de Búsqueda y Filtros Rápidos */}
+        <div className="mb-4 sm:mb-5">
+          <StoreSearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedZone={selectedZone}
+            setSelectedZone={setSelectedZone}
+            activeFilters={activeFilters}
+            onToggleFilter={handleToggleFilter}
+            zoneOptions={zoneOptions}
+          />
+        </div>
 
-          {/* Canvas Interactivo del Mapa */}
-          <div className="pt-24 sm:pt-28 md:pt-24">
-            <NeighborhoodMap
-              stores={stores}
-              selectedStore={stores.find((s) => s.slug === selectedStoreSlug)}
-              onSelectStore={(slug) => setSelectedStoreSlug(slug)}
-              onEnterStore={handleStoreNavigation}
-              userLocation={selectedLocation}
-            />
-          </div>
+        {/* Canvas de Google Maps */}
+        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
+          <NeighborhoodMap
+            stores={stores}
+            selectedStore={stores.find((s) => s.slug === selectedStoreSlug)}
+            onSelectStore={(slug) => setSelectedStoreSlug(slug)}
+            onEnterStore={handleStoreNavigation}
+            userLocation={selectedLocation}
+          />
         </div>
       </section>
 

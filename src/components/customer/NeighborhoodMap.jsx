@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Store, 
-  ShoppingCart, 
   MapPin, 
   Star, 
-  Layers, 
   Plus, 
   Minus, 
-  Navigation,
-  Wine,
+  Navigation, 
+  ExternalLink,
+  Compass,
   ShoppingBag,
-  Compass
+  Sparkles
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
@@ -22,301 +21,222 @@ export const NeighborhoodMap = ({
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
-  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(16);
   const [isRecentering, setIsRecentering] = useState(false);
 
+  // Tienda Don Vecino como fallback
+  const donVecino = stores.find((s) => s.slug === 'don-vecino') || stores[0];
+  const activeStore = selectedStore || donVecino;
+
+  // Ubicación del residente por defecto
+  const userHomeQuery = `${userLocation.condominium || 'Condominio Las Palmas'}, Santa Cruz de la Sierra, Bolivia`;
+
+  // Ubicación que centra actualmente el mapa
+  const [currentLocationTarget, setCurrentLocationTarget] = useState({
+    type: 'store',
+    targetSlug: activeStore?.slug || 'don-vecino',
+    query: activeStore?.googleMapsQuery || userHomeQuery
+  });
+
+  // Cuando cambia selectedStore desde fuera, enfocar esa tienda
+  React.useEffect(() => {
+    if (selectedStore) {
+      setCurrentLocationTarget({
+        type: 'store',
+        targetSlug: selectedStore.slug,
+        query: selectedStore.googleMapsQuery || `${selectedStore.name}, ${selectedStore.address}, Santa Cruz de la Sierra, Bolivia`
+      });
+    }
+  }, [selectedStore]);
+
+  // Controles de Zoom
   const handleZoomIn = () => {
-    setZoomScale((prev) => Math.min(prev + 0.15, 1.5));
+    setZoomLevel((prev) => Math.min(prev + 1, 19));
   };
 
   const handleZoomOut = () => {
-    setZoomScale((prev) => Math.max(prev - 0.15, 0.85));
+    setZoomLevel((prev) => Math.max(prev - 1, 13));
   };
 
+  // Re-centrar en la torre del usuario
   const handleRecenter = () => {
     setIsRecentering(true);
-    setZoomScale(1);
+    setZoomLevel(16);
+    setCurrentLocationTarget({
+      type: 'user',
+      targetSlug: null,
+      query: userHomeQuery
+    });
     setTimeout(() => setIsRecentering(false), 500);
   };
 
-  // Identificar tiendas principales
-  const donVecino = stores.find((s) => s.slug === 'don-vecino') || stores[0];
-  const laPradera = stores.find((s) => s.slug === 'la-pradera');
-  const expressStore = stores.find((s) => s.slug === 'express-24-7');
+  // Selección de tienda desde los chips del mapa
+  const handleSelectStoreTarget = (store) => {
+    onSelectStore && onSelectStore(store.slug);
+    setCurrentLocationTarget({
+      type: 'store',
+      targetSlug: store.slug,
+      query: store.googleMapsQuery || `${store.name}, ${store.address}, Santa Cruz de la Sierra, Bolivia`
+    });
+  };
 
-  const activeStore = selectedStore || donVecino;
+  // Enlace directo para navegación en la App oficial de Google Maps
+  const externalGoogleMapsUrl = useMemo(() => {
+    const q = activeStore?.googleMapsQuery || currentLocationTarget.query;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  }, [activeStore, currentLocationTarget]);
+
+  // Construcción de la URL de Google Maps Embed interactivo
+  const googleMapsEmbedUrl = useMemo(() => {
+    const q = encodeURIComponent(currentLocationTarget.query);
+    const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
+    return `https://maps.google.com/maps?q=${q}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
+  }, [currentLocationTarget.query, mapType, zoomLevel]);
 
   return (
-    <div className="neighborhood-map-container relative w-full h-[400px] sm:h-[460px] md:h-[480px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 select-none">
-      {/* Contenedor del Mapa con Zoom y Pan */}
-      <div 
-        className={`map-canvas-wrapper absolute inset-0 transition-transform duration-300 ${
-          isRecentering ? 'map-recenter-anim' : ''
-        }`}
-        style={{ transform: `scale(${zoomScale})`, transformOrigin: 'center center' }}
-      >
-        {/* SVG Vector Canvas */}
-        <div className={`absolute inset-0 pointer-events-none ${mapType === 'satellite' ? 'opacity-85 filter contrast-125' : 'opacity-95'}`}>
-          <svg 
-            className="w-full h-full object-cover" 
-            viewBox="0 0 1200 480" 
-            fill="none" 
-            preserveAspectRatio="xMidYMid slice" 
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Terreno Base */}
-            <rect width="1200" height="480" fill={mapType === 'satellite' ? '#1E293B' : '#EAEFF5'} />
+    <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
+      
+      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS */}
+      <div className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`}>
+        <iframe
+          key={`${currentLocationTarget.query}-${mapType}-${zoomLevel}`}
+          title="Google Maps Hiperlocal MarketSaaS"
+          src={googleMapsEmbedUrl}
+          className="w-full h-full border-0 pointer-events-auto"
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
+        />
+      </div>
 
-            {/* Áreas Verdes y Parques */}
-            <path 
-              d="M 80 30 Q 200 20 320 60 T 480 140 L 390 230 L 140 210 Z" 
-              fill={mapType === 'satellite' ? '#14532D' : '#D2E8D8'} 
-              opacity="0.85" 
-            />
-            <path 
-              d="M 820 180 Q 980 150 1100 200 L 1120 380 L 890 350 Z" 
-              fill={mapType === 'satellite' ? '#14532D' : '#D2E8D8'} 
-              opacity="0.75" 
-            />
-            <circle 
-              cx="240" 
-              cy="110" 
-              r="42" 
-              fill={mapType === 'satellite' ? '#166534' : '#C1E0CA'} 
-              opacity="0.9" 
-            />
-            <text 
-              x="200" 
-              y="115" 
-              fill={mapType === 'satellite' ? '#BBF7D0' : '#005236'} 
-              fontFamily="Outfit, sans-serif" 
-              fontSize="11" 
-              fontWeight="700"
-            >
-              Parque Central
-            </text>
+      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y TORRE DEL VECINO */}
+      <div className="absolute top-3 left-3 sm:left-4 right-3 sm:right-4 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
+        {/* Chip Mi Ubicación */}
+        <button
+          type="button"
+          onClick={handleRecenter}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
+            currentLocationTarget.type === 'user'
+              ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
+              : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
+          }`}
+        >
+          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
+          <Navigation className="w-3.5 h-3.5 text-sky-400" />
+          <span>Mi Torre ({userLocation.tower})</span>
+        </button>
 
-            {/* Polígono del Condominio Las Palmas */}
-            <rect 
-              x="420" 
-              y="140" 
-              width="460" 
-              height="230" 
-              rx="16" 
-              fill={mapType === 'satellite' ? '#0F172A' : '#F4F7FA'} 
-              stroke={mapType === 'satellite' ? '#334155' : '#CBD5E1'} 
-              strokeWidth="2" 
-              strokeDasharray="6 4" 
-            />
-            <text 
-              x="440" 
-              y="165" 
-              fill={mapType === 'satellite' ? '#94A3B8' : '#334155'} 
-              fontFamily="Outfit, sans-serif" 
-              fontSize="12" 
-              fontWeight="800" 
-              letterSpacing="0.5"
-            >
-              CONDOMINIO LAS PALMAS
-            </text>
-
-            {/* Torres Residenciales */}
-            {/* Torre A */}
-            <g id="map-torre-a">
-              <rect x="450" y="185" width="60" height="60" rx="8" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="1.5" />
-              <rect x="457" y="192" width="46" height="46" rx="4" fill="#E2E8F0" />
-              <text x="462" y="219" fill="#1E293B" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="11" fontWeight="700">Torre A</text>
-            </g>
-
-            {/* Torre B */}
-            <g id="map-torre-b">
-              <rect x="550" y="185" width="60" height="60" rx="8" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="1.5" />
-              <rect x="557" y="192" width="46" height="46" rx="4" fill="#E2E8F0" />
-              <text x="562" y="219" fill="#1E293B" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="11" fontWeight="700">Torre B</text>
-            </g>
-
-            {/* Torre C */}
-            <g id="map-torre-c">
-              <rect x="650" y="185" width="60" height="60" rx="8" fill="#FFFFFF" stroke="#94A3B8" strokeWidth="1.5" />
-              <rect x="657" y="192" width="46" height="46" rx="4" fill="#E2E8F0" />
-              <text x="662" y="219" fill="#1E293B" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="11" fontWeight="700">Torre C</text>
-            </g>
-
-            {/* Piscina y Club Social */}
-            <rect x="745" y="190" width="85" height="50" rx="10" fill="#BAE6FD" opacity="0.85" />
-            <text x="758" y="220" fill="#0369A1" fontFamily="Plus Jakarta Sans, sans-serif" fontSize="10" fontWeight="700">Club Social</text>
-
-            {/* Calles y Avenidas */}
-            <path d="M 0 410 L 1200 390" stroke={mapType === 'satellite' ? '#334155' : '#FFFFFF'} strokeWidth="32" strokeLinecap="round" />
-            <path d="M 0 410 L 1200 390" stroke={mapType === 'satellite' ? '#64748B' : '#CBD5E1'} strokeWidth="2" strokeDasharray="8 8" />
-            <text 
-              x="50" 
-              y="412" 
-              fill={mapType === 'satellite' ? '#94A3B8' : '#64748B'} 
-              fontFamily="Outfit, sans-serif" 
-              fontSize="12" 
-              fontWeight="700" 
-              transform="rotate(-1, 50, 412)"
-            >
-              AV. LAS PALMERAS
-            </text>
-
-            <path d="M 360 0 L 370 480" stroke={mapType === 'satellite' ? '#334155' : '#FFFFFF'} strokeWidth="24" />
-            <text 
-              x="380" 
-              y="70" 
-              fill={mapType === 'satellite' ? '#94A3B8' : '#64748B'} 
-              fontFamily="Outfit, sans-serif" 
-              fontSize="11" 
-              fontWeight="600" 
-              transform="rotate(89, 380, 70)"
-            >
-              CALLE LOS SAUCES
-            </text>
-
-            <path d="M 940 0 L 930 480" stroke={mapType === 'satellite' ? '#334155' : '#FFFFFF'} strokeWidth="20" />
-
-            {/* Trayecto peatonal sugerido */}
-            <path d="M 480 250 C 480 300, 580 320, 680 300" stroke="#10B981" strokeWidth="2" strokeDasharray="4 4" opacity="0.75" />
-          </svg>
-        </div>
-
-        {/* PIN 1: Minimarket Don Vecino (Activo con Popover Emergente) */}
-        {donVecino && (
-          <div 
-            className="absolute left-[24%] md:left-[28%] bottom-[42px] z-30 -translate-x-1/2 pointer-events-auto cursor-pointer"
-            onClick={() => {
-              onSelectStore && onSelectStore(donVecino.slug);
-            }}
-          >
-            {/* Popover Card Expandido */}
-            <div 
-              className={`w-60 bg-white/95 backdrop-blur-xl p-2.5 rounded-xl shadow-xl mb-2 border border-slate-200/80 flex flex-col gap-1.5 transition-all duration-200 transform hover:scale-105 ${
-                activeStore?.slug === donVecino.slug ? 'ring-2 ring-emerald-500 shadow-emerald-500/20' : ''
+        {/* Chips de Minimarkets */}
+        {stores.map((s) => {
+          const isSelected = activeStore?.slug === s.slug && currentLocationTarget.type === 'store';
+          return (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => handleSelectStoreTarget(s)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
+                isSelected
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-white'
+                  : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                  <Store className="w-4 h-4" />
+              <Store className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
+              <span className="truncate max-w-[140px] sm:max-w-none">{s.name}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3. CARD FLOTANTE INTERACTIVA DE LA TIENDA SELECCIONADA */}
+      {activeStore && (
+        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-20 max-w-[280px] sm:max-w-[320px] w-full pointer-events-auto">
+          <div className="bg-white/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-200/90 flex flex-col gap-2 transition-all transform hover:scale-[1.02]">
+            
+            {/* Cabecera de la Tienda */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Store className="w-5 h-5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="font-bold text-xs text-slate-900 block truncate">
-                    {donVecino.name}
-                  </span>
-                  <div className="flex items-center gap-1 text-amber-600 text-[10px] font-bold">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
+                    {activeStore.name}
+                  </h4>
+                  <div className="flex items-center gap-1 text-[11px] text-amber-600 font-bold mt-0.5">
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                    <span>{donVecino.rating}</span>
-                    <span className="text-slate-400 font-normal">• {donVecino.deliveryTime}</span>
+                    <span>{activeStore.rating || 4.8}</span>
+                    <span className="text-slate-400 font-normal">• {activeStore.deliveryTime || '10-15 min'}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-[10px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
-                <span>📍 A 120m • Acera Oeste</span>
-                <span className="text-emerald-700 font-bold">Stock Live</span>
-              </div>
-              {onEnterStore && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEnterStore(donVecino.slug);
-                  }}
-                  className="w-full mt-1 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <ShoppingBag className="w-3 h-3" />
-                  <span>Ver Catálogo</span>
-                </button>
-              )}
+
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                En vivo
+              </span>
             </div>
 
-            {/* Marcador Pin con Pulso */}
-            <div className="flex flex-col items-center">
-              <div className="relative flex items-center justify-center">
-                <span className="absolute w-7 h-7 rounded-full bg-emerald-500/40 animate-ping" />
-                <div className="relative w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
-                  <ShoppingCart className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="w-1.5 h-2 bg-emerald-600 rounded-b-full" />
+            {/* Dirección y Distancia */}
+            <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-100">
+              <span className="truncate flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                {activeStore.address}
+              </span>
+              <span className="font-bold text-slate-900 shrink-0 ml-1">
+                {activeStore.distanceMeters ? `a ${activeStore.distanceMeters}m` : 'Cerca'}
+              </span>
             </div>
-          </div>
-        )}
 
-        {/* PIN 2: Ubicación del Vecino (Torre A) */}
-        <div className="absolute left-[46%] top-[56%] z-25 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-          <div className="relative flex items-center justify-center">
-            <span className="absolute w-10 h-10 rounded-full bg-sky-500/30 animate-pulse" />
-            <div className="w-4 h-4 rounded-full bg-sky-600 ring-4 ring-white shadow-md" />
-          </div>
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-lg flex items-center gap-1 border border-slate-700">
-            <Navigation className="w-3 h-3 text-emerald-400" />
-            <span>Tú estás aquí ({userLocation.tower} - {userLocation.apartment})</span>
+            {/* Botones de Acción */}
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => onEnterStore && onEnterStore(activeStore.slug)}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Ver Catálogo</span>
+              </button>
+
+              <a
+                href={externalGoogleMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-slate-200"
+                title="Ver ruta en la aplicación de Google Maps"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
+                <span>Cómo llegar</span>
+              </a>
+            </div>
+
           </div>
         </div>
+      )}
 
-        {/* PIN 3: Abarrotes La Pradera */}
-        {laPradera && (
-          <div 
-            className="absolute left-[72%] top-[50%] z-25 -translate-x-1/2 -translate-y-full pointer-events-auto cursor-pointer"
-            onClick={() => onSelectStore && onSelectStore(laPradera.slug)}
-          >
-            <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg mb-1 hover:bg-emerald-50 transition-colors border border-slate-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] font-bold text-slate-800 whitespace-nowrap">La Pradera • 350m</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shadow-md hover:scale-110 transition-transform">
-                <Store className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PIN 4: Licorería & Express 24/7 */}
-        {expressStore && (
-          <div 
-            className="absolute left-[88%] bottom-[30px] z-25 -translate-x-1/2 pointer-events-auto cursor-pointer"
-            onClick={() => onSelectStore && onSelectStore(expressStore.slug)}
-          >
-            <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full shadow-lg mb-1 hover:bg-amber-50 transition-colors border border-slate-200">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-[11px] font-bold text-slate-800 whitespace-nowrap">Express 24/7 • 500m</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-7 h-7 rounded-full bg-slate-900 text-amber-400 flex items-center justify-center shadow-md hover:scale-110 transition-transform">
-                <Wine className="w-3.5 h-3.5" />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* CONTROLES FLOTANTES DEL MAPA */}
-      {/* Indicador GPS & Botón Re-centrar */}
-      <div className="absolute bottom-3 left-3 sm:left-4 z-35 flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200/80">
+      {/* 4. CONTROLES INFERIORES: GPS, SATÉLITE Y ZOOM */}
+      {/* Lado Izquierdo: Estado de Cobertura */}
+      <div className="absolute bottom-3 left-3 sm:left-4 z-20 flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>GPS Activo • Radio 600m</span>
+          <span className="font-bold text-emerald-700">Google Maps</span>
+          <span className="text-slate-400">•</span>
+          <span>Radio 600m</span>
         </div>
-        <button 
-          type="button"
-          onClick={handleRecenter}
-          className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 bg-white/90 backdrop-blur-md hover:bg-white text-slate-800 text-[11px] font-bold rounded-full shadow-md transition-all cursor-pointer border border-slate-200/80 active:scale-95"
-          title="Re-centrar vista en tu condominio"
-        >
-          <Compass className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Re-centrar en mi torre</span>
-        </button>
       </div>
 
-      {/* Switcher Satélite & Controles Zoom */}
-      <div className="absolute bottom-3 right-3 sm:right-4 z-35 flex items-center gap-2">
-        <div className="hidden sm:flex items-center bg-white/90 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200/80">
+      {/* Lado Derecho: Toggle Satélite y Zoom */}
+      <div className="absolute bottom-3 right-3 sm:right-4 z-20 flex items-center gap-2 pointer-events-auto">
+        {/* Toggle Mapa / Satélite */}
+        <div className="flex items-center bg-white/95 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200">
           <button 
             type="button"
             onClick={() => setMapType('map')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-              mapType === 'map' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+              mapType === 'map' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             🗺️ Mapa
@@ -324,20 +244,20 @@ export const NeighborhoodMap = ({
           <button 
             type="button"
             onClick={() => setMapType('satellite')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-              mapType === 'satellite' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+              mapType === 'satellite' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             🛰️ Satélite
           </button>
         </div>
 
-        {/* Botones Zoom +/- */}
-        <div className="flex flex-col bg-white/90 backdrop-blur-md rounded-xl shadow-md overflow-hidden border border-slate-200/80">
+        {/* Controles de Zoom */}
+        <div className="flex flex-col bg-white/95 backdrop-blur-md rounded-xl shadow-md overflow-hidden border border-slate-200">
           <button 
             type="button"
             onClick={handleZoomIn}
-            className="w-7 h-7 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200"
+            className="w-7 h-7 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200 transition-colors"
             title="Acercar mapa"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -346,13 +266,14 @@ export const NeighborhoodMap = ({
           <button 
             type="button"
             onClick={handleZoomOut}
-            className="w-7 h-7 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200"
+            className="w-7 h-7 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200 transition-colors"
             title="Alejar mapa"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
+
     </div>
   );
 };

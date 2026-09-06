@@ -430,6 +430,8 @@ export const initialStores = [
       { id: 'fp-2', name: 'Coca-Cola 2L', price: 13.00, emoji: '🥤' },
       { id: 'fp-3', name: 'Huevos 15u', price: 15.00, emoji: '🥚' }
     ],
+    googleMapsQuery: 'Condominio Las Palmas, Calle Los Sauces, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7942, lng: -63.2031 },
     mapPosition: {
       leftPercent: 28,
       bottomPixels: 42,
@@ -471,6 +473,8 @@ export const initialStores = [
       { id: 'fp-4', name: 'Queso Gouda 250g', price: 24.00, emoji: '🧀' },
       { id: 'fp-5', name: 'Pan Baguette', price: 6.00, emoji: '🥖' }
     ],
+    googleMapsQuery: 'Condominio Altos del Valle, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7885, lng: -63.1978 },
     mapPosition: {
       leftPercent: 72,
       topPercent: 50,
@@ -512,6 +516,8 @@ export const initialStores = [
       { id: 'fp-6', name: 'Cerveza Huari 6pk', price: 42.00, emoji: '🍺' },
       { id: 'fp-7', name: 'Bolsa Hielo 3kg', price: 10.00, emoji: '🧊' }
     ],
+    googleMapsQuery: 'Av. Principal, Santa Cruz de la Sierra, Bolivia',
+    googleMapsCoordinates: { lat: -17.7995, lng: -63.2085 },
     mapPosition: {
       leftPercent: 88,
       bottomPixels: 30,
