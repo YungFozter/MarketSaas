@@ -375,8 +375,15 @@ export const StoreProvider = ({ children }) => {
   // 9. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
-  // 10. Pedido activo para seguimiento
-  const [activeTrackingOrderId, setActiveTrackingOrderId] = useState(null);
+  // 10. Pedido activo para seguimiento y modal de tracking
+  const [activeTrackingOrderId, setActiveTrackingOrderId] = useState(() => {
+    try {
+      return localStorage.getItem(`marketsaas_${tenantSlug}_active_order`) || null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   // 11. Toast notification
   const [toast, setToast] = useState(null);
@@ -857,6 +864,10 @@ export const StoreProvider = ({ children }) => {
     // Limpiar carrito y abrir tracking
     clearCart();
     setActiveTrackingOrderId(orderId);
+    setIsTrackingModalOpen(true);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_active_order`, orderId);
+    } catch (e) {}
     triggerConfetti();
     showToast(`¡Pedido ${orderId} recibido con éxito! La tienda ya lo está preparando.`, 'success');
 
@@ -1268,6 +1279,8 @@ export const StoreProvider = ({ children }) => {
         updateRequestStatus,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
+        isTrackingModalOpen,
+        setIsTrackingModalOpen,
         toast,
         showToast,
         triggerConfetti,

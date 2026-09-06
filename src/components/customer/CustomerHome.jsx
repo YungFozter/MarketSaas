@@ -3,12 +3,20 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
-import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './CustomerHome.css';
 
 export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
-  const { products, selectedLocation, activeTrackingOrderId, setActiveTrackingOrderId, goToDirectory, storeConfig } = useStore();
+  const { 
+    products, 
+    selectedLocation, 
+    activeTrackingOrderId, 
+    setActiveTrackingOrderId, 
+    setIsTrackingModalOpen,
+    goToDirectory, 
+    storeConfig 
+  } = useStore();
 
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,12 +52,25 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
           <span className="group-hover:underline">Cambiar de Tienda / Ver Mapa</span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <span className="hidden sm:inline">Comprando en:</span>
           <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             {storeConfig.name}
           </span>
+          {(storeConfig.whatsapp || storeConfig.phone) && (
+            <a
+              href={`https://wa.me/${(storeConfig.whatsapp || storeConfig.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`¡Hola ${storeConfig.name}! Tengo una consulta sobre los productos de la tienda.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 transition-colors shadow-2xs"
+              title="Consultar por WhatsApp a la tienda"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Consultar a la tienda</span>
+              <span className="sm:hidden">WhatsApp</span>
+            </a>
+          )}
         </div>
       </div>
 
@@ -74,8 +95,8 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
             </div>
           </div>
           <button
-            onClick={() => {}}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-emerald-900 font-black text-xs shadow-md hover:bg-emerald-50 transition-colors flex items-center justify-center gap-1"
+            onClick={() => setIsTrackingModalOpen(true)}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-emerald-900 font-black text-xs shadow-md hover:bg-emerald-50 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             <span>Ver Seguimiento en Vivo</span>
             <ArrowRight className="w-4 h-4" />
@@ -112,6 +133,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
                 key={prod.id}
                 product={prod}
                 onOpenDetail={(p) => setSelectedProduct(p)}
+                onRequestProduct={onOpenRequests}
               />
             ))}
           </div>
@@ -119,7 +141,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
       )}
 
       {/* Catálogo de Productos Principal */}
-      <section>
+      <section id="products-catalog-section">
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
             {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
@@ -149,7 +171,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
                 Ver todos los productos
               </button>
               <button
-                onClick={onOpenRequests}
+                onClick={() => onOpenRequests('')}
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20"
               >
                 Pídelo a la tienda
@@ -163,6 +185,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
                 key={prod.id}
                 product={prod}
                 onOpenDetail={(p) => setSelectedProduct(p)}
+                onRequestProduct={onOpenRequests}
               />
             ))}
           </div>
@@ -174,6 +197,7 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
         <ProductModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          onRequestProduct={onOpenRequests}
         />
       )}
     </main>

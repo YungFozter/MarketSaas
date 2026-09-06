@@ -13,7 +13,8 @@ import {
   Sparkles, 
   Copy, 
   Clock,
-  MessageCircle 
+  MessageCircle,
+  AlertCircle
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './CheckoutModal.css';
@@ -51,6 +52,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card'
   const [cashAmount, setCashAmount] = useState('50.00');
   const [copiedBank, setCopiedBank] = useState(false);
+
+  const minOrder = Number(storeConfig?.minOrder || 0);
+  const isBelowMinOrder = effectiveDeliveryType === 'delivery' && minOrder > 0 && cartSubtotal < minOrder;
+  const missingToMinOrder = Math.max(0, minOrder - cartSubtotal);
 
   useEffect(() => {
     if (isOpen) {
@@ -96,6 +101,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
     if (!customerPhone.trim() || rawDigits.length < 7) {
       showToast('Por favor ingresa tu número de teléfono o WhatsApp.', 'warning');
+      return;
+    }
+
+    if (isBelowMinOrder) {
+      const curr = storeConfig?.currencySymbol || 'Bs.';
+      showToast(`El pedido mínimo para delivery en esta tienda es de ${curr} ${minOrder.toFixed(2)}. Agrega ${curr} ${missingToMinOrder.toFixed(2)} más o elige retiro en tienda.`, 'warning');
       return;
     }
     
@@ -381,10 +392,27 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
               )}
 
+              {/* Advertencia de Pedido Mínimo para Delivery */}
+              {isBelowMinOrder && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/90 text-amber-950 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold block">Pedido mínimo de delivery: {currency} {minOrder.toFixed(2)}</span>
+                    <span className="text-[11px] text-amber-800">
+                      Tu subtotal actual es {currency} {cartSubtotal.toFixed(2)}. Te faltan <strong>{currency} {missingToMinOrder.toFixed(2)}</strong> para cumplir con la condición de entrega a domicilio, o puedes seleccionar arriba la opción <strong>"Retiro en Tienda"</strong> sin mínimo.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleProceedToPayment}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className={`w-full py-3.5 rounded-2xl text-white font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  isBelowMinOrder 
+                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30' 
+                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                }`}
               >
                 <span>Continuar al Pago ({currency} {finalTotal.toFixed(2)})</span>
                 <span>→</span>
@@ -545,6 +573,18 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg font-bold flex justify-between">
                     <span>{effectiveDeliveryType === 'pickup' ? 'Vuelto a entregarte en caja:' : 'Vuelto que llevará el repartidor:'}</span>
                     <span>{currency} {changeToReturn}</span>
+                  </div>
+                )}
+
+                {storeConfig.enablePoints !== false && cartSubtotal > 0 && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <span>VeciPuntos que acumularás:</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black">
+                      +{Math.round(cartSubtotal * (storeConfig.pointsRatio || 1))} pts
+                    </span>
                   </div>
                 )}
               </div>

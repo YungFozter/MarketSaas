@@ -3,7 +3,7 @@ import { X, Plus, Minus, ShieldCheck, Sparkles, Truck, Check, Share2, Tag } from
 import { useStore } from '../../context/StoreContext';
 import './ProductModal.css';
 
-export const ProductModal = ({ product, onClose }) => {
+export const ProductModal = ({ product, onClose, onRequestProduct }) => {
   const { addToCart, cart, updateCartQuantity, selectedLocation, storeConfig } = useStore();
   const [qty, setQty] = useState(1);
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -29,7 +29,7 @@ export const ProductModal = ({ product, onClose }) => {
         {/* Botón Cerrar */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-slate-800 shadow-md transition-all"
+          className="absolute top-3 right-3 z-10 p-2 rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-slate-800 shadow-md transition-all cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -103,8 +103,20 @@ export const ProductModal = ({ product, onClose }) => {
           {/* Selector de cantidad y botón */}
           <div className="pt-3 sm:pt-4 border-t border-slate-100 flex flex-col gap-2.5 sm:gap-3">
             {isOutOfStock ? (
-              <div className="text-center py-2.5 bg-rose-50 text-rose-700 font-bold rounded-2xl border border-rose-200 text-xs sm:text-sm">
-                Producto agotado por el momento
+              <div className="flex flex-col gap-2 p-3.5 bg-amber-50/80 rounded-2xl border border-amber-200 text-center">
+                <span className="text-xs font-bold text-slate-800">
+                  Este producto se encuentra agotado temporalmente.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    if (onRequestProduct) onRequestProduct(product.name);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-102 active:scale-98"
+                >
+                  <span>🔔 Pedir al dueño que reponga stock</span>
+                </button>
               </div>
             ) : (
               <>

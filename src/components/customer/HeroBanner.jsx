@@ -54,8 +54,13 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, o
               </button>
             )}
             <button
-              onClick={() => {}}
-              className="absolute right-1.5 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1"
+              onClick={() => {
+                const el = document.getElementById('products-catalog-section') || document.querySelector('section');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="absolute right-1.5 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
             >
               <span>Buscar</span>
             </button>

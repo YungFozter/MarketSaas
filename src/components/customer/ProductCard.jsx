@@ -3,7 +3,7 @@ import { Plus, Minus, Check, Sparkles, Tag, Eye } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './ProductCard.css';
 
-export const ProductCard = ({ product, onOpenDetail }) => {
+export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
   const { cart, addToCart, updateCartQuantity, storeConfig } = useStore();
 
   const cartItem = cart.find(item => item.id === product.id);
@@ -107,10 +107,15 @@ export const ProductCard = ({ product, onOpenDetail }) => {
           <div className="shrink-0">
             {isOutOfStock ? (
               <button
-                disabled
-                className="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 text-[11px] sm:text-xs font-bold cursor-not-allowed"
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onRequestProduct) onRequestProduct(product.name);
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] sm:text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-1 shadow-2xs"
+                title="Pedir al dueño que reponga este producto"
               >
-                Sin Stock
+                <span>🔔 Pídelo</span>
               </button>
             ) : quantityInCart > 0 ? (
               <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-300 rounded-xl sm:rounded-2xl p-0.5 sm:p-1 shadow-2xs">

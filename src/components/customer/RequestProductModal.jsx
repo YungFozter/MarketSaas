@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, PlusCircle, ThumbsUp, Sparkles, MessageSquarePlus, CheckCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './RequestProductModal.css';
 
-export const RequestProductModal = ({ isOpen, onClose }) => {
+export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }) => {
   const { productRequests, submitProductRequest, voteProductRequest } = useStore();
-  const [productName, setProductName] = useState('');
+  const [productName, setProductName] = useState(initialProductName);
   const [notes, setNotes] = useState('');
   const [customerName, setCustomerName] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setProductName(initialProductName || '');
+    }
+  }, [isOpen, initialProductName]);
 
   if (!isOpen) return null;
 
@@ -19,6 +25,7 @@ export const RequestProductModal = ({ isOpen, onClose }) => {
     setProductName('');
     setNotes('');
     setCustomerName('');
+    onClose();
   };
 
   return (
