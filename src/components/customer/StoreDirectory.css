@@ -6,3 +6,26 @@
 .store-directory-wrapper .font-headline {
   font-family: 'Outfit', sans-serif;
 }
+
+/* Scroller personalizado para columna de tiendas secundarias */
+.secondary-stores-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.secondary-stores-scroller::-webkit-scrollbar {
+  width: 6px;
+}
+
+.secondary-stores-scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.secondary-stores-scroller::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.secondary-stores-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}

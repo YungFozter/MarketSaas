@@ -239,7 +239,7 @@ export const initialCategories = [
 
 export const presetBanners = [
   { id: 'b1', name: 'Minimarket & Abarrotes Frescos', url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'b2', name: 'Supermercado & Granel', url: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=1200&auto=format&fit=crop&q=80' },
+  { id: 'b2', name: 'Supermercado & Granel', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200&auto=format&fit=crop&q=80' },
   { id: 'b3', name: 'Panadería & Desayunos Tradicionales', url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80' },
   { id: 'b4', name: 'Frutas & Verduras del Día', url: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=1200&auto=format&fit=crop&q=80' },
   { id: 'b5', name: 'Bebidas, Licores & Snacks', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200&auto=format&fit=crop&q=80' }
@@ -515,7 +515,7 @@ export const initialStores = [
     ordersCount: 220,
     isOpen: true,
     statusBadge: 'Abierto • Cierra 23:00',
-    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1588964895597-cfccd6e2dbf9?w=800&auto=format&fit=crop&q=80',
     deliveryTime: '12-15 min',
     freeDeliveryThreshold: 50.00,
     hasFreeDelivery: true,
@@ -661,7 +661,7 @@ export const initialStores = [
     ordersCount: 188,
     isOpen: true,
     statusBadge: 'Abierto Ahora',
-    imageUrl: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=800&auto=format&fit=crop&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800&auto=format&fit=crop&q=80',
     deliveryTime: '15 min',
     freeDeliveryThreshold: 80.00,
     hasFreeDelivery: true,

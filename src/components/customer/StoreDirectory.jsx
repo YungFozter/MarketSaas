@@ -284,25 +284,38 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               </div>
             )}
 
-            {/* COLUMNA SECUNDARIA (4 Columnas en Desktop, apiladas) */}
-            <div className="lg:col-span-4 flex flex-col gap-6">
-              {secondaryStores.map((store) => (
-                <StoreCard
-                  key={store.id}
-                  store={store}
-                  variant="compact"
-                  onSelect={handleStoreNavigation}
-                />
-              ))}
-
-              {secondaryStores.length === 0 && (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-                  <Building2 className="w-8 h-8 text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold text-slate-500">
-                    Mostrando la tienda con mayor cobertura en este sector.
-                  </p>
+            {/* COLUMNA SECUNDARIA (4 Columnas en Desktop, apiladas con scroll vertical propio) */}
+            <div className="lg:col-span-4 flex flex-col">
+              {secondaryStores.length > 3 && (
+                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold border-b border-slate-200/80">
+                  <span className="font-bold text-slate-700">
+                    Otras {secondaryStores.length} tiendas cercanas
+                  </span>
+                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+                    Desliza para ver más ↓
+                  </span>
                 </div>
               )}
+
+              <div className="secondary-stores-scroller flex flex-col gap-4 max-h-[850px] overflow-y-auto pr-1.5 scroll-smooth">
+                {secondaryStores.map((store) => (
+                  <StoreCard
+                    key={store.id}
+                    store={store}
+                    variant="compact"
+                    onSelect={handleStoreNavigation}
+                  />
+                ))}
+
+                {secondaryStores.length === 0 && (
+                  <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
+                    <Building2 className="w-8 h-8 text-slate-300 mb-2" />
+                    <p className="text-xs font-semibold text-slate-500">
+                      Mostrando la tienda con mayor cobertura en este sector.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
