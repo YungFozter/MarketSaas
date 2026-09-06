@@ -12,10 +12,32 @@
   box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
 }
 
+/* Riel de filtros con desplazamiento táctil y barra suave */
 .store-filters-ribbon {
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.35) transparent;
 }
 
+.store-filters-ribbon::-webkit-scrollbar {
+  height: 4px;
+}
+
+.store-filters-ribbon::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.store-filters-ribbon::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.3);
+  border-radius: 9999px;
+}
+
+.store-filters-ribbon::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
+}
+
+/* Botones / Píldoras */
 .filter-pill-emerald {
   background-color: rgba(236, 253, 245, 0.95);
   backdrop-filter: blur(12px);
@@ -35,19 +57,20 @@
 }
 
 .filter-pill-glass {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   color: #1e293b;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.85);
 }
 
 .filter-pill-glass:hover {
   border-color: #10b981;
   color: #047857;
+  background-color: #f8fafc;
 }
 
 .filter-pill-active {
-  background-color: #1e293b;
+  background-color: #0f172a;
   color: #ffffff;
   border: 1px solid #0f172a;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);

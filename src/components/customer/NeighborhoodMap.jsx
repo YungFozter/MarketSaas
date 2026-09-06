@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Store, 
   MapPin, 
@@ -13,9 +13,24 @@ import {
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
+// Coordenadas fijas y precisas para garantizar centrado perfecto en Google Maps
+const DEFAULT_NEIGHBORHOOD_COORDS = {
+  lat: -17.7942,
+  lng: -63.2031,
+  name: 'Condominio Las Palmas'
+};
+
+const ZONE_COORDINATES = {
+  'Condominio Las Palmas': { lat: -17.7942, lng: -63.2031, name: 'Condominio Las Palmas' },
+  'Condominio Altos del Valle': { lat: -17.7885, lng: -63.1978, name: 'Condominio Altos del Valle' },
+  'Barrio Central (Casas)': { lat: -17.7995, lng: -63.2085, name: 'Barrio Central' },
+  'all': DEFAULT_NEIGHBORHOOD_COORDS
+};
+
 export const NeighborhoodMap = ({
   stores = [],
   selectedStore,
+  selectedZone = 'all',
   onSelectStore,
   onEnterStore,
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
@@ -28,26 +43,32 @@ export const NeighborhoodMap = ({
   const donVecino = stores.find((s) => s.slug === 'don-vecino') || stores[0];
   const activeStore = selectedStore || donVecino;
 
-  // Ubicación del residente por defecto
-  const userHomeQuery = `${userLocation.condominium || 'Condominio Las Palmas'}, Santa Cruz de la Sierra, Bolivia`;
-
-  // Ubicación que centra actualmente el mapa
-  const [currentLocationTarget, setCurrentLocationTarget] = useState({
-    type: 'store',
-    targetSlug: activeStore?.slug || 'don-vecino',
-    query: activeStore?.googleMapsQuery || userHomeQuery
+  // Estado de coordenadas activas para centrar Google Maps
+  const [currentCoords, setCurrentCoords] = useState(() => {
+    if (activeStore?.googleMapsCoordinates) {
+      return activeStore.googleMapsCoordinates;
+    }
+    return DEFAULT_NEIGHBORHOOD_COORDS;
   });
 
-  // Cuando cambia selectedStore desde fuera, enfocar esa tienda
-  React.useEffect(() => {
-    if (selectedStore) {
-      setCurrentLocationTarget({
-        type: 'store',
-        targetSlug: selectedStore.slug,
-        query: selectedStore.googleMapsQuery || `${selectedStore.name}, ${selectedStore.address}, Santa Cruz de la Sierra, Bolivia`
-      });
+  const [activeLocationType, setActiveLocationType] = useState('store'); // 'store' | 'user' | 'zone'
+
+  // Si cambia la tienda seleccionada desde el directorio
+  useEffect(() => {
+    if (selectedStore?.googleMapsCoordinates) {
+      setCurrentCoords(selectedStore.googleMapsCoordinates);
+      setActiveLocationType('store');
     }
   }, [selectedStore]);
+
+  // Si cambia el filtro de zona desde el selector "Todas las Zonas"
+  useEffect(() => {
+    if (selectedZone && ZONE_COORDINATES[selectedZone]) {
+      setCurrentCoords(ZONE_COORDINATES[selectedZone]);
+      setActiveLocationType(selectedZone === 'all' ? 'store' : 'zone');
+      setZoomLevel(16);
+    }
+  }, [selectedZone]);
 
   // Controles de Zoom
   const handleZoomIn = () => {
@@ -61,45 +82,42 @@ export const NeighborhoodMap = ({
   // Re-centrar en la torre del usuario
   const handleRecenter = () => {
     setIsRecentering(true);
-    setZoomLevel(16);
-    setCurrentLocationTarget({
-      type: 'user',
-      targetSlug: null,
-      query: userHomeQuery
-    });
+    setZoomLevel(17);
+    setCurrentCoords(DEFAULT_NEIGHBORHOOD_COORDS);
+    setActiveLocationType('user');
     setTimeout(() => setIsRecentering(false), 500);
   };
 
   // Selección de tienda desde los chips del mapa
   const handleSelectStoreTarget = (store) => {
     onSelectStore && onSelectStore(store.slug);
-    setCurrentLocationTarget({
-      type: 'store',
-      targetSlug: store.slug,
-      query: store.googleMapsQuery || `${store.name}, ${store.address}, Santa Cruz de la Sierra, Bolivia`
-    });
+    if (store.googleMapsCoordinates) {
+      setCurrentCoords(store.googleMapsCoordinates);
+    } else {
+      setCurrentCoords(DEFAULT_NEIGHBORHOOD_COORDS);
+    }
+    setActiveLocationType('store');
   };
 
   // Enlace directo para navegación en la App oficial de Google Maps
   const externalGoogleMapsUrl = useMemo(() => {
-    const q = activeStore?.googleMapsQuery || currentLocationTarget.query;
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-  }, [activeStore, currentLocationTarget]);
+    return `https://www.google.com/maps/search/?api=1&query=${currentCoords.lat},${currentCoords.lng}`;
+  }, [currentCoords]);
 
-  // Construcción de la URL de Google Maps Embed interactivo
+  // Construcción de la URL de Google Maps Embed interactivo con coordenadas precisas
   const googleMapsEmbedUrl = useMemo(() => {
-    const q = encodeURIComponent(currentLocationTarget.query);
     const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
-    return `https://maps.google.com/maps?q=${q}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
-  }, [currentLocationTarget.query, mapType, zoomLevel]);
+    // Utilizar coordenadas exactas garantiza centrado perfecto sin ambigüedades
+    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
+  }, [currentCoords, mapType, zoomLevel]);
 
   return (
     <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
       
-      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS */}
+      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS CENTRADO EXACTO */}
       <div className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`}>
         <iframe
-          key={`${currentLocationTarget.query}-${mapType}-${zoomLevel}`}
+          key={`${currentCoords.lat}-${currentCoords.lng}-${mapType}-${zoomLevel}`}
           title="Google Maps Hiperlocal MarketSaaS"
           src={googleMapsEmbedUrl}
           className="w-full h-full border-0 pointer-events-auto"
@@ -116,7 +134,7 @@ export const NeighborhoodMap = ({
           type="button"
           onClick={handleRecenter}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-            currentLocationTarget.type === 'user'
+            activeLocationType === 'user'
               ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
               : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
           }`}
@@ -128,7 +146,7 @@ export const NeighborhoodMap = ({
 
         {/* Chips de Minimarkets */}
         {stores.map((s) => {
-          const isSelected = activeStore?.slug === s.slug && currentLocationTarget.type === 'store';
+          const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
           return (
             <button
               key={s.id}
@@ -206,7 +224,7 @@ export const NeighborhoodMap = ({
                 target="_blank"
                 rel="noreferrer"
                 className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer border border-slate-200"
-                title="Ver ruta en la aplicación de Google Maps"
+                title="Abrir ubicación en la aplicación de Google Maps"
               >
                 <ExternalLink className="w-3.5 h-3.5 text-slate-600" />
                 <span>Cómo llegar</span>
@@ -222,7 +240,7 @@ export const NeighborhoodMap = ({
       <div className="absolute bottom-3 left-3 sm:left-4 z-20 flex items-center gap-2 pointer-events-auto">
         <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-bold text-emerald-700">Google Maps</span>
+          <span className="font-bold text-emerald-700">Google Maps Centrado</span>
           <span className="text-slate-400">•</span>
           <span>Radio 600m</span>
         </div>

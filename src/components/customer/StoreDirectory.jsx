@@ -150,6 +150,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <NeighborhoodMap
             stores={stores}
             selectedStore={stores.find((s) => s.slug === selectedStoreSlug)}
+            selectedZone={selectedZone}
             onSelectStore={(slug) => setSelectedStoreSlug(slug)}
             onEnterStore={handleStoreNavigation}
             userLocation={selectedLocation}

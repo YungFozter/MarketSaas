@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   Search, 
   MapPin, 
@@ -8,7 +8,9 @@ import {
   QrCode, 
   Star, 
   Gift,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import './StoreSearchBar.css';
 
@@ -22,6 +24,8 @@ export const StoreSearchBar = ({
   onSearchSubmit,
   zoneOptions = []
 }) => {
+  const ribbonRef = useRef(null);
+
   const filterPills = [
     {
       id: 'openNow',
@@ -68,6 +72,20 @@ export const StoreSearchBar = ({
     }
   ];
 
+  // Desplazamiento horizontal con botones o rueda del ratón
+  const scrollRibbon = (direction) => {
+    if (ribbonRef.current) {
+      const scrollAmount = direction === 'left' ? -220 : 220;
+      ribbonRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleWheelScroll = (e) => {
+    if (ribbonRef.current && e.deltaY !== 0) {
+      ribbonRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
   return (
     <div className="store-search-container w-full max-w-4xl mx-auto flex flex-col gap-3 relative z-20">
       {/* Barra de Búsqueda Flotante Glassmórfica */}
@@ -87,7 +105,7 @@ export const StoreSearchBar = ({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-xs text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded-md hover:bg-slate-100"
+              className="text-xs text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded-md hover:bg-slate-100 cursor-pointer"
               title="Borrar búsqueda"
             >
               ✕
@@ -95,14 +113,15 @@ export const StoreSearchBar = ({
           )}
         </div>
 
-        {/* Acciones: Selector de Condominio y Botón Buscar */}
+        {/* Acciones: Selector de Condominio/Zona y Botón Buscar */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
           {/* Selector de Zona */}
           <div className="relative flex-1 sm:flex-none">
             <select
               value={selectedZone}
               onChange={(e) => setSelectedZone(e.target.value)}
-              className="w-full sm:w-auto appearance-none flex items-center justify-between gap-1.5 px-3.5 py-2 pr-7 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200/70 transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full sm:w-auto appearance-none flex items-center justify-between gap-1.5 px-3.5 py-2 pr-7 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              title="Filtrar minimarkets por condominio o zona de cobertura"
             >
               <option value="all">📍 Todas las Zonas ▾</option>
               {zoneOptions.map((zone) => (
@@ -126,29 +145,56 @@ export const StoreSearchBar = ({
         </div>
       </div>
 
-      {/* Riel Deslizable de Filtros Rápidos (Pills) */}
-      <div className="store-filters-ribbon flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none justify-start sm:justify-center">
-        {filterPills.map((pill) => {
-          const isActive = !!activeFilters[pill.id];
-          return (
-            <button
-              key={pill.id}
-              type="button"
-              onClick={() => onToggleFilter(pill.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none shadow-xs ${
-                isActive
-                  ? pill.activeClass
-                  : pill.baseClass
-              }`}
-            >
-              {pill.pulse && (
-                <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'} animate-pulse`} />
-              )}
-              {pill.icon}
-              <span>{pill.label}</span>
-            </button>
-          );
-        })}
+      {/* Riel Deslizable de Filtros Rápidos (Pills) con Scroll Completo y Flechas */}
+      <div className="relative flex items-center w-full group/ribbon">
+        {/* Flecha Desplazamiento Izquierda */}
+        <button
+          type="button"
+          onClick={() => scrollRibbon('left')}
+          className="hidden md:flex absolute left-0 z-10 w-7 h-7 -ml-2 rounded-full bg-white/95 shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer opacity-80 hover:opacity-100 active:scale-95"
+          title="Ver filtros anteriores"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Contenedor desplazable de píldoras */}
+        <div 
+          ref={ribbonRef}
+          onWheel={handleWheelScroll}
+          className="store-filters-ribbon flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 px-1 sm:px-3 w-full scroll-smooth select-none"
+        >
+          {filterPills.map((pill) => {
+            const isActive = !!activeFilters[pill.id];
+            return (
+              <button
+                key={pill.id}
+                type="button"
+                onClick={() => onToggleFilter(pill.id)}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none shadow-xs whitespace-nowrap active:scale-95 ${
+                  isActive
+                    ? pill.activeClass
+                    : pill.baseClass
+                }`}
+              >
+                {pill.pulse && (
+                  <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'} animate-pulse`} />
+                )}
+                {pill.icon}
+                <span>{pill.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Flecha Desplazamiento Derecha */}
+        <button
+          type="button"
+          onClick={() => scrollRibbon('right')}
+          className="hidden md:flex absolute right-0 z-10 w-7 h-7 -mr-2 rounded-full bg-white/95 shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer opacity-80 hover:opacity-100 active:scale-95"
+          title="Ver más filtros"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
