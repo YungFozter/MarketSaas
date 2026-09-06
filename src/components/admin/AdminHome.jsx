@@ -41,10 +41,10 @@ import {
   MessageCircle,
   Bell,
   CheckSquare,
-  Square
+  Square,
+  Receipt,
+  Wallet
 } from 'lucide-react';
-import { AdminDashboard } from './AdminDashboard';
-import { LiveOrdersBoard } from './LiveOrdersBoard';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
 import { StoreSettings } from './StoreSettings';
@@ -78,7 +78,15 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedCondoFilter, setSelectedCondoFilter] = useState('all');
-  const [checkedItems, setCheckedItems] = useState({});
+  const [checkedItems, setCheckedItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_checked_items`);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [isCashCloseModalOpen, setIsCashCloseModalOpen] = useState(false);
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isOpen = storeConfig?.isOpen !== false;
@@ -88,11 +96,29 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
-  const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
-  const pendingOrders = orders.filter(o => o.status === 'pending');
-  const preparingOrders = orders.filter(o => o.status === 'preparing');
-  const onTheWayOrders = orders.filter(o => o.status === 'on_the_way');
-  const deliveredOrders = orders.filter(o => o.status === 'delivered');
+  // Desglose por método de pago para Arqueo / Cierre de Caja
+  const cashOrders = validOrders.filter(o => o.paymentMethod === 'cash');
+  const qrOrders = validOrders.filter(o => o.paymentMethod === 'qr');
+  const cardOrders = validOrders.filter(o => o.paymentMethod === 'card');
+
+  const totalCashSales = cashOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalQrSales = qrOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalCardSales = cardOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalDeliveryCollected = validOrders
+    .filter(o => o.deliveryType === 'delivery')
+    .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
+
+  // Filtrado de pedidos según condominio seleccionado en el Kanban
+  const condoFilteredOrders = orders.filter(o => {
+    if (selectedCondoFilter === 'all') return true;
+    return o.customer?.condominium === selectedCondoFilter;
+  });
+
+  const activeOrders = condoFilteredOrders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
+  const pendingOrders = condoFilteredOrders.filter(o => o.status === 'pending');
+  const preparingOrders = condoFilteredOrders.filter(o => o.status === 'preparing');
+  const onTheWayOrders = condoFilteredOrders.filter(o => o.status === 'on_the_way');
+  const deliveredOrders = condoFilteredOrders.filter(o => o.status === 'delivered');
 
   const lowStockProducts = products.filter(p => p.stock <= p.minStock);
   const pendingRequests = productRequests.filter(r => r.status === 'pending');
@@ -288,10 +314,88 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     showToast(`Stock de "${prod.name}" actualizado a ${newStock} unidades`, 'info');
   };
 
-  // Toggle de ítems checklist en el Kanban
+  // Toggle de ítems checklist en el Kanban con persistencia local
   const toggleItemCheck = (orderId, itemId) => {
     const key = `${orderId}-${itemId}`;
-    setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
+    setCheckedItems(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_checked_items`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // Imprimir Cierre y Arqueo de Caja del Día en formato térmico
+  const handlePrintDailyCashClose = () => {
+    const printWindow = window.open('', '', 'width=420,height=650');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Cierre de Caja - ${storeConfig.name}</title>
+            <style>
+              body { font-family: 'Courier New', monospace; font-size: 13px; padding: 14px; width: 280px; color: #000; }
+              .center { text-align: center; }
+              .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+              .row { display: flex; justify-content: space-between; margin: 4px 0; }
+              .bold { font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="center">
+              <h3 style="margin:0;">${storeConfig.name}</h3>
+              <p style="margin:2px 0;">ARQUEO & CIERRE DE CAJA DIARIO</p>
+              <div class="divider"></div>
+              <p style="margin:2px 0;">Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p style="margin:2px 0;">Responsable: ${currentUser?.user_metadata?.full_name || currentUser?.email || 'Administrador'}</p>
+              <div class="divider"></div>
+            </div>
+            
+            <p class="bold" style="margin:6px 0 2px 0;">RESUMEN DE OPERACIONES:</p>
+            <div class="row"><span>Pedidos Cobrados:</span><span class="bold">${validOrders.length}</span></div>
+            <div class="row"><span>Ticket Promedio:</span><span>Bs. ${averageTicket.toFixed(2)}</span></div>
+            <div class="divider"></div>
+
+            <p class="bold" style="margin:6px 0 2px 0;">DESGLOSE POR FORMA DE COBRO:</p>
+            <div class="row">
+              <span>💵 Efectivo (${cashOrders.length}):</span>
+              <span class="bold">Bs. ${totalCashSales.toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>📲 QR Simple (${qrOrders.length}):</span>
+              <span class="bold">Bs. ${totalQrSales.toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>💳 Tarjeta POS (${cardOrders.length}):</span>
+              <span class="bold">Bs. ${totalCardSales.toFixed(2)}</span>
+            </div>
+            <div class="row">
+              <span>🛵 Delivery / Envíos:</span>
+              <span>Bs. ${totalDeliveryCollected.toFixed(2)}</span>
+            </div>
+            <div class="divider"></div>
+
+            <div class="row bold" style="font-size:15px; margin:8px 0;">
+              <span>TOTAL VENTAS:</span>
+              <span>Bs. ${totalSales.toFixed(2)}</span>
+            </div>
+            <div class="divider"></div>
+
+            <div style="margin-top: 36px; text-align: center;">
+              <div style="border-top: 1px solid #000; width: 180px; margin: 0 auto 4px auto;"></div>
+              <p style="font-size:11px; margin:0;">Firma Responsable de Caja</p>
+            </div>
+            <p class="center" style="font-size:10px; margin-top:20px; color:#555;">MarketSaaS • Sistema Hiperlocal</p>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      showToast('Comanda de Cierre de Caja enviada a impresión.', 'success');
+    }
   };
 
   const navItems = [
@@ -562,29 +666,41 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Canal Supabase & Latencia Realtime */}
+            {/* Estado de Tienda & Sincronización en Vivo */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-xs text-slate-800 hidden sm:inline">Canal Supabase Realtime:</span>
-                  <span className="text-[11px] sm:text-xs text-emerald-700 font-bold">
-                    {storeConfig.condominiums?.[0]?.name || 'Torres A, B, C'} & Mostrador
-                  </span>
-                </div>
+                <span className="font-extrabold text-xs text-slate-800">
+                  {storeConfig.name}
+                </span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                  isOpen ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'
+                }`}>
+                  {isOpen ? '● Abierto' : '○ Cerrado'}
+                </span>
               </div>
               <div className="hidden md:flex items-center gap-1.5 text-slate-400 text-xs border-l border-slate-200 pl-3 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Latencia: <strong className="text-slate-700 font-bold">24ms</strong> • Modo Autónomo</span>
+                <span>Supabase Conectado • Tienda en Vivo</span>
               </div>
             </div>
           </div>
 
           {/* Quick Action CTA Buttons */}
           <div className="flex items-center gap-2">
+            {/* Botón de Arqueo y Cierre de Caja del Día */}
+            <button
+              onClick={() => setIsCashCloseModalOpen(true)}
+              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Ver desglose de cobros en Efectivo, QR y POS, e imprimir arqueo"
+            >
+              <Receipt className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Arqueo de Caja</span>
+            </button>
+
             <button
               onClick={exportSalesCSV}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -596,12 +712,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
             <button
               onClick={handleSimulateNewOrder}
-              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-              title="Simular un pedido entrante con sonido y alerta"
+              className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-dashed border-amber-300 font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
+              title="Herramienta de prueba: simular un pedido entrante"
             >
-              <Bell className="w-3.5 h-3.5 text-amber-600 animate-bounce" />
-              <span>Simular Pedido</span>
-              <span className="px-1 py-0.2 rounded-full bg-amber-200 text-amber-900 font-black text-[9px]">+1 Demo</span>
+              <Bell className="w-3 h-3 text-amber-600" />
+              <span className="hidden md:inline">Probar Pedido Demo</span>
             </button>
 
             <button
@@ -651,16 +766,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                         {currency} {totalSales.toFixed(2)}
                       </p>
                     </div>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                      <DollarSign className="w-5 h-5" />
-                    </div>
+                    <button
+                      onClick={() => setIsCashCloseModalOpen(true)}
+                      className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold cursor-pointer transition-colors"
+                      title="Abrir Arqueo y Cierre de Caja"
+                    >
+                      <Receipt className="w-5 h-5" />
+                    </button>
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold">
-                      <TrendingUp className="w-3.5 h-3.5" />
-                      +18% vs ayer
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">{validOrders.length} pedidos cobrados</span>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-500 font-medium">{validOrders.length} cobrados</span>
+                    <button
+                      onClick={() => setIsCashCloseModalOpen(true)}
+                      className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
+                    >
+                      Ver Arqueo →
+                    </button>
                   </div>
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
                 </div>
@@ -1306,6 +1427,114 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
         </div>
       </main>
+
+      {/* ========================================================================= */}
+      {/* MODAL DE ARQUEO & CIERRE DE CAJA DEL DÍA                                  */}
+      {/* ========================================================================= */}
+      {isCashCloseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+            {/* Header del Modal */}
+            <div className="p-6 pb-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">Arqueo & Cierre de Caja</h3>
+                  <p className="text-xs text-slate-300">
+                    {storeConfig.name} • {new Date().toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCashCloseModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenido del Arqueo */}
+            <div className="p-6 space-y-4">
+              {/* Cuadrícula de Métodos de Pago */}
+              <div className="grid grid-cols-2 gap-3">
+                {/* Efectivo */}
+                <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-bold text-emerald-900 uppercase">Efectivo en Gaveta</span>
+                    <Banknote className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <p className="text-xl font-black text-emerald-950">{currency} {totalCashSales.toFixed(2)}</p>
+                  <p className="text-[10px] text-emerald-700 mt-0.5">{cashOrders.length} {cashOrders.length === 1 ? 'cobro' : 'cobros'}</p>
+                </div>
+
+                {/* QR Simple */}
+                <div className="p-3.5 rounded-2xl bg-cyan-50/70 border border-cyan-200/80">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-bold text-cyan-900 uppercase">QR Simple Digital</span>
+                    <QrCode className="w-4 h-4 text-cyan-600" />
+                  </div>
+                  <p className="text-xl font-black text-cyan-950">{currency} {totalQrSales.toFixed(2)}</p>
+                  <p className="text-[10px] text-cyan-700 mt-0.5">{qrOrders.length} {qrOrders.length === 1 ? 'cobro' : 'cobros'}</p>
+                </div>
+
+                {/* Tarjeta POS */}
+                <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-bold text-amber-900 uppercase">Tarjeta POS Móvil</span>
+                    <CreditCard className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <p className="text-xl font-black text-amber-950">{currency} {totalCardSales.toFixed(2)}</p>
+                  <p className="text-[10px] text-amber-700 mt-0.5">{cardOrders.length} {cardOrders.length === 1 ? 'cobro' : 'cobros'}</p>
+                </div>
+
+                {/* Flete Delivery */}
+                <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/80">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-bold text-purple-900 uppercase">Envíos / Delivery</span>
+                    <Truck className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <p className="text-xl font-black text-purple-950">{currency} {totalDeliveryCollected.toFixed(2)}</p>
+                  <p className="text-[10px] text-purple-700 mt-0.5">Recaudado fletes</p>
+                </div>
+              </div>
+
+              {/* Total General Destacado */}
+              <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between shadow-md">
+                <div>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Ventas de la Jornada</span>
+                  <p className="text-2xl font-black text-emerald-400 tracking-tight">{currency} {totalSales.toFixed(2)}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-slate-300 font-bold block">{validOrders.length} pedidos</span>
+                  <span className="text-[11px] text-slate-400">Ticket prom: {currency} {averageTicket.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Acciones del Modal */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handlePrintDailyCashClose}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Imprimir Comanda de Cierre</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCashCloseModalOpen(false)}
+                  className="w-full sm:w-auto py-3 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
