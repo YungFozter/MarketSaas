@@ -20,31 +20,94 @@ export const StoreProvider = ({ children }) => {
   const [merchantStore, setMerchantStore] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
-  // 1. Vista actual: Al abrir el enlace principal (https://marketsaas.onrender.com),
-  // SIEMPRE la primera pantalla es la Informativa ("Vista Espectador").
-  const [viewMode, setViewMode] = useState(() => {
+  // 1. Vista actual: Persistencia en localStorage y URL
+  // Si el usuario recarga la página, se mantiene exactamente en la sección donde estaba (ej. 'customer' / Vista Vecino).
+  const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('view') && ['spectator', 'customer', 'admin'].includes(params.get('view'))) {
-        return params.get('view');
+      const urlView = params.get('view');
+      if (urlView && ['spectator', 'customer', 'admin'].includes(urlView)) {
+        return urlView;
       }
       if (params.get('store') || params.get('tenant')) {
         return 'customer';
+      }
+      const savedView = localStorage.getItem('marketsaas_active_view_mode');
+      if (savedView && ['spectator', 'customer', 'admin'].includes(savedView)) {
+        return savedView;
       }
     }
     return 'spectator';
   });
 
+  const setViewMode = (newMode) => {
+    setViewModeState(newMode);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('marketsaas_active_view_mode', newMode);
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', newMode);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {
+        console.error('Error al persistir vista activa:', e);
+      }
+    }
+  };
+
   // 1.1. Sub-vista dentro del modo Vecino / Cliente ('directory' | 'storefront')
-  const [customerSubView, setCustomerSubView] = useState(() => {
+  const [customerSubView, setCustomerSubViewState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('store') && params.get('store') !== 'default') {
         return 'storefront';
       }
+      const savedSubView = localStorage.getItem('marketsaas_customer_subview');
+      if (savedSubView && ['directory', 'storefront'].includes(savedSubView)) {
+        return savedSubView;
+      }
     }
     return 'directory';
   });
+
+  const setCustomerSubView = (newSubView) => {
+    setCustomerSubViewState(newSubView);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('marketsaas_customer_subview', newSubView);
+      } catch (e) {
+        console.error('Error al persistir sub-vista:', e);
+      }
+    }
+  };
+
+  // Sincronización de URL y soporte para botones Atrás/Adelante
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('view')) {
+          url.searchParams.set('view', viewMode);
+          window.history.replaceState({}, '', url.toString());
+        }
+      } catch (e) {}
+
+      const handlePopState = () => {
+        const params = new URLSearchParams(window.location.search);
+        const urlView = params.get('view');
+        if (urlView && ['spectator', 'customer', 'admin'].includes(urlView)) {
+          setViewModeState(urlView);
+        }
+        if (params.get('store')) {
+          setCustomerSubViewState('storefront');
+        } else if (urlView === 'customer') {
+          setCustomerSubViewState('directory');
+        }
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [viewMode]);
 
   // Lista global de tiendas para el Directorio & Mapa Hiperlocal
   const [stores, setStores] = useState(initialStores);
@@ -57,6 +120,9 @@ export const StoreProvider = ({ children }) => {
     if (foundStore) {
       setSelectedStore(foundStore);
       setTenantSlug(foundStore.slug);
+      try {
+        localStorage.setItem('marketsaas_active_tenant', foundStore.slug);
+      } catch (e) {}
       setStoreConfigState(prev => ({
         ...prev,
         name: foundStore.name,
@@ -65,14 +131,24 @@ export const StoreProvider = ({ children }) => {
       }));
     }
     setCustomerSubView('storefront');
+    setViewMode('customer');
     if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', 'customer');
+      if (foundStore) url.searchParams.set('store', foundStore.slug);
+      window.history.replaceState({}, '', url.toString());
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const goToDirectory = () => {
     setCustomerSubView('directory');
+    setViewMode('customer');
     if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('view', 'customer');
+      url.searchParams.delete('store');
+      window.history.replaceState({}, '', url.toString());
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
