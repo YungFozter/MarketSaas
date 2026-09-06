@@ -29,7 +29,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     hasPoints: false
   });
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
-  const [selectedStoreSlug, setSelectedStoreSlug] = useState('don-vecino');
+  const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
 
   // Alternar filtro rápido
   const handleToggleFilter = (filterId) => {

@@ -17,45 +17,46 @@ import {
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
-// Coordenadas fijas y precisas para garantizar centrado perfecto en Google Maps
-const DEFAULT_NEIGHBORHOOD_COORDS = {
-  lat: -17.7942,
-  lng: -63.2031,
-  name: 'Condominio Las Palmas'
+// Coordenadas fijas y precisas: Plaza Metropolitana 24 de Septiembre (Centro de la Ciudad, Santa Cruz de la Sierra)
+const DEFAULT_CITY_CENTER_COORDS = {
+  lat: -17.78335,
+  lng: -63.18214,
+  name: 'Plaza Metropolitana 24 de Septiembre'
 };
 
 const ZONE_COORDINATES = {
   'Condominio Las Palmas': { lat: -17.7942, lng: -63.2031, name: 'Condominio Las Palmas' },
   'Condominio Altos del Valle': { lat: -17.7885, lng: -63.1978, name: 'Condominio Altos del Valle' },
   'Barrio Central (Casas)': { lat: -17.7995, lng: -63.2085, name: 'Barrio Central' },
-  'all': DEFAULT_NEIGHBORHOOD_COORDS
+  'all': DEFAULT_CITY_CENTER_COORDS
 };
 
 export const NeighborhoodMap = ({
   stores = [],
-  selectedStore,
+  selectedStore = null,
   selectedZone = 'all',
   onSelectStore,
   onEnterStore,
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
-  const [zoomLevel, setZoomLevel] = useState(16);
+  const [zoomLevel, setZoomLevel] = useState(14); // Zoom 14 para Vista Panorámica / Amplia del Centro
   const [isRecentering, setIsRecentering] = useState(false);
 
-  // Tienda Don Vecino como fallback
-  const donVecino = stores.find((s) => s.slug === 'don-vecino') || stores[0];
-  const activeStore = selectedStore || donVecino;
+  // La tienda activa se define cuando el usuario hace clic en una tienda
+  const activeStore = selectedStore;
 
-  // Estado de coordenadas activas para centrar Google Maps
+  // Estado de coordenadas activas: arranca por defecto en la Plaza 24 de Septiembre
   const [currentCoords, setCurrentCoords] = useState(() => {
     if (activeStore?.googleMapsCoordinates) {
       return activeStore.googleMapsCoordinates;
     }
-    return DEFAULT_NEIGHBORHOOD_COORDS;
+    return DEFAULT_CITY_CENTER_COORDS;
   });
 
-  const [activeLocationType, setActiveLocationType] = useState('store'); // 'store' | 'user' | 'zone'
+  const [activeLocationType, setActiveLocationType] = useState(() => {
+    return activeStore ? 'store' : 'plaza';
+  });
 
   // Manejo de tiendas fijadas (Favoritas) guardadas en localStorage (máximo 3)
   const [pinnedSlugs, setPinnedSlugs] = useState(() => {
@@ -118,11 +119,16 @@ export const NeighborhoodMap = ({
       .filter(Boolean);
   }, [stores, pinnedSlugs]);
 
-  // Si cambia la tienda seleccionada desde el directorio
+  // Si cambia la tienda seleccionada desde el directorio o los chips
   useEffect(() => {
     if (selectedStore?.googleMapsCoordinates) {
       setCurrentCoords(selectedStore.googleMapsCoordinates);
       setActiveLocationType('store');
+      setZoomLevel(16);
+    } else if (!selectedStore) {
+      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
+      setActiveLocationType('plaza');
+      setZoomLevel(14);
     }
   }, [selectedStore]);
 
@@ -130,8 +136,8 @@ export const NeighborhoodMap = ({
   useEffect(() => {
     if (selectedZone && ZONE_COORDINATES[selectedZone]) {
       setCurrentCoords(ZONE_COORDINATES[selectedZone]);
-      setActiveLocationType(selectedZone === 'all' ? 'store' : 'zone');
-      setZoomLevel(16);
+      setActiveLocationType(selectedZone === 'all' ? 'plaza' : 'zone');
+      setZoomLevel(selectedZone === 'all' ? 14 : 16);
     }
   }, [selectedZone]);
 
@@ -141,14 +147,24 @@ export const NeighborhoodMap = ({
   };
 
   const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 1, 13));
+    setZoomLevel((prev) => Math.max(prev - 1, 12));
+  };
+
+  // Centrar en la Plaza 24 de Septiembre con vista panorámica amplia
+  const handleRecenterPlaza = () => {
+    setIsRecentering(true);
+    setZoomLevel(14);
+    setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
+    setActiveLocationType('plaza');
+    if (onSelectStore) onSelectStore(null);
+    setTimeout(() => setIsRecentering(false), 500);
   };
 
   // Re-centrar en la torre del usuario
   const handleRecenter = () => {
     setIsRecentering(true);
-    setZoomLevel(17);
-    setCurrentCoords(DEFAULT_NEIGHBORHOOD_COORDS);
+    setZoomLevel(16);
+    setCurrentCoords(ZONE_COORDINATES['Condominio Las Palmas'] || DEFAULT_CITY_CENTER_COORDS);
     setActiveLocationType('user');
     setTimeout(() => setIsRecentering(false), 500);
   };
@@ -159,8 +175,9 @@ export const NeighborhoodMap = ({
     if (store.googleMapsCoordinates) {
       setCurrentCoords(store.googleMapsCoordinates);
     } else {
-      setCurrentCoords(DEFAULT_NEIGHBORHOOD_COORDS);
+      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
     }
+    setZoomLevel(16);
     setActiveLocationType('store');
   };
 
@@ -191,8 +208,23 @@ export const NeighborhoodMap = ({
         />
       </div>
 
-      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y TORRE DEL VECINO */}
+      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS, PLAZA 24 Y TORRE DEL VECINO */}
       <div className="absolute top-3 left-3 sm:left-4 right-3 sm:right-4 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
+        {/* Chip Plaza 24 de Septiembre (Centro de la Ciudad - Vista Amplia) */}
+        <button
+          type="button"
+          onClick={handleRecenterPlaza}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
+            activeLocationType === 'plaza'
+              ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
+              : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
+          }`}
+          title="Centrar en la Plaza 24 de Septiembre con vista panorámica amplia"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>🏛️ Plaza 24 de Septiembre</span>
+        </button>
+
         {/* Chip Mi Ubicación */}
         <button
           type="button"
@@ -202,8 +234,8 @@ export const NeighborhoodMap = ({
               ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
               : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
           }`}
+          title="Centrar en mi ubicación residencial"
         >
-          <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />
           <Navigation className="w-3.5 h-3.5 text-sky-400" />
           <span>Mi Torre ({userLocation.tower})</span>
         </button>
@@ -447,9 +479,11 @@ export const NeighborhoodMap = ({
       <div className="absolute bottom-3 left-3 sm:left-4 z-20 flex items-center gap-2 pointer-events-auto">
         <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-bold text-emerald-700">Google Maps Centrado</span>
+          <span className="font-bold text-emerald-700">
+            {activeLocationType === 'plaza' ? 'Plaza 24 de Septiembre' : 'Google Maps Centrado'}
+          </span>
           <span className="text-slate-400">•</span>
-          <span>Radio 600m</span>
+          <span>{activeLocationType === 'plaza' ? 'Vista Panorámica Centro' : 'Radio 600m'}</span>
         </div>
       </div>
 
