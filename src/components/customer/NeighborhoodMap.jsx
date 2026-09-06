@@ -32,6 +32,7 @@ const ZONE_COORDINATES = {
 };
 
 export const NeighborhoodMap = ({
+  allStores = [],
   stores = [],
   selectedStore = null,
   selectedZone = 'all',
@@ -41,6 +42,11 @@ export const NeighborhoodMap = ({
   onUserLocationChange,
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
+  // masterStores garantiza acceso al catálogo completo incluso si se aplican filtros de búsqueda
+  const masterStores = useMemo(() => {
+    return allStores.length > 0 ? allStores : stores;
+  }, [allStores, stores]);
+
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
   const [zoomLevel, setZoomLevel] = useState(15); // Ligero zoom (15) para ver con claridad la Plaza 24 de Septiembre
   const [isRecentering, setIsRecentering] = useState(false);
@@ -76,8 +82,22 @@ export const NeighborhoodMap = ({
       console.error('Error al leer tiendas fijadas:', e);
     }
     // Por defecto fijamos hasta las 3 primeras tiendas
-    return stores.slice(0, 3).map((s) => s.slug);
+    const initialList = allStores.length > 0 ? allStores : stores;
+    return initialList.slice(0, 3).map((s) => s.slug);
   });
+
+  // Sincronizar pinnedSlugs por defecto si la lista de tiendas llega de forma asíncrona
+  useEffect(() => {
+    if (pinnedSlugs.length === 0 && masterStores.length > 0) {
+      const defaultPins = masterStores.slice(0, 3).map((s) => s.slug);
+      setPinnedSlugs(defaultPins);
+      try {
+        localStorage.setItem('marketsaas_pinned_store_slugs', JSON.stringify(defaultPins));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [masterStores, pinnedSlugs.length]);
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [pinFeedbackMessage, setPinFeedbackMessage] = useState(null);
@@ -116,14 +136,14 @@ export const NeighborhoodMap = ({
     });
   };
 
-  // Tiendas actualmente fijadas para los chips superiores
+  // Tiendas actualmente fijadas para los chips superiores (siempre basadas en masterStores)
   const pinnedStores = useMemo(() => {
     const list = pinnedSlugs
-      .map((slug) => stores.find((s) => s.slug === slug))
+      .map((slug) => masterStores.find((s) => s.slug === slug))
       .filter(Boolean);
     if (list.length > 0) return list;
-    return stores.slice(0, 3);
-  }, [stores, pinnedSlugs]);
+    return masterStores.slice(0, 3);
+  }, [masterStores, pinnedSlugs]);
 
   // Si cambia la tienda seleccionada desde el directorio o los chips
   useEffect(() => {
@@ -262,61 +282,64 @@ export const NeighborhoodMap = ({
       </div>
 
       {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y UBICACIÓN GPS (ALINEADOS A LA DERECHA) */}
-      <div className="absolute top-3 right-3 sm:right-4 z-20 flex items-center justify-end gap-1.5 max-w-[calc(100%-1.5rem)] overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
-        {/* Chip Mi Ubicación con GPS en tiempo real */}
-        <button
-          type="button"
-          onClick={handleGetUserLocation}
-          disabled={isLocating}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-            activeLocationType === 'user'
-              ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
-              : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
-          } ${isLocating ? 'opacity-80 cursor-wait' : ''}`}
-          title="Detectar y centrar en mi ubicación GPS en tiempo real"
-        >
-          {isLocating ? (
-            <span className="w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Navigation className="w-3.5 h-3.5 text-sky-400" />
-          )}
-          <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicacion'}</span>
-        </button>
+      <div className="absolute top-3 right-3 sm:right-4 z-20 max-w-[calc(100%-1.5rem)] overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
+        <div className="flex items-center justify-end gap-1.5 min-w-max ml-auto">
+          {/* Chip Mi Ubicación con GPS en tiempo real */}
+          <button
+            type="button"
+            onClick={handleGetUserLocation}
+            disabled={isLocating}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
+              activeLocationType === 'user'
+                ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
+                : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
+            } ${isLocating ? 'opacity-80 cursor-wait' : ''}`}
+            title="Detectar y centrar en mi ubicación GPS en tiempo real"
+          >
+            {isLocating ? (
+              <span className="w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Navigation className="w-3.5 h-3.5 text-sky-400" />
+            )}
+            <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicacion'}</span>
+          </button>
 
-        {/* Chips de Minimarkets Fijados (Hasta 3) */}
-        {pinnedStores.map((s) => {
-          const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => handleSelectStoreTarget(s)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-                isSelected
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-white'
-                  : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
-              }`}
-            >
-              <Pin className={`w-3 h-3 ${isSelected ? 'fill-white text-white' : 'fill-amber-500 text-amber-500'}`} />
-              <Store className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-              <span className="truncate max-w-[130px] sm:max-w-none">{s.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
-              </span>
-            </button>
-          );
-        })}
+          {/* Chips de Minimarkets Fijados (Hasta 3) */}
+          {pinnedStores.map((s) => {
+            const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => handleSelectStoreTarget(s)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-white'
+                    : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
+                }`}
+                title={`Ver ${s.name} en el mapa`}
+              >
+                <Pin className={`w-3 h-3 ${isSelected ? 'fill-white text-white' : 'fill-amber-500 text-amber-500'}`} />
+                <Store className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
+                <span className="truncate max-w-[115px] sm:max-w-[155px]">{s.name}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
+                </span>
+              </button>
+            );
+          })}
 
-        {/* Botón para Gestionar / Editar Tiendas Fijadas */}
-        <button
-          type="button"
-          onClick={() => setIsPinModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md bg-white/95 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition-all cursor-pointer shrink-0"
-          title="Configura hasta 3 tiendas favoritas fijadas en el mapa"
-        >
-          <Settings2 className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Fijadas ({pinnedSlugs.length}/3)</span>
-        </button>
+          {/* Botón para Gestionar / Editar Tiendas Fijadas */}
+          <button
+            type="button"
+            onClick={() => setIsPinModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md bg-white/95 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition-all cursor-pointer shrink-0"
+            title="Configura hasta 3 tiendas favoritas fijadas en el mapa"
+          >
+            <Settings2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Fijadas ({pinnedSlugs.length}/3)</span>
+          </button>
+        </div>
       </div>
 
       {/* Toast Notificación de Feedback sutil sobre el mapa */}
@@ -429,11 +452,21 @@ export const NeighborhoodMap = ({
                   <p className="text-[11px] text-slate-500">Hasta 3 minimarkets favoritos rápidos</p>
                 </div>
               </div>
-              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                pinnedSlugs.length === 3 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-              }`}>
-                {pinnedSlugs.length} de 3
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                  pinnedSlugs.length === 3 ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                }`}>
+                  {pinnedSlugs.length} de 3
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsPinModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-all cursor-pointer"
+                  title="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Aviso dinámico si existe feedback */}
@@ -446,9 +479,14 @@ export const NeighborhoodMap = ({
 
             {/* Lista de minimarkets */}
             <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
-              {stores.map((store) => {
-                const isPinned = pinnedSlugs.includes(store.slug);
-                const isLimitReached = !isPinned && pinnedSlugs.length >= 3;
+              {masterStores.length === 0 ? (
+                <div className="text-center py-6 text-slate-400 text-xs font-medium">
+                  No hay minimarkets disponibles en el catálogo.
+                </div>
+              ) : (
+                masterStores.map((store) => {
+                  const isPinned = pinnedSlugs.includes(store.slug);
+                  const isLimitReached = !isPinned && pinnedSlugs.length >= 3;
 
                 return (
                   <div 
@@ -497,7 +535,8 @@ export const NeighborhoodMap = ({
                     </button>
                   </div>
                 );
-              })}
+              })
+            )}
             </div>
 
             {/* Pie del modal */}

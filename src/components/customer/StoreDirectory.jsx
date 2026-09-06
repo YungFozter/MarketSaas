@@ -175,7 +175,8 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         {/* Canvas de Google Maps */}
         <div className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
           <NeighborhoodMap
-            stores={sortedStores}
+            allStores={storesWithDistance}
+            stores={storesWithDistance}
             selectedStore={storesWithDistance.find((s) => s.slug === selectedStoreSlug)}
             selectedZone="all"
             searchQuery={searchQuery}
