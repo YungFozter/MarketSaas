@@ -14,7 +14,8 @@ import {
   Settings2,
   X,
   Check,
-  ChevronDown
+  ChevronDown,
+  ArrowRight
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
@@ -236,7 +237,7 @@ export const NeighborhoodMap = ({
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 60000
+        maximumAge: 0
       }
     );
   };
@@ -267,8 +268,19 @@ export const NeighborhoodMap = ({
   const googleMapsEmbedUrl = useMemo(() => {
     const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
 
-    // 1. Si hay una búsqueda activa (ej. "Supermercado Tía", "Amarket", etc.) y no se ha seleccionado una tienda puntual
-    if (searchQuery && searchQuery.trim().length >= 2 && activeLocationType !== 'store') {
+    // 1. Si el usuario activó "Mi Ubicación": Prioridad absoluta para centrar y colocar pin de su GPS
+    if (activeLocationType === 'user') {
+      return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Tu+Ubicaci%C3%B3n+GPS)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
+    }
+
+    // 2. Si hay una tienda seleccionada específicamente
+    if (activeStore?.googleMapsCoordinates && activeLocationType === 'store') {
+      const storeLabel = encodeURIComponent(activeStore.name);
+      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}+(${storeLabel})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
+    }
+
+    // 3. Si hay una búsqueda activa (ej. "Supermercado Tía", "Amarket", etc.)
+    if (searchQuery && searchQuery.trim().length >= 2) {
       const qText = searchQuery.trim();
       const queryParam = qText.toLowerCase().includes('santa cruz')
         ? qText
@@ -276,13 +288,8 @@ export const NeighborhoodMap = ({
       return `https://maps.google.com/maps?q=${encodeURIComponent(queryParam)}&t=${mapTypeCode}&z=13&hl=es&ie=UTF8&output=embed`;
     }
 
-    // 2. Si hay una tienda seleccionada específicamente
-    if (activeStore?.googleMapsCoordinates) {
-      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=near&output=embed`;
-    }
-
-    // 3. Ubicación del usuario o centro de la ciudad
-    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=near&output=embed`;
+    // 4. Ubicación por defecto (Centro de Santa Cruz)
+    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Centro+Santa+Cruz)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
   }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType]);
 
   return (
@@ -530,6 +537,49 @@ export const NeighborhoodMap = ({
               </a>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO */}
+      {activeLocationType === 'user' && !activeStore && (
+        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-20 max-w-[290px] sm:max-w-[340px] w-full pointer-events-auto">
+          <div className="bg-slate-900/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-700/80 text-white flex flex-col gap-2.5 transition-all transform hover:scale-[1.02]">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                  <Navigation className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-bold text-xs sm:text-sm text-white leading-tight flex items-center gap-1.5">
+                    <span>Tu Ubicación GPS</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  </h4>
+                  <p className="text-[11px] text-slate-300 truncate mt-0.5">
+                    {currentCoords.lat.toFixed(4)}, {currentCoords.lng.toFixed(4)}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full shrink-0">
+                En vivo
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-300 leading-snug">
+              El mapa y el listado inferior se han actualizado con las distancias reales a tus minimarkets más cercanos.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('stores-grid-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Ver tiendas más cercanas abajo</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       )}

@@ -25,6 +25,14 @@ const DEFAULT_REFERENCE_COORDS = {
   name: 'Plaza 24 de Septiembre'
 };
 
+// Función auxiliar para normalizar texto (sin tildes, minúsculas y sin espacios extra)
+const normalizeText = (str) =>
+  (str || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
 export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   const { stores, selectedLocation, goToStore } = useStore();
 
@@ -48,6 +56,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     if (coords && coords.lat && coords.lng) {
       setUserCoords(coords);
       setHasUserGps(true);
+      setSortBy('nearest');
     }
   };
 
@@ -84,20 +93,27 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     });
   }, [stores, userCoords]);
 
-  // Filtrado reactivo de tiendas
+  // Filtrado reactivo de tiendas con normalización de acentos y búsqueda multi-palabra
   const filteredStores = useMemo(() => {
     return storesWithDistance.filter((store) => {
       // 1. Filtro de Texto (Búsqueda por nombre, dirección, productos destacados o categoría)
       if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const matchesName = store.name.toLowerCase().includes(query);
-        const matchesAddress = store.address.toLowerCase().includes(query);
-        const matchesCategory = store.category?.toLowerCase().includes(query);
-        const matchesProducts = store.featuredProducts?.some((fp) =>
-          fp.name.toLowerCase().includes(query)
-        );
+        const queryNorm = normalizeText(searchQuery);
+        const tokens = queryNorm.split(/\s+/).filter(Boolean);
 
-        if (!matchesName && !matchesAddress && !matchesCategory && !matchesProducts) {
+        const storeContent = [
+          store.name,
+          store.address,
+          store.condominium,
+          store.category,
+          ...(store.featuredProducts?.map((p) => p.name) || []),
+          ...(store.perks?.map((p) => p.text) || [])
+        ]
+          .map(normalizeText)
+          .join(' ');
+
+        const matches = tokens.every((token) => storeContent.includes(token));
+        if (!matches) {
           return false;
         }
       }
