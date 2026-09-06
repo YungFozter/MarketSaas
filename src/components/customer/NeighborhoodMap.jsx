@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Store, 
   MapPin, 
@@ -40,9 +40,10 @@ export const NeighborhoodMap = ({
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
-  const [zoomLevel, setZoomLevel] = useState(6); // Zoom x6 para Vista Amplia / Panorámica
+  const [zoomLevel, setZoomLevel] = useState(15); // Ligero zoom (15) para ver con claridad la Plaza 24 de Septiembre
   const [isRecentering, setIsRecentering] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const isFirstZoneEffect = useRef(true);
 
   // La tienda activa se define cuando el usuario hace clic en una tienda
   const activeStore = selectedStore;
@@ -129,16 +130,20 @@ export const NeighborhoodMap = ({
     } else if (!selectedStore) {
       setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
       setActiveLocationType('plaza');
-      setZoomLevel(6);
+      setZoomLevel(15);
     }
   }, [selectedStore]);
 
-  // Si cambia el filtro de zona desde el selector de zona
+  // Si cambia el filtro de zona desde el selector de zona (solo al interactuar, no en el montaje inicial)
   useEffect(() => {
+    if (isFirstZoneEffect.current) {
+      isFirstZoneEffect.current = false;
+      return;
+    }
     if (selectedZone && ZONE_COORDINATES[selectedZone]) {
       setCurrentCoords(ZONE_COORDINATES[selectedZone]);
-      setActiveLocationType(selectedZone === 'all' ? 'plaza' : 'zone');
-      setZoomLevel(selectedZone === 'all' ? 6 : 16);
+      setActiveLocationType('zone');
+      setZoomLevel(15);
     }
   }, [selectedZone]);
 
@@ -149,16 +154,6 @@ export const NeighborhoodMap = ({
 
   const handleZoomOut = () => {
     setZoomLevel((prev) => Math.max(prev - 1, 3));
-  };
-
-  // Centrar en la Plaza 24 de Septiembre con vista panorámica amplia (x6)
-  const handleRecenterPlaza = () => {
-    setIsRecentering(true);
-    setZoomLevel(6);
-    setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
-    setActiveLocationType('plaza');
-    if (onSelectStore) onSelectStore(null);
-    setTimeout(() => setIsRecentering(false), 500);
   };
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
@@ -248,23 +243,8 @@ export const NeighborhoodMap = ({
         />
       </div>
 
-      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS, PLAZA 24 Y UBICACIÓN GPS */}
+      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y UBICACIÓN GPS */}
       <div className="absolute top-3 left-3 sm:left-4 right-3 sm:right-4 z-20 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
-        {/* Chip Plaza 24 de Septiembre (Centro de la Ciudad - Vista Amplia x6) */}
-        <button
-          type="button"
-          onClick={handleRecenterPlaza}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-            activeLocationType === 'plaza'
-              ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
-              : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
-          }`}
-          title="Centrar en la Plaza 24 de Septiembre con vista panorámica x6"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>🏛️ Plaza 24 de Septiembre</span>
-        </button>
-
         {/* Chip Mi Ubicación con GPS en tiempo real */}
         <button
           type="button"
