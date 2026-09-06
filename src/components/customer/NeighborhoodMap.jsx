@@ -238,12 +238,11 @@ export const NeighborhoodMap = ({
 
     // 2. Si hay una tienda seleccionada específicamente
     if (activeStore?.googleMapsCoordinates) {
-      const label = encodeURIComponent(activeStore.name);
-      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}+(${label})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
+      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=near&output=embed`;
     }
 
     // 3. Ubicación del usuario o centro de la ciudad
-    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=&output=embed`;
+    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&iwloc=near&output=embed`;
   }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType]);
 
   return (
