@@ -155,17 +155,27 @@ export const Navbar = ({
 
               <button
                 onClick={() => {
-                  setViewMode('admin');
+                  if (currentUser) {
+                    setViewMode('admin');
+                  } else {
+                    if (onOpenAuthModal) onOpenAuthModal();
+                    else if (onRequestAdminAccess) onRequestAdminAccess();
+                  }
                 }}
                 className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'admin'
                     ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
                     : 'text-slate-300 hover:text-white'
                 }`}
-                title="Panel de administración del comerciante"
+                title={currentUser ? 'Panel de administración del comerciante' : 'Iniciar sesión para acceder al panel de tu minimarket'}
               >
                 <span>🏪</span>
                 <span>Panel Minimarket</span>
+                {!currentUser && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/90 text-amber-300 font-bold ml-0.5">
+                    Login
+                  </span>
+                )}
               </button>
             </div>
           </div>

@@ -22,6 +22,7 @@ import {
   ExternalLink,
   Eye,
   LogOut,
+  LogIn,
   UserCheck,
   DollarSign,
   QrCode,
@@ -64,6 +65,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     setStoreConfig,
     tenantSlug, 
     currentUser, 
+    isAuthLoading,
     signOutMerchant,
     setViewMode,
     goToDirectory,
@@ -299,6 +301,68 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];
+
+  // Auto-abrir modal de login si intenta ver el panel sin sesión
+  useEffect(() => {
+    if (!isAuthLoading && !currentUser && onOpenAuthModal) {
+      onOpenAuthModal();
+    }
+  }, [isAuthLoading, currentUser, onOpenAuthModal]);
+
+  // Auth Guard: Comprobación de estado de autenticación
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white">
+        <div className="w-12 h-12 rounded-full border-4 border-emerald-500/30 border-t-emerald-400 animate-spin mb-4" />
+        <p className="text-sm font-medium text-slate-400">Verificando credenciales de tienda...</p>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
+        {/* Luces de fondo ambient */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-amber-500/20 text-slate-950">
+            <Store className="w-8 h-8" />
+          </div>
+
+          <span className="inline-block px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 text-xs font-black uppercase tracking-wider mb-3 border border-amber-400/20">
+            Área Privada de Comerciante
+          </span>
+
+          <h2 className="text-2xl font-black text-white tracking-tight mb-2">
+            Inicia Sesión en tu Minimarket
+          </h2>
+          <p className="text-sm text-slate-400 leading-relaxed mb-8">
+            Para ver tu panel de pedidos en vivo, controlar tu inventario y emitir ventas, debes ingresar con tu cuenta de comerciante.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => onOpenAuthModal?.()}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Iniciar Sesión o Registrar Tienda</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode('customer')}
+              className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-colors border border-slate-700/60 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              <span>Volver a la Vista Vecino (Catálogo)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] text-slate-900 antialiased font-sans">
