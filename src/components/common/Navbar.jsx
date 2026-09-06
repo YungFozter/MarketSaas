@@ -155,15 +155,7 @@ export const Navbar = ({
 
               <button
                 onClick={() => {
-                  if (currentUser) {
-                    setViewMode('admin');
-                  } else if (onOpenAuthModal) {
-                    onOpenAuthModal();
-                  } else if (onRequestAdminAccess) {
-                    onRequestAdminAccess();
-                  } else {
-                    setViewMode('admin');
-                  }
+                  setViewMode('admin');
                 }}
                 className={`px-2.5 py-1 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'admin'
