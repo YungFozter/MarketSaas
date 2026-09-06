@@ -1,24 +1,19 @@
 import React from 'react';
 import { 
   Search, 
-  MapPin, 
   ArrowRight, 
   QrCode, 
   Star, 
-  Gift,
-  ChevronDown
+  Gift
 } from 'lucide-react';
 import './StoreSearchBar.css';
 
 export const StoreSearchBar = ({
   searchQuery,
   setSearchQuery,
-  selectedZone,
-  setSelectedZone,
   activeFilters,
   onToggleFilter,
-  onSearchSubmit,
-  zoneOptions = []
+  onSearchSubmit
 }) => {
   const filterPills = [
     {
@@ -79,35 +74,15 @@ export const StoreSearchBar = ({
           )}
         </div>
 
-        {/* Acciones: Selector de Condominio/Zona y Botón Buscar */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Selector de Zona */}
-          <div className="relative flex-1 sm:flex-none">
-            <select
-              value={selectedZone}
-              onChange={(e) => setSelectedZone(e.target.value)}
-              className="w-full sm:w-auto appearance-none flex items-center justify-between gap-1.5 px-3.5 py-2 pr-7 bg-slate-100 text-slate-800 rounded-xl text-xs font-semibold hover:bg-slate-200/70 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              title="Filtrar minimarkets por condominio o zona de cobertura"
-            >
-              {zoneOptions.map((zone) => (
-                <option key={zone} value={zone}>
-                  📍 {zone}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-          </div>
-
-          {/* Botón Buscar Tiendas */}
-          <button
-            type="button"
-            onClick={onSearchSubmit}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all cursor-pointer whitespace-nowrap min-h-[40px]"
-          >
-            <span>Buscar Tiendas</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Botón Buscar Tiendas */}
+        <button
+          type="button"
+          onClick={onSearchSubmit}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-emerald-600/25 transition-all cursor-pointer whitespace-nowrap min-h-[40px]"
+        >
+          <span>Buscar Tiendas</span>
+          <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Riel Centrado de Filtros Rápidos (Pills) */}

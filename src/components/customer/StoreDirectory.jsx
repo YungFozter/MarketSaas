@@ -21,7 +21,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
   // Estados de búsqueda, filtros y ordenación
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedZone, setSelectedZone] = useState('Condominio Las Palmas');
   const [activeFilters, setActiveFilters] = useState({
     openNow: true,
     acceptsQr: false,
@@ -39,14 +38,12 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }));
   };
 
-  // Opciones de condominios / zonas extraídas dinámicamente de las tiendas
-  const zoneOptions = useMemo(() => {
-    const zones = new Set();
-    stores.forEach((s) => {
-      if (s.condominium) zones.add(s.condominium);
-    });
-    return Array.from(zones);
-  }, [stores]);
+  const handleSearchSubmit = () => {
+    const listElement = document.getElementById('stores-grid-section');
+    if (listElement) {
+      listElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Filtrado reactivo de tiendas
   const filteredStores = useMemo(() => {
@@ -66,12 +63,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         }
       }
 
-      // 2. Filtro de Zona / Condominio
-      if (selectedZone && selectedZone !== 'all' && store.condominium !== selectedZone) {
-        return false;
-      }
-
-      // 3. Filtros Rápidos (Pills)
+      // 2. Filtros Rápidos (Pills)
       if (activeFilters.openNow && !store.isOpen) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
       if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
@@ -79,7 +71,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
       return true;
     });
-  }, [stores, searchQuery, selectedZone, activeFilters]);
+  }, [stores, searchQuery, activeFilters]);
 
   // Ordenación de tiendas
   const sortedStores = useMemo(() => {
@@ -133,11 +125,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <StoreSearchBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            selectedZone={selectedZone}
-            setSelectedZone={setSelectedZone}
             activeFilters={activeFilters}
             onToggleFilter={handleToggleFilter}
-            zoneOptions={zoneOptions}
+            onSearchSubmit={handleSearchSubmit}
           />
         </div>
 
@@ -146,7 +136,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <NeighborhoodMap
             stores={stores}
             selectedStore={stores.find((s) => s.slug === selectedStoreSlug)}
-            selectedZone={selectedZone}
+            selectedZone="all"
             onSelectStore={(slug) => setSelectedStoreSlug(slug)}
             onEnterStore={handleStoreNavigation}
             userLocation={selectedLocation}
@@ -155,7 +145,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       </section>
 
       {/* 3. SECCIÓN DIRECTO: CUADRÍCULA MULTICOLUMNA BENTO */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section id="stores-grid-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {/* Cabecera de Conteo y Ordenación */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
