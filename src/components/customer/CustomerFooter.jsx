@@ -1,9 +1,5 @@
 import React from 'react';
 import {
-  Store,
-  MapPin,
-  Clock,
-  Phone,
   MessageCircle,
   ShieldCheck,
   Sparkles,
@@ -19,15 +15,6 @@ import { useStore } from '../../context/StoreContext';
 export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => {
   const { storeConfig } = useStore();
 
-  const storeName = storeConfig?.name || 'Minimarket Saas';
-  const tagline = storeConfig?.tagline || 'Tu tienda de confianza a pasos de tu puerta';
-  const address = storeConfig?.address?.includes('Calle Los Sauces')
-    ? 'Direccion según cada Tienda'
-    : (storeConfig?.address || 'Direccion según cada Tienda');
-  const schedule = storeConfig?.schedule?.includes('08:00 AM')
-    ? 'Horarios de Atención según cada Tienda'
-    : (storeConfig?.schedule || 'Horarios de Atención según cada Tienda');
-  const phone = storeConfig?.phone || '+591 72125280';
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
   const merchantWaMessage = "¡Hola!. Me gustaría crear mi Tienda Digital en MarketSaaS. 🚀 Quisiera recibir información sobre cómo activar mi propio minimarket online, digitalizar mi catálogo y comenzar a recibir pedidos por WhatsApp. 🛒📦";
   const merchantWaUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(merchantWaMessage)}`;
@@ -35,41 +22,8 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
   return (
     <footer className="bg-slate-900 text-white border-t border-slate-800 pt-12 pb-8 px-4 sm:px-6 lg:px-8 mt-12 transition-colors">
       <div className="max-w-7xl mx-auto">
-        {/* Fila Superior: Identidad y Contacto Directo */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-slate-800/80">
-
-          {/* Columna 1: Datos de la Tienda */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-extrabold shadow-inner">
-                <Store className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-black text-lg text-white tracking-tight leading-tight">
-                  {storeName}
-                </h3>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/60 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  {storeConfig?.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente'}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed font-normal">
-              {tagline}
-            </p>
-
-            <div className="space-y-2.5 pt-1 text-xs text-slate-300">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span className="leading-snug">{address}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span className="leading-snug">{schedule}</span>
-              </div>
-            </div>
-          </div>
+        {/* Fila Superior: Métodos de Pago y Accesos del Vecino */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10 border-b border-slate-800/80">
 
           {/* Columna 2: Métodos de Pago & Seguridad */}
           <div className="space-y-3">
@@ -194,10 +148,6 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
         {/* Barra Inferior de Copyright & Legal */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-300">
-              {storeName}
-            </span>
-            <span>•</span>
             <span>© {new Date().getFullYear()} Todos los derechos reservados</span>
           </div>
 
