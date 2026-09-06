@@ -13,7 +13,8 @@ import {
   Pin,
   Settings2,
   X,
-  Check
+  Check,
+  ChevronDown
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
@@ -100,7 +101,26 @@ export const NeighborhoodMap = ({
   }, [masterStores, pinnedSlugs.length]);
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false); // Por defecto oculto
+  const quickMenuRef = useRef(null);
   const [pinFeedbackMessage, setPinFeedbackMessage] = useState(null);
+
+  // Cerrar el menú desplegable al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (quickMenuRef.current && !quickMenuRef.current.contains(event.target)) {
+        setIsQuickMenuOpen(false);
+      }
+    };
+    if (isQuickMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isQuickMenuOpen]);
 
   const showFeedback = (msg) => {
     setPinFeedbackMessage(msg);
@@ -281,65 +301,142 @@ export const NeighborhoodMap = ({
         />
       </div>
 
-      {/* 2. CHIPS FLOTANTES SUPERIORES: ACCESO RÁPIDO A TIENDAS Y UBICACIÓN GPS (ALINEADOS A LA DERECHA) */}
-      <div className="absolute top-3 right-3 sm:right-4 z-20 max-w-[calc(100%-1.5rem)] overflow-x-auto pb-1 scrollbar-none pointer-events-auto">
-        <div className="flex items-center justify-end gap-1.5 min-w-max ml-auto">
-          {/* Chip Mi Ubicación con GPS en tiempo real */}
-          <button
-            type="button"
-            onClick={handleGetUserLocation}
-            disabled={isLocating}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-              activeLocationType === 'user'
-                ? 'bg-slate-900 text-white border-slate-700 shadow-slate-900/30 ring-2 ring-emerald-400'
-                : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-slate-100'
-            } ${isLocating ? 'opacity-80 cursor-wait' : ''}`}
-            title="Detectar y centrar en mi ubicación GPS en tiempo real"
-          >
-            {isLocating ? (
-              <span className="w-3 h-3 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Navigation className="w-3.5 h-3.5 text-sky-400" />
-            )}
-            <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicacion'}</span>
-          </button>
+      {/* 2. MENÚ DESPLEGABLE FLOTANTE: ACCESO RÁPIDO A MI UBICACIÓN Y TIENDAS FIJADAS (OCULTO POR DEFECTO) */}
+      <div ref={quickMenuRef} className="absolute top-3 right-3 sm:right-4 z-30 pointer-events-auto">
+        {/* Botón Disparador del Menú Desplegable */}
+        <button
+          type="button"
+          onClick={() => setIsQuickMenuOpen((prev) => !prev)}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+            isQuickMenuOpen
+              ? 'bg-slate-900 text-white border-slate-800 shadow-slate-900/25 ring-2 ring-emerald-400/50'
+              : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-slate-300 hover:shadow-lg'
+          }`}
+          aria-expanded={isQuickMenuOpen}
+          title="Ver mi ubicación GPS y tiendas favoritas fijadas"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${activeLocationType === 'user' ? 'text-sky-400' : 'text-emerald-600'}`} />
+          <span>Ubicaciones Rápidas</span>
+          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
+            isQuickMenuOpen ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+          }`}>
+            {pinnedSlugs.length}
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isQuickMenuOpen ? 'rotate-180' : 'text-slate-400'}`} />
+        </button>
 
-          {/* Chips de Minimarkets Fijados (Hasta 3) */}
-          {pinnedStores.map((s) => {
-            const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
-            return (
+        {/* Panel Desplegable Flotante */}
+        {isQuickMenuOpen && (
+          <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-40 transition-all">
+            {/* Cabecera del desplegable */}
+            <div className="px-3.5 py-2.5 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <Compass className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Accesos Directos</span>
+              </div>
+              <span className="text-[10px] font-semibold text-slate-400">
+                {pinnedSlugs.length}/3 fijadas
+              </span>
+            </div>
+
+            {/* 1. SECCIÓN: MI UBICACIÓN GPS */}
+            <div className="p-2 border-b border-slate-100">
               <button
-                key={s.id}
                 type="button"
-                onClick={() => handleSelectStoreTarget(s)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer shrink-0 border ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-white'
-                    : 'bg-white/95 text-slate-800 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
+                onClick={() => {
+                  handleGetUserLocation();
+                  setIsQuickMenuOpen(false);
+                }}
+                disabled={isLocating}
+                className={`w-full flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  activeLocationType === 'user'
+                    ? 'bg-slate-900 text-white border-slate-800 shadow-xs ring-1 ring-emerald-400/40'
+                    : 'bg-slate-50/60 hover:bg-slate-100/80 text-slate-800 border-slate-200/80 hover:border-slate-300'
                 }`}
-                title={`Ver ${s.name} en el mapa`}
               >
-                <Pin className={`w-3 h-3 ${isSelected ? 'fill-white text-white' : 'fill-amber-500 text-amber-500'}`} />
-                <Store className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-                <span className="truncate max-w-[115px] sm:max-w-[155px]">{s.name}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                  {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
-                </span>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                    activeLocationType === 'user' ? 'bg-white/20 text-sky-300' : 'bg-sky-50 text-sky-600 border border-sky-200/80'
+                  }`}>
+                    {isLocating ? (
+                      <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Navigation className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="leading-tight">Mi Ubicación</div>
+                    <div className={`text-[10px] font-normal mt-0.5 ${activeLocationType === 'user' ? 'text-slate-300' : 'text-slate-500'}`}>
+                      {isLocating ? 'Obteniendo señal GPS...' : 'Centrar mapa con tu GPS'}
+                    </div>
+                  </div>
+                </div>
+                {activeLocationType === 'user' && (
+                  <span className="text-[10px] font-bold bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded-full shrink-0">
+                    En mapa
+                  </span>
+                )}
               </button>
-            );
-          })}
+            </div>
 
-          {/* Botón para Gestionar / Editar Tiendas Fijadas */}
-          <button
-            type="button"
-            onClick={() => setIsPinModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-md backdrop-blur-md bg-white/95 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition-all cursor-pointer shrink-0"
-            title="Configura hasta 3 tiendas favoritas fijadas en el mapa"
-          >
-            <Settings2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Fijadas ({pinnedSlugs.length}/3)</span>
-          </button>
-        </div>
+            {/* 2. SECCIÓN: TIENDAS FIJADAS */}
+            <div className="p-2">
+              <div className="px-1.5 pb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-600">
+                <div className="flex items-center gap-1">
+                  <Pin className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  <span>Minimarkets Fijados</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                {pinnedStores.map((s) => {
+                  const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        handleSelectStoreTarget(s);
+                        setIsQuickMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs ring-1 ring-white/40'
+                          : 'bg-white hover:bg-emerald-50/60 text-slate-800 border-slate-200 hover:border-emerald-200'
+                      }`}
+                      title={`Ver ${s.name} en el mapa`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 pr-2">
+                        <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
+                        <span className="truncate text-left leading-tight font-medium">{s.name}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 3. SECCIÓN: GESTIONAR TIENDAS FIJADAS (FIJADAS 3/3) */}
+            <div className="p-2 border-t border-slate-100 bg-slate-50/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsQuickMenuOpen(false);
+                  setIsPinModalOpen(true);
+                }}
+                className="w-full py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 font-bold text-xs rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <Settings2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Gestionar fijadas ({pinnedSlugs.length}/3)</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Toast Notificación de Feedback sutil sobre el mapa */}
