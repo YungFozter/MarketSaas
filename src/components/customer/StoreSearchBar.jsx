@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { 
   Search, 
   MapPin, 
@@ -6,9 +6,7 @@ import {
   QrCode, 
   Star, 
   Gift,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight
+  ChevronDown
 } from 'lucide-react';
 import './StoreSearchBar.css';
 
@@ -22,8 +20,6 @@ export const StoreSearchBar = ({
   onSearchSubmit,
   zoneOptions = []
 }) => {
-  const ribbonRef = useRef(null);
-
   const filterPills = [
     {
       id: 'openNow',
@@ -55,20 +51,6 @@ export const StoreSearchBar = ({
       baseClass: 'filter-pill-amber'
     }
   ];
-
-  // Desplazamiento horizontal con botones o rueda del ratón
-  const scrollRibbon = (direction) => {
-    if (ribbonRef.current) {
-      const scrollAmount = direction === 'left' ? -220 : 220;
-      ribbonRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
-
-  const handleWheelScroll = (e) => {
-    if (ribbonRef.current && e.deltaY !== 0) {
-      ribbonRef.current.scrollLeft += e.deltaY;
-    }
-  };
 
   return (
     <div className="store-search-container w-full max-w-4xl mx-auto flex flex-col gap-3 relative z-20">
@@ -128,24 +110,9 @@ export const StoreSearchBar = ({
         </div>
       </div>
 
-      {/* Riel Deslizable de Filtros Rápidos (Pills) con Scroll Completo y Flechas */}
-      <div className="relative flex items-center w-full group/ribbon">
-        {/* Flecha Desplazamiento Izquierda */}
-        <button
-          type="button"
-          onClick={() => scrollRibbon('left')}
-          className="hidden md:flex absolute left-0 z-10 w-7 h-7 -ml-2 rounded-full bg-white/95 shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer opacity-80 hover:opacity-100 active:scale-95"
-          title="Ver filtros anteriores"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-
-        {/* Contenedor desplazable de píldoras */}
-        <div 
-          ref={ribbonRef}
-          onWheel={handleWheelScroll}
-          className="store-filters-ribbon flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 px-1 sm:px-3 w-full scroll-smooth select-none"
-        >
+      {/* Riel Centrado de Filtros Rápidos (Pills) */}
+      <div className="w-full flex items-center justify-center">
+        <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap py-0.5 px-1 select-none">
           {filterPills.map((pill) => {
             const isActive = !!activeFilters[pill.id];
             return (
@@ -153,7 +120,7 @@ export const StoreSearchBar = ({
                 key={pill.id}
                 type="button"
                 onClick={() => onToggleFilter(pill.id)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none shadow-xs whitespace-nowrap active:scale-95 ${
+                className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none shadow-xs whitespace-nowrap active:scale-95 ${
                   isActive
                     ? pill.activeClass
                     : pill.baseClass
@@ -168,16 +135,6 @@ export const StoreSearchBar = ({
             );
           })}
         </div>
-
-        {/* Flecha Desplazamiento Derecha */}
-        <button
-          type="button"
-          onClick={() => scrollRibbon('right')}
-          className="hidden md:flex absolute right-0 z-10 w-7 h-7 -mr-2 rounded-full bg-white/95 shadow-md border border-slate-200 items-center justify-center text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 transition-all cursor-pointer opacity-80 hover:opacity-100 active:scale-95"
-          title="Ver más filtros"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
       </div>
     </div>
   );
