@@ -325,14 +325,15 @@ export const StoreProvider = ({ children }) => {
   });
 
   const setStoreConfig = (newConfigData) => {
-    const updated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
-    setStoreConfigState(updated);
+    const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
+    const { adminPassword, admin_pin, ...safeConfig } = rawUpdated;
+    setStoreConfigState(safeConfig);
     if (supabase) {
       const payload = {
         id: tenantSlug,
         tenant_id: tenantSlug,
-        name: updated.name || 'Tienda',
-        config: updated,
+        name: safeConfig.name || 'Tienda',
+        config: safeConfig,
         owner_id: currentUser?.id || merchantStore?.owner_id || null,
         updated_at: new Date().toISOString()
       };
@@ -456,11 +457,14 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     if (!supabase) return;
 
-    // 1. Cargar productos por tienda
-    supabase.from('products').select('*').then(({ data, error }) => {
+    // 1. Cargar productos por tienda de forma aislada a nivel servidor
+    const productQuery = tenantSlug === 'default'
+      ? supabase.from('products').select('*').or(`tenant_id.eq.${tenantSlug},tenant_id.is.null`)
+      : supabase.from('products').select('*').eq('tenant_id', tenantSlug);
+
+    productQuery.then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        const filtered = data.filter(p => !p.tenant_id || p.tenant_id === tenantSlug);
-        if (filtered.length > 0) setProducts(filtered);
+        setProducts(data);
       }
     });
 
@@ -468,37 +472,46 @@ export const StoreProvider = ({ children }) => {
     supabase.from('store_config').select('*').eq('id', tenantSlug).maybeSingle().then(({ data, error }) => {
       if (!error && data) {
         const loadedConfig = data.config || data;
-        const { id, tenant_id, ...configData } = loadedConfig;
+        const { id, tenant_id, adminPassword, admin_pin, ...configData } = loadedConfig;
         setStoreConfigState(prev => ({ ...prev, ...configData, name: data.name || configData.name }));
       }
     });
 
-    // 3. Cargar pedidos por tienda
-    supabase.from('orders').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
-      if (!error && data && data.length > 0) {
-        const filtered = data.filter(o => !o.tenant_id || o.tenant_id === tenantSlug);
-        if (filtered.length > 0) setOrders(filtered);
-      }
-    });
-
-    // 4. Cargar solicitudes de productos por tienda (solo para tiendas comerciales reales)
-    if (tenantSlug && tenantSlug !== 'default') {
-      supabase.from('product_requests').select('*').order('created_at', { ascending: false }).then(({ data, error }) => {
-        if (!error && data && data.length > 0) {
-          const filtered = data.filter(r => r.tenant_id === tenantSlug);
-          if (filtered.length > 0) setProductRequests(filtered);
+    // 3. Cargar pedidos por tienda con filtro server-side seguro (Previene fuga cross-tenant)
+    supabase.from('orders')
+      .select('*')
+      .eq('tenant_id', tenantSlug)
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setOrders(data);
         }
       });
+
+    // 4. Cargar solicitudes de productos por tienda
+    if (tenantSlug && tenantSlug !== 'default') {
+      supabase.from('product_requests')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setProductRequests(data);
+          }
+        });
     }
 
-    // Subscripciones en Tiempo Real (Realtime) para Pedidos y Productos
+    // Subscripciones en Tiempo Real (Realtime) con filtro de fila de Postgres por tenant_id
     const ordersChannel = supabase
       .channel(`public:orders:${tenantSlug}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'orders',
+        filter: `tenant_id=eq.${tenantSlug}`
+      }, payload => {
         if (payload.eventType === 'INSERT') {
-          if (!payload.new.tenant_id || payload.new.tenant_id === tenantSlug) {
-            setOrders(prev => [payload.new, ...prev.filter(o => o.id !== payload.new.id)]);
-          }
+          setOrders(prev => [payload.new, ...prev.filter(o => o.id !== payload.new.id)]);
         } else if (payload.eventType === 'UPDATE') {
           setOrders(prev => prev.map(o => (o.id === payload.new.id ? payload.new : o)));
         } else if (payload.eventType === 'DELETE') {
@@ -509,11 +522,14 @@ export const StoreProvider = ({ children }) => {
 
     const productsChannel = supabase
       .channel(`public:products:${tenantSlug}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, payload => {
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'products',
+        filter: `tenant_id=eq.${tenantSlug}`
+      }, payload => {
         if (payload.eventType === 'INSERT') {
-          if (!payload.new.tenant_id || payload.new.tenant_id === tenantSlug) {
-            setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
-          }
+          setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
         } else if (payload.eventType === 'UPDATE') {
           setProducts(prev => prev.map(p => (p.id === payload.new.id ? payload.new : p)));
         } else if (payload.eventType === 'DELETE') {
@@ -936,6 +952,7 @@ export const StoreProvider = ({ children }) => {
     // Registrar como pedido completado directo
     const posOrder = {
       id: saleId,
+      tenant_id: tenantSlug,
       customer: {
         name: 'Venta de Mostrador (Presencial)',
         phone: 'Presencial',
@@ -956,6 +973,11 @@ export const StoreProvider = ({ children }) => {
     };
 
     setOrders(prev => [posOrder, ...prev]);
+    if (supabase && tenantSlug && tenantSlug !== 'default') {
+      supabase.from('orders').insert([posOrder]).then(({ error }) => {
+        if (error) console.error('Error insertando venta POS en Supabase:', error);
+      });
+    }
     triggerConfetti();
     const currency = storeConfig.currencySymbol || 'Bs.';
     showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
@@ -993,6 +1015,11 @@ export const StoreProvider = ({ children }) => {
     setProductRequests(prev =>
       prev.map(r => (r.id === requestId ? { ...r, status } : r))
     );
+    if (supabase && tenantSlug && tenantSlug !== 'default') {
+      supabase.from('product_requests').update({ status }).eq('id', requestId).then(({ error }) => {
+        if (error) console.error('Error actualizando solicitud de producto en Supabase:', error);
+      });
+    }
     showToast('Estado de solicitud actualizado.');
   };
 
@@ -1050,6 +1077,14 @@ export const StoreProvider = ({ children }) => {
     const cleanSlug = slug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
     if (!cleanSlug) return { data: null, error: { message: 'El identificador de tienda no es válido.' } };
 
+    const RESERVED_SLUGS = [
+      'admin', 'api', 'auth', 'login', 'register', 'default', 'null',
+      'undefined', 'dashboard', 'settings', 'store', 'public', 'system', 'root'
+    ];
+    if (RESERVED_SLUGS.includes(cleanSlug)) {
+      return { data: null, error: { message: `El enlace "${cleanSlug}" es una palabra reservada del sistema. Por favor elige otro identificador.` } };
+    }
+
     try {
       // Validar si ya existe ese slug
       const { data: existing } = await supabase
@@ -1064,8 +1099,9 @@ export const StoreProvider = ({ children }) => {
 
       const userId = ownerId || currentUser?.id || (await supabase.auth.getUser())?.data?.user?.id || null;
 
+      const { adminPassword, admin_pin, ...baseConfig } = initialStoreConfig;
       const newConfig = {
-        ...initialStoreConfig,
+        ...baseConfig,
         name: storeName,
         tagline: 'Tu tienda de confianza a pasos de tu puerta',
         phone: phone || '',
@@ -1082,7 +1118,6 @@ export const StoreProvider = ({ children }) => {
         theme_color: themeColor || 'emerald',
         currency_symbol: 'Bs.',
         is_open: true,
-        admin_pin: '1234',
         condominiums: initialStoreConfig.condominiums,
         coupons: initialStoreConfig.coupons,
         categories: initialStoreConfig.categories,

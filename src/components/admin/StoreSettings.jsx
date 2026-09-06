@@ -11,7 +11,9 @@ import {
   Image as ImageIcon,
   Palette,
   Tag,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -57,7 +59,6 @@ export const StoreSettings = () => {
 
   const [form, setForm] = useState({ 
     currencySymbol: 'Bs.',
-    adminPassword: 'admin',
     themeColor: 'emerald',
     logoUrl: '',
     bannerUrl: presetBanners[0].url,
@@ -74,9 +75,6 @@ export const StoreSettings = () => {
     ],
     ...storeConfig 
   });
-
-  const [confirmPassword, setConfirmPassword] = useState(storeConfig.adminPassword || 'admin');
-  const [passwordError, setPasswordError] = useState('');
 
   const [newCondoName, setNewCondoName] = useState('');
   const [newCondoFee, setNewCondoFee] = useState('5.00');
@@ -98,13 +96,8 @@ export const StoreSettings = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (form.adminPassword !== confirmPassword) {
-      setPasswordError('Las contraseñas no coinciden. Verifica antes de guardar.');
-      showToast('⚠️ Las contraseñas no coinciden.', 'error');
-      return;
-    }
-    setPasswordError('');
-    setStoreConfig(form);
+    const { adminPassword, admin_pin, ...safeConfig } = form;
+    setStoreConfig(safeConfig);
     showToast('Configuración del negocio guardada exitosamente.', 'success');
   };
 
@@ -422,38 +415,16 @@ export const StoreSettings = () => {
             />
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Contraseña de Seguridad (Acceso Dueño)</label>
-            <input
-              type="password"
-              value={form.adminPassword || 'admin'}
-              onChange={(e) => {
-                setForm(prev => ({ ...prev, adminPassword: e.target.value }));
-                if (passwordError) setPasswordError('');
-              }}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Confirmar Contraseña de Seguridad</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (passwordError) setPasswordError('');
-              }}
-              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-mono font-bold bg-white ${
-                passwordError ? 'border-rose-400 bg-rose-50/50' : 'border-slate-200'
-              }`}
-            />
-            {passwordError && (
-              <span className="text-[11px] font-bold text-rose-600 mt-1 block flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                {passwordError}
-              </span>
-            )}
+          <div className="sm:col-span-2 p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-950">Acceso y Credenciales Protegidas</h4>
+              <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                El acceso a tu panel de comerciante está blindado mediante <strong>Supabase Auth</strong> con encriptación de grado bancario. Para cambiar tu contraseña de acceso, utiliza el enlace seguro desde la pantalla de inicio de sesión.
+              </p>
+            </div>
           </div>
         </div>
       </div>

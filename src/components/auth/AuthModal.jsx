@@ -14,9 +14,11 @@ import {
   EyeOff, 
   X,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { supabase } from '../../services/supabaseClient';
 import './AuthModal.css';
 
 export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
@@ -29,7 +31,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     showToast 
   } = useStore();
 
-  const [mode, setMode] = useState(initialMode); // 'login' | 'register'
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
   const [registerStep, setRegisterStep] = useState(1); // 1: Datos Dueño, 2: Datos Tienda
   const [registeredUser, setRegisteredUser] = useState(null);
   
@@ -37,6 +39,10 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Campos de Recuperación de Contraseña
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState(false);
 
   // Campos de Registro (Paso 1)
   const [ownerName, setOwnerName] = useState('');
@@ -108,11 +114,46 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       return;
     }
 
-    onClose();
     if (!store) {
-      // Si el usuario existe pero no tiene tienda, enviarlo a crear una
+      // Si el usuario existe pero no tiene tienda, guiarlo al paso 2 de inmediato sin cerrar el modal
       setMode('register');
       setRegisterStep(2);
+      showToast('Sesión verificada. Completa los datos de tu tienda para comenzar.', 'info');
+      return;
+    }
+
+    onClose();
+  };
+
+  // Manejador de Recuperación de Contraseña
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!forgotEmail || !forgotEmail.includes('@')) {
+      setErrorMsg('Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+
+    if (!supabase) {
+      setErrorMsg('El servicio de autenticación no está disponible.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+        redirectTo: window.location.origin
+      });
+      setLoading(false);
+
+      if (error) {
+        setErrorMsg(error.message || 'Error al solicitar el enlace de restablecimiento.');
+      } else {
+        setForgotSuccess(true);
+      }
+    } catch (err) {
+      setLoading(false);
+      setErrorMsg('Error de red al procesar la solicitud.');
     }
   };
 
@@ -164,6 +205,15 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
     if (!storeName.trim() || !storeSlug.trim()) {
       setErrorMsg('El nombre de la tienda y el enlace son requeridos.');
+      return;
+    }
+
+    const RESERVED_SLUGS = [
+      'admin', 'api', 'auth', 'login', 'register', 'default', 'null',
+      'undefined', 'dashboard', 'settings', 'store', 'public', 'system', 'root'
+    ];
+    if (RESERVED_SLUGS.includes(storeSlug.trim().toLowerCase())) {
+      setErrorMsg(`"${storeSlug}" es una palabra reservada del sistema. Por favor elige otro enlace.`);
       return;
     }
 
@@ -292,6 +342,15 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                     {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <div className="flex justify-end mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setErrorMsg(''); setForgotSuccess(false); setForgotEmail(loginEmail); }}
+                    className="text-[11px] font-semibold text-slate-500 hover:text-emerald-700 cursor-pointer transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
               </div>
 
               <button
@@ -322,6 +381,87 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* ========================================================
+              MODO 3: RECUPERAR CONTRASEÑA
+             ======================================================== */}
+          {mode === 'forgot' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900">Recupera el Acceso a tu Tienda</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ingresa tu correo registrado y te enviaremos un enlace seguro para restablecer tu contraseña.
+                </p>
+              </div>
+
+              {forgotSuccess ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-2 text-center">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
+                  <p className="font-bold">¡Enlace de recuperación enviado!</p>
+                  <p className="text-emerald-800 text-[11px]">
+                    Revisa tu bandeja de entrada en <strong>{forgotEmail}</strong> (y la carpeta de spam o promociones) para crear tu nueva contraseña.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setForgotSuccess(false); }}
+                    className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                  >
+                    Volver a Iniciar Sesión
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Correo Electrónico Registrado
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="email"
+                        required
+                        placeholder="ejemplo@mitienda.com"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:border-emerald-500 outline-none bg-slate-50/50"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Enviando enlace...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Enviar Enlace de Recuperación</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('login'); setErrorMsg(''); }}
+                      className="text-xs font-semibold text-slate-600 hover:text-emerald-700 cursor-pointer"
+                    >
+                      ← Volver a Iniciar Sesión
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
 
           {/* ========================================================

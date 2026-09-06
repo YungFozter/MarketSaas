@@ -12,7 +12,10 @@ import {
   ExternalLink,
   Check,
   Globe,
-  UserCheck
+  UserCheck,
+  Lock,
+  LogIn,
+  ShieldAlert
 } from 'lucide-react';
 import { AdminDashboard } from './AdminDashboard';
 import { LiveOrdersBoard } from './LiveOrdersBoard';
@@ -58,6 +61,36 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
   return (
     <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24 space-y-5">
+      {/* Auth Guard Banner para usuarios no autenticados */}
+      {!currentUser && (
+        <div className="bg-amber-50 border border-amber-200 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-amber-950 flex items-center gap-2">
+                <span>Panel de Tienda en Modo Simulación Local</span>
+                <span className="text-[10px] bg-amber-200/80 text-amber-900 font-black px-2 py-0.5 rounded-md uppercase">Sandbox</span>
+              </h3>
+              <p className="text-xs text-amber-800/90 mt-0.5 max-w-2xl">
+                Los cambios que realices aquí no se guardarán en la nube multi-inquilino. Inicia sesión como comerciante o registra tu minimarket para tener tu catálogo en vivo con Supabase Auth.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              onClick={onOpenAuthModal}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-sm transition-all cursor-pointer active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Iniciar Sesión / Registrar Tienda</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Banner de Identidad del Comerciante y Enlace Público */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-4 sm:p-5 text-white shadow-lg border border-slate-700/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 min-w-0">

@@ -115,23 +115,48 @@ DROP POLICY IF EXISTS "Permitir acceso público total a pedidos" ON public.order
 DROP POLICY IF EXISTS "Permitir acceso público total a solicitudes" ON public.product_requests;
 DROP POLICY IF EXISTS "Permitir acceso público total a perfil" ON public.customer_profile;
 
--- Políticas de Seguridad Robustas (RLS)
--- Lectura pública para catálogo e información básica
+-- Políticas de Seguridad Robustas y Blindadas (RLS Multi-Tenant)
+
+-- 1. Productos: Lectura pública del catálogo, pero escritura/modificación/borrado restringida al dueño de la tienda
 CREATE POLICY "Lectura pública de productos" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Escritura de productos por administradores" ON public.products FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Modificación de productos por el dueño de la tienda" ON public.products FOR ALL USING (
+  products.tenant_id = 'default' OR
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+) WITH CHECK (
+  products.tenant_id = 'default' OR
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+);
 
+-- 2. Configuración de Tiendas: Lectura pública del perfil/tema/contacto, creación para autenticados y edición solo por el dueño
 CREATE POLICY "Lectura pública de store_config" ON public.store_config FOR SELECT USING (true);
-CREATE POLICY "Escritura de store_config por administradores" ON public.store_config FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Registro de tienda por usuarios autenticados" ON public.store_config FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Actualización de tienda por su dueño" ON public.store_config FOR UPDATE USING (
+  auth.uid() = owner_id OR id = 'default'
+) WITH CHECK (
+  auth.uid() = owner_id OR id = 'default'
+);
 
--- Los clientes pueden crear pedidos y ver pedidos
-CREATE POLICY "Lectura de pedidos" ON public.orders FOR SELECT USING (true);
+-- 3. Pedidos (Privacidad de Clientes): Inserción pública por los vecinos al ordenar; lectura y gestión reservada al dueño de la tienda correspondiente
 CREATE POLICY "Inserción de pedidos por clientes" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Actualización de pedidos por administradores" ON public.orders FOR UPDATE USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Lectura de pedidos por el dueño de la tienda" ON public.orders FOR SELECT USING (
+  tenant_id = 'default' OR
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+);
+CREATE POLICY "Actualización de pedidos por el dueño de la tienda" ON public.orders FOR UPDATE USING (
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+) WITH CHECK (
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+);
 
--- Solicitudes de vecinos y perfiles
-CREATE POLICY "Lectura e inserción de solicitudes de productos" ON public.product_requests FOR SELECT USING (true);
+-- 4. Solicitudes de vecinos ("Pídelo si no está"): Lectura e inserción comunitaria, gestión por el dueño
+CREATE POLICY "Lectura de solicitudes de productos" ON public.product_requests FOR SELECT USING (true);
 CREATE POLICY "Inserción de solicitudes por vecinos" ON public.product_requests FOR INSERT WITH CHECK (true);
-CREATE POLICY "Gestión de solicitudes por administradores" ON public.product_requests FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Gestión de solicitudes por el dueño" ON public.product_requests FOR UPDATE USING (
+  product_requests.tenant_id = 'default' OR
+  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = product_requests.tenant_id)
+);
+
+-- 5. Perfil de Cliente
 CREATE POLICY "Acceso a perfil de cliente" ON public.customer_profile FOR ALL USING (true) WITH CHECK (true);
 
 -- Habilitar Publicación en Tiempo Real (Realtime) para las tablas clave
