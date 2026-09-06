@@ -54,13 +54,29 @@ export const Navbar = ({
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsScrolled(scrollY > 20);
+    let ticking = false;
 
-      const winHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (winHeight > 0) {
-        setScrollProgress(Math.min(100, Math.max(0, (scrollY / winHeight) * 100)));
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+
+          // Histéresis: se activa al scrollear hacia abajo (> 60px)
+          // y se desactiva al regresar arriba (< 15px).
+          // La zona muerta de 15px-60px previene oscilaciones y parpadeos.
+          setIsScrolled((prev) => {
+            if (!prev && scrollY > 60) return true;
+            if (prev && scrollY < 15) return false;
+            return prev;
+          });
+
+          const winHeight = document.documentElement.scrollHeight - window.innerHeight;
+          if (winHeight > 0) {
+            setScrollProgress(Math.min(100, Math.max(0, (scrollY / winHeight) * 100)));
+          }
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
@@ -85,15 +101,9 @@ export const Navbar = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full transition-all duration-300">
-      {/* Barra superior de Promoción y Confianza Rediseñada (Se colapsa suavemente al scrollear) */}
-      <div 
-        className={`w-full bg-slate-950 text-white text-[11px] sm:text-xs border-b border-slate-800/80 transition-all duration-300 overflow-hidden ${
-          isScrolled 
-            ? 'max-h-0 opacity-0 py-0 border-none' 
-            : 'max-h-16 py-1.5 px-3 sm:px-6 opacity-100'
-        }`}
-      >
+    <>
+      {/* Barra superior de Promoción, Confianza y Switch de Modos (Flujo normal, se oculta de forma natural al scrollear sin salto de altura) */}
+      <div className="w-full bg-slate-950 text-white text-[11px] sm:text-xs border-b border-slate-800/80 py-1.5 px-3 sm:px-6 relative z-30">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
           
           {/* Lado Izquierdo: Anuncio de Confianza & Estado en Vivo */}
@@ -171,24 +181,24 @@ export const Navbar = ({
         </div>
       </div>
 
-      {/* Cápsula Flotante Despegada / Dynamic Island */}
-      <div 
-        className={`transition-all duration-300 ease-out ${
-          isScrolled 
-            ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-2 sm:pt-2.5' 
-            : 'w-full px-0 pt-0'
-        }`}
-      >
+      {/* Header Sticky Principal: se ancla suavemente en top-0 sin saltos de altura */}
+      <header className="sticky top-0 z-40 w-full transition-all duration-300">
+        {/* Cápsula Flotante Despegada / Dynamic Island */}
         <div 
-          className={`relative transition-all duration-300 ${
-            isScrolled
-              ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
-              : 'bg-white border-b border-slate-100 shadow-none px-3 sm:px-6 lg:px-8'
+          className={`transition-all duration-300 ease-out ${
+            isScrolled 
+              ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-2 sm:pt-2.5' 
+              : 'w-full px-0 pt-0'
           }`}
         >
-          <div className={`flex items-center justify-between gap-2 sm:gap-4 transition-all duration-300 ${
-            isScrolled ? 'h-14 sm:h-16' : 'h-16 sm:h-18'
-          }`}>
+          <div 
+            className={`relative transition-all duration-300 ${
+              isScrolled
+                ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
+                : 'bg-white border-b border-slate-100 shadow-none px-3 sm:px-6 lg:px-8'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 sm:gap-4 h-16 sm:h-18 transition-all duration-300">
           
           {/* Logo y Marca Oficial MarketSaaS en Código Vectorial */}
           <button 
@@ -503,5 +513,5 @@ export const Navbar = ({
         </div>
       </div>
     </header>
-  );
+  </>);
 };
