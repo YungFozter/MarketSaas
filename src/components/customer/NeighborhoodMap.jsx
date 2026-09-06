@@ -127,10 +127,6 @@ export const NeighborhoodMap = ({
       setCurrentCoords(selectedStore.googleMapsCoordinates);
       setActiveLocationType('store');
       setZoomLevel(16);
-    } else if (!selectedStore) {
-      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
-      setActiveLocationType('plaza');
-      setZoomLevel(15);
     }
   }, [selectedStore]);
 
@@ -165,6 +161,7 @@ export const NeighborhoodMap = ({
 
     setIsLocating(true);
     setIsRecentering(true);
+    if (onSelectStore) onSelectStore(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -177,7 +174,6 @@ export const NeighborhoodMap = ({
         setCurrentCoords(userCoords);
         setZoomLevel(17); // Zoom a nivel de calle para la ubicación real del usuario
         setActiveLocationType('user');
-        if (onSelectStore) onSelectStore(null);
         setIsLocating(false);
         setIsRecentering(false);
         showFeedback('📍 Ubicación GPS detectada en tiempo real');
