@@ -125,8 +125,8 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         [filterId]: willBeActive
       };
 
-      // Si se activa o desactiva "Tiendas Registradas", limpiamos la tienda seleccionada para ver la vista general
-      if (filterId === 'registeredOnly') {
+      // Si se activa o desactiva "Tiendas Registradas" o "Abiertas Ahora", limpiamos la tienda seleccionada para ver la vista general
+      if (filterId === 'registeredOnly' || filterId === 'openNow') {
         setSelectedStoreSlug(null);
       }
 

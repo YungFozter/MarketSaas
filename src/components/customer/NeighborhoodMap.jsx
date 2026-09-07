@@ -88,35 +88,117 @@ export const NeighborhoodMap = ({
 
   // Tiendas que se deben graficar con marcadores según los filtros activos
   const storesToPlot = useMemo(() => {
-    if (activeFilters?.registeredOnly) {
-      return registeredStores;
-    }
-    return masterStores;
-  }, [activeFilters?.registeredOnly, registeredStores, masterStores]);
+    return masterStores.filter((store) => {
+      // 1. Filtro "Abiertas Ahora": Si está activado, ocultar tiendas cerradas
+      if (activeFilters?.openNow && store.isOpen === false) {
+        return false;
+      }
+      // 2. Filtro "Tiendas Registradas": Mostrar solo tiendas oficiales
+      if (activeFilters?.registeredOnly && !store.isRegisteredStore) {
+        return false;
+      }
+      // 3. Filtro "Aceptan QR"
+      if (activeFilters?.acceptsQr && !store.acceptsQr) {
+        return false;
+      }
+      // 4. Filtro "Mejor Calificadas"
+      if (activeFilters?.topRated && (store.rating || 0) < 4.8) {
+        return false;
+      }
+      // 5. Filtro "VeciPuntos"
+      if (activeFilters?.hasPoints && !store.pointsReward) {
+        return false;
+      }
+      return true;
+    });
+  }, [masterStores, activeFilters]);
 
-  // Crear DivIcon HTML personalizado para cada tienda
+  // Crear DivIcon HTML personalizado para cada tienda (diferenciando abiertas vs cerradas)
   const createStoreDivIcon = (store, isSelected) => {
     const isRegistered = Boolean(store.isRegisteredStore);
     const isOwner = Boolean(store.isCurrentOwnerStore);
-    const ringClass = isOwner ? 'owner-pulse-ring' : isRegistered ? 'registered-pulse-ring' : '';
-    const badgeLabel = isOwner ? '⭐ Tu Tienda' : isRegistered ? 'Oficial' : '';
-    const bgColor = isOwner ? '#f59e0b' : isRegistered ? '#059669' : '#334155';
+    const isOpen = store.isOpen !== false;
+
+    // Anillo de pulso dinámico (SOLO para tiendas abiertas)
+    const ringClass = isOpen
+      ? (isOwner ? 'owner-pulse-ring' : isRegistered ? 'registered-pulse-ring' : '')
+      : '';
+
+    // Estilos según si la tienda está ABIERTA o CERRADA
+    let bgColor;
+    let borderColor;
+    let badgeText = '';
+    let badgeBg = '';
+    let badgeColor = '';
+    let badgeBorder = '';
+    let dotHtml = '';
+    let statusPillHtml = '';
+
+    if (!isOpen) {
+      // 🔴 TIENDA CERRADA: Marcador sobrio pizarra/grafito con ribete de alerta suave
+      bgColor = isOwner ? '#78350f' : isRegistered ? '#475569' : '#334155';
+      borderColor = isOwner ? '#fde68a' : isRegistered ? '#fca5a5' : '#cbd5e1';
+
+      if (isOwner) {
+        badgeText = '⭐ Tu Tienda • Cerrado';
+        badgeBg = '#fee2e2';
+        badgeColor = '#991b1b';
+        badgeBorder = '#fca5a5';
+      } else if (isRegistered) {
+        badgeText = 'Oficial • Cerrado';
+        badgeBg = '#fee2e2';
+        badgeColor = '#991b1b';
+        badgeBorder = '#fca5a5';
+      }
+
+      dotHtml = '<span style="color:#ef4444; font-size: 8px;">●</span>';
+      statusPillHtml = '<span style="font-size: 8px; font-weight: 900; background: #fee2e2; color: #b91c1c; padding: 0.5px 4px; border-radius: 4px; margin-left: 3px; border: 0.5px solid #fca5a5;">CERRADO</span>';
+    } else {
+      // 🟢 TIENDA ABIERTA: Marcador verde esmeralda / ámbar vibrante
+      bgColor = isOwner ? '#f59e0b' : isRegistered ? '#059669' : '#334155';
+      borderColor = '#ffffff';
+
+      if (isOwner) {
+        badgeText = '⭐ Tu Tienda';
+        badgeBg = '#fef3c7';
+        badgeColor = '#92400e';
+        badgeBorder = '#fde68a';
+      } else if (isRegistered) {
+        badgeText = 'Oficial';
+        badgeBg = '#d1fae5';
+        badgeColor = '#065f46';
+        badgeBorder = '#a7f3d0';
+      }
+
+      dotHtml = isRegistered ? '<span style="color:#059669; font-size: 8px;">●</span>' : '';
+    }
+
+    // Icono SVG: Candado si está cerrada, casita de tienda si está abierta
+    const iconSvg = !isOpen ? `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    ` : `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    `;
 
     const html = `
-      <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''}">
+      <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''} ${!isOpen ? 'is-closed' : ''}">
         ${ringClass ? `<div class="${ringClass}"></div>` : ''}
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: ${bgColor}; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2.5px solid #ffffff; z-index: 2;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: ${bgColor}; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2.5px solid ${borderColor}; z-index: 2;">
+          ${iconSvg}
         </div>
         <div style="margin-top: 4px; display: flex; flex-direction: column; align-items: center; z-index: 3;">
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.08); font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
-            ${isRegistered ? '<span style="color:#059669; font-size: 8px;">●</span>' : ''}
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); border: 1px solid ${!isOpen ? 'rgba(239,68,68,0.3)' : 'rgba(0,0,0,0.08)'}; font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap; max-width: 155px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 3px;">
+            ${dotHtml}
             <span>${escapeHtml(store.name)}</span>
+            ${statusPillHtml}
           </div>
-          ${badgeLabel ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${isOwner ? '#fef3c7' : '#d1fae5'}; color: ${isOwner ? '#92400e' : '#065f46'}; padding: 1px 5px; border-radius: 9999px; margin-top: 1px; border: 0.5px solid ${isOwner ? '#fde68a' : '#a7f3d0'};">${badgeLabel}</span>` : ''}
+          ${badgeText ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 9999px; margin-top: 1px; border: 0.5px solid ${badgeBorder};">${badgeText}</span>` : ''}
         </div>
       </div>
     `;
@@ -646,7 +728,9 @@ export const NeighborhoodMap = ({
                   <div className="flex items-center gap-1 text-[11px] text-amber-600 font-bold mt-0.5">
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                     <span>{activeStore.rating || 4.8}</span>
-                    <span className="text-slate-400 font-normal">• {activeStore.deliveryTime || '10-15 min'}</span>
+                    <span className="text-slate-400 font-normal">
+                      • {activeStore.isOpen !== false ? (activeStore.deliveryTime || '10-15 min') : 'Cerrado temporalmente'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -670,10 +754,17 @@ export const NeighborhoodMap = ({
                   <span>{pinnedSlugs.includes(activeStore.slug) ? 'Fijada' : 'Fijar'}</span>
                 </button>
 
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  En vivo
-                </span>
+                {activeStore.isOpen !== false ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Abierto
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    Cerrado
+                  </span>
+                )}
 
                 {/* Botón para cerrar tarjeta y volver a la vista general */}
                 <button

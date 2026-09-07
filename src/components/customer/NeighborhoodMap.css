@@ -38,6 +38,17 @@
   z-index: 1000 !important;
 }
 
+/* Marcadores de Tiendas Cerradas */
+.custom-leaflet-pin.is-closed {
+  opacity: 0.90;
+  filter: saturate(0.85);
+}
+
+.custom-leaflet-pin.is-closed:hover {
+  opacity: 1;
+  filter: saturate(1);
+}
+
 /* Animación de Pulso para Tiendas Registradas */
 .registered-pulse-ring {
   position: absolute;
