@@ -261,17 +261,17 @@ export const StoreSettings = () => {
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 w-full max-w-5xl xl:max-w-6xl mx-auto animate-fadeIn relative pb-12">
-      {/* Floating Save Button on Scroll */}
+    <form onSubmit={handleSave} className="space-y-6 w-full max-w-7xl mx-auto animate-fadeIn relative pb-24">
+      {/* Floating Save Button on Scroll (Esquina inferior derecha para no solapar el menú superior) */}
       {!isHeaderVisible && (
-        <div className="fixed top-3 sm:top-3.5 right-4 sm:right-6 z-50 animate-fadeIn">
+        <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 animate-fadeIn">
           <button
             type="submit"
-            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 active:scale-95 transition-all flex items-center gap-2 cursor-pointer border border-emerald-400/40"
+            className="px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow-2xl shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer border border-emerald-400/40 ring-4 ring-emerald-500/20"
             title="Guardar Cambios de Configuración"
           >
-            <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">Guardar Cambios</span>
+            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Guardar Cambios</span>
           </button>
         </div>
       )}
@@ -293,19 +293,22 @@ export const StoreSettings = () => {
 
         <button
           type="submit"
-          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
+          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer shrink-0"
         >
           <Save className="w-4 h-4" />
           <span>Guardar Cambios</span>
         </button>
       </div>
 
-      {/* Identidad Visual & Portadas */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
-        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-emerald-600" />
-          <span>Personalización Visual (Logo & Imagen de Portada)</span>
-        </h3>
+      {/* FILA 1: Personalización Visual & Información Básica (Lado a lado en PC) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* Card 1: Identidad Visual & Portadas */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5 flex flex-col justify-between">
+          <div className="space-y-5">
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-emerald-600" />
+              <span>Personalización Visual (Logo & Imagen de Portada)</span>
+            </h3>
 
         {/* Cargar Logotipo */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
@@ -402,13 +405,15 @@ export const StoreSettings = () => {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Estado del Local & Datos Generales */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-          <Power className="w-4 h-4 text-emerald-600" />
-          <span>Información Básica & Autenticación de Dueño</span>
-        </h3>
+        {/* Card 2: Estado del Local & Datos Generales */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <Power className="w-4 h-4 text-emerald-600" />
+              <span>Información Básica & Autenticación de Dueño</span>
+            </h3>
 
         {/* Switch Abierto / Cerrado */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
@@ -522,10 +527,14 @@ export const StoreSettings = () => {
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      {/* Ubicación Física & Geolocalización en el Mapa */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      {/* FILA 2: Ubicación Física & Geolocalización en el Mapa (Ancho Completo) */}
+      <div className="w-full">
+        {/* Card 3: Ubicación Física & Mapa */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-600" />
@@ -675,74 +684,78 @@ export const StoreSettings = () => {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Imagen del Código QR de Cobro */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <div>
-          <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-            <QrCode className="w-4 h-4 text-emerald-600" />
-            <span>Imagen del Código QR de Cobro</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
-          </p>
-        </div>
-
-        {/* Cargar Foto de QR con Compresión */}
-        <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="w-28 h-28 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
-              {form.qrImageUrl ? (
-                <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1.5" />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center p-2">
-                  <QrCode className="w-8 h-8 text-amber-400 mb-1" />
-                  <span className="text-[10px] text-amber-700 font-bold">Sin Foto QR</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1 space-y-2 w-full">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e, 'qrImageUrl')}
-                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
-              />
-              <input
-                type="url"
-                placeholder="O pega una URL directa de la imagen del QR..."
-                value={form.qrImageUrl || ''}
-                onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
-                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium focus:border-amber-400 focus:outline-hidden"
-              />
-              {form.qrImageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setForm(prev => ({ ...prev, qrImageUrl: '' }))}
-                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
-                >
-                  Quitar imagen de QR
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Cupones de Descuento de la Tienda */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* FILA 3: Código QR de Cobro & Cupones de Descuento (Lado a lado en PC) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        {/* Card 4: Imagen del Código QR de Cobro */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              <span>Gestión de Cupones de Descuento</span>
+              <QrCode className="w-4 h-4 text-emerald-600" />
+              <span>Imagen del Código QR de Cobro</span>
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
+              Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
             </p>
           </div>
+
+          {/* Cargar Foto de QR con Compresión */}
+          <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-28 h-28 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                {form.qrImageUrl ? (
+                  <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1.5" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-2">
+                    <QrCode className="w-8 h-8 text-amber-400 mb-1" />
+                    <span className="text-[10px] text-amber-700 font-bold">Sin Foto QR</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 w-full">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'qrImageUrl')}
+                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
+                />
+                <input
+                  type="url"
+                  placeholder="O pega una URL directa de la imagen del QR..."
+                  value={form.qrImageUrl || ''}
+                  onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
+                  className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium focus:border-amber-400 focus:outline-hidden"
+                />
+                {form.qrImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, qrImageUrl: '' }))}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                  >
+                    Quitar imagen de QR
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Card 5: Cupones de Descuento de la Tienda */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-emerald-600" />
+                  <span>Gestión de Cupones de Descuento</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
+                </p>
+              </div>
+            </div>
 
         {/* Modal / Panel de Edición de Cupón (cuando se edita uno existente) */}
         {editingCoupon && (
@@ -905,6 +918,8 @@ export const StoreSettings = () => {
           </button>
         </div>
       </div>
-    </form>
+    </div>
+  </div>
+</form>
   );
 };
