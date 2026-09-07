@@ -3,7 +3,7 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
-import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle } from 'lucide-react';
+import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle, X } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -11,12 +11,14 @@ import './CustomerHome.css';
 export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
   const { 
     products, 
+    orders,
     selectedLocation, 
     activeTrackingOrderId, 
     setActiveTrackingOrderId, 
     setIsTrackingModalOpen,
     goToDirectory, 
-    storeConfig 
+    storeConfig,
+    tenantSlug
   } = useStore();
 
   const [selectedCategory, setSelectedCategoryState] = useState(() => {
@@ -71,6 +73,20 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
 
   const popularProducts = products.filter(p => p.isPopular).slice(0, 8);
 
+  // Pedido activo real y en curso
+  const activeOrder = orders?.find(
+    o => o.id === activeTrackingOrderId && ['pending', 'preparing', 'on_the_way'].includes(o.status)
+  );
+
+  const handleDismissActiveOrder = (e) => {
+    e?.stopPropagation?.();
+    setActiveTrackingOrderId(null);
+    try {
+      localStorage.removeItem(`marketsaas_${tenantSlug || storeConfig?.id || 'default'}_active_order`);
+      localStorage.removeItem('marketsaas_default_active_order');
+    } catch (err) {}
+  };
+
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
       {/* Barra de Retorno al Directorio de Tiendas */}
@@ -118,24 +134,38 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
       />
 
       {/* Banner de Pedido en Curso si existe */}
-      {activeTrackingOrderId && (
-        <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse-glow">
+      {activeOrder && (
+        <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse-glow relative">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 flex items-center justify-center font-bold shrink-0">
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-black text-xs sm:text-sm">¡Tienes un pedido en preparación (#{activeTrackingOrderId})!</p>
-              <p className="text-[11px] sm:text-xs text-emerald-100 font-medium">Revisa en qué etapa viene hacia {selectedLocation.condominium}</p>
+              <p className="font-black text-xs sm:text-sm">
+                ¡Tienes un pedido {activeOrder.status === 'on_the_way' ? 'en camino' : activeOrder.status === 'preparing' ? 'en preparación' : 'recibido'} (#{activeOrder.id})!
+              </p>
+              <p className="text-[11px] sm:text-xs text-emerald-100 font-medium">
+                Revisa en qué etapa viene hacia {selectedLocation?.condominium || 'tu ubicación'}
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => setIsTrackingModalOpen(true)}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white text-emerald-900 font-black text-xs shadow-md hover:bg-emerald-50 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <span>Ver Seguimiento en Vivo</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => setIsTrackingModalOpen(true)}
+              className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white text-emerald-900 font-black text-xs shadow-md hover:bg-emerald-50 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <span>Ver Seguimiento en Vivo</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDismissActiveOrder}
+              title="Cerrar aviso"
+              className="p-2 rounded-xl bg-black/15 hover:bg-black/25 text-white transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 

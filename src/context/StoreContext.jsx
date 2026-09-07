@@ -401,6 +401,20 @@ export const StoreProvider = ({ children }) => {
   });
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
+  // Auto-limpieza de pedido activo si el pedido ya fue entregado, cancelado o no existe en orders
+  useEffect(() => {
+    if (!activeTrackingOrderId) return;
+    const existing = orders.find(o => o.id === activeTrackingOrderId);
+    // Si el pedido no existe o ya no está en curso activo:
+    if (!existing || ['delivered', 'cancelled'].includes(existing.status)) {
+      setActiveTrackingOrderId(null);
+      try {
+        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+        localStorage.removeItem('marketsaas_default_active_order');
+      } catch (e) {}
+    }
+  }, [orders, activeTrackingOrderId, tenantSlug]);
+
   // 11. Toast notification
   const [toast, setToast] = useState(null);
 
@@ -1704,6 +1718,7 @@ export const StoreProvider = ({ children }) => {
         signInMerchant,
         createMerchantStore,
         signOutMerchant,
+        tenantSlug,
         viewMode,
         setViewMode,
         customerSubView,
