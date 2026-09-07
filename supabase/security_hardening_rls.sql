@@ -7,8 +7,16 @@
 -- 2. Impedir que usuarios anónimos o atacantes puedan modificar o borrar productos ('products').
 -- 3. Proteger la configuración de tiendas ('store_config') para que solo el dueño autenticado pueda editarla.
 -- 4. Blindar las funciones RPC (KPIs financieros, control de stock y cambio de etapas).
--- 5. Garantizar aislamiento estricto: Ningún dueño puede ver o manipular datos de otro dueño.
+-- 5. Compatibilidad total de tipos (Casting universal ::text para evitar 'operator does not exist: uuid = text').
 -- ==============================================================================
+
+-- 0. GARANTIZAR COLUMNAS CLAVE MULTI-TENANT (Evita fallos por columnas ausentes)
+ALTER TABLE IF EXISTS public.store_config ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
+ALTER TABLE IF EXISTS public.store_config ADD COLUMN IF NOT EXISTS owner_id UUID;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS owner_id UUID;
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
+ALTER TABLE IF EXISTS public.products ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
+ALTER TABLE IF EXISTS public.product_requests ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
 
 -- 1. HABILITAR ROW LEVEL SECURITY (RLS) EN TODAS LAS TABLAS DEL SISTEMA
 ALTER TABLE IF EXISTS public.store_config ENABLE ROW LEVEL SECURITY;
@@ -18,8 +26,8 @@ ALTER TABLE IF EXISTS public.product_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.customer_profile ENABLE ROW LEVEL SECURITY;
 
 -- Limpieza de posibles registros residuales de auditoría/pruebas
-DELETE FROM public.orders WHERE id LIKE 'TEST-%';
-DELETE FROM public.products WHERE id LIKE 'fake-%';
+DELETE FROM public.orders WHERE id::text LIKE 'TEST-%';
+DELETE FROM public.products WHERE id::text LIKE 'fake-%';
 
 -- 2. PURGA TOTAL DE POLÍTICAS PREVIAS (Elimina políticas obsoletas o demasiado permisivas)
 DO $$
@@ -43,13 +51,13 @@ ON public.store_config
 FOR SELECT 
 USING (true);
 
--- B) Registro de Tienda: Solo usuarios autenticados y sellando su propio owner_id
+-- B) Registro de Tienda: Solo usuarios autenticados sellando su propio owner_id
 CREATE POLICY "store_config_owner_insert" 
 ON public.store_config 
 FOR INSERT 
 WITH CHECK (
   auth.role() = 'authenticated' 
-  AND (owner_id = auth.uid() OR owner_id IS NULL)
+  AND (owner_id::text = auth.uid()::text OR owner_id IS NULL)
 );
 
 -- C) Modificación de Tienda: Estrictamente el dueño legítimo (auth.uid() = owner_id)
@@ -57,10 +65,10 @@ CREATE POLICY "store_config_owner_update"
 ON public.store_config 
 FOR UPDATE 
 USING (
-  auth.role() = 'authenticated' AND auth.uid() = owner_id
+  auth.role() = 'authenticated' AND auth.uid()::text = owner_id::text
 ) 
 WITH CHECK (
-  auth.role() = 'authenticated' AND auth.uid() = owner_id
+  auth.role() = 'authenticated' AND auth.uid()::text = owner_id::text
 );
 
 -- D) Eliminación de Tienda: Estrictamente el dueño legítimo
@@ -68,7 +76,7 @@ CREATE POLICY "store_config_owner_delete"
 ON public.store_config 
 FOR DELETE 
 USING (
-  auth.role() = 'authenticated' AND auth.uid() = owner_id
+  auth.role() = 'authenticated' AND auth.uid()::text = owner_id::text
 );
 
 
@@ -85,10 +93,10 @@ ON public.products
 FOR INSERT 
 WITH CHECK (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = products.tenant_id OR sc.tenant_id = products.tenant_id
+    WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text
   )
 );
 
@@ -98,18 +106,18 @@ ON public.products
 FOR UPDATE 
 USING (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = products.tenant_id OR sc.tenant_id = products.tenant_id
+    WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text
   )
 )
 WITH CHECK (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = products.tenant_id OR sc.tenant_id = products.tenant_id
+    WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text
   )
 );
 
@@ -119,10 +127,10 @@ ON public.products
 FOR DELETE 
 USING (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = products.tenant_id OR sc.tenant_id = products.tenant_id
+    WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text
   )
 );
 
@@ -145,18 +153,18 @@ USING (
   (
     auth.role() = 'authenticated' 
     AND (
-      auth.uid() = owner_id 
-      OR auth.uid() IN (
-        SELECT sc.owner_id 
+      auth.uid()::text = owner_id::text 
+      OR auth.uid()::text IN (
+        SELECT sc.owner_id::text 
         FROM public.store_config sc 
-        WHERE sc.id = orders.tenant_id OR sc.tenant_id = orders.tenant_id
+        WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text
       )
     )
   )
   OR
   (
     auth.role() = 'anon' 
-    AND id = current_setting('request.headers', true)::json->>'x-order-id'
+    AND id::text = (COALESCE(NULLIF(current_setting('request.headers', true), ''), '{}')::json->>'x-order-id')::text
   )
 );
 
@@ -167,22 +175,22 @@ FOR UPDATE
 USING (
   auth.role() = 'authenticated' 
   AND (
-    auth.uid() = owner_id 
-    OR auth.uid() IN (
-      SELECT sc.owner_id 
+    auth.uid()::text = owner_id::text 
+    OR auth.uid()::text IN (
+      SELECT sc.owner_id::text 
       FROM public.store_config sc 
-      WHERE sc.id = orders.tenant_id OR sc.tenant_id = orders.tenant_id
+      WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text
     )
   )
 ) 
 WITH CHECK (
   auth.role() = 'authenticated' 
   AND (
-    auth.uid() = owner_id 
-    OR auth.uid() IN (
-      SELECT sc.owner_id 
+    auth.uid()::text = owner_id::text 
+    OR auth.uid()::text IN (
+      SELECT sc.owner_id::text 
       FROM public.store_config sc 
-      WHERE sc.id = orders.tenant_id OR sc.tenant_id = orders.tenant_id
+      WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text
     )
   )
 );
@@ -194,11 +202,11 @@ FOR DELETE
 USING (
   auth.role() = 'authenticated' 
   AND (
-    auth.uid() = owner_id 
-    OR auth.uid() IN (
-      SELECT sc.owner_id 
+    auth.uid()::text = owner_id::text 
+    OR auth.uid()::text IN (
+      SELECT sc.owner_id::text 
       FROM public.store_config sc 
-      WHERE sc.id = orders.tenant_id OR sc.tenant_id = orders.tenant_id
+      WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text
     )
   )
 );
@@ -220,10 +228,10 @@ ON public.product_requests
 FOR UPDATE 
 USING (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = product_requests.tenant_id OR sc.tenant_id = product_requests.tenant_id
+    WHERE sc.id::text = product_requests.tenant_id::text OR sc.tenant_id::text = product_requests.tenant_id::text
   )
 );
 
@@ -232,10 +240,10 @@ ON public.product_requests
 FOR DELETE 
 USING (
   auth.role() = 'authenticated' 
-  AND auth.uid() IN (
-    SELECT sc.owner_id 
+  AND auth.uid()::text IN (
+    SELECT sc.owner_id::text 
     FROM public.store_config sc 
-    WHERE sc.id = product_requests.tenant_id OR sc.tenant_id = product_requests.tenant_id
+    WHERE sc.id::text = product_requests.tenant_id::text OR sc.tenant_id::text = product_requests.tenant_id::text
   )
 );
 
@@ -245,10 +253,10 @@ CREATE POLICY "customer_profile_self_manage"
 ON public.customer_profile 
 FOR ALL 
 USING (
-  auth.role() = 'authenticated' AND auth.uid() = id
+  auth.role() = 'authenticated' AND auth.uid()::text = id::text
 ) 
 WITH CHECK (
-  auth.role() = 'authenticated' AND auth.uid() = id
+  auth.role() = 'authenticated' AND auth.uid()::text = id::text
 );
 
 
@@ -265,9 +273,9 @@ BEGIN
 
   -- Auto-asignar el owner_id de la tienda según el tenant_id
   IF NEW.owner_id IS NULL AND NEW.tenant_id IS NOT NULL THEN
-    SELECT owner_id INTO v_owner_id 
-    FROM public.store_config 
-    WHERE id = NEW.tenant_id OR tenant_id = NEW.tenant_id
+    SELECT sc.owner_id INTO v_owner_id 
+    FROM public.store_config sc 
+    WHERE sc.id::text = NEW.tenant_id::text OR sc.tenant_id::text = NEW.tenant_id::text
     LIMIT 1;
 
     IF v_owner_id IS NOT NULL THEN
@@ -295,7 +303,7 @@ DECLARE
   v_order public.orders%ROWTYPE;
   v_is_owner BOOLEAN := false;
 BEGIN
-  SELECT * INTO v_order FROM public.orders WHERE id = p_order_id;
+  SELECT * INTO v_order FROM public.orders WHERE id::text = p_order_id::text;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Pedido no encontrado.';
   END IF;
@@ -303,18 +311,18 @@ BEGIN
   -- Comprobar que el usuario autenticado sea el dueño de la tienda
   SELECT EXISTS (
     SELECT 1 FROM public.store_config sc 
-    WHERE (sc.id = v_order.tenant_id OR sc.tenant_id = v_order.tenant_id)
-      AND sc.owner_id = auth.uid()
+    WHERE (sc.id::text = v_order.tenant_id::text OR sc.tenant_id::text = v_order.tenant_id::text)
+      AND sc.owner_id::text = auth.uid()::text
   ) INTO v_is_owner;
 
-  IF NOT v_is_owner AND auth.uid() != v_order.owner_id THEN
+  IF NOT v_is_owner AND auth.uid()::text != v_order.owner_id::text THEN
     RAISE EXCEPTION 'Acceso denegado: Solo el dueño de la tienda puede cambiar el estado de este pedido.';
   END IF;
 
   UPDATE public.orders
   SET status = p_new_status,
       updated_at = NOW()
-  WHERE id = p_order_id
+  WHERE id::text = p_order_id::text
   RETURNING * INTO v_order;
 
   RETURN to_jsonb(v_order);
@@ -338,8 +346,8 @@ BEGIN
   -- Validar autorización
   SELECT EXISTS (
     SELECT 1 FROM public.store_config sc 
-    WHERE (sc.id = p_tenant_id OR sc.tenant_id = p_tenant_id)
-      AND sc.owner_id = auth.uid()
+    WHERE (sc.id::text = p_tenant_id::text OR sc.tenant_id::text = p_tenant_id::text)
+      AND sc.owner_id::text = auth.uid()::text
   ) INTO v_is_owner;
 
   IF NOT v_is_owner THEN
@@ -352,7 +360,7 @@ BEGIN
     COUNT(*)
   INTO v_total_sales, v_order_count
   FROM public.orders
-  WHERE tenant_id = p_tenant_id
+  WHERE tenant_id::text = p_tenant_id::text
     AND status != 'cancelled'
     AND created_at >= v_today_start;
 
@@ -364,14 +372,14 @@ BEGIN
     COUNT(*) FILTER (WHERE status = 'on_the_way')
   INTO v_active_count, v_pending_count, v_preparing_count, v_shipping_count
   FROM public.orders
-  WHERE tenant_id = p_tenant_id
+  WHERE tenant_id::text = p_tenant_id::text
     AND status IN ('pending', 'preparing', 'on_the_way');
 
   -- Productos en stock crítico
   SELECT COUNT(*)
   INTO v_low_stock_count
   FROM public.products
-  WHERE tenant_id = p_tenant_id
+  WHERE tenant_id::text = p_tenant_id::text
     AND stock <= COALESCE(min_stock, 5);
 
   RETURN jsonb_build_object(
@@ -395,15 +403,15 @@ DECLARE
   v_is_owner BOOLEAN := false;
   new_stock INT;
 BEGIN
-  SELECT tenant_id INTO v_tenant_id FROM public.products WHERE id = product_id;
+  SELECT tenant_id::text INTO v_tenant_id FROM public.products WHERE id::text = product_id::text;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Producto no encontrado.';
   END IF;
 
   SELECT EXISTS (
     SELECT 1 FROM public.store_config sc 
-    WHERE (sc.id = v_tenant_id OR sc.tenant_id = v_tenant_id)
-      AND sc.owner_id = auth.uid()
+    WHERE (sc.id::text = v_tenant_id::text OR sc.tenant_id::text = v_tenant_id::text)
+      AND sc.owner_id::text = auth.uid()::text
   ) INTO v_is_owner;
 
   IF NOT v_is_owner THEN
@@ -413,7 +421,7 @@ BEGIN
   UPDATE public.products
   SET stock = GREATEST(0, stock + delta),
       updated_at = NOW()
-  WHERE id = product_id
+  WHERE id::text = product_id::text
   RETURNING stock INTO new_stock;
 
   RETURN new_stock;
