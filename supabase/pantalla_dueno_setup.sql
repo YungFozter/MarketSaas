@@ -37,9 +37,7 @@ CREATE TABLE IF NOT EXISTS public.store_config (
   categories JSONB NOT NULL DEFAULT '[
     "Lácteos & Huevos", "Panadería & Desayuno", "Abarrotes", "Frutas & Verduras", "Bebidas & Licores", "Snacks & Golosinas", "Limpieza & Hogar"
   ]'::jsonb,
-  coupons JSONB NOT NULL DEFAULT '[
-    {"id": "coup-1", "code": "VECINO10", "discount": 10.00, "minSubtotal": 50.00, "description": "Descuento 10 Bs. para vecinos en compras mayores a 50 Bs."}
-  ]'::jsonb,
+  coupons JSONB NOT NULL DEFAULT '[]'::jsonb,
   payment_methods JSONB NOT NULL DEFAULT '[
     {"id": "cash", "name": "Efectivo contra entrega", "desc": "Indica con cuánto pagarás para tu vuelto", "enabled": true},
     {"id": "qr", "name": "Transferencia / QR Digital", "desc": "Simple QR Banco de Preferencia", "enabled": true},
@@ -124,6 +122,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS points_earned INT DEFAULT 0;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS cash_change_for NUMERIC;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS couponCode TEXT;
 
 -- 5. TABLA: PETICIONES DE VECINOS (product_requests - Buzón de Vecinos)
 CREATE TABLE IF NOT EXISTS public.product_requests (

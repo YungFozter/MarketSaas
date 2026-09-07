@@ -172,7 +172,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         `📱 *Teléfono:* ${customerPhone}\n` +
         `📍 *Ubicación:* ${condoName} - ${tower} (${apartment})\n` +
         `🛵 *Tipo:* ${effectiveDeliveryType === 'delivery' ? 'Delivery a puerta' : 'Retiro en tienda'}\n` +
-        `💳 *Pago:* ${paymentMethod === 'cash' ? `Efectivo (Vuelto para ${currency}${cashAmount})` : paymentMethod === 'qr' ? 'Transferencia / QR' : 'Tarjeta (POS)'}\n\n` +
+        `💳 *Pago:* ${paymentMethod === 'cash' ? `Efectivo (Vuelto para ${currency}${cashAmount})` : paymentMethod === 'qr' ? 'Transferencia / QR' : 'Tarjeta (POS)'}\n` +
+        (newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* ${newOrder.couponCode || 'Descuento'} (-${currency}${newOrder.discount.toFixed(2)})\n` : '') +
+        `\n` +
         `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
         `💰 *TOTAL A PAGAR:* ${currency}${newOrder.total.toFixed(2)}`;
       

@@ -66,6 +66,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
 );
 
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS couponCode TEXT;
 
 -- 4. Tabla de Solicitudes de Productos ("Pídelo si no está")
 CREATE TABLE IF NOT EXISTS public.product_requests (

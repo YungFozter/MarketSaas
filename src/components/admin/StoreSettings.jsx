@@ -22,7 +22,8 @@ import {
   Map,
   Sparkles,
   X,
-  Check
+  Check,
+  RotateCcw
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -234,7 +235,11 @@ export const StoreSettings = () => {
       id: `coup-${Date.now()}`,
       code: cleanCode,
       discount: discountVal,
-      description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}`
+      description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}`,
+      isUsed: false,
+      usedCount: 0,
+      maxUses: 1, // REGLA: Cada cupón es de 1 solo uso
+      createdAt: new Date().toISOString()
     };
     const updatedCoupons = [...(form.coupons || []).filter(c => c.code !== 'VECINO10'), newCoupon];
     setForm(prev => ({
@@ -247,14 +252,16 @@ export const StoreSettings = () => {
     }));
     setNewCouponCode('');
     setNewCouponDiscount('10.00');
-    showToast(`Cupón "${newCoupon.code}" creado y guardado con éxito.`, 'success');
+    showToast(`Cupón "${newCoupon.code}" creado y guardado (Válido para 1 solo uso).`, 'success');
   };
 
   const handleStartEditCoupon = (coupon) => {
     setEditingCoupon({
       id: coupon.id,
       code: coupon.code,
-      discount: coupon.discount
+      discount: coupon.discount,
+      isUsed: !!coupon.isUsed,
+      usedInOrder: coupon.usedInOrder || null
     });
   };
 
@@ -268,7 +275,15 @@ export const StoreSettings = () => {
     const cleanCode = editingCoupon.code.toUpperCase().trim();
     const updatedCoupons = (form.coupons || []).map(c => 
       c.id === editingCoupon.id 
-        ? { ...c, code: cleanCode, discount: discountVal, description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}` }
+        ? { 
+            ...c, 
+            code: cleanCode, 
+            discount: discountVal, 
+            description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}`,
+            isUsed: editingCoupon.isUsed,
+            usedCount: editingCoupon.isUsed ? (c.usedCount || 1) : 0,
+            usedInOrder: editingCoupon.isUsed ? c.usedInOrder : null
+          }
         : c
     );
     setForm(prev => ({
@@ -281,6 +296,26 @@ export const StoreSettings = () => {
     }));
     setEditingCoupon(null);
     showToast('Cupón actualizado y guardado correctamente.', 'success');
+  };
+
+  const handleToggleCouponUsed = (couponId) => {
+    const target = (form.coupons || []).find(c => c.id === couponId);
+    if (!target) return;
+    const willBeUsed = !target.isUsed;
+    const updatedCoupons = (form.coupons || []).map(c => 
+      c.id === couponId 
+        ? { 
+            ...c, 
+            isUsed: willBeUsed, 
+            usedCount: willBeUsed ? 1 : 0, 
+            usedInOrder: willBeUsed ? (c.usedInOrder || 'MANUAL') : null,
+            usedAt: willBeUsed ? (c.usedAt || new Date().toISOString()) : null
+          }
+        : c
+    );
+    setForm(prev => ({ ...prev, coupons: updatedCoupons }));
+    setStoreConfig(prev => ({ ...prev, coupons: updatedCoupons }));
+    showToast(willBeUsed ? `Cupón "${target.code}" marcado como CANJEADO/USADO.` : `Cupón "${target.code}" reactivado para 1 nuevo uso.`, 'info');
   };
 
   const handleRemoveCoupon = (id) => {
@@ -830,6 +865,24 @@ export const StoreSettings = () => {
                   className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
                 />
               </div>
+
+              <div className="sm:col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-white border border-emerald-200">
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Disponibilidad del Cupón (1 solo uso):</span>
+                  <span className="text-[10px] text-slate-500">
+                    {editingCoupon.isUsed ? 'Figura como ya utilizado/canjeado por un cliente.' : 'Listo y disponible para ser canjeado 1 sola vez.'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingCoupon(prev => ({ ...prev, isUsed: !prev.isUsed }))}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                    editingCoupon.isUsed ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  }`}
+                >
+                  {editingCoupon.isUsed ? '✓ CANJEADO / USADO' : '● DISPONIBLE (1 USO)'}
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
@@ -859,56 +912,102 @@ export const StoreSettings = () => {
               No tienes cupones de descuento activos actualmente.
             </p>
           ) : (
-            (form.coupons || []).map((c) => (
-              <div 
-                key={c.id} 
-                className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 text-xs transition-all hover:bg-amber-50"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-black text-amber-950 font-mono tracking-wider text-sm bg-white px-3 py-1 rounded-xl border border-amber-200 shadow-2xs">
-                    {c.code}
-                  </span>
-                  <div>
-                    <span className="font-bold text-slate-800 text-xs block">
-                      {c.description || `Descuento directo de Bs. ${parseFloat(c.discount || 0).toFixed(2)}`}
+            (form.coupons || []).map((c) => {
+              const isUsed = !!c.isUsed || (c.usedCount && c.usedCount >= (c.maxUses || 1));
+              return (
+                <div 
+                  key={c.id} 
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border text-xs transition-all gap-3 ${
+                    isUsed 
+                      ? 'bg-slate-100/80 border-slate-200/90 text-slate-500' 
+                      : 'bg-amber-50/50 border-amber-200/80 text-slate-800 hover:bg-amber-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`font-black font-mono tracking-wider text-sm px-3 py-1 rounded-xl border shadow-2xs ${
+                      isUsed 
+                        ? 'bg-slate-200/90 text-slate-500 border-slate-300 line-through' 
+                        : 'bg-white text-amber-950 border-amber-200'
+                    }`}>
+                      {c.code}
                     </span>
-                    <span className="text-[11px] font-black text-emerald-700">
-                      Ahorro al cliente: -Bs. {parseFloat(c.discount || 0).toFixed(2)}
-                    </span>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`font-bold text-xs ${isUsed ? 'text-slate-600 line-through' : 'text-slate-800'}`}>
+                          {c.description || `Descuento directo de Bs. ${parseFloat(c.discount || 0).toFixed(2)}`}
+                        </span>
+                        {isUsed ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px]">
+                            ✓ CANJEADO / USADO {c.usedInOrder ? `(${c.usedInOrder})` : ''}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                            ● DISPONIBLE (1 solo uso)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] mt-0.5">
+                        <span className={isUsed ? 'text-slate-400 font-medium' : 'font-black text-emerald-700'}>
+                          Ahorro al cliente: -Bs. {parseFloat(c.discount || 0).toFixed(2)}
+                        </span>
+                        {c.usedAt && (
+                          <span className="text-slate-400 text-[10px]">
+                            • Usado el: {new Date(c.usedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 self-end sm:self-center">
+                    {/* Botón para Reactivar o Marcar Usado */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCouponUsed(c.id)}
+                      className={`p-2 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 ${
+                        isUsed 
+                          ? 'text-emerald-700 hover:bg-emerald-100 bg-emerald-50' 
+                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                      }`}
+                      title={isUsed ? 'Reactivar cupón para 1 nuevo uso' : 'Marcar manualmente como usado'}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">{isUsed ? 'Reactivar' : 'Marcar usado'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStartEditCoupon(c)}
+                      className="p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                      title="Editar código y monto"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCoupon(c.id)}
+                      className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
+                      title="Eliminar cupón"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleStartEditCoupon(c)}
-                    className="p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
-                    title="Editar código y monto"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveCoupon(c.id)}
-                    className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Eliminar cupón"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
         {/* Formulario para Crear Nuevo Cupón */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <p className="text-xs font-bold text-slate-800">Crear Nuevo Cupón de Descuento:</p>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Crear Nuevo Cupón de Descuento:</p>
+              <p className="text-[11px] text-slate-500">Por seguridad cada cupón es de <strong>1 solo uso</strong>. Al completarse un pedido se marcará automáticamente como CANJEADO.</p>
+            </div>
             <button
               type="button"
               onClick={handleGenerateCouponCode}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300/80 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300/80 transition-colors cursor-pointer shrink-0"
               title="Generar automáticamente un código al azar"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />

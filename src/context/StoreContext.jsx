@@ -908,6 +908,8 @@ export const StoreProvider = ({ children }) => {
       subtotal: cartSubtotal,
       deliveryFee: orderData.deliveryType === 'delivery' ? actualDeliveryFee : 0,
       discount: discountAmount,
+      couponCode: appliedCoupon ? appliedCoupon.code : null,
+      coupon_code: appliedCoupon ? appliedCoupon.code : null,
       total: orderData.deliveryType === 'delivery' ? cartTotal : Math.max(0, cartSubtotal - discountAmount),
       deliveryType: orderData.deliveryType, // 'delivery' | 'pickup'
       paymentMethod: orderData.paymentMethod,
@@ -930,6 +932,32 @@ export const StoreProvider = ({ children }) => {
 
     // Sumar puntos al cliente
     setVeciPoints(prev => prev + earnedPoints);
+
+    // Si se aplicó un cupón, marcarlo como USADO (1 solo uso) y persistir
+    if (appliedCoupon && appliedCoupon.code) {
+      const codeUpper = appliedCoupon.code.toUpperCase();
+      const currentCoupons = storeConfig?.coupons || [];
+      const hasCoupon = currentCoupons.some(c => c.code.toUpperCase() === codeUpper);
+      if (hasCoupon) {
+        const updatedCoupons = currentCoupons.map(c => {
+          if (c.code.toUpperCase() === codeUpper) {
+            return {
+              ...c,
+              isUsed: true,
+              usedCount: (c.usedCount || 0) + 1,
+              usedInOrder: orderId,
+              usedAt: new Date().toISOString()
+            };
+          }
+          return c;
+        });
+        setStoreConfig(prev => ({
+          ...prev,
+          coupons: updatedCoupons
+        }));
+      }
+      setAppliedCoupon(null);
+    }
 
     // Agregar a la lista de pedidos y persistir en Supabase
     setOrders(prev => [newOrder, ...prev]);
@@ -1156,14 +1184,21 @@ export const StoreProvider = ({ children }) => {
       showToast('El cupón ingresado no es válido o no existe en esta tienda.', 'error');
       return false;
     }
+    // REGLA: Cada cupón sólo se puede usar 1 sola vez
+    const isAlreadyUsed = !!available.isUsed || (available.usedCount && available.usedCount >= (available.maxUses || 1));
+    if (isAlreadyUsed) {
+      showToast(`El cupón "${available.code}" ya fue utilizado y no puede volver a usarse (es válido para 1 solo uso).`, 'error');
+      return false;
+    }
     const currency = storeConfig.currencySymbol || 'Bs.';
     setAppliedCoupon({
+      id: available.id,
       code: available.code,
       discount: parseFloat(available.discount || 0),
       description: available.description || `Descuento de ${currency} ${parseFloat(available.discount || 0).toFixed(2)}`
     });
     triggerConfetti();
-    showToast(`¡Cupón "${available.code}" aplicado con éxito!`, 'success');
+    showToast(`¡Cupón "${available.code}" aplicado con éxito! (-${currency} ${parseFloat(available.discount || 0).toFixed(2)})`, 'success');
     return true;
   };
 
