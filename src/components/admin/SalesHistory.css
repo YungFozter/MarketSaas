@@ -1,0 +1,12 @@
+/* ==========================================================================
+   SalesHistory.css - Estilos específicos para el Historial de Ventas
+   ========================================================================== */
+
+.sales-history-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sales-table-row:hover {
+  background-color: rgba(241, 245, 249, 0.7);
+}

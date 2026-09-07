@@ -47,6 +47,7 @@ import {
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
+import { SalesHistory } from './SalesHistory';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { useStore } from '../../context/StoreContext';
@@ -464,6 +465,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const navItems = [
     { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
     { id: 'pos', label: 'Terminal POS', icon: Store },
+    { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
@@ -811,7 +813,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   <div className="mt-3 flex items-center justify-between gap-2">
                     <span className="text-xs text-slate-500 font-medium">{validOrders.length} cobrados</span>
                     <button
-                      onClick={() => setIsCashCloseModalOpen(true)}
+                      onClick={() => setActiveTab('sales')}
                       className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
                     >
                       Ver Ventas →
@@ -1316,7 +1318,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
-          {/* TAB 3: INVENTARIO */}
+          {/* TAB 3: HISTORIAL DE VENTAS */}
+          {activeTab === 'sales' && (
+            <div className="animate-fadeIn">
+              <SalesHistory />
+            </div>
+          )}
+
+          {/* TAB 4: INVENTARIO */}
           {activeTab === 'inventory' && (
             <div className="animate-fadeIn">
               <InventoryManager />
