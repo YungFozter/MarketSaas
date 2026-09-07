@@ -125,6 +125,7 @@ export const InventoryManager = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleFileSelected = async (e) => {
     const file = e.target.files?.[0];
@@ -134,6 +135,7 @@ export const InventoryManager = () => {
       const result = await parseProductExcel(file);
       setImportPreview(result);
     } catch (err) {
+      console.error('Error al procesar el archivo Excel:', err);
       showToast(err.message || 'Error al procesar el archivo Excel.', 'error');
     } finally {
       setIsProcessingFile(false);
@@ -144,11 +146,15 @@ export const InventoryManager = () => {
   const handleConfirmImport = async () => {
     if (!importPreview?.validProducts || importPreview.validProducts.length === 0) return;
     try {
+      setIsImporting(true);
       await importProductsBatch(importPreview.validProducts);
       setIsImportModalOpen(false);
       setImportPreview(null);
     } catch (err) {
-      showToast('Error al importar productos.', 'error');
+      console.error('Error al confirmar importación de productos:', err);
+      showToast(err?.message || 'Error al importar productos.', 'error');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -945,12 +951,21 @@ export const InventoryManager = () => {
 
                 <button
                   type="button"
-                  disabled={!importPreview || importPreview.validProducts.length === 0 || isProcessingFile}
+                  disabled={!importPreview || importPreview.validProducts.length === 0 || isProcessingFile || isImporting}
                   onClick={handleConfirmImport}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  <Check className="w-4 h-4" />
-                  <span>Confirmar e Importar al Inventario</span>
+                  {isImporting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Importando productos...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Confirmar e Importar al Inventario</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

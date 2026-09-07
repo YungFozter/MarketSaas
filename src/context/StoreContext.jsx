@@ -1152,17 +1152,30 @@ export const StoreProvider = ({ children }) => {
 
   // Importar Lote Masivo de Productos desde Excel
   const importProductsBatch = async (productList) => {
-    if (!productList || productList.length === 0) return;
+    if (!productList || !Array.isArray(productList) || productList.length === 0) {
+      showToast('No hay productos válidos para importar.', 'warning');
+      return;
+    }
 
     let createdCount = 0;
     let updatedCount = 0;
 
+    const safeExistingProducts = Array.isArray(products) ? products.filter(Boolean) : [];
+
     const preparedProducts = productList.map((p, idx) => {
-      const existing = products.find(ep => 
-        (p.code && ep.code && String(ep.code).trim() === String(p.code).trim()) || 
-        (ep.name && ep.name.trim().toLowerCase() === p.name.trim().toLowerCase())
-      );
-      const prodId = existing ? existing.id : `${tenantSlug}-prod-${Date.now()}-${idx}`;
+      if (!p || typeof p !== 'object') return null;
+
+      const pCode = p.code != null ? String(p.code).trim() : '';
+      const pName = p.name != null ? String(p.name).trim().toLowerCase() : '';
+
+      const existing = safeExistingProducts.find(ep => {
+        if (!ep || typeof ep !== 'object') return false;
+        const epCode = ep.code != null ? String(ep.code).trim() : '';
+        const epName = ep.name != null ? String(ep.name).trim().toLowerCase() : '';
+        return (pCode && epCode && epCode === pCode) || (pName && epName && epName === pName);
+      });
+
+      const prodId = existing?.id ? existing.id : `${tenantSlug}-prod-${Date.now()}-${idx}`;
       if (existing) {
         updatedCount++;
       } else {
@@ -1175,19 +1188,21 @@ export const StoreProvider = ({ children }) => {
         tenant_id: tenantSlug,
         image: p.image || '/products/producto-sin-imagen.png'
       };
-    });
+    }).filter(Boolean);
 
     // Actualizar estado local (merge con existentes)
     setProducts(prev => {
-      const map = new Map(prev.map(p => [p.id, p]));
+      const safePrev = Array.isArray(prev) ? prev.filter(Boolean) : [];
+      const map = new Map(safePrev.map(p => [p.id, p]));
       preparedProducts.forEach(np => {
-        map.set(np.id, { ...map.get(np.id), ...np });
+        const prevItem = map.get(np.id) || {};
+        map.set(np.id, { ...prevItem, ...np });
       });
       const updatedList = Array.from(map.values());
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updatedList));
       } catch (e) {
-        console.error(e);
+        console.error('Error guardando en localStorage:', e);
       }
       return updatedList;
     });
@@ -1203,7 +1218,7 @@ export const StoreProvider = ({ children }) => {
     if (newCategories.length > 0) {
       const updatedCategories = [...currentCats, ...newCategories];
       setStoreConfig(prev => ({
-        ...prev,
+        ...(prev || {}),
         categories: updatedCategories
       }));
     }
@@ -1212,32 +1227,32 @@ export const StoreProvider = ({ children }) => {
     if (supabase) {
       try {
         const supabaseBatch = preparedProducts.map(p => ({
-          id: p.id,
+          id: String(p.id),
           tenant_id: p.tenant_id || tenantSlug,
-          name: p.name,
+          name: String(p.name || 'Sin nombre'),
           category: p.category || 'Sin definir',
-          code: p.code || '',
+          code: p.code ? String(p.code) : '',
           price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0),
           original_price: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
-          originalPrice: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
           cost_price: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
-          costPrice: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
           stock: p.stock != null ? String(p.stock) : 'Sin definir',
           min_stock: p.minStock != null ? String(p.minStock) : 'Sin definir',
-          minStock: p.minStock != null ? String(p.minStock) : 'Sin definir',
           unit: p.unit || 'Sin definir',
           image: p.image || '/products/producto-sin-imagen.png',
           description: p.description || 'Sin definir',
           badge: p.badge || '',
           is_popular: Boolean(p.isPopular),
-          isPopular: Boolean(p.isPopular),
-          is_active: true,
-          isActive: true
+          is_active: true
         }));
+
         const { error } = await supabase.from('products').upsert(supabaseBatch);
-        if (error) console.error('Error en upsert batch Supabase:', error);
+        if (error) {
+          console.error('Error en upsert batch Supabase:', error);
+          showToast(`Guardado en tu inventario local. Supabase: ${error.message}`, 'warning');
+          return;
+        }
       } catch (err) {
-        console.error('Error sincronizando lote con Supabase:', err);
+        console.error('Error de conexión al sincronizar lote con Supabase:', err);
       }
     }
 
