@@ -95,6 +95,27 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='products' AND column_name='description') THEN
     ALTER TABLE public.products ADD COLUMN description TEXT DEFAULT 'Sin definir';
   END IF;
+
+  -- Sincronizar registros existentes donde costPrice quedó en 0 pero cost_price tiene el costo real
+  BEGIN
+    UPDATE public.products 
+    SET "costPrice" = cost_price 
+    WHERE ("costPrice"::text = '0' OR "costPrice" IS NULL) 
+      AND cost_price IS NOT NULL 
+      AND cost_price::text != '0' 
+      AND cost_price::text != 'Sin definir';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
+
+  BEGIN
+    UPDATE public.products 
+    SET cost_price = "costPrice" 
+    WHERE (cost_price::text = '0' OR cost_price IS NULL) 
+      AND "costPrice" IS NOT NULL 
+      AND "costPrice"::text != '0' 
+      AND "costPrice"::text != 'Sin definir';
+  EXCEPTION WHEN OTHERS THEN NULL;
+  END;
 END $$;
 
 -- 3. FUNCIÓN RPC: DESCUENTO DE STOCK SEGURO COMPATIBLE CON VALORES NUMÉRICOS Y Sin definir

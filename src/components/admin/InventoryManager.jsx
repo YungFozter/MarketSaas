@@ -110,10 +110,23 @@ export const InventoryManager = () => {
 
   const handleOpenEdit = (product) => {
     setIsNew(false);
-    const cost = product.costPrice ?? product.cost_price;
+    const resolvedCost = (() => {
+      const candidates = [product.cost_price, product.costPrice, product.costprice];
+      for (const c of candidates) {
+        if (c !== undefined && c !== null && c !== '' && c !== 'Sin definir') {
+          const n = typeof c === 'number' ? c : parseFloat(String(c).replace(',', '.'));
+          if (!isNaN(n) && n > 0) return n;
+        }
+      }
+      for (const c of candidates) {
+        if (c === 0 || c === '0' || c === '0.00') return 0;
+      }
+      return 'Sin definir';
+    })();
     setEditingProduct({ 
       ...product,
-      costPrice: cost !== undefined ? cost : 'Sin definir'
+      costPrice: resolvedCost,
+      cost_price: resolvedCost
     });
   };
 
@@ -371,11 +384,22 @@ export const InventoryManager = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((prod) => {
                 const isSelected = selectedProductIds.includes(prod.id);
-                const rawCostVal = prod.costPrice ?? prod.cost_price;
-                const numCost = typeof rawCostVal === 'number' ? rawCostVal : parseFloat(rawCostVal);
-                const isNumericCost = !isNaN(numCost) && rawCostVal !== 'Sin definir' && rawCostVal !== null && rawCostVal !== undefined && rawCostVal !== '';
+                const rawCostVal = (() => {
+                  const candidates = [prod.cost_price, prod.costPrice, prod.costprice];
+                  for (const c of candidates) {
+                    if (c !== undefined && c !== null && c !== '' && c !== 'Sin definir') {
+                      const n = typeof c === 'number' ? c : parseFloat(String(c).replace(',', '.'));
+                      if (!isNaN(n) && n > 0) return n;
+                    }
+                  }
+                  for (const c of candidates) {
+                    if (c === 0 || c === '0' || c === '0.00') return 0;
+                  }
+                  return 'Sin definir';
+                })();
+                const isNumericCost = typeof rawCostVal === 'number' && !isNaN(rawCostVal);
                 const costDisplay = isNumericCost 
-                  ? `${currency} ${numCost.toFixed(2)}` 
+                  ? `${currency} ${rawCostVal.toFixed(2)}` 
                   : (rawCostVal || 'Sin definir');
 
                 const isNumericStock = typeof prod.stock === 'number' && !isNaN(prod.stock);

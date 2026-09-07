@@ -491,11 +491,24 @@ export const StoreProvider = ({ children }) => {
       resolvedOriginalPrice = isNaN(parsed) ? numPrice : parsed;
     }
 
-    let rawCost = p.costPrice ?? p.cost_price ?? p.costprice;
+    const candidateCosts = [p.cost_price, p.costPrice, p.costprice];
     let resolvedCost = 'Sin definir';
-    if (rawCost !== undefined && rawCost !== null && rawCost !== '' && rawCost !== 'Sin definir') {
-      const parsed = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost).replace(',', '.').replace(/[^\d.]/g, ''));
-      resolvedCost = isNaN(parsed) ? 'Sin definir' : parsed;
+    for (const val of candidateCosts) {
+      if (val !== undefined && val !== null && val !== '' && val !== 'Sin definir') {
+        const parsed = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.').replace(/[^\d.]/g, ''));
+        if (!isNaN(parsed) && parsed > 0) {
+          resolvedCost = parsed;
+          break;
+        }
+      }
+    }
+    if (resolvedCost === 'Sin definir') {
+      for (const val of candidateCosts) {
+        if (val === 0 || val === '0' || val === '0.00') {
+          resolvedCost = 0;
+          break;
+        }
+      }
     }
 
     let rawStock = p.stock;
@@ -1226,10 +1239,26 @@ export const StoreProvider = ({ children }) => {
         createdCount++;
       }
 
+      const rawImportCost = (() => {
+        const candidates = [p.costPrice, p.cost_price];
+        for (const c of candidates) {
+          if (c !== undefined && c !== null && c !== '' && c !== 'Sin definir') {
+            const n = typeof c === 'number' ? c : parseFloat(String(c).replace(',', '.'));
+            if (!isNaN(n) && n > 0) return n;
+          }
+        }
+        for (const c of candidates) {
+          if (c === 0 || c === '0' || c === '0.00') return 0;
+        }
+        return 'Sin definir';
+      })();
+
       return {
         ...p,
         id: prodId,
         tenant_id: tenantSlug,
+        costPrice: rawImportCost,
+        cost_price: rawImportCost,
         image: p.image || '/products/producto-sin-imagen.png'
       };
     }).filter(Boolean);
@@ -1278,15 +1307,20 @@ export const StoreProvider = ({ children }) => {
           code: p.code ? String(p.code) : '',
           price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0),
           original_price: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
-          cost_price: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
+          originalPrice: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
+          cost_price: p.costPrice != null ? p.costPrice : 'Sin definir',
+          costPrice: p.costPrice != null ? p.costPrice : 'Sin definir',
           stock: p.stock != null ? String(p.stock) : 'Sin definir',
           min_stock: p.minStock != null ? String(p.minStock) : 'Sin definir',
+          minStock: p.minStock != null ? String(p.minStock) : 'Sin definir',
           unit: p.unit || 'Sin definir',
           image: p.image || '/products/producto-sin-imagen.png',
           description: p.description || 'Sin definir',
           badge: p.badge || '',
           is_popular: Boolean(p.isPopular),
-          is_active: true
+          isPopular: Boolean(p.isPopular),
+          is_active: true,
+          isActive: true
         }));
 
         const { error } = await supabase.from('products').upsert(supabaseBatch);
