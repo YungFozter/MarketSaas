@@ -317,11 +317,15 @@ export const StoreProvider = ({ children }) => {
           }));
         }
         if (Array.isArray(parsed.coupons)) {
-          parsed.coupons = parsed.coupons.filter(c => c.code !== 'VECINO10');
+          parsed.coupons = parsed.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
         } else {
           parsed.coupons = [];
         }
-        return { ...initialStoreConfig, ...parsed, coupons: parsed.coupons };
+        const cleaned = { ...initialStoreConfig, ...parsed, coupons: parsed.coupons };
+        try {
+          localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(cleaned));
+        } catch (err) {}
+        return cleaned;
       } catch (e) {
         return initialStoreConfig;
       }
@@ -333,9 +337,12 @@ export const StoreProvider = ({ children }) => {
     const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
     const { adminPassword, admin_pin, ...safeConfig } = rawUpdated;
     if (Array.isArray(safeConfig.coupons)) {
-      safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10');
+      safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     }
     setStoreConfigState(safeConfig);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(safeConfig));
+    } catch (err) {}
     if (supabase) {
       const payload = {
         id: tenantSlug,
@@ -426,8 +433,8 @@ export const StoreProvider = ({ children }) => {
         const loadedConfig = storeRecord.config || storeRecord;
         const { id, tenant_id, ...configData } = loadedConfig;
         const loadedCoupons = Array.isArray(configData.coupons)
-          ? configData.coupons.filter(c => c.code !== 'VECINO10')
-          : (Array.isArray(storeRecord.coupons) ? storeRecord.coupons.filter(c => c.code !== 'VECINO10') : []);
+          ? configData.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
+          : (Array.isArray(storeRecord.coupons) ? storeRecord.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511') : []);
         setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: storeRecord.name || configData.name }));
         setMerchantStore(storeRecord);
         setTenantSlug(storeRecord.id);
@@ -537,8 +544,8 @@ export const StoreProvider = ({ children }) => {
         const loadedConfig = data.config || data;
         const { id, tenant_id, adminPassword, admin_pin, ...configData } = loadedConfig;
         const loadedCoupons = Array.isArray(configData.coupons)
-          ? configData.coupons.filter(c => c.code !== 'VECINO10')
-          : (Array.isArray(data.coupons) ? data.coupons.filter(c => c.code !== 'VECINO10') : []);
+          ? configData.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
+          : (Array.isArray(data.coupons) ? data.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511') : []);
         setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: data.name || configData.name }));
       }
     });

@@ -93,7 +93,7 @@ export const StoreSettings = () => {
     longitude: storeConfig?.googleMapsCoordinates?.lng ?? storeConfig?.longitude ?? -63.18214,
     ...storeConfig,
     coupons: Array.isArray(storeConfig?.coupons)
-      ? storeConfig.coupons.filter(c => c.code !== 'VECINO10')
+      ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
       : [],
     address: cleanInitialAddress
   });
@@ -105,7 +105,7 @@ export const StoreSettings = () => {
         ...prev,
         ...storeConfig,
         coupons: Array.isArray(storeConfig.coupons)
-          ? storeConfig.coupons.filter(c => c.code !== 'VECINO10')
+          ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : [],
         address: (storeConfig.address && storeConfig.address !== 'Direccion según cada Tienda')
           ? storeConfig.address
@@ -187,7 +187,7 @@ export const StoreSettings = () => {
     const { adminPassword, admin_pin, ...safeConfig } = form;
     const lat = parseFloat(form.latitude) || -17.78335;
     const lng = parseFloat(form.longitude) || -63.18214;
-    const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10');
+    const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     const configToSave = {
       ...safeConfig,
       coupons: cleanCoupons,
@@ -241,7 +241,7 @@ export const StoreSettings = () => {
       maxUses: 1, // REGLA: Cada cupón es de 1 solo uso
       createdAt: new Date().toISOString()
     };
-    const updatedCoupons = [...(form.coupons || []).filter(c => c.code !== 'VECINO10'), newCoupon];
+    const updatedCoupons = [...(form.coupons || []).filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511'), newCoupon];
     setForm(prev => ({
       ...prev,
       coupons: updatedCoupons
@@ -319,7 +319,7 @@ export const StoreSettings = () => {
   };
 
   const handleRemoveCoupon = (id) => {
-    const updatedCoupons = (form.coupons || []).filter(c => c.id !== id && c.code !== 'VECINO10');
+    const updatedCoupons = (form.coupons || []).filter(c => c.id !== id && c.code !== 'VECINO10' && c.code !== 'VECI-511');
     setForm(prev => ({
       ...prev,
       coupons: updatedCoupons
