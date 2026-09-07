@@ -679,6 +679,7 @@ export const StoreProvider = ({ children }) => {
           setStores(prev => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
+              const isDeliveryActive = conf.enableDelivery === true;
               const coords = conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
                 lat: parseFloat(conf.latitude),
                 lng: parseFloat(conf.longitude)
@@ -707,12 +708,12 @@ export const StoreProvider = ({ children }) => {
                 isOpen: rs.is_open !== false && conf.isOpen !== false,
                 statusBadge: (rs.is_open !== false && conf.isOpen !== false) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
                 imageUrl: conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
-                deliveryTime: '10-20 min',
+                deliveryTime: isDeliveryActive ? (conf.deliveryTime || '10-20 min') : 'Retiro en Tienda',
                 freeDeliveryThreshold: conf.freeDeliveryThreshold || null,
-                hasFreeDelivery: !!conf.freeDeliveryThreshold,
+                hasFreeDelivery: isDeliveryActive && !!conf.freeDeliveryThreshold,
                 acceptsQr: true,
                 hasPickup: true,
-                hasFastDelivery: conf.enableDelivery !== false,
+                hasFastDelivery: isDeliveryActive,
                 pointsReward: conf.enablePoints !== false ? '+20 VeciPuntos' : null,
                 category: 'Minimarket Registrado',
                 isFeatured: true,
@@ -723,8 +724,8 @@ export const StoreProvider = ({ children }) => {
                 totalStockItems: 120,
                 perks: [
                   { id: 'p1', text: '✅ Registrada en el sistema' },
-                  { id: 'p2', text: '🛵 Delivery disponible' },
-                  { id: 'p3', text: '💳 QR Simple' }
+                  isDeliveryActive ? { id: 'p2', text: '🛵 Delivery disponible' } : { id: 'p2', text: '🛍️ Retiro en Tienda' },
+                  { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
                 ],
                 featuredProducts: [],
                 googleMapsCoordinates: coords,
@@ -787,6 +788,7 @@ export const StoreProvider = ({ children }) => {
     if (!tenantSlug || !storeConfig?.name) return;
     setStores(prev => {
       const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
+      const isDeliveryActive = storeConfig.enableDelivery === true;
       const coords = storeConfig.googleMapsCoordinates || {
         lat: parseFloat(storeConfig.latitude) || -17.78335,
         lng: parseFloat(storeConfig.longitude) || -63.18214
@@ -807,12 +809,12 @@ export const StoreProvider = ({ children }) => {
         isOpen: storeConfig.isOpen !== false,
         statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
         imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
-        deliveryTime: '10-15 min',
+        deliveryTime: isDeliveryActive ? (storeConfig.deliveryTime || '10-15 min') : 'Retiro en Tienda',
         freeDeliveryThreshold: storeConfig.freeDeliveryThreshold || null,
-        hasFreeDelivery: !!storeConfig.freeDeliveryThreshold,
+        hasFreeDelivery: isDeliveryActive && !!storeConfig.freeDeliveryThreshold,
         acceptsQr: true,
         hasPickup: true,
-        hasFastDelivery: storeConfig.enableDelivery !== false,
+        hasFastDelivery: isDeliveryActive,
         pointsReward: storeConfig.enablePoints !== false ? '+20 VeciPuntos' : null,
         category: 'Minimarket Registrado',
         isFeatured: true,
@@ -823,8 +825,8 @@ export const StoreProvider = ({ children }) => {
         totalStockItems: 100,
         perks: [
           { id: 'p1', text: '✅ Registrada en el sistema' },
-          { id: 'p2', text: '🛵 Delivery disponible' },
-          { id: 'p3', text: '💳 QR Simple' }
+          isDeliveryActive ? { id: 'p2', text: '🛵 Delivery disponible' } : { id: 'p2', text: '🛍️ Retiro en Tienda' },
+          { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
         ],
         featuredProducts: [],
         googleMapsCoordinates: coords,
