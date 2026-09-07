@@ -386,6 +386,11 @@ export const NeighborhoodMap = ({
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
   const handleGetUserLocation = () => {
+    // Si ya tenemos coordenadas GPS del usuario y el mapa está montado, centrar inmediatamente
+    if (mapInstanceRef.current && userCoordinates?.lat && userCoordinates?.lng && hasUserGps) {
+      mapInstanceRef.current.flyTo([userCoordinates.lat, userCoordinates.lng], 16, { duration: 0.8 });
+    }
+
     if (!navigator.geolocation) {
       showFeedback('Tu navegador no soporta geolocalización GPS.');
       return;
@@ -411,7 +416,7 @@ export const NeighborhoodMap = ({
 
           const userIcon = L.divIcon({
             className: 'custom-leaflet-pin-wrapper',
-            html: '<div class="user-gps-beacon"></div>',
+            html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
             iconSize: [22, 22],
             iconAnchor: [11, 11]
           });
@@ -422,6 +427,7 @@ export const NeighborhoodMap = ({
 
         setIsLocating(false);
         setIsRecentering(false);
+        setActiveLocationType('user');
         showFeedback('📍 Ubicación GPS detectada en tiempo real');
         if (onUserLocationChange) {
           onUserLocationChange(userCoords);
@@ -474,9 +480,31 @@ export const NeighborhoodMap = ({
         className={`w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`} 
       />
 
-      {/* 1.1 BOTÓN FLOTANTE RÁPIDO: TIENDAS REGISTRADAS / MI TIENDA */}
-      {registeredStores.length > 0 && (
-        <div className="absolute top-3 left-3 sm:left-4 z-30 pointer-events-auto flex items-center gap-2">
+      {/* 1.1 BOTONES FLOTANTES SUPERIORES: MI UBICACIÓN Y TIENDAS REGISTRADAS */}
+      <div className="absolute top-3 left-3 sm:left-4 z-30 pointer-events-auto flex items-center gap-2 flex-wrap">
+        {/* Botón Mi Ubicación */}
+        <button
+          type="button"
+          onClick={handleGetUserLocation}
+          disabled={isLocating}
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+            isLocating
+              ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/50 shadow-blue-600/25'
+              : hasUserGps
+                ? 'bg-white/95 hover:bg-white text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30'
+                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg'
+          }`}
+          title="Detectar mi ubicación GPS actual y centrar el mapa"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-white' : hasUserGps ? 'text-blue-600' : 'text-slate-600'}`} />
+          <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicación'}</span>
+          {hasUserGps && !isLocating && (
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          )}
+        </button>
+
+        {/* Botón Tiendas Registradas */}
+        {registeredStores.length > 0 && (
           <button
             type="button"
             onClick={() => {
@@ -501,8 +529,8 @@ export const NeighborhoodMap = ({
               {registeredStores.length}
             </span>
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 2. MENÚ DESPLEGABLE FLOTANTE: ACCESO RÁPIDO A MI UBICACIÓN Y TIENDAS FIJADAS (OCULTO POR DEFECTO) */}
       <div ref={quickMenuRef} className="absolute top-3 right-3 sm:right-4 z-30 pointer-events-auto">

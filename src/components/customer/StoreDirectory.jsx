@@ -209,21 +209,28 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   }, [filteredStores, sortBy]);
 
   // Separación para la cuadrícula Bento:
-  // Tarjeta Destacada Principal (a la izquierda): la tienda más cercana a la ubicación del usuario
-  const featuredStore = sortedStores[0] || null;
+  // Tarjeta Destacada Principal (a la izquierda): la tienda seleccionada en el mapa o la más cercana por defecto
+  const featuredStore = useMemo(() => {
+    if (selectedStoreSlug) {
+      const selected = sortedStores.find((s) => s.slug === selectedStoreSlug) ||
+                       storesWithDistance.find((s) => s.slug === selectedStoreSlug);
+      if (selected) return selected;
+    }
+    return sortedStores[0] || null;
+  }, [sortedStores, storesWithDistance, selectedStoreSlug]);
 
   // Tarjetas Secundarias con Mayor Cobertura (a la derecha):
-  // Si hay más tiendas, ordenadas por cobertura/servicio de delivery y volumen
+  // Si hay más tiendas, ordenadas por cobertura/servicio de delivery y volumen (excluyendo a la destacada)
   const coverageStores = useMemo(() => {
     if (sortedStores.length <= 1) return [];
-    const others = sortedStores.slice(1);
+    const others = sortedStores.filter((s) => s.slug !== featuredStore?.slug);
     return others.sort((a, b) => {
       // Priorizar tiendas abiertas, con delivery y mayor número de pedidos
       const scoreA = (a.isOpen ? 100 : 0) + (a.hasFastDelivery ? 50 : 0) + (a.ordersCount || 0);
       const scoreB = (b.isOpen ? 100 : 0) + (b.hasFastDelivery ? 50 : 0) + (b.ordersCount || 0);
       return scoreB - scoreA;
     });
-  }, [sortedStores]);
+  }, [sortedStores, featuredStore]);
 
   const handleStoreNavigation = (slug) => {
     if (onSelectStore) {
@@ -238,6 +245,19 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     const mapElement = document.getElementById('map-directory-container');
     if (mapElement) {
       mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // Manejar selección de tienda desde el mapa para actualizar la tarjeta destacada principal
+  const handleSelectStoreFromMap = (slug) => {
+    setSelectedStoreSlug(slug);
+    if (slug) {
+      setTimeout(() => {
+        const targetElement = document.getElementById('featured-store-target');
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
     }
   };
 
@@ -293,7 +313,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
             searchQuery={searchQuery}
             activeFilters={activeFilters}
             onToggleFilter={handleToggleFilter}
-            onSelectStore={(slug) => setSelectedStoreSlug(slug)}
+            onSelectStore={handleSelectStoreFromMap}
             onEnterStore={handleStoreNavigation}
             onUserLocationChange={handleUserLocationChange}
             userLocation={selectedLocation}
@@ -404,21 +424,40 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
             {/* TARJETA DESTACADA PRINCIPAL (8 Columnas en Desktop) */}
             {featuredStore && (
-              <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
+              <div id="featured-store-target" className="lg:col-span-7 xl:col-span-8 flex flex-col scroll-mt-6">
                 <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold">
                   <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-                    Tienda Más Cercana a Tu Ubicación
+                    {selectedStoreSlug && featuredStore.slug === selectedStoreSlug ? (
+                      <span className="flex items-center gap-1.5">
+                        <span>Tienda Seleccionada:</span>
+                        <span className="text-emerald-700 font-black">{featuredStore.name}</span>
+                      </span>
+                    ) : (
+                      'Tienda Más Cercana a Tu Ubicación'
+                    )}
                   </span>
-                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
-                    {featuredStore.distance} de ti
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {selectedStoreSlug && featuredStore.slug === selectedStoreSlug && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStoreSlug(null)}
+                        className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 underline cursor-pointer"
+                        title="Ver la tienda más cercana nuevamente"
+                      >
+                        (Ver más cercana)
+                      </button>
+                    )}
+                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+                      {featuredStore.distance} de ti
+                    </span>
+                  </div>
                 </div>
 
                 <StoreCard
                   store={featuredStore}
                   variant="featured"
-                  isNearest={true}
+                  isNearest={featuredStore.slug === sortedStores[0]?.slug}
                   onSelect={handleStoreNavigation}
                   onViewOnMap={handleViewStoreOnMap}
                 />
