@@ -19,7 +19,9 @@ export const StoreCard = ({
   variant = 'compact', // 'featured' | 'compact'
   onSelect, 
   onViewOnMap,
-  currencySymbol = 'Bs.' 
+  currencySymbol = 'Bs.',
+  badgeLabel = null,
+  isNearest = false
 }) => {
   if (!store) return null;
 
@@ -82,6 +84,11 @@ export const StoreCard = ({
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                         {store.name}
                       </h3>
+                      {(isNearest || store.isNearest) && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs">
+                          📍 Más Cercana a Ti
+                        </span>
+                      )}
                       {store.isRegisteredStore && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md border border-emerald-300 shadow-2xs">
                           <CheckCircle2 className="w-3 h-3 text-emerald-700" />
@@ -208,7 +215,11 @@ export const StoreCard = ({
               <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
                 {store.name}
               </h3>
-              {store.isRegisteredStore ? (
+              {(badgeLabel || store.badgeLabel) ? (
+                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 shrink-0">
+                  {badgeLabel || store.badgeLabel}
+                </span>
+              ) : store.isRegisteredStore ? (
                 <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
                   <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700" />
                   Registrada

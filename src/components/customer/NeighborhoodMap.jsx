@@ -48,7 +48,9 @@ export const NeighborhoodMap = ({
   onSelectStore,
   onEnterStore,
   onUserLocationChange,
-  userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
+  userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' },
+  userCoordinates = null,
+  hasUserGps = false
 }) => {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -352,6 +354,22 @@ export const NeighborhoodMap = ({
     const { lat, lng } = selectedStore.googleMapsCoordinates;
     map.flyTo([lat, lng], 16, { duration: 0.8 });
   }, [selectedStore]);
+
+  // 4.1 SINCRONIZAR MARCADOR GPS DEL USUARIO
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !userCoordinates || !hasUserGps) return;
+    if (userMarkerRef.current) {
+      map.removeLayer(userMarkerRef.current);
+    }
+    const userIcon = L.divIcon({
+      className: 'custom-leaflet-pin-wrapper',
+      html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11]
+    });
+    userMarkerRef.current = L.marker([userCoordinates.lat, userCoordinates.lng], { icon: userIcon }).addTo(map);
+  }, [userCoordinates, hasUserGps]);
 
   // Controles de Zoom
   const handleZoomIn = () => {

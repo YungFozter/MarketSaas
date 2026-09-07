@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { StoreSearchBar } from './StoreSearchBar';
 import { NeighborhoodMap } from './NeighborhoodMap';
@@ -14,7 +14,11 @@ import {
   Building2,
   SlidersHorizontal,
   ChevronDown,
-  Navigation
+  Navigation,
+  Truck,
+  Clock,
+  CreditCard,
+  RotateCcw
 } from 'lucide-react';
 import './StoreDirectory.css';
 
@@ -39,6 +43,8 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   // Estados de geolocalización del usuario
   const [userCoords, setUserCoords] = useState(DEFAULT_REFERENCE_COORDS);
   const [hasUserGps, setHasUserGps] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState('idle'); // 'idle' | 'loading' | 'granted' | 'denied'
+  const [gpsErrorMsg, setGpsErrorMsg] = useState('');
 
   // Estados de búsqueda, filtros y ordenación
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,11 +58,60 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
 
-  // Notificación de nueva ubicación GPS detectada
+  // Solicitar ubicación GPS real del usuario
+  const requestUserLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsStatus('denied');
+      setGpsErrorMsg('Tu navegador no admite geolocalización.');
+      return;
+    }
+
+    setGpsStatus('loading');
+    setGpsErrorMsg('');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          name: 'Mi Ubicación GPS'
+        };
+        setUserCoords(coords);
+        setHasUserGps(true);
+        setGpsStatus('granted');
+        setGpsErrorMsg('');
+        setSortBy('nearest');
+      },
+      (error) => {
+        console.warn('Geolocation request failed or denied:', error);
+        setGpsStatus('denied');
+        if (error.code === 1) {
+          setGpsErrorMsg('Permiso de ubicación denegado.');
+        } else if (error.code === 2) {
+          setGpsErrorMsg('Señal GPS no disponible.');
+        } else {
+          setGpsErrorMsg('Tiempo de espera agotado al obtener GPS.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  }, []);
+
+  // Solicitar automáticamente la ubicación al montar la pantalla vecino
+  useEffect(() => {
+    requestUserLocation();
+  }, [requestUserLocation]);
+
+  // Notificación de nueva ubicación GPS detectada desde el mapa
   const handleUserLocationChange = (coords) => {
     if (coords && coords.lat && coords.lng) {
       setUserCoords(coords);
       setHasUserGps(true);
+      setGpsStatus('granted');
       setSortBy('nearest');
     }
   };
@@ -156,8 +211,19 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   // Separación para la cuadrícula Bento:
   // Tarjeta Destacada Principal (a la izquierda): la tienda más cercana a la ubicación del usuario
   const featuredStore = sortedStores[0] || null;
-  // Tarjetas Secundarias (a la derecha): las siguientes tiendas más cercanas
-  const secondaryStores = sortedStores.slice(1);
+
+  // Tarjetas Secundarias con Mayor Cobertura (a la derecha):
+  // Si hay más tiendas, ordenadas por cobertura/servicio de delivery y volumen
+  const coverageStores = useMemo(() => {
+    if (sortedStores.length <= 1) return [];
+    const others = sortedStores.slice(1);
+    return others.sort((a, b) => {
+      // Priorizar tiendas abiertas, con delivery y mayor número de pedidos
+      const scoreA = (a.isOpen ? 100 : 0) + (a.hasFastDelivery ? 50 : 0) + (a.ordersCount || 0);
+      const scoreB = (b.isOpen ? 100 : 0) + (b.hasFastDelivery ? 50 : 0) + (b.ordersCount || 0);
+      return scoreB - scoreA;
+    });
+  }, [sortedStores]);
 
   const handleStoreNavigation = (slug) => {
     if (onSelectStore) {
@@ -231,13 +297,15 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
             onEnterStore={handleStoreNavigation}
             onUserLocationChange={handleUserLocationChange}
             userLocation={selectedLocation}
+            userCoordinates={userCoords}
+            hasUserGps={hasUserGps}
           />
         </div>
       </section>
 
       {/* 3. SECCIÓN DIRECTO: CUADRÍCULA MULTICOLUMNA BENTO */}
       <section id="stores-grid-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        {/* Cabecera de Conteo y Ordenación */}
+        {/* Cabecera de Conteo, Estado de GPS y Ordenación */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200">
           <div className="flex items-start sm:items-center gap-3">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping mt-1.5 sm:mt-0 shrink-0" />
@@ -245,18 +313,47 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight font-headline">
                 {sortedStores.length} {sortedStores.length === 1 ? 'tienda cercana' : 'tiendas cercanas'} a tu ubicación
               </h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                {hasUserGps ? (
-                  <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
-                    <Navigation className="w-3 h-3 text-emerald-600 inline" />
-                    Distancias calculadas con tu ubicación GPS en tiempo real
+              <div className="text-xs text-slate-500 font-medium mt-1">
+                {gpsStatus === 'loading' ? (
+                  <span className="text-blue-700 font-semibold inline-flex items-center gap-1.5 animate-pulse">
+                    <Navigation className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                    Solicitando tu ubicación para calcular distancias exactas a los minimarkets...
                   </span>
+                ) : hasUserGps ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-emerald-700 font-semibold inline-flex items-center gap-1.5">
+                      <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <Navigation className="w-3.5 h-3.5 text-emerald-600 inline" />
+                      Distancias calculadas con tu ubicación GPS en tiempo real
+                    </span>
+                    <button
+                      type="button"
+                      onClick={requestUserLocation}
+                      className="text-[11px] text-slate-500 hover:text-emerald-700 underline font-medium cursor-pointer"
+                      title="Volver a calibrar ubicación GPS"
+                    >
+                      (Recalibrar)
+                    </button>
+                  </div>
                 ) : (
-                  <span>
-                    📍 Distancias calculadas desde Centro de Santa Cruz (pulsa <strong>"Mi Ubicación"</strong> en el mapa para usar tu GPS)
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span>
+                      📍 Distancias calculadas desde Centro de Santa Cruz
+                    </span>
+                    <button
+                      type="button"
+                      onClick={requestUserLocation}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs cursor-pointer transition-all active:scale-95"
+                    >
+                      <Navigation className="w-3 h-3" />
+                      <span>Usar mi ubicación GPS</span>
+                    </button>
+                  </div>
                 )}
-              </p>
+              </div>
             </div>
           </div>
 
@@ -305,51 +402,136 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
-            {/* TARJETA DESTACADA HORIZONTAL (8 Columnas en Desktop) */}
+            {/* TARJETA DESTACADA PRINCIPAL (8 Columnas en Desktop) */}
             {featuredStore && (
-              <div className="lg:col-span-8 flex flex-col">
+              <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
+                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold">
+                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+                    Tienda Más Cercana a Tu Ubicación
+                  </span>
+                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+                    {featuredStore.distance} de ti
+                  </span>
+                </div>
+
                 <StoreCard
                   store={featuredStore}
                   variant="featured"
+                  isNearest={true}
                   onSelect={handleStoreNavigation}
                   onViewOnMap={handleViewStoreOnMap}
                 />
               </div>
             )}
 
-            {/* COLUMNA SECUNDARIA (4 Columnas en Desktop, apiladas con scroll vertical propio) */}
-            <div className="lg:col-span-4 flex flex-col">
-              {secondaryStores.length > 3 && (
-                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold border-b border-slate-200/80">
-                  <span className="font-bold text-slate-700">
-                    Otras {secondaryStores.length} tiendas cercanas
+            {/* COLUMNA SECUNDARIA: TARJETAS COMPACTAS (MAYOR COBERTURA) (5/4 Columnas en Desktop) */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
+              <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold">
+                <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-blue-600" />
+                  Mayor Cobertura en este Sector
+                </span>
+                {coverageStores.length > 0 && (
+                  <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold">
+                    {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
                   </span>
-                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
-                    Desliza para ver más ↓
-                  </span>
-                </div>
-              )}
-
-              <div className="secondary-stores-scroller flex flex-col gap-4 max-h-[850px] overflow-y-auto pr-1.5 scroll-smooth">
-                {secondaryStores.map((store) => (
-                  <StoreCard
-                    key={store.id}
-                    store={store}
-                    variant="compact"
-                    onSelect={handleStoreNavigation}
-                    onViewOnMap={handleViewStoreOnMap}
-                  />
-                ))}
-
-                {secondaryStores.length === 0 && (
-                  <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-                    <Building2 className="w-8 h-8 text-slate-300 mb-2" />
-                    <p className="text-xs font-semibold text-slate-500">
-                      Mostrando la tienda con mayor cobertura en este sector.
-                    </p>
-                  </div>
                 )}
               </div>
+
+              {coverageStores.length > 0 ? (
+                <div className="secondary-stores-scroller flex flex-col gap-4 max-h-[850px] overflow-y-auto pr-1.5 scroll-smooth">
+                  {coverageStores.map((store) => (
+                    <StoreCard
+                      key={store.id}
+                      store={store}
+                      variant="compact"
+                      badgeLabel="🛵 Mayor Cobertura"
+                      onSelect={handleStoreNavigation}
+                      onViewOnMap={handleViewStoreOnMap}
+                    />
+                  ))}
+                </div>
+              ) : featuredStore ? (
+                /* Si actualmente sólo hay 1 tienda registrada en el sistema (ej. Minimarket Ian), esa misma tienda
+                   es la que ostenta la cobertura principal del sector. Mostramos su ficha de cobertura completa */
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 flex flex-col justify-between h-full transition-all hover:shadow-md">
+                  <div>
+                    {/* Cabecera de la ficha */}
+                    <div className="flex items-start justify-between gap-2 pb-3.5 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                          <Truck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-extrabold tracking-wider uppercase text-blue-700 block">
+                            Cobertura Activa en tu Sector
+                          </span>
+                          <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
+                            {featuredStore.name}
+                          </h4>
+                        </div>
+                      </div>
+                      <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Abierto
+                      </span>
+                    </div>
+
+                    {/* Ficha de Detalles de Cobertura */}
+                    <div className="mt-4 space-y-2.5 text-xs text-slate-600">
+                      <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-slate-800 block">Zona & Domicilios:</span>
+                          <span className="text-slate-600">
+                            {featuredStore.address || 'Cobertura completa para condominios y casas del sector'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <Clock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-slate-800 block">Tiempo de entrega promedio:</span>
+                          <span className="text-slate-600">
+                            {featuredStore.deliveryTime || '10 a 20 min'} directo a tu puerta
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <CreditCard className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-slate-800 block">Modalidades de Pago:</span>
+                          <span className="text-slate-600">
+                            Pago QR Simple directo, efectivo contra entrega y retiro en local
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Botón de acción */}
+                  <div className="mt-5 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleStoreNavigation(featuredStore.slug)}
+                      className="w-full h-11 bg-slate-900 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98"
+                    >
+                      <span>Ver Catálogo con Cobertura Directa</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
+                  <Building2 className="w-8 h-8 text-slate-300 mb-2" />
+                  <p className="text-xs font-semibold text-slate-500">
+                    No hay tiendas con cobertura en este sector en este momento.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
