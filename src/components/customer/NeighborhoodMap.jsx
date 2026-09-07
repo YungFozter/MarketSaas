@@ -17,11 +17,16 @@ import {
   X,
   Check,
   ChevronDown,
-  ArrowRight,
-  CheckCircle2
+  ArrowRight
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 import { escapeHtml } from '../../utils/formatters';
+
+// Proveedor de mapas de alta velocidad y fidelidad (CARTO Voyager & Esri Satellite)
+const CARTO_VOYAGER_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+const CARTO_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
 
 // Coordenadas fijas y precisas: Plaza Metropolitana 24 de Septiembre (Centro de la Ciudad, Santa Cruz de la Sierra)
 const DEFAULT_CITY_CENTER_COORDS = {
@@ -142,43 +147,21 @@ export const NeighborhoodMap = ({
     return activeStore ? 'store' : 'plaza';
   });
 
-  // Manejo de tiendas fijadas (Favoritas) guardadas en localStorage (máximo 3)
+  // Manejo de tiendas fijadas (Favoritas) guardadas en localStorage (máximo 3, sin auto-fijar)
   const [pinnedSlugs, setPinnedSlugs] = useState(() => {
     try {
       const saved = localStorage.getItem('marketsaas_pinned_store_slugs');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed.slice(0, 3);
         }
       }
     } catch (e) {
       console.error('Error al leer tiendas fijadas:', e);
     }
-    // Por defecto fijamos hasta las 3 primeras tiendas
-    const initialList = allStores.length > 0 ? allStores : stores;
-    return initialList.slice(0, 3).map((s) => s.slug);
+    return [];
   });
-
-  // Asegurar que la tienda registrada del dueño esté siempre presente en accesos rápidos
-  useEffect(() => {
-    if (ownerStore && !pinnedSlugs.includes(ownerStore.slug)) {
-      setPinnedSlugs((prev) => [ownerStore.slug, ...prev.filter((s) => s !== ownerStore.slug)].slice(0, 3));
-    }
-  }, [ownerStore]);
-
-  // Sincronizar pinnedSlugs por defecto si la lista de tiendas llega de forma asíncrona
-  useEffect(() => {
-    if (pinnedSlugs.length === 0 && masterStores.length > 0) {
-      const defaultPins = masterStores.slice(0, 3).map((s) => s.slug);
-      setPinnedSlugs(defaultPins);
-      try {
-        localStorage.setItem('marketsaas_pinned_store_slugs', JSON.stringify(defaultPins));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }, [masterStores, pinnedSlugs.length]);
 
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false); // Por defecto oculto
@@ -213,10 +196,6 @@ export const NeighborhoodMap = ({
     setPinnedSlugs((prev) => {
       let updated;
       if (prev.includes(storeSlug)) {
-        if (prev.length <= 1) {
-          showFeedback('Debes mantener al menos 1 tienda fijada en accesos rápidos.');
-          return prev;
-        }
         updated = prev.filter((slug) => slug !== storeSlug);
         showFeedback('Tienda retirada de tus accesos rápidos fijados.');
       } else {
@@ -236,13 +215,11 @@ export const NeighborhoodMap = ({
     });
   };
 
-  // Tiendas actualmente fijadas para los chips superiores (siempre basadas en masterStores)
+  // Tiendas actualmente fijadas para los accesos rápidos (siempre basadas en masterStores)
   const pinnedStores = useMemo(() => {
-    const list = pinnedSlugs
+    return pinnedSlugs
       .map((slug) => masterStores.find((s) => s.slug === slug))
       .filter(Boolean);
-    if (list.length > 0) return list;
-    return masterStores.slice(0, 3);
   }, [masterStores, pinnedSlugs]);
 
   // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ
@@ -259,13 +236,11 @@ export const NeighborhoodMap = ({
       attributionControl: true
     });
 
-    const streetLayer = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19
-      }
-    ).addTo(map);
+    const streetLayer = L.tileLayer(CARTO_VOYAGER_URL, {
+      attribution: CARTO_ATTRIBUTION,
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
 
     tileLayerRef.current = streetLayer;
 
@@ -294,21 +269,16 @@ export const NeighborhoodMap = ({
     }
 
     if (mapType === 'satellite') {
-      tileLayerRef.current = L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {
-          attribution: '&copy; Esri World Imagery',
-          maxZoom: 18
-        }
-      ).addTo(map);
+      tileLayerRef.current = L.tileLayer(SATELLITE_URL, {
+        attribution: SATELLITE_ATTRIBUTION,
+        maxZoom: 18
+      }).addTo(map);
     } else {
-      tileLayerRef.current = L.tileLayer(
-        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          maxZoom: 19
-        }
-      ).addTo(map);
+      tileLayerRef.current = L.tileLayer(CARTO_VOYAGER_URL, {
+        attribution: CARTO_ATTRIBUTION,
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
     }
   }, [mapType]);
 
@@ -386,11 +356,6 @@ export const NeighborhoodMap = ({
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
   const handleGetUserLocation = () => {
-    // Si ya tenemos coordenadas GPS del usuario y el mapa está montado, centrar inmediatamente
-    if (mapInstanceRef.current && userCoordinates?.lat && userCoordinates?.lng && hasUserGps) {
-      mapInstanceRef.current.flyTo([userCoordinates.lat, userCoordinates.lng], 16, { duration: 0.8 });
-    }
-
     if (!navigator.geolocation) {
       showFeedback('Tu navegador no soporta geolocalización GPS.');
       return;
@@ -422,13 +387,20 @@ export const NeighborhoodMap = ({
           });
 
           userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
-          map.flyTo([latitude, longitude], 16, { duration: 1 });
+          map.flyTo([latitude, longitude], 15, { duration: 0.8 });
+
+          // Asegurar que Leaflet recalcule dimensiones y cargue todas las teselas sin dejar mapa en blanco
+          setTimeout(() => {
+            if (mapInstanceRef.current) {
+              mapInstanceRef.current.invalidateSize();
+            }
+          }, 850);
         }
 
         setIsLocating(false);
         setIsRecentering(false);
         setActiveLocationType('user');
-        showFeedback('📍 Ubicación GPS detectada en tiempo real');
+        showFeedback('📍 Ubicación GPS detectada');
         if (onUserLocationChange) {
           onUserLocationChange(userCoords);
         }
@@ -502,34 +474,6 @@ export const NeighborhoodMap = ({
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
           )}
         </button>
-
-        {/* Botón Tiendas Registradas */}
-        {registeredStores.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              if (onToggleFilter) {
-                onToggleFilter('registeredOnly');
-              }
-            }}
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
-              activeFilters?.registeredOnly
-                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-emerald-400/50'
-                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-emerald-300 hover:shadow-lg'
-            }`}
-            title="Mostrar todas las tiendas registradas en el mapa"
-          >
-            <CheckCircle2 className={`w-3.5 h-3.5 ${activeFilters?.registeredOnly ? 'text-white' : 'text-emerald-600'}`} />
-            <span>Tiendas Registradas</span>
-            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-              activeFilters?.registeredOnly
-                ? 'bg-white/20 text-white'
-                : 'bg-emerald-100 text-emerald-800'
-            }`}>
-              {registeredStores.length}
-            </span>
-          </button>
-        )}
       </div>
 
       {/* 2. MENÚ DESPLEGABLE FLOTANTE: ACCESO RÁPIDO A MI UBICACIÓN Y TIENDAS FIJADAS (OCULTO POR DEFECTO) */}
@@ -547,7 +491,7 @@ export const NeighborhoodMap = ({
           title="Ver mi ubicación GPS y tiendas favoritas fijadas"
         >
           <Navigation className={`w-3.5 h-3.5 ${activeLocationType === 'user' ? 'text-sky-400' : 'text-emerald-600'}`} />
-          <span>Ubicaciones Rápidas</span>
+          <span>Accesos Rápidos</span>
           <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
             isQuickMenuOpen ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
           }`}>
@@ -610,64 +554,6 @@ export const NeighborhoodMap = ({
               </button>
             </div>
 
-            {/* 1.5 SECCIÓN: TIENDAS OFICIALES REGISTRADAS */}
-            {registeredStores.length > 0 && (
-              <div className="p-2 border-b border-slate-100 bg-emerald-50/40">
-                <div className="px-1.5 pb-1 flex items-center justify-between text-[11px] font-bold text-emerald-900">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    <span>Tiendas Registradas ({registeredStores.length})</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-emerald-700">Ver Pin</span>
-                </div>
-
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
-                  {registeredStores.map((store) => {
-                    const isSelected = activeStore?.slug === store.slug && activeLocationType === 'store';
-                    return (
-                      <button
-                        key={store.id}
-                        type="button"
-                        onClick={() => {
-                          handleSelectStoreTarget(store);
-                          setIsQuickMenuOpen(false);
-                          showFeedback(`📍 Mostrando ${store.name}`);
-                        }}
-                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                          isSelected
-                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs ring-1 ring-white/40'
-                            : 'bg-white hover:bg-emerald-50 text-slate-800 border-emerald-200/80 hover:border-emerald-300'
-                        }`}
-                        title={`Ver marcador de ${store.name} en el mapa`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0 pr-2">
-                          <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-                          <div className="text-left min-w-0 truncate">
-                            <div className="truncate font-bold leading-tight flex items-center gap-1">
-                              <span>{store.name}</span>
-                              {store.isCurrentOwnerStore && (
-                                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isSelected ? 'bg-white/30 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
-                                  Tu Tienda
-                                </span>
-                              )}
-                            </div>
-                            <div className={`text-[10px] truncate ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
-                              {store.address}
-                            </div>
-                          </div>
-                        </div>
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
-                          isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          📍 Pin
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* 2. SECCIÓN: TIENDAS FIJADAS */}
             <div className="p-2">
               <div className="px-1.5 pb-1.5 flex items-center justify-between text-[11px] font-bold text-slate-600">
@@ -677,37 +563,43 @@ export const NeighborhoodMap = ({
                 </div>
               </div>
 
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
-                {pinnedStores.map((s) => {
-                  const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        handleSelectStoreTarget(s);
-                        setIsQuickMenuOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
-                        isSelected
-                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs ring-1 ring-white/40'
-                          : 'bg-white hover:bg-emerald-50/60 text-slate-800 border-slate-200 hover:border-emerald-200'
-                      }`}
-                      title={`Ver ${s.name} en el mapa`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 pr-2">
-                        <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
-                        <span className="truncate text-left leading-tight font-medium">{s.name}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              {pinnedStores.length > 0 ? (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-0.5">
+                  {pinnedStores.map((s) => {
+                    const isSelected = activeStore?.slug === s.slug && activeLocationType === 'store';
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectStoreTarget(s);
+                          setIsQuickMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs ring-1 ring-white/40'
+                            : 'bg-white hover:bg-emerald-50/60 text-slate-800 border-slate-200 hover:border-emerald-200'
+                        }`}
+                        title={`Ver ${s.name} en el mapa`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
+                          <span className="truncate text-left leading-tight font-medium">{s.name}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {s.distanceMeters ? `${s.distanceMeters}m` : 'Cerca'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-3 px-2 text-center text-[11px] text-slate-400 bg-slate-50/60 rounded-xl border border-dashed border-slate-200">
+                  No tienes minimarkets fijados. Usa "Gestionar fijadas" para fijar tus favoritos.
+                </div>
+              )}
             </div>
 
             {/* 3. SECCIÓN: GESTIONAR TIENDAS FIJADAS (FIJADAS 3/3) */}
