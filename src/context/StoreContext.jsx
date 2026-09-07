@@ -112,7 +112,7 @@ export const StoreProvider = ({ children }) => {
   // Lista global de tiendas para el Directorio & Mapa Hiperlocal
   const [stores, setStores] = useState(initialStores);
   const [selectedStore, setSelectedStore] = useState(() => {
-    return initialStores.find(s => s.slug === tenantSlug) || initialStores[0];
+    return initialStores.find(s => s.slug === tenantSlug) || null;
   });
 
   const goToStore = (storeSlugOrId) => {
@@ -746,8 +746,7 @@ export const StoreProvider = ({ children }) => {
               finalStores.unshift(currentOwnerStore);
               remoteSlugs.add(currentOwnerStore.slug);
             }
-            const remaining = initialStores.filter(s => !remoteSlugs.has(s.slug));
-            return [...finalStores, ...remaining];
+            return finalStores;
           });
         }
       } catch (err) {

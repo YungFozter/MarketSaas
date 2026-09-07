@@ -342,17 +342,6 @@ export const NeighborhoodMap = ({
       marker.addTo(markersLayer);
       validLatLngs.push([coords.lat, coords.lng]);
     });
-
-    // Si no hay una tienda seleccionada específicamente, encuadrar la vista para ver todas las tiendas del mapa
-    if (!selectedStore && validLatLngs.length > 1) {
-      const bounds = L.latLngBounds(validLatLngs);
-      map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
-    } else if (!selectedStore && validLatLngs.length === 1) {
-      map.flyTo(validLatLngs[0], 15, { duration: 0.8 });
-    } else if (selectedStore?.googleMapsCoordinates) {
-      const { lat, lng } = selectedStore.googleMapsCoordinates;
-      map.flyTo([lat, lng], 16, { duration: 0.8 });
-    }
   }, [storesToPlot, selectedStore]);
 
   // 4. CENTRAR CUANDO CAMBIE LA TIENDA SELECCIONADA ESPECÍFICA
