@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Store, 
   Search, 
@@ -15,15 +15,21 @@ import {
 import { useStore } from '../../context/StoreContext';
 import './PosTerminal.css';
 
-export const PosTerminal = () => {
+export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) => {
   const { products, categories, completePosSale, showToast, storeConfig } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   const [posCart, setPosCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
-  const [paymentType, setPaymentType] = useState('cash');
+  const [paymentType, setPaymentType] = useState(initialPaymentType || 'cash');
   const [cashReceived, setCashReceived] = useState('');
+
+  useEffect(() => {
+    if (initialPaymentType) {
+      setPaymentType(initialPaymentType);
+    }
+  }, [initialPaymentType]);
 
   const filteredProducts = products.filter((p) => {
     const matchCat = selectedCat === 'all' || p.category === selectedCat;
@@ -79,6 +85,9 @@ export const PosTerminal = () => {
     completePosSale(posCart, paymentType);
     setPosCart([]);
     setCashReceived('');
+    if (onSaleCompleted) {
+      onSaleCompleted();
+    }
   };
 
   return (

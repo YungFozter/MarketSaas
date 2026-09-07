@@ -118,6 +118,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   });
   const [isCashCloseModalOpen, setIsCashCloseModalOpen] = useState(false);
+  const [quickSalePaymentType, setQuickSalePaymentType] = useState(null);
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isOpen = storeConfig?.isOpen !== false;
@@ -127,7 +128,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
-  // Desglose por método de pago para Arqueo / Cierre de Caja
+  // Desglose por método de pago para Ventas y Cierre de Caja
   const cashOrders = validOrders.filter(o => o.paymentMethod === 'cash');
   const qrOrders = validOrders.filter(o => o.paymentMethod === 'qr');
   const cardOrders = validOrders.filter(o => o.paymentMethod === 'card');
@@ -135,6 +136,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalCashSales = cashOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const totalQrSales = qrOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const totalCardSales = cardOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalSalesCount = cashOrders.length + qrOrders.length + cardOrders.length;
+  const totalDaySales = totalCashSales + totalQrSales + totalCardSales;
   const totalDeliveryCollected = validOrders
     .filter(o => o.deliveryType === 'delivery')
     .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
@@ -711,14 +714,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
           {/* Quick Action CTA Buttons */}
           <div className="flex items-center gap-2">
-            {/* Botón de Arqueo y Cierre de Caja del Día */}
+            {/* Botón de Ventas del Día */}
             <button
               onClick={() => setIsCashCloseModalOpen(true)}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Ver desglose de cobros en Efectivo, QR y POS, e imprimir arqueo"
+              title="Ver resumen de Ventas e iniciar ventas rápidas"
             >
               <Receipt className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Arqueo de Caja</span>
+              <span>Ventas</span>
             </button>
 
             <button
@@ -789,7 +792,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     <button
                       onClick={() => setIsCashCloseModalOpen(true)}
                       className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold cursor-pointer transition-colors"
-                      title="Abrir Arqueo y Cierre de Caja"
+                      title="Abrir Ventas"
                     >
                       <Receipt className="w-5 h-5" />
                     </button>
@@ -800,7 +803,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       onClick={() => setIsCashCloseModalOpen(true)}
                       className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
                     >
-                      Ver Arqueo →
+                      Ver Ventas →
                     </button>
                   </div>
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
@@ -1449,11 +1452,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       </main>
 
       {/* ========================================================================= */}
-      {/* MODAL DE ARQUEO & CIERRE DE CAJA DEL DÍA                                  */}
+      {/* MODAL DE VENTAS DEL DÍA & ACCESO A VENTAS RÁPIDAS                          */}
       {/* ========================================================================= */}
       {isCashCloseModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
             {/* Header del Modal */}
             <div className="p-6 pb-4 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1461,7 +1464,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">Arqueo & Cierre de Caja</h3>
+                  <h3 className="text-base font-extrabold text-white">Ventas</h3>
                   <p className="text-xs text-slate-300">
                     {storeConfig.name} • {new Date().toLocaleDateString()}
                   </p>
@@ -1475,60 +1478,103 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </button>
             </div>
 
-            {/* Contenido del Arqueo */}
+            {/* Contenido de Ventas */}
             <div className="p-6 space-y-4">
-              {/* Cuadrícula de Métodos de Pago */}
-              <div className="grid grid-cols-2 gap-3">
-                {/* Efectivo */}
-                <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-emerald-900 uppercase">Efectivo en Gaveta</span>
-                    <Banknote className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <p className="text-xl font-black text-emerald-950">{currency} {totalCashSales.toFixed(2)}</p>
-                  <p className="text-[10px] text-emerald-700 mt-0.5">{cashOrders.length} {cashOrders.length === 1 ? 'cobro' : 'cobros'}</p>
-                </div>
+              <p className="text-xs text-slate-500 font-medium">
+                Selecciona una opción para abrir el panel y registrar una nueva venta:
+              </p>
 
-                {/* QR Simple */}
-                <div className="p-3.5 rounded-2xl bg-cyan-50/70 border border-cyan-200/80">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-cyan-900 uppercase">QR Simple Digital</span>
-                    <QrCode className="w-4 h-4 text-cyan-600" />
+              {/* Cuadrícula de Métodos de Pago Interactivos */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Venta en Efectivo */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCashCloseModalOpen(false);
+                    setQuickSalePaymentType('cash');
+                  }}
+                  className="p-3.5 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100/90 border-2 border-emerald-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
+                  title="Abrir panel de Venta en Efectivo"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-extrabold text-emerald-900 uppercase tracking-tight">Venta en Efectivo</span>
+                      <Banknote className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className="text-xl font-black text-emerald-950">{currency} {totalCashSales.toFixed(2)}</p>
+                    <p className="text-[10px] text-emerald-700 mt-0.5 font-semibold">
+                      {cashOrders.length} {cashOrders.length === 1 ? 'venta' : 'ventas'}
+                    </p>
                   </div>
-                  <p className="text-xl font-black text-cyan-950">{currency} {totalQrSales.toFixed(2)}</p>
-                  <p className="text-[10px] text-cyan-700 mt-0.5">{qrOrders.length} {qrOrders.length === 1 ? 'cobro' : 'cobros'}</p>
-                </div>
+                  <div className="mt-3 pt-2 border-t border-emerald-200/80 flex items-center justify-between text-[11px] font-extrabold text-emerald-700 group-hover:text-emerald-950">
+                    <span>+ Iniciar Venta</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </div>
+                </button>
 
-                {/* Tarjeta POS */}
-                <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/80">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-amber-900 uppercase">Tarjeta POS Móvil</span>
-                    <CreditCard className="w-4 h-4 text-amber-600" />
+                {/* Qr Digital */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCashCloseModalOpen(false);
+                    setQuickSalePaymentType('qr');
+                  }}
+                  className="p-3.5 rounded-2xl bg-cyan-50/80 hover:bg-cyan-100/90 border-2 border-cyan-200 hover:border-cyan-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
+                  title="Abrir panel de Venta por QR"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-extrabold text-cyan-900 uppercase tracking-tight">Qr Digital</span>
+                      <QrCode className="w-4 h-4 text-cyan-600 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className="text-xl font-black text-cyan-950">{currency} {totalQrSales.toFixed(2)}</p>
+                    <p className="text-[10px] text-cyan-700 mt-0.5 font-semibold">
+                      {qrOrders.length} {qrOrders.length === 1 ? 'venta' : 'ventas'}
+                    </p>
                   </div>
-                  <p className="text-xl font-black text-amber-950">{currency} {totalCardSales.toFixed(2)}</p>
-                  <p className="text-[10px] text-amber-700 mt-0.5">{cardOrders.length} {cardOrders.length === 1 ? 'cobro' : 'cobros'}</p>
-                </div>
+                  <div className="mt-3 pt-2 border-t border-cyan-200/80 flex items-center justify-between text-[11px] font-extrabold text-cyan-700 group-hover:text-cyan-950">
+                    <span>+ Iniciar Venta</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </div>
+                </button>
 
-                {/* Flete Delivery */}
-                <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/80">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-bold text-purple-900 uppercase">Envíos / Delivery</span>
-                    <Truck className="w-4 h-4 text-purple-600" />
+                {/* Tarjeta POS Móvil */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCashCloseModalOpen(false);
+                    setQuickSalePaymentType('card');
+                  }}
+                  className="p-3.5 rounded-2xl bg-amber-50/80 hover:bg-amber-100/90 border-2 border-amber-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
+                  title="Abrir panel de Venta con Tarjeta"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-extrabold text-amber-900 uppercase tracking-tight">Tarjeta POS Móvil</span>
+                      <CreditCard className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
+                    </div>
+                    <p className="text-xl font-black text-amber-950">{currency} {totalCardSales.toFixed(2)}</p>
+                    <p className="text-[10px] text-amber-700 mt-0.5 font-semibold">
+                      {cardOrders.length} {cardOrders.length === 1 ? 'venta' : 'ventas'}
+                    </p>
                   </div>
-                  <p className="text-xl font-black text-purple-950">{currency} {totalDeliveryCollected.toFixed(2)}</p>
-                  <p className="text-[10px] text-purple-700 mt-0.5">Recaudado fletes</p>
-                </div>
+                  <div className="mt-3 pt-2 border-t border-amber-200/80 flex items-center justify-between text-[11px] font-extrabold text-amber-700 group-hover:text-amber-950">
+                    <span>+ Iniciar Venta</span>
+                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  </div>
+                </button>
               </div>
 
               {/* Total General Destacado */}
               <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between shadow-md">
                 <div>
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Ventas de la Jornada</span>
-                  <p className="text-2xl font-black text-emerald-400 tracking-tight">{currency} {totalSales.toFixed(2)}</p>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Ventas del día</span>
+                  <p className="text-2xl font-black text-emerald-400 tracking-tight">{currency} {totalDaySales.toFixed(2)}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs text-slate-300 font-bold block">{validOrders.length} pedidos</span>
-                  <span className="text-[11px] text-slate-400">Ticket prom: {currency} {averageTicket.toFixed(2)}</span>
+                  <span className="text-sm text-slate-200 font-black block">
+                    {totalSalesCount} {totalSalesCount === 1 ? 'venta' : 'ventas'}
+                  </span>
                 </div>
               </div>
 
@@ -1551,6 +1597,49 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   Cerrar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PANEL DE VENTA RÁPIDA (Lanzado al presionar opción en Ventas)             */}
+      {/* ========================================================================= */}
+      {quickSalePaymentType && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
+          <div className="relative w-full max-w-6xl max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            {/* Header del Panel de Venta Rápida */}
+            <div className="p-4 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                  <Store className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+                    <span>Panel de Venta</span>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                      {quickSalePaymentType === 'cash' ? 'Venta en Efectivo' : quickSalePaymentType === 'qr' ? 'Qr Digital' : 'Tarjeta POS Móvil'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Selecciona productos del catálogo, agrégalos al ticket y procesa la venta
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setQuickSalePaymentType(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Cerrar panel de venta"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Contenido interactivo: Terminal de Venta POS */}
+            <div className="p-3 sm:p-5 overflow-y-auto flex-1">
+              <PosTerminal 
+                initialPaymentType={quickSalePaymentType} 
+              />
             </div>
           </div>
         </div>
