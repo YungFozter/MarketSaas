@@ -1060,6 +1060,75 @@ export const StoreProvider = ({ children }) => {
     showToast('Producto eliminado del catálogo.', 'warning');
   };
 
+  // Importar Lote Masivo de Productos desde Excel
+  const importProductsBatch = async (productList) => {
+    if (!productList || productList.length === 0) return;
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    const preparedProducts = productList.map((p, idx) => {
+      const existing = products.find(ep => 
+        (p.code && ep.code && String(ep.code).trim() === String(p.code).trim()) || 
+        (ep.name && ep.name.trim().toLowerCase() === p.name.trim().toLowerCase())
+      );
+      const prodId = existing ? existing.id : (p.id || `prod-${Date.now()}-${idx}`);
+      if (existing) {
+        updatedCount++;
+      } else {
+        createdCount++;
+      }
+
+      return {
+        ...p,
+        id: prodId,
+        tenant_id: tenantSlug,
+        image: p.image || '/products/producto-sin-imagen.png'
+      };
+    });
+
+    // Actualizar estado local (merge con existentes)
+    setProducts(prev => {
+      const map = new Map(prev.map(p => [p.id, p]));
+      preparedProducts.forEach(np => {
+        map.set(np.id, { ...map.get(np.id), ...np });
+      });
+      const updatedList = Array.from(map.values());
+      try {
+        localStorage.setItem(`products_${tenantSlug}`, JSON.stringify(updatedList));
+      } catch (e) {
+        console.error(e);
+      }
+      return updatedList;
+    });
+
+    // Auto-agregar nuevas categorías si vienen en la importación
+    const importedCategories = Array.from(new Set(
+      preparedProducts
+        .map(p => p.category)
+        .filter(c => c && c !== 'Sin definir' && !categories.some(cat => cat.name === c))
+    ));
+
+    if (importedCategories.length > 0) {
+      setCategories(prev => [
+        ...prev,
+        ...importedCategories.map((c, i) => ({ id: `cat-${Date.now()}-${i}`, name: c, icon: 'Package' }))
+      ]);
+    }
+
+    // Sincronizar con Supabase si está disponible
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('products').upsert(preparedProducts);
+        if (error) console.error('Error en upsert batch Supabase:', error);
+      } catch (err) {
+        console.error('Error sincronizando lote con Supabase:', err);
+      }
+    }
+
+    showToast(`✓ Se importaron ${createdCount} productos nuevos y se actualizaron ${updatedCount}.`, 'success');
+  };
+
   // Venta en POS de Mostrador (Dueño)
   const completePosSale = (posItems, paymentType = 'cash') => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -1417,6 +1486,7 @@ export const StoreProvider = ({ children }) => {
         completePosSale,
         saveProduct,
         deleteProduct,
+        importProductsBatch,
         veciPoints,
         setVeciPoints,
         productRequests,

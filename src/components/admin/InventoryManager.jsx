@@ -13,13 +13,26 @@ import {
   Image as ImageIcon,
   Save,
   CheckCircle2,
-  Tag
+  Tag,
+  FileSpreadsheet,
+  Download,
+  UploadCloud,
+  Check
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
-  const { products, saveProduct, deleteProduct, showToast, storeConfig, setStoreConfig } = useStore();
+  const { 
+    products, 
+    saveProduct, 
+    deleteProduct, 
+    importProductsBatch,
+    showToast, 
+    storeConfig, 
+    setStoreConfig 
+  } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   const activeCategories = storeConfig?.categories && storeConfig.categories.length > 0
@@ -109,10 +122,40 @@ export const InventoryManager = () => {
     setEditingProduct(null);
   };
 
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState(null);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsProcessingFile(true);
+      const result = await parseProductExcel(file);
+      setImportPreview(result);
+    } catch (err) {
+      showToast(err.message || 'Error al procesar el archivo Excel.', 'error');
+    } finally {
+      setIsProcessingFile(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    if (!importPreview?.validProducts || importPreview.validProducts.length === 0) return;
+    try {
+      await importProductsBatch(importPreview.validProducts);
+      setIsImportModalOpen(false);
+      setImportPreview(null);
+    } catch (err) {
+      showToast('Error al importar productos.', 'error');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Package className="w-5 h-5 text-emerald-600" />
@@ -123,7 +166,32 @@ export const InventoryManager = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Botón Descargar Plantilla Oficial */}
+          <button
+            type="button"
+            onClick={downloadProductTemplate}
+            className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 shadow-2xs"
+            title="Descargar plantilla de Excel oficial para importar productos"
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">Plantilla</span> Excel
+          </button>
+
+          {/* Botón Importar Excel */}
+          <button
+            type="button"
+            onClick={() => {
+              setImportPreview(null);
+              setIsImportModalOpen(true);
+            }}
+            className="px-3.5 py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Cargar archivo Excel o CSV con tus productos"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Importar Excel</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsCategoryModalOpen(true)}
@@ -201,9 +269,18 @@ export const InventoryManager = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((prod) => {
-                const cost = prod.costPrice || prod.price * 0.7;
-                const marginPercent = ((prod.price - cost) / prod.price) * 100;
-                const isLowStock = prod.stock <= prod.minStock;
+                const isNumericCost = typeof prod.costPrice === 'number' && !isNaN(prod.costPrice);
+                const costDisplay = isNumericCost 
+                  ? `${currency} ${prod.costPrice.toFixed(2)}` 
+                  : (prod.costPrice || 'Sin definir');
+
+                const marginDisplay = isNumericCost && prod.price > 0
+                  ? `${(((prod.price - prod.costPrice) / prod.price) * 100).toFixed(0)}%`
+                  : 'Sin definir';
+
+                const isNumericStock = typeof prod.stock === 'number' && !isNaN(prod.stock);
+                const isLowStock = isNumericStock && typeof prod.minStock === 'number' && prod.stock <= prod.minStock;
+                const stockDisplay = isNumericStock ? `${prod.stock} u.` : (prod.stock || 'Sin definir');
 
                 return (
                   <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
@@ -211,55 +288,73 @@ export const InventoryManager = () => {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={prod.image}
+                          src={prod.image || '/products/producto-sin-imagen.png'}
                           alt={prod.name}
-                          className="w-10 h-10 rounded-xl object-cover bg-slate-100 shrink-0"
+                          className="w-10 h-10 rounded-xl object-contain bg-slate-50 border border-slate-100 shrink-0 p-0.5"
                         />
                         <div>
                           <p className="font-extrabold text-slate-900 leading-snug">{prod.name}</p>
-                          <p className="text-[11px] text-slate-400">{prod.unit}</p>
+                          <p className="text-[11px] text-slate-400">
+                            {prod.unit === 'Sin definir' ? <span className="italic">Sin formato</span> : prod.unit}
+                          </p>
                         </div>
                       </div>
                     </td>
 
                     {/* Categoría / SKU */}
                     <td className="py-3 px-4">
-                      <p className="font-semibold text-slate-700">{prod.category}</p>
+                      <p className={`font-semibold ${prod.category === 'Sin definir' ? 'text-amber-800 italic' : 'text-slate-700'}`}>
+                        {prod.category || 'Sin definir'}
+                      </p>
                       <p className="text-[10px] font-mono text-slate-400">{prod.code}</p>
                     </td>
 
                     {/* Costo */}
                     <td className="py-3 px-4 font-semibold text-slate-600">
-                      {currency} {cost.toFixed(2)}
+                      {isNumericCost ? (
+                        costDisplay
+                      ) : (
+                        <span className="text-slate-400 text-[11px] italic">Sin definir</span>
+                      )}
                     </td>
 
                     {/* Precio de Venta */}
                     <td className="py-3 px-4">
-                      <span className="font-black text-sm text-emerald-700">{currency} {prod.price.toFixed(2)}</span>
+                      <span className="font-black text-sm text-emerald-700">{currency} {Number(prod.price || 0).toFixed(2)}</span>
                       {prod.originalPrice > prod.price && (
                         <span className="block text-[10px] text-slate-400 line-through">
-                          {currency} {prod.originalPrice.toFixed(2)}
+                          {currency} {Number(prod.originalPrice).toFixed(2)}
                         </span>
                       )}
                     </td>
 
                     {/* Margen % */}
                     <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1 font-bold text-xs text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
-                        {marginPercent.toFixed(0)}%
-                      </span>
+                      {marginDisplay !== 'Sin definir' ? (
+                        <span className="inline-flex items-center gap-1 font-bold text-xs text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                          {marginDisplay}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[11px] italic">-</span>
+                      )}
                     </td>
 
                     {/* Stock */}
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-xl font-extrabold text-xs inline-flex items-center gap-1 ${
-                        isLowStock
-                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                          : 'bg-emerald-50 text-emerald-800'
-                      }`}>
-                        {isLowStock && <AlertTriangle className="w-3 h-3 text-rose-600" />}
-                        {prod.stock} u.
-                      </span>
+                      {isNumericStock ? (
+                        <span className={`px-2.5 py-1 rounded-xl font-extrabold text-xs inline-flex items-center gap-1 ${
+                          isLowStock
+                            ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                            : 'bg-emerald-50 text-emerald-800'
+                        }`}>
+                          {isLowStock && <AlertTriangle className="w-3 h-3 text-rose-600" />}
+                          {stockDisplay}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 font-bold text-[11px] italic">
+                          Sin definir
+                        </span>
+                      )}
                     </td>
 
                     {/* Acciones */}
@@ -334,10 +429,13 @@ export const InventoryManager = () => {
                 <div>
                   <label className="text-xs font-bold text-slate-700 block mb-1">Categoría</label>
                   <select
-                    value={editingProduct.category}
+                    value={editingProduct.category || 'Sin definir'}
                     onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
                   >
+                    {!activeCategories.includes(editingProduct.category) && editingProduct.category && (
+                      <option value={editingProduct.category}>{editingProduct.category}</option>
+                    )}
                     {activeCategories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -366,8 +464,12 @@ export const InventoryManager = () => {
                     <input
                       type="number"
                       step="0.10"
-                      value={editingProduct.costPrice || 0}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, costPrice: parseFloat(e.target.value) || 0 })}
+                      value={typeof editingProduct.costPrice === 'number' ? editingProduct.costPrice : ''}
+                      onChange={(e) => setEditingProduct({ 
+                        ...editingProduct, 
+                        costPrice: e.target.value === '' ? 'Sin definir' : parseFloat(e.target.value) || 0 
+                      })}
+                      placeholder="Sin definir"
                       className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
                     />
                   </div>
@@ -378,7 +480,7 @@ export const InventoryManager = () => {
                       type="number"
                       step="0.10"
                       required
-                      value={editingProduct.price}
+                      value={typeof editingProduct.price === 'number' ? editingProduct.price : ''}
                       onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
                       className="w-full px-2.5 py-2 rounded-xl border border-emerald-300 text-xs font-black text-emerald-800 bg-white"
                     />
@@ -389,7 +491,7 @@ export const InventoryManager = () => {
                     <input
                       type="number"
                       step="0.10"
-                      value={editingProduct.originalPrice || editingProduct.price}
+                      value={typeof editingProduct.originalPrice === 'number' ? editingProduct.originalPrice : (typeof editingProduct.price === 'number' ? editingProduct.price : '')}
                       onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || 0 })}
                       className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white"
                     />
@@ -401,7 +503,9 @@ export const InventoryManager = () => {
                   <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-xs">
                     <span className="text-slate-600 font-semibold">Margen de Ganancia Estimado:</span>
                     <span className="font-extrabold text-emerald-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200">
-                      {(((editingProduct.price - (editingProduct.costPrice || 0)) / editingProduct.price) * 100).toFixed(1)}% Margen Neto
+                      {typeof editingProduct.costPrice === 'number'
+                        ? `${(((editingProduct.price - editingProduct.costPrice) / editingProduct.price) * 100).toFixed(1)}% Margen Neto`
+                        : 'Sin definir (Costo pendiente)'}
                     </span>
                   </div>
                 )}
@@ -413,8 +517,12 @@ export const InventoryManager = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Stock Actual (u)</label>
                   <input
                     type="number"
-                    value={editingProduct.stock}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value, 10) || 0 })}
+                    value={typeof editingProduct.stock === 'number' ? editingProduct.stock : ''}
+                    onChange={(e) => setEditingProduct({ 
+                      ...editingProduct, 
+                      stock: e.target.value === '' ? 'Sin definir' : parseInt(e.target.value, 10) || 0 
+                    })}
+                    placeholder="Sin definir"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold"
                   />
                 </div>
@@ -423,8 +531,12 @@ export const InventoryManager = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Alerta Stock Mínimo</label>
                   <input
                     type="number"
-                    value={editingProduct.minStock || 5}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, minStock: parseInt(e.target.value, 10) || 0 })}
+                    value={typeof editingProduct.minStock === 'number' ? editingProduct.minStock : ''}
+                    onChange={(e) => setEditingProduct({ 
+                      ...editingProduct, 
+                      minStock: e.target.value === '' ? 'Sin definir' : parseInt(e.target.value, 10) || 0 
+                    })}
+                    placeholder="Sin definir"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium"
                   />
                 </div>
@@ -433,9 +545,9 @@ export const InventoryManager = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Unidad / Formato</label>
                   <input
                     type="text"
-                    value={editingProduct.unit}
+                    value={editingProduct.unit || ''}
                     onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
-                    placeholder="Botella 1L, Kg..."
+                    placeholder="Botella 1L, Kg, Sin definir..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium"
                   />
                 </div>
@@ -614,6 +726,218 @@ export const InventoryManager = () => {
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL DE IMPORTAR PRODUCTOS DESDE EXCEL                                   */}
+      {/* ========================================================================= */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+          <div 
+            className="relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del modal */}
+            <div className="p-4 sm:p-6 bg-slate-900 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-white">Importar Productos desde Excel</h3>
+                  <p className="text-xs text-slate-300">Carga masiva de catálogo en formatos .xlsx, .xls o .csv</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportPreview(null);
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Cerrar ventana"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Cuerpo del modal */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
+              {/* Zona de Arrastrar / Cargar Archivo */}
+              <div className="border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl p-6 text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-xs">
+                  <UploadCloud className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-slate-800 text-sm">Selecciona tu archivo Excel con productos</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">Compatible con planillas de cálculo .xlsx, .xls y archivos .csv</p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                  <label className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5">
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span>Examinar Archivo</span>
+                    <input 
+                      type="file" 
+                      accept=".xlsx, .xls, .csv" 
+                      className="hidden" 
+                      onChange={handleFileSelected} 
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={downloadProductTemplate}
+                    className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                  >
+                    <Download className="w-4 h-4 text-emerald-600" />
+                    <span>Descargar Plantilla Oficial (.xlsx)</span>
+                  </button>
+                </div>
+
+                {isProcessingFile && (
+                  <p className="text-xs font-bold text-emerald-700 animate-pulse pt-2">
+                    Procesando y validando filas del archivo...
+                  </p>
+                )}
+              </div>
+
+              {/* Reglas de Auto-Relleno Inteligente */}
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 text-xs text-slate-600 space-y-1.5">
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Reglas de Auto-Relleno Inteligente para campos vacíos:</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-500 pl-5">
+                  <p>• <strong>Categoría</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Costo Compra</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Stock Actual</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Alerta Stock Mínimo</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Unidad / Formato</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Descripción</strong>: se asigna <em>"Sin definir"</em></p>
+                  <p>• <strong>Código / SKU</strong>: auto-generado único de 11 dígitos</p>
+                  <p>• <strong>Foto / Imagen</strong>: imagen de <em>Caja con Interrogante</em></p>
+                </div>
+              </div>
+
+              {/* Advertencias / Filas omitidas */}
+              {importPreview?.errors?.length > 0 && (
+                <div className="p-3.5 bg-rose-50 rounded-2xl border border-rose-200 text-xs space-y-1 text-rose-900">
+                  <p className="font-bold flex items-center gap-1.5 text-rose-800">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <span>Filas omitidas por falta de Nombre o Precio ({importPreview.errors.length}):</span>
+                  </p>
+                  <div className="max-h-24 overflow-y-auto space-y-0.5 text-[11px] text-rose-700">
+                    {importPreview.errors.map((err, i) => (
+                      <p key={i}>• {err.reason}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Previsualización de productos leídos */}
+              {importPreview?.validProducts?.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      Vista Previa ({importPreview.validProducts.length} productos listos):
+                    </h4>
+                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      Formato Válido ✓
+                    </span>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-64 overflow-y-auto shadow-2xs">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-100 text-slate-600 font-bold sticky top-0">
+                        <tr>
+                          <th className="py-2.5 px-3">Producto</th>
+                          <th className="py-2.5 px-3">Categoría</th>
+                          <th className="py-2.5 px-3">Código / SKU</th>
+                          <th className="py-2.5 px-3">Costo</th>
+                          <th className="py-2.5 px-3">Precio Venta</th>
+                          <th className="py-2.5 px-3">Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {importPreview.validProducts.map((p, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="py-2 px-3">
+                              <div className="flex items-center gap-2">
+                                <img 
+                                  src={p.image} 
+                                  alt={p.name} 
+                                  className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5" 
+                                />
+                                <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-2 px-3">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                                p.category === 'Sin definir' 
+                                  ? 'bg-amber-50 text-amber-800 border border-amber-200 italic' 
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {p.category}
+                              </span>
+                            </td>
+                            <td className="py-2 px-3 font-mono text-[10px] text-slate-500">{p.code}</td>
+                            <td className="py-2 px-3 font-semibold text-slate-600">
+                              {typeof p.costPrice === 'number' ? `${currency} ${p.costPrice.toFixed(2)}` : <span className="text-slate-400 italic">Sin definir</span>}
+                            </td>
+                            <td className="py-2 px-3 font-bold text-emerald-700">
+                              {currency} {Number(p.price).toFixed(2)}
+                            </td>
+                            <td className="py-2 px-3">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                                p.stock === 'Sin definir' 
+                                  ? 'bg-slate-100 text-slate-500 italic' 
+                                  : 'bg-emerald-50 text-emerald-800'
+                              }`}>
+                                {typeof p.stock === 'number' ? `${p.stock} u.` : p.stock}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer de confirmación */}
+            <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <span className="text-xs text-slate-500">
+                {importPreview?.validProducts?.length > 0 
+                  ? `${importPreview.validProducts.length} productos listos para incorporar` 
+                  : 'Sube un archivo para previsualizar'}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsImportModalOpen(false);
+                    setImportPreview(null);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!importPreview || importPreview.validProducts.length === 0 || isProcessingFile}
+                  onClick={handleConfirmImport}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Confirmar e Importar al Inventario</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
