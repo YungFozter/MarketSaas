@@ -483,7 +483,51 @@ export const StoreProvider = ({ children }) => {
 
     productQuery.then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        setProducts(data);
+        const normalized = data.map(p => {
+          const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
+          
+          let resolvedOriginalPrice = p.originalPrice ?? p.original_price ?? p.originalprice;
+          if (resolvedOriginalPrice !== 'Sin definir' && resolvedOriginalPrice != null) {
+            resolvedOriginalPrice = typeof resolvedOriginalPrice === 'number' ? resolvedOriginalPrice : (parseFloat(resolvedOriginalPrice) || numPrice);
+          } else if (resolvedOriginalPrice == null) {
+            resolvedOriginalPrice = numPrice;
+          }
+
+          let rawCost = p.costPrice ?? p.cost_price ?? p.costprice;
+          let resolvedCost = 'Sin definir';
+          if (rawCost !== undefined && rawCost !== null && rawCost !== '' && rawCost !== 'Sin definir') {
+            const parsed = parseFloat(rawCost);
+            resolvedCost = isNaN(parsed) ? 'Sin definir' : parsed;
+          }
+
+          let rawStock = p.stock;
+          let resolvedStock = 'Sin definir';
+          if (rawStock !== undefined && rawStock !== null && rawStock !== '' && rawStock !== 'Sin definir') {
+            const parsed = parseInt(rawStock, 10);
+            resolvedStock = isNaN(parsed) ? 'Sin definir' : parsed;
+          }
+
+          let rawMinStock = p.minStock ?? p.min_stock ?? p.minstock;
+          let resolvedMinStock = 'Sin definir';
+          if (rawMinStock !== undefined && rawMinStock !== null && rawMinStock !== '' && rawMinStock !== 'Sin definir') {
+            const parsed = parseInt(rawMinStock, 10);
+            resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
+          }
+
+          return {
+            ...p,
+            price: numPrice,
+            originalPrice: resolvedOriginalPrice,
+            costPrice: resolvedCost,
+            stock: resolvedStock,
+            minStock: resolvedMinStock,
+            category: p.category || 'Sin definir',
+            unit: p.unit || 'Sin definir',
+            description: p.description || 'Sin definir',
+            image: p.image || '/products/producto-sin-imagen.png'
+          };
+        });
+        setProducts(normalized);
       }
     });
 
@@ -1019,13 +1063,26 @@ export const StoreProvider = ({ children }) => {
   // Crear o Editar Producto (Dueño)
   const saveProduct = (productData) => {
     const payload = { ...productData, tenant_id: tenantSlug };
+    const syncItem = {
+      ...payload,
+      cost_price: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
+      costPrice: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
+      min_stock: payload.minStock != null ? String(payload.minStock) : 'Sin definir',
+      minStock: payload.minStock != null ? String(payload.minStock) : 'Sin definir',
+      stock: payload.stock != null ? String(payload.stock) : 'Sin definir',
+      original_price: payload.originalPrice,
+      originalPrice: payload.originalPrice,
+      is_popular: Boolean(payload.isPopular),
+      isPopular: Boolean(payload.isPopular)
+    };
+
     if (productData.id) {
       // Editar
       setProducts(prev =>
         prev.map(p => (p.id === productData.id ? { ...p, ...payload } : p))
       );
       if (supabase) {
-        supabase.from('products').upsert([payload]).then(({ error }) => {
+        supabase.from('products').upsert([syncItem]).then(({ error }) => {
           if (error) console.error('Error guardando producto en Supabase:', error);
         });
       }
@@ -1040,9 +1097,15 @@ export const StoreProvider = ({ children }) => {
         code: productData.code && productData.code.trim() ? productData.code.trim() : autoCode,
         image: productData.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'
       };
+      const newProdSync = {
+        ...syncItem,
+        id: newProd.id,
+        code: newProd.code,
+        image: newProd.image
+      };
       setProducts(prev => [newProd, ...prev]);
       if (supabase) {
-        supabase.from('products').insert([newProd]).then(({ error }) => {
+        supabase.from('products').insert([newProdSync]).then(({ error }) => {
           if (error) console.error('Error insertando producto en Supabase:', error);
         });
       }
@@ -1119,7 +1182,30 @@ export const StoreProvider = ({ children }) => {
     // Sincronizar con Supabase si está disponible
     if (supabase) {
       try {
-        const { error } = await supabase.from('products').upsert(preparedProducts);
+        const supabaseBatch = preparedProducts.map(p => ({
+          id: p.id,
+          tenant_id: p.tenant_id || tenantSlug,
+          name: p.name,
+          category: p.category || 'Sin definir',
+          code: p.code || '',
+          price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0),
+          original_price: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
+          originalPrice: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
+          cost_price: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
+          costPrice: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
+          stock: p.stock != null ? String(p.stock) : 'Sin definir',
+          min_stock: p.minStock != null ? String(p.minStock) : 'Sin definir',
+          minStock: p.minStock != null ? String(p.minStock) : 'Sin definir',
+          unit: p.unit || 'Sin definir',
+          image: p.image || '/products/producto-sin-imagen.png',
+          description: p.description || 'Sin definir',
+          badge: p.badge || '',
+          is_popular: Boolean(p.isPopular),
+          isPopular: Boolean(p.isPopular),
+          is_active: true,
+          isActive: true
+        }));
+        const { error } = await supabase.from('products').upsert(supabaseBatch);
         if (error) console.error('Error en upsert batch Supabase:', error);
       } catch (err) {
         console.error('Error sincronizando lote con Supabase:', err);
