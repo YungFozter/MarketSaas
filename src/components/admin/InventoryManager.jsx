@@ -28,6 +28,7 @@ export const InventoryManager = () => {
     products, 
     saveProduct, 
     deleteProduct, 
+    deleteProductsBatch,
     importProductsBatch,
     showToast, 
     storeConfig, 
@@ -109,7 +110,11 @@ export const InventoryManager = () => {
 
   const handleOpenEdit = (product) => {
     setIsNew(false);
-    setEditingProduct({ ...product });
+    const cost = product.costPrice ?? product.cost_price;
+    setEditingProduct({ 
+      ...product,
+      costPrice: cost !== undefined ? cost : 'Sin definir'
+    });
   };
 
   const handleSaveForm = (e) => {
@@ -118,8 +123,49 @@ export const InventoryManager = () => {
       showToast('Ingresa el nombre del producto', 'warning');
       return;
     }
-    saveProduct(editingProduct);
+    const cost = editingProduct.costPrice ?? editingProduct.cost_price;
+    saveProduct({
+      ...editingProduct,
+      costPrice: cost !== undefined ? cost : 'Sin definir',
+      cost_price: cost !== undefined ? cost : 'Sin definir'
+    });
     setEditingProduct(null);
+  };
+
+  // Estado de selección múltiple para eliminar productos
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [isDeletingBatch, setIsDeletingBatch] = useState(false);
+
+  const handleToggleSelectProduct = (productId) => {
+    setSelectedProductIds(prev => 
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const visibleIds = filteredProducts.map(p => p.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedProductIds.includes(id));
+    if (allSelected) {
+      setSelectedProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
+    } else {
+      setSelectedProductIds(prev => Array.from(new Set([...prev, ...visibleIds])));
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    try {
+      setIsDeletingBatch(true);
+      await deleteProductsBatch(selectedProductIds);
+      setSelectedProductIds([]);
+      setIsBulkDeleteModalOpen(false);
+    } catch (err) {
+      console.error('Error al eliminar productos en lote:', err);
+      showToast('Error al eliminar los productos seleccionados.', 'error');
+    } finally {
+      setIsDeletingBatch(false);
+    }
   };
 
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -258,38 +304,100 @@ export const InventoryManager = () => {
         </div>
       </div>
 
+      {/* Barra de Acciones Masivas cuando hay productos seleccionados */}
+      {selectedProductIds.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 text-white font-black text-xs shrink-0">
+              {selectedProductIds.length}
+            </span>
+            <span className="text-xs font-bold text-rose-900">
+              {selectedProductIds.length === 1 
+                ? '1 producto seleccionado para eliminar' 
+                : `${selectedProductIds.length} productos seleccionados para eliminar`}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setSelectedProductIds([])}
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+            >
+              Deseleccionar todos
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Eliminar ({selectedProductIds.length})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tabla de Productos */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider">
+                <th className="w-12 py-3.5 px-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id))}
+                    ref={el => {
+                      if (el) {
+                        const hasSome = filteredProducts.some(p => selectedProductIds.includes(p.id));
+                        const hasAll = filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id));
+                        el.indeterminate = hasSome && !hasAll;
+                      }
+                    }}
+                    onChange={handleToggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                    title="Seleccionar todos los productos visibles"
+                  />
+                </th>
                 <th className="py-3.5 px-4">Producto</th>
                 <th className="py-3.5 px-4">Categoría / SKU</th>
                 <th className="py-3.5 px-4">Costo Compra</th>
                 <th className="py-3.5 px-4">Precio Venta</th>
-                <th className="py-3.5 px-4">Margen Bruto</th>
                 <th className="py-3.5 px-4">Stock Actual</th>
                 <th className="py-3.5 px-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredProducts.map((prod) => {
-                const isNumericCost = typeof prod.costPrice === 'number' && !isNaN(prod.costPrice);
+                const isSelected = selectedProductIds.includes(prod.id);
+                const rawCostVal = prod.costPrice ?? prod.cost_price;
+                const numCost = typeof rawCostVal === 'number' ? rawCostVal : parseFloat(rawCostVal);
+                const isNumericCost = !isNaN(numCost) && rawCostVal !== 'Sin definir' && rawCostVal !== null && rawCostVal !== undefined && rawCostVal !== '';
                 const costDisplay = isNumericCost 
-                  ? `${currency} ${prod.costPrice.toFixed(2)}` 
-                  : (prod.costPrice || 'Sin definir');
-
-                const marginDisplay = isNumericCost && prod.price > 0
-                  ? `${(((prod.price - prod.costPrice) / prod.price) * 100).toFixed(0)}%`
-                  : 'Sin definir';
+                  ? `${currency} ${numCost.toFixed(2)}` 
+                  : (rawCostVal || 'Sin definir');
 
                 const isNumericStock = typeof prod.stock === 'number' && !isNaN(prod.stock);
                 const isLowStock = isNumericStock && typeof prod.minStock === 'number' && prod.stock <= prod.minStock;
                 const stockDisplay = isNumericStock ? `${prod.stock} u.` : (prod.stock || 'Sin definir');
 
                 return (
-                  <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr 
+                    key={prod.id} 
+                    className={`transition-colors ${isSelected ? 'bg-emerald-50/50 hover:bg-emerald-50/70' : 'hover:bg-slate-50/80'}`}
+                  >
+                    {/* Checkbox de selección individual */}
+                    <td className="w-12 py-3 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelectProduct(prod.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+                        title="Seleccionar producto"
+                      />
+                    </td>
+
                     {/* Producto */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
@@ -315,7 +423,7 @@ export const InventoryManager = () => {
                       <p className="text-[10px] font-mono text-slate-400">{prod.code}</p>
                     </td>
 
-                    {/* Costo */}
+                    {/* Costo Compra */}
                     <td className="py-3 px-4 font-semibold text-slate-600">
                       {isNumericCost ? (
                         costDisplay
@@ -334,18 +442,7 @@ export const InventoryManager = () => {
                       )}
                     </td>
 
-                    {/* Margen % */}
-                    <td className="py-3 px-4">
-                      {marginDisplay !== 'Sin definir' ? (
-                        <span className="inline-flex items-center gap-1 font-bold text-xs text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
-                          {marginDisplay}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[11px] italic">-</span>
-                      )}
-                    </td>
-
-                    {/* Stock */}
+                    {/* Stock Actual */}
                     <td className="py-3 px-4">
                       {isNumericStock ? (
                         <span className={`px-2.5 py-1 rounded-xl font-extrabold text-xs inline-flex items-center gap-1 ${
@@ -968,6 +1065,51 @@ export const InventoryManager = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Eliminación Masiva */}
+      {isBulkDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-scaleIn text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4 shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-black text-slate-900 mb-1.5">
+              ¿Eliminar {selectedProductIds.length} {selectedProductIds.length === 1 ? 'producto' : 'productos'}?
+            </h3>
+            <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+              Esta acción eliminará de forma definitiva {selectedProductIds.length === 1 ? 'el producto seleccionado' : `los ${selectedProductIds.length} productos seleccionados`} de tu inventario local y de tu catálogo en la nube. Esta operación no se puede deshacer.
+            </p>
+            <div className="flex items-center justify-center gap-2.5">
+              <button
+                type="button"
+                disabled={isDeletingBatch}
+                onClick={() => setIsBulkDeleteModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingBatch}
+                onClick={handleConfirmBulkDelete}
+                className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                {isDeletingBatch ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, eliminar {selectedProductIds.length}</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -479,21 +479,80 @@ export const StoreProvider = ({ children }) => {
     };
   }, []);
 
-  // Cargar datos reactivamente cada vez que cambia tenantSlug
+  // Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
+  const normalizeProduct = (p) => {
+    if (!p || typeof p !== 'object') return p;
+    const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
+
+    let rawOriginalPrice = p.originalPrice ?? p.original_price ?? p.originalprice;
+    let resolvedOriginalPrice = numPrice;
+    if (rawOriginalPrice !== 'Sin definir' && rawOriginalPrice != null && rawOriginalPrice !== '') {
+      const parsed = typeof rawOriginalPrice === 'number' ? rawOriginalPrice : parseFloat(rawOriginalPrice);
+      resolvedOriginalPrice = isNaN(parsed) ? numPrice : parsed;
+    }
+
+    let rawCost = p.costPrice ?? p.cost_price ?? p.costprice;
+    let resolvedCost = 'Sin definir';
+    if (rawCost !== undefined && rawCost !== null && rawCost !== '' && rawCost !== 'Sin definir') {
+      const parsed = typeof rawCost === 'number' ? rawCost : parseFloat(String(rawCost).replace(',', '.').replace(/[^\d.]/g, ''));
+      resolvedCost = isNaN(parsed) ? 'Sin definir' : parsed;
+    }
+
+    let rawStock = p.stock;
+    let resolvedStock = 'Sin definir';
+    if (rawStock !== undefined && rawStock !== null && rawStock !== '' && rawStock !== 'Sin definir') {
+      const parsed = typeof rawStock === 'number' ? Math.floor(rawStock) : parseInt(String(rawStock), 10);
+      resolvedStock = isNaN(parsed) ? 'Sin definir' : parsed;
+    }
+
+    let rawMinStock = p.minStock ?? p.min_stock ?? p.minstock;
+    let resolvedMinStock = 'Sin definir';
+    if (rawMinStock !== undefined && rawMinStock !== null && rawMinStock !== '' && rawMinStock !== 'Sin definir') {
+      const parsed = typeof rawMinStock === 'number' ? Math.floor(rawMinStock) : parseInt(String(rawMinStock), 10);
+      resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
+    }
+
+    return {
+      ...p,
+      price: numPrice,
+      originalPrice: resolvedOriginalPrice,
+      original_price: resolvedOriginalPrice,
+      costPrice: resolvedCost,
+      cost_price: resolvedCost,
+      stock: resolvedStock,
+      minStock: resolvedMinStock,
+      min_stock: resolvedMinStock,
+      category: p.category || 'Sin definir',
+      unit: p.unit || 'Sin definir',
+      description: p.description || 'Sin definir',
+      image: p.image || '/products/producto-sin-imagen.png',
+      code: p.code ? String(p.code) : '',
+      badge: p.badge || '',
+      isPopular: Boolean(p.isPopular ?? p.is_popular),
+      is_popular: Boolean(p.isPopular ?? p.is_popular),
+      isActive: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true),
+      is_active: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true)
+    };
+  };
+
   useEffect(() => {
-    // 0. Recargar caché local aislada para el tenant seleccionado
+    if (!tenantSlug) return;
+
+    // Cargar inmediatamente desde localStorage para respuesta instantánea
     try {
-      const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
-      if (localProds) {
-        setProducts(JSON.parse(localProds));
-      }
-      const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
-      if (localOrders) {
-        setOrders(JSON.parse(localOrders));
-      }
-      const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
-      if (localCfg) {
-        setStoreConfigState(JSON.parse(localCfg));
+      if (tenantSlug !== 'default') {
+        const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
+        if (localProds) {
+          setProducts(JSON.parse(localProds).map(normalizeProduct));
+        }
+        const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
+        if (localOrders) {
+          setOrders(JSON.parse(localOrders));
+        }
+        const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
+        if (localCfg) {
+          setStoreConfigState(JSON.parse(localCfg));
+        }
       }
     } catch (e) {
       console.warn('Error cargando caché local de tenant:', e);
@@ -508,51 +567,7 @@ export const StoreProvider = ({ children }) => {
 
     productQuery.then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        const normalized = data.map(p => {
-          const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
-          
-          let resolvedOriginalPrice = p.originalPrice ?? p.original_price ?? p.originalprice;
-          if (resolvedOriginalPrice !== 'Sin definir' && resolvedOriginalPrice != null) {
-            resolvedOriginalPrice = typeof resolvedOriginalPrice === 'number' ? resolvedOriginalPrice : (parseFloat(resolvedOriginalPrice) || numPrice);
-          } else if (resolvedOriginalPrice == null) {
-            resolvedOriginalPrice = numPrice;
-          }
-
-          let rawCost = p.costPrice ?? p.cost_price ?? p.costprice;
-          let resolvedCost = 'Sin definir';
-          if (rawCost !== undefined && rawCost !== null && rawCost !== '' && rawCost !== 'Sin definir') {
-            const parsed = parseFloat(rawCost);
-            resolvedCost = isNaN(parsed) ? 'Sin definir' : parsed;
-          }
-
-          let rawStock = p.stock;
-          let resolvedStock = 'Sin definir';
-          if (rawStock !== undefined && rawStock !== null && rawStock !== '' && rawStock !== 'Sin definir') {
-            const parsed = parseInt(rawStock, 10);
-            resolvedStock = isNaN(parsed) ? 'Sin definir' : parsed;
-          }
-
-          let rawMinStock = p.minStock ?? p.min_stock ?? p.minstock;
-          let resolvedMinStock = 'Sin definir';
-          if (rawMinStock !== undefined && rawMinStock !== null && rawMinStock !== '' && rawMinStock !== 'Sin definir') {
-            const parsed = parseInt(rawMinStock, 10);
-            resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
-          }
-
-          return {
-            ...p,
-            price: numPrice,
-            originalPrice: resolvedOriginalPrice,
-            costPrice: resolvedCost,
-            stock: resolvedStock,
-            minStock: resolvedMinStock,
-            category: p.category || 'Sin definir',
-            unit: p.unit || 'Sin definir',
-            description: p.description || 'Sin definir',
-            image: p.image || '/products/producto-sin-imagen.png'
-          };
-        });
-        setProducts(normalized);
+        setProducts(data.map(normalizeProduct));
       }
     });
 
@@ -620,9 +635,9 @@ export const StoreProvider = ({ children }) => {
         filter: `tenant_id=eq.${tenantSlug}`
       }, payload => {
         if (payload.eventType === 'INSERT') {
-          setProducts(prev => [payload.new, ...prev.filter(p => p.id !== payload.new.id)]);
+          setProducts(prev => [normalizeProduct(payload.new), ...prev.filter(p => p.id !== payload.new.id)]);
         } else if (payload.eventType === 'UPDATE') {
-          setProducts(prev => prev.map(p => (p.id === payload.new.id ? payload.new : p)));
+          setProducts(prev => prev.map(p => (p.id === payload.new.id ? normalizeProduct(payload.new) : p)));
         } else if (payload.eventType === 'DELETE') {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id));
         }
@@ -1150,6 +1165,35 @@ export const StoreProvider = ({ children }) => {
     showToast('Producto eliminado del catálogo.', 'warning');
   };
 
+  // Eliminación Masiva de Productos Seleccionados
+  const deleteProductsBatch = async (productIds) => {
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return;
+    const idSet = new Set(productIds);
+    setProducts(prev => {
+      const updated = prev.filter(p => !idSet.has(p.id));
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error guardando en localStorage:', e);
+      }
+      return updated;
+    });
+
+    if (supabase) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .in('id', productIds)
+          .eq('tenant_id', tenantSlug);
+        if (error) console.error('Error eliminando lote de productos en Supabase:', error);
+      } catch (err) {
+        console.error('Error de conexión al eliminar productos en Supabase:', err);
+      }
+    }
+    showToast(`✓ Se eliminaron ${productIds.length} productos seleccionados.`, 'info');
+  };
+
   // Importar Lote Masivo de Productos desde Excel
   const importProductsBatch = async (productList) => {
     if (!productList || !Array.isArray(productList) || productList.length === 0) {
@@ -1616,6 +1660,7 @@ export const StoreProvider = ({ children }) => {
         completePosSale,
         saveProduct,
         deleteProduct,
+        deleteProductsBatch,
         importProductsBatch,
         veciPoints,
         setVeciPoints,

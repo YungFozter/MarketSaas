@@ -1,40 +1,77 @@
 import * as XLSX from 'xlsx';
 
 /**
- * Limpia y normaliza cadenas de moneda o números con comas/puntos
+ * Limpia y normaliza cadenas de moneda o números con comas/puntos de forma robusta
  */
 export const cleanNumericValue = (val) => {
   if (val === undefined || val === null || val === '') return null;
   if (typeof val === 'number') return isNaN(val) ? null : val;
-  
-  // Quitar letras, símbolos como Bs, $, espacios
-  const cleaned = String(val)
-    .replace(/[Bs$\s]/gi, '')
-    .replace(',', '.')
+
+  let str = String(val).trim();
+  if (!/\d/.test(str)) return null;
+
+  // Quitar símbolos y nombres de moneda comunes evitando truncar decimales
+  str = str
+    .replace(/bs\.?/gi, '')
+    .replace(/bob\.?/gi, '')
+    .replace(/usd\.?/gi, '')
+    .replace(/[$€]/g, '')
     .trim();
 
-  const num = parseFloat(cleaned);
+  // Si tiene formato de miles con punto y decimal con coma: "1.234,50"
+  if (/\d+\.\d{3},\d+/.test(str)) {
+    str = str.replace(/\./g, '').replace(',', '.');
+  } else if (/\d+,\d{3}\.\d+/.test(str)) {
+    // Si tiene formato "1,234.50"
+    str = str.replace(/,/g, '');
+  } else if (str.includes(',')) {
+    // Si sólo tiene coma decimal: "5,5" -> "5.5"
+    str = str.replace(',', '.');
+  }
+
+  // Quitar cualquier carácter residual que no sea dígito o punto
+  str = str.replace(/[^\d.]/g, '');
+
+  // Si quedaron múltiples puntos, conservar sólo el primero como separador decimal
+  const parts = str.split('.');
+  if (parts.length > 2) {
+    str = `${parts[0]}.${parts.slice(1).join('')}`;
+  }
+
+  const num = parseFloat(str);
   return isNaN(num) ? null : num;
 };
 
 /**
- * Normaliza nombres de encabezados para mapeo flexible
+ * Normaliza nombres de encabezados para mapeo flexible priorizando patrones específicos
  */
 const findColumnValue = (row, patterns) => {
   const keys = Object.keys(row);
-  for (const key of keys) {
-    const normalizedKey = key
+  const normalizedKeyMap = keys.map(key => ({
+    originalKey: key,
+    normalizedKey: key
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/g, '');
+      .replace(/[^a-z0-9]/g, '')
+  }));
 
-    for (const pattern of patterns) {
-      if (normalizedKey.includes(pattern)) {
-        return row[key];
-      }
+  // Prioridad 1: Buscar coincidencia de patrones en orden (más específico primero) con valor no vacío
+  for (const pattern of patterns) {
+    const match = normalizedKeyMap.find(k => k.normalizedKey.includes(pattern));
+    if (match && row[match.originalKey] !== undefined && row[match.originalKey] !== '') {
+      return row[match.originalKey];
     }
   }
+
+  // Prioridad 2: Si no hubo valor no vacío, retornar la clave que coincide con el patrón
+  for (const pattern of patterns) {
+    const match = normalizedKeyMap.find(k => k.normalizedKey.includes(pattern));
+    if (match && row[match.originalKey] !== undefined) {
+      return row[match.originalKey];
+    }
+  }
+
   return undefined;
 };
 
@@ -71,11 +108,11 @@ export const parseProductExcel = async (file) => {
         rawRows.forEach((row, index) => {
           const rowNum = index + 2; // Considerando cabecera en fila 1
 
-          // Mapeo flexible de columnas
-          const rawName = findColumnValue(row, ['producto', 'nombre', 'articulo', 'item', 'titulo']);
-          const rawPrice = findColumnValue(row, ['precioventa', 'pventa', 'precio', 'pvp', 'venta']);
-          const rawCost = findColumnValue(row, ['costocompra', 'pcompra', 'costo', 'compra']);
-          const rawNormalPrice = findColumnValue(row, ['precionormal', 'pnormal', 'normal', 'original', 'tachado', 'regular']);
+          // Mapeo flexible de columnas con búsqueda de patrones por especificidad
+          const rawName = findColumnValue(row, ['nombre', 'producto', 'articulo', 'item', 'titulo']);
+          const rawPrice = findColumnValue(row, ['precioventa', 'preciodeventa', 'pventa', 'pvp', 'venta', 'precio']);
+          const rawCost = findColumnValue(row, ['costocompra', 'costodecompra', 'preciocompra', 'preciodecompra', 'pcompra', 'costo', 'compra']);
+          const rawNormalPrice = findColumnValue(row, ['precionormal', 'preciotachado', 'precioregular', 'pnormal', 'normal', 'original', 'tachado', 'regular']);
           const rawCategory = findColumnValue(row, ['categoria', 'rubro', 'familia', 'seccion', 'grupo']);
           const rawCode = findColumnValue(row, ['codigo', 'sku', 'barra', 'ean', 'cod']);
           const rawStock = findColumnValue(row, ['stockactual', 'stock', 'cantidad', 'cant', 'existencia']);
@@ -148,10 +185,13 @@ export const parseProductExcel = async (file) => {
             category,
             code,
             costPrice,
+            cost_price: costPrice,
             price: parsedPrice,
             originalPrice,
+            original_price: originalPrice,
             stock,
             minStock,
+            min_stock: minStock,
             unit,
             image,
             description,
