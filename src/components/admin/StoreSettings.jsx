@@ -672,7 +672,7 @@ export const StoreSettings = () => {
               <span>{form.latitude}, {form.longitude}</span>
             </div>
 
-            <div className="relative w-full h-52 sm:h-60 rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
+            <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
               <iframe
                 key={`${form.latitude}-${form.longitude}`}
                 title="Vista previa del mapa de la tienda"
@@ -687,15 +687,15 @@ export const StoreSettings = () => {
     </div>
 
       {/* FILA 3: Código QR de Cobro & Cupones de Descuento (Lado a lado en PC) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Card 4: Imagen del Código QR de Cobro */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               <QrCode className="w-4 h-4 text-emerald-600" />
               <span>Imagen del Código QR de Cobro</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-1">
               Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
             </p>
           </div>
@@ -743,19 +743,16 @@ export const StoreSettings = () => {
         </div>
 
         {/* Card 5: Cupones de Descuento de la Tienda */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-emerald-600" />
-                  <span>Gestión de Cupones de Descuento</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
-                </p>
-              </div>
-            </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+          <div>
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <span>Gestión de Cupones de Descuento</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
+            </p>
+          </div>
 
         {/* Modal / Panel de Edición de Cupón (cuando se edita uno existente) */}
         {editingCoupon && (
@@ -919,7 +916,6 @@ export const StoreSettings = () => {
         </div>
       </div>
     </div>
-  </div>
 </form>
   );
 };
