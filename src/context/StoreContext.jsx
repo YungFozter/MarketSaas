@@ -988,6 +988,7 @@ export const StoreProvider = ({ children }) => {
     const newOrder = {
       id: orderId,
       tenant_id: tenantSlug,
+      owner_id: storeConfig?.owner_id || null,
       customer: {
         name: orderData.name,
         phone: orderData.phone,
@@ -1357,6 +1358,7 @@ export const StoreProvider = ({ children }) => {
     const posOrder = {
       id: saleId,
       tenant_id: tenantSlug,
+      owner_id: currentUser?.id || storeConfig?.owner_id || null,
       customer: {
         name: 'Venta de Mostrador (Presencial)',
         phone: 'Presencial',
