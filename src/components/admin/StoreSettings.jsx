@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Settings, 
-  Truck, 
   Save, 
   Plus, 
   Trash2, 
+  Edit3,
   QrCode, 
   DollarSign,
   Power,
   Image as ImageIcon,
   Palette,
-  Tag,
   AlertTriangle,
   Lock,
   ShieldCheck,
@@ -20,7 +19,10 @@ import {
   ExternalLink,
   Crosshair,
   CheckCircle2,
-  Map
+  Map,
+  Sparkles,
+  X,
+  Check
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -64,6 +66,10 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) =>
 export const StoreSettings = () => {
   const { storeConfig, setStoreConfig, showToast } = useStore();
 
+  const cleanInitialAddress = (storeConfig?.address && storeConfig.address !== 'Direccion según cada Tienda')
+    ? storeConfig.address
+    : '';
+
   const [form, setForm] = useState({ 
     currencySymbol: 'Bs.',
     themeColor: 'emerald',
@@ -80,13 +86,31 @@ export const StoreSettings = () => {
       'Snacks & Golosinas',
       'Limpieza & Hogar'
     ],
-    address: storeConfig?.address || '',
     zone: storeConfig?.zone || storeConfig?.condominium || '',
     reference: storeConfig?.reference || '',
     latitude: storeConfig?.googleMapsCoordinates?.lat ?? storeConfig?.latitude ?? -17.78335,
     longitude: storeConfig?.googleMapsCoordinates?.lng ?? storeConfig?.longitude ?? -63.18214,
-    ...storeConfig 
+    ...storeConfig,
+    address: cleanInitialAddress
   });
+
+  const headerCardRef = useRef(null);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeaderVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (headerCardRef.current) {
+      observer.observe(headerCardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   const [detectingGps, setDetectingGps] = useState(false);
 
@@ -118,14 +142,16 @@ export const StoreSettings = () => {
     );
   };
 
-  const [newCondoName, setNewCondoName] = useState('');
-  const [newCondoFee, setNewCondoFee] = useState('5.00');
-  const [newCondoTime, setNewCondoTime] = useState('10-15 min');
-
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponDiscount, setNewCouponDiscount] = useState('10.00');
+  const [editingCoupon, setEditingCoupon] = useState(null);
 
-  const [newCategoryName, setNewCategoryName] = useState('');
+  const handleGenerateCouponCode = () => {
+    const prefixes = ['PROMO', 'VECI', 'DESC', 'SUPER', 'OFERTA'];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    setNewCouponCode(`${prefix}-${randomNum}`);
+  };
 
   const colorThemes = [
     { id: 'emerald', name: 'Verde Esmeralda', bg: 'bg-emerald-600', ring: 'ring-emerald-500' },
@@ -168,44 +194,62 @@ export const StoreSettings = () => {
     }
   };
 
-  const handleAddCondo = () => {
-    if (!newCondoName.trim()) return;
-    const newCondo = {
-      id: `c-${Date.now()}`,
-      name: newCondoName,
-      towers: ['Torre A', 'Torre B', 'Casas'],
-      deliveryFee: parseFloat(newCondoFee) || 5.00,
-      estTime: newCondoTime || '15 min'
-    };
-    setForm(prev => ({
-      ...prev,
-      condominiums: [...prev.condominiums, newCondo]
-    }));
-    setNewCondoName('');
-    showToast(`Condominio "${newCondoName}" agregado.`);
-  };
-
-  const handleRemoveCondo = (id) => {
-    setForm(prev => ({
-      ...prev,
-      condominiums: prev.condominiums.filter(c => c.id !== id)
-    }));
-  };
-
   const handleAddCoupon = () => {
-    if (!newCouponCode.trim()) return;
+    if (!newCouponCode.trim()) {
+      showToast('Ingresa o genera un código para el cupón.', 'warning');
+      return;
+    }
+    const discountVal = parseFloat(newCouponDiscount);
+    if (isNaN(discountVal) || discountVal <= 0) {
+      showToast('Ingresa un monto de descuento válido mayor a 0.', 'warning');
+      return;
+    }
+    const cleanCode = newCouponCode.toUpperCase().trim();
+    if ((form.coupons || []).some(c => c.code === cleanCode)) {
+      showToast('Ya existe un cupón con este código.', 'error');
+      return;
+    }
     const newCoupon = {
       id: `coup-${Date.now()}`,
-      code: newCouponCode.toUpperCase().trim(),
-      discount: parseFloat(newCouponDiscount) || 10.00,
-      description: `Cupón de descuento por Bs. ${parseFloat(newCouponDiscount).toFixed(2)}`
+      code: cleanCode,
+      discount: discountVal,
+      description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}`
     };
     setForm(prev => ({
       ...prev,
       coupons: [...(prev.coupons || []), newCoupon]
     }));
     setNewCouponCode('');
-    showToast(`Cupón "${newCoupon.code}" creado.`);
+    setNewCouponDiscount('10.00');
+    showToast(`Cupón "${newCoupon.code}" creado con éxito.`, 'success');
+  };
+
+  const handleStartEditCoupon = (coupon) => {
+    setEditingCoupon({
+      id: coupon.id,
+      code: coupon.code,
+      discount: coupon.discount
+    });
+  };
+
+  const handleSaveEditCoupon = () => {
+    if (!editingCoupon) return;
+    const discountVal = parseFloat(editingCoupon.discount);
+    if (isNaN(discountVal) || discountVal <= 0) {
+      showToast('El monto de descuento debe ser mayor a 0.', 'warning');
+      return;
+    }
+    const cleanCode = editingCoupon.code.toUpperCase().trim();
+    setForm(prev => ({
+      ...prev,
+      coupons: (prev.coupons || []).map(c => 
+        c.id === editingCoupon.id 
+          ? { ...c, code: cleanCode, discount: discountVal, description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}` }
+          : c
+      )
+    }));
+    setEditingCoupon(null);
+    showToast('Cupón actualizado correctamente.', 'success');
   };
 
   const handleRemoveCoupon = (id) => {
@@ -213,34 +257,30 @@ export const StoreSettings = () => {
       ...prev,
       coupons: (prev.coupons || []).filter(c => c.id !== id)
     }));
-  };
-
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
-    const cleanCat = newCategoryName.trim();
-    if (form.categories.includes(cleanCat)) {
-      showToast('Esta categoría ya existe.', 'error');
-      return;
-    }
-    setForm(prev => ({
-      ...prev,
-      categories: [...prev.categories, cleanCat]
-    }));
-    setNewCategoryName('');
-    showToast(`Categoría "${cleanCat}" agregada.`);
-  };
-
-  const handleRemoveCategory = (catName) => {
-    setForm(prev => ({
-      ...prev,
-      categories: prev.categories.filter(c => c !== catName)
-    }));
+    showToast('Cupón eliminado.');
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 max-w-4xl animate-fadeIn">
+    <form onSubmit={handleSave} className="space-y-6 w-full max-w-5xl xl:max-w-6xl mx-auto animate-fadeIn relative pb-12">
+      {/* Floating Save Button on Scroll */}
+      {!isHeaderVisible && (
+        <div className="fixed top-3 sm:top-3.5 right-4 sm:right-6 z-50 animate-fadeIn">
+          <button
+            type="submit"
+            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 active:scale-95 transition-all flex items-center gap-2 cursor-pointer border border-emerald-400/40"
+            title="Guardar Cambios de Configuración"
+          >
+            <Save className="w-4 h-4" />
+            <span className="hidden sm:inline">Guardar Cambios</span>
+          </button>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div 
+        ref={headerCardRef}
+        className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <Settings className="w-5 h-5 text-emerald-600" />
@@ -253,7 +293,7 @@ export const StoreSettings = () => {
 
         <button
           type="submit"
-          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"
+          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
         >
           <Save className="w-4 h-4" />
           <span>Guardar Cambios</span>
@@ -483,16 +523,16 @@ export const StoreSettings = () => {
         </div>
       </div>
 
-      {/* Ubicación Física & Geolocalización en el Mapa Hiperlocal */}
+      {/* Ubicación Física & Geolocalización en el Mapa */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-emerald-600" />
-              <span>Ubicación Física & Geolocalización en el Mapa Hiperlocal</span>
+              <span>Ubicación Física & Geolocalización en el Mapa</span>
             </h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              Esta ubicación posicionará tu tienda en el mapa interactivo de la <strong>Vista Vecino</strong> y se usará para calcular la distancia y tiempos de entrega de tus clientes.
+              Esta ubicación posicionará tu tienda en el mapa interactivo de la Vista Vecino.
             </p>
           </div>
 
@@ -613,38 +653,6 @@ export const StoreSettings = () => {
             </div>
           </div>
 
-          {/* Atajos Rápidos de Zona */}
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
-              Zonas de Referencia:
-            </span>
-            {[
-              { name: 'Centro / Plaza 24', lat: -17.78335, lng: -63.18214 },
-              { name: 'Equipetrol', lat: -17.7665, lng: -63.1942 },
-              { name: 'Las Palmas', lat: -17.7942, lng: -63.2031 },
-              { name: 'Grigotá', lat: -17.7965, lng: -63.1985 },
-              { name: 'Av. Busch', lat: -17.7780, lng: -63.1990 }
-            ].map((zone) => (
-              <button
-                key={zone.name}
-                type="button"
-                onClick={() => {
-                  setForm(prev => ({
-                    ...prev,
-                    latitude: zone.lat,
-                    longitude: zone.lng,
-                    zone: prev.zone || zone.name,
-                    googleMapsCoordinates: { lat: zone.lat, lng: zone.lng }
-                  }));
-                  showToast(`Coordenadas fijadas en: ${zone.name}`);
-                }}
-                className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:border-emerald-400 hover:text-emerald-700 transition-colors cursor-pointer shadow-2xs"
-              >
-                {zone.name}
-              </button>
-            ))}
-          </div>
-
           {/* Previsualización en Vivo de Google Maps */}
           <div className="space-y-1.5 pt-2">
             <div className="flex items-center justify-between text-[11px] text-slate-500">
@@ -668,66 +676,32 @@ export const StoreSettings = () => {
         </div>
       </div>
 
+      {/* Imagen del Código QR de Cobro */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-          <Tag className="w-4 h-4 text-emerald-600" />
-          <span>Gestión de Categorías de Productos</span>
-        </h3>
-
-        <div className="flex flex-wrap gap-2">
-          {form.categories.map((cat) => (
-            <div key={cat} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-800 border border-slate-200">
-              <span>{cat}</span>
-              {form.categories.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCategory(cat)}
-                  className="p-0.5 hover:text-rose-600 rounded-md"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          ))}
+        <div>
+          <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+            <QrCode className="w-4 h-4 text-emerald-600" />
+            <span>Imagen del Código QR de Cobro</span>
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
+          </p>
         </div>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Nueva Categoría (ej. Mascotas, Panadería...)"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-          />
-          <button
-            type="button"
-            onClick={handleAddCategory}
-            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1 shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Agregar Categoría</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Datos Bancarios y Carga de Imagen del QR de Cobro */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-          <QrCode className="w-4 h-4 text-emerald-600" />
-          <span>Datos Bancarios & Imagen del Código QR de Cobro</span>
-        </h3>
 
         {/* Cargar Foto de QR con Compresión */}
         <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
-          <label className="text-xs font-bold text-amber-950 block">Imagen del Código QR de Cobro (Se mostrará al cliente al pagar)</label>
           <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="w-24 h-24 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-28 h-28 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
               {form.qrImageUrl ? (
-                <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1" />
+                <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1.5" />
               ) : (
-                <span className="text-[10px] text-amber-600 font-bold text-center px-1">Sin Foto QR</span>
+                <div className="flex flex-col items-center justify-center text-center p-2">
+                  <QrCode className="w-8 h-8 text-amber-400 mb-1" />
+                  <span className="text-[10px] text-amber-700 font-bold">Sin Foto QR</span>
+                </div>
               )}
             </div>
+
             <div className="flex-1 space-y-2 w-full">
               <input
                 type="file"
@@ -740,180 +714,138 @@ export const StoreSettings = () => {
                 placeholder="O pega una URL directa de la imagen del QR..."
                 value={form.qrImageUrl || ''}
                 onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
-                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium"
+                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium focus:border-amber-400 focus:outline-hidden"
               />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Banco o Billetera Digital</label>
-            <input
-              type="text"
-              value={form.bankDetails.bank}
-              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, bank: e.target.value } }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Número de Cuenta</label>
-            <input
-              type="text"
-              value={form.bankDetails.accountNumber}
-              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, accountNumber: e.target.value } }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Titular de la Cuenta</label>
-            <input
-              type="text"
-              value={form.bankDetails.holder}
-              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, holder: e.target.value } }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Alias QR / Glosa</label>
-            <input
-              type="text"
-              value={form.bankDetails.aliasQR}
-              onChange={(e) => setForm(prev => ({ ...prev, bankDetails: { ...prev.bankDetails, aliasQR: e.target.value } }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Tarifas de Delivery por Condominio */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-            <Truck className="w-4 h-4 text-emerald-600" />
-            <span>Condominios Atendidos & Cobro de Delivery</span>
-          </h3>
-        </div>
-
-        {/* Parámetros Generales */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Monto Mínimo para Delivery Gratis (Bs.)</label>
-            <input
-              type="number"
-              step="1"
-              value={form.freeDeliveryThreshold}
-              onChange={(e) => setForm(prev => ({ ...prev, freeDeliveryThreshold: parseFloat(e.target.value) || 0 }))}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
-            />
-            <span className="text-[10px] text-slate-400 mt-1 block">Incentiva a los clientes a pedir canastas más grandes.</span>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Tarifa de Delivery Base por Defecto (Bs.)</label>
-            <input
-              type="number"
-              step="0.50"
-              value={form.defaultDeliveryFee}
-              onChange={(e) => setForm(prev => ({ ...prev, defaultDeliveryFee: parseFloat(e.target.value) || 0 }))}
-              className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
-            />
-            <span className="text-[10px] text-slate-400 mt-1 block">Se aplica a zonas sin tarifa específica.</span>
-          </div>
-        </div>
-
-        {/* Lista de Condominios */}
-        <div className="space-y-2">
-          {form.condominiums.map((condo) => (
-            <div key={condo.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-white border border-slate-200 text-xs">
-              <div>
-                <span className="font-extrabold text-slate-900 text-sm">{condo.name}</span>
-                <p className="text-[11px] text-slate-500">Tiempo: {condo.estTime} • Torres: {condo.towers.join(', ')}</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                  Bs. {condo.deliveryFee.toFixed(2)}
-                </span>
+              {form.qrImageUrl && (
                 <button
                   type="button"
-                  onClick={() => handleRemoveCondo(condo.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                  onClick={() => setForm(prev => ({ ...prev, qrImageUrl: '' }))}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  Quitar imagen de QR
                 </button>
-              </div>
+              )}
             </div>
-          ))}
-        </div>
-
-        {/* Agregar Nuevo Condominio */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-          <p className="text-xs font-bold text-slate-700">Agregar Nuevo Condominio / Zona:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input
-              type="text"
-              placeholder="Nombre Condominio / Calle"
-              value={newCondoName}
-              onChange={(e) => setNewCondoName(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white"
-            />
-            <input
-              type="number"
-              step="0.50"
-              placeholder="Costo Delivery (Bs.)"
-              value={newCondoFee}
-              onChange={(e) => setNewCondoFee(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white"
-            />
-            <input
-              type="text"
-              placeholder="Tiempo Estimado (ej. 15 min)"
-              value={newCondoTime}
-              onChange={(e) => setNewCondoTime(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white"
-            />
           </div>
-          <button
-            type="button"
-            onClick={handleAddCondo}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Agregar Condominio</span>
-          </button>
         </div>
       </div>
 
       {/* Cupones de Descuento de la Tienda */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-emerald-600" />
-          <span>Gestión de Cupones de Descuento</span>
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+              <span>Gestión de Cupones de Descuento</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
+            </p>
+          </div>
+        </div>
+
+        {/* Modal / Panel de Edición de Cupón (cuando se edita uno existente) */}
+        {editingCoupon && (
+          <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300 space-y-3 animate-fadeIn">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                <Edit3 className="w-4 h-4 text-emerald-600" />
+                <span>Editar Cupón: <code className="text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">{editingCoupon.code}</code></span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setEditingCoupon(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                title="Cerrar edición"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Código del Cupón</label>
+                <input
+                  type="text"
+                  value={editingCoupon.code}
+                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-black uppercase bg-white focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Monto de Descuento (Bs.)</label>
+                <input
+                  type="number"
+                  step="0.50"
+                  min="0.50"
+                  value={editingCoupon.discount}
+                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, discount: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditingCoupon(null)}
+                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEditCoupon}
+                className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Guardar Cambios de Cupón</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Lista de Cupones */}
         <div className="space-y-2">
           {(form.coupons || []).length === 0 ? (
-            <p className="text-xs text-slate-400 py-2">No hay cupones activos creados.</p>
+            <p className="text-xs text-slate-400 py-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 font-medium">
+              No tienes cupones de descuento activos actualmente.
+            </p>
           ) : (
             (form.coupons || []).map((c) => (
-              <div key={c.id} className="flex items-center justify-between p-3 rounded-2xl bg-amber-50/50 border border-amber-200 text-xs">
-                <div>
-                  <span className="font-black text-amber-950 font-mono tracking-wider text-sm">{c.code}</span>
-                  <p className="text-[11px] text-slate-500">{c.description}</p>
-                </div>
+              <div 
+                key={c.id} 
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-amber-50/50 border border-amber-200/80 text-xs transition-all hover:bg-amber-50"
+              >
                 <div className="flex items-center gap-3">
-                  <span className="font-black text-emerald-800 bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
-                    -Bs. {c.discount.toFixed(2)}
+                  <span className="font-black text-amber-950 font-mono tracking-wider text-sm bg-white px-3 py-1 rounded-xl border border-amber-200 shadow-2xs">
+                    {c.code}
                   </span>
+                  <div>
+                    <span className="font-bold text-slate-800 text-xs block">
+                      {c.description || `Descuento directo de Bs. ${parseFloat(c.discount || 0).toFixed(2)}`}
+                    </span>
+                    <span className="text-[11px] font-black text-emerald-700">
+                      Ahorro al cliente: -Bs. {parseFloat(c.discount || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleStartEditCoupon(c)}
+                    className="p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                    title="Editar código y monto"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemoveCoupon(c.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"
+                    className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
+                    title="Eliminar cupón"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -923,32 +855,52 @@ export const StoreSettings = () => {
           )}
         </div>
 
-        {/* Agregar Nuevo Cupón */}
+        {/* Formulario para Crear Nuevo Cupón */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-          <p className="text-xs font-bold text-slate-700">Crear Nuevo Código Promocional:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-              type="text"
-              placeholder="Código (ej. VECINO10)"
-              value={newCouponCode}
-              onChange={(e) => setNewCouponCode(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white"
-            />
-            <input
-              type="number"
-              step="0.50"
-              placeholder="Monto Descuento (Bs.)"
-              value={newCouponDiscount}
-              onChange={(e) => setNewCouponDiscount(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-xs font-bold text-slate-800">Crear Nuevo Cupón de Descuento:</p>
+            <button
+              type="button"
+              onClick={handleGenerateCouponCode}
+              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300/80 transition-colors cursor-pointer"
+              title="Generar automáticamente un código al azar"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>⚡ Autogenerar Código</span>
+            </button>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-slate-600 block mb-1">Código del Cupón</label>
+              <input
+                type="text"
+                placeholder="Ej. PROMO-742 o VECINO10"
+                value={newCouponCode}
+                onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white focus:outline-hidden focus:border-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-slate-600 block mb-1">Monto de Descuento en Bs.</label>
+              <input
+                type="number"
+                step="0.50"
+                min="0.50"
+                placeholder="Ej. 10.00"
+                value={newCouponDiscount}
+                onChange={(e) => setNewCouponDiscount(e.target.value)}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={handleAddCoupon}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             <span>Crear Cupón</span>
           </button>
         </div>

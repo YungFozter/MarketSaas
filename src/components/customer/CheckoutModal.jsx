@@ -500,19 +500,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                             <p className="text-[11px] font-bold text-amber-900">Escanea el código QR de cobro de la tienda o transfiere a la cuenta:</p>
                           </div>
                         )}
-                        <div className="flex justify-between items-center">
-                          <span className="font-bold text-slate-800">{bankDetails.bank}</span>
-                          <button
-                            type="button"
-                            onClick={handleCopyBankInfo}
-                            className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors cursor-pointer"
-                          >
-                            <Copy className="w-3 h-3" />
-                            <span>{copiedBank ? '¡Copiado!' : 'Copiar Datos'}</span>
-                          </button>
-                        </div>
-                        <p className="text-slate-600 text-[11px]">Cuenta: <strong>{bankDetails.accountNumber}</strong></p>
-                        <p className="text-slate-600 text-[11px]">Titular: {bankDetails.holder}</p>
+                        {(bankDetails.bank || bankDetails.accountNumber) && (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-slate-800">{bankDetails.bank}</span>
+                              <button
+                                type="button"
+                                onClick={handleCopyBankInfo}
+                                className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md hover:bg-emerald-100 transition-colors cursor-pointer"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>{copiedBank ? '¡Copiado!' : 'Copiar Datos'}</span>
+                              </button>
+                            </div>
+                            {bankDetails.accountNumber && <p className="text-slate-600 text-[11px]">Cuenta: <strong>{bankDetails.accountNumber}</strong></p>}
+                            {bankDetails.holder && <p className="text-slate-600 text-[11px]">Titular: {bankDetails.holder}</p>}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

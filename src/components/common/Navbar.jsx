@@ -248,10 +248,6 @@ export const Navbar = ({
                     <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">
                       {storeConfig.name}
                     </span>
-                    <span className="hidden md:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-200 shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                      Abierto
-                    </span>
                   </div>
                   <p className="text-[11px] text-slate-500 hidden sm:block truncate">
                     {storeConfig.tagline}
