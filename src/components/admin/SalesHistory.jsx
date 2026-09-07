@@ -23,7 +23,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { normalizeSearchText } from '../../utils/formatters';
+import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import './SalesHistory.css';
 
 export const SalesHistory = () => {
@@ -250,19 +250,19 @@ export const SalesHistory = () => {
         </head>
         <body>
           <div class="center">
-            <h3 style="margin:0; font-size:16px;">${storeConfig?.name || 'MarketSaaS'}</h3>
+            <h3 style="margin:0; font-size:16px;">${escapeHtml(storeConfig?.name || 'MarketSaaS')}</h3>
             <p style="margin:2px 0; font-size:11px;">COMPROBANTE DE VENTA</p>
             <div class="divider"></div>
-            <p style="margin:2px 0; font-size:12px; font-weight:bold;">TICKET #${sale.id}</p>
-            <p style="margin:2px 0; font-size:11px;">Fecha: ${formatted.fullDate} - ${formatted.time}</p>
-            <p style="margin:2px 0; font-size:11px;">Atendido por: ${currentUser?.user_metadata?.full_name || currentUser?.email || 'Caja'}</p>
+            <p style="margin:2px 0; font-size:12px; font-weight:bold;">TICKET #${escapeHtml(sale.id)}</p>
+            <p style="margin:2px 0; font-size:11px;">Fecha: ${escapeHtml(formatted.fullDate)} - ${escapeHtml(formatted.time)}</p>
+            <p style="margin:2px 0; font-size:11px;">Atendido por: ${escapeHtml(currentUser?.user_metadata?.full_name || currentUser?.email || 'Caja')}</p>
             <div class="divider"></div>
           </div>
           
           <div style="margin-bottom:6px;">
-            <p style="margin:2px 0; font-size:11px;"><strong>Cliente:</strong> ${sale.customer?.name || 'Cliente Presencial'}</p>
+            <p style="margin:2px 0; font-size:11px;"><strong>Cliente:</strong> ${escapeHtml(sale.customer?.name || 'Cliente Presencial')}</p>
             ${sale.customer?.condominium && sale.customer.condominium !== 'En Tienda' ? `
-              <p style="margin:2px 0; font-size:11px;"><strong>Destino:</strong> ${sale.customer.tower || ''} • ${sale.customer.apartment || ''}</p>
+              <p style="margin:2px 0; font-size:11px;"><strong>Destino:</strong> ${escapeHtml(sale.customer.tower || '')} • ${escapeHtml(sale.customer.apartment || '')}</p>
             ` : ''}
             <p style="margin:2px 0; font-size:11px;"><strong>Tipo:</strong> ${sale.deliveryType === 'delivery' ? 'Delivery Vecino' : 'Venta Mostrador'}</p>
           </div>
@@ -272,9 +272,9 @@ export const SalesHistory = () => {
 
           ${items.map(item => `
             <div style="margin-bottom:4px;">
-              <div class="item-title">${item.name}</div>
+              <div class="item-title">${escapeHtml(item.name)}</div>
               <div class="item-detail">
-                <span>${item.quantity} x ${currency} ${(Number(item.price) || 0).toFixed(2)}</span>
+                <span>${escapeHtml(item.quantity)} x ${currency} ${(Number(item.price) || 0).toFixed(2)}</span>
                 <span class="bold">${currency} ${((Number(item.quantity) || 1) * (Number(item.price) || 0)).toFixed(2)}</span>
               </div>
             </div>

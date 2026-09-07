@@ -21,6 +21,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import './NeighborhoodMap.css';
+import { escapeHtml } from '../../utils/formatters';
 
 // Coordenadas fijas y precisas: Plaza Metropolitana 24 de Septiembre (Centro de la Ciudad, Santa Cruz de la Sierra)
 const DEFAULT_CITY_CENTER_COORDS = {
@@ -106,7 +107,7 @@ export const NeighborhoodMap = ({
         <div style="margin-top: 4px; display: flex; flex-direction: column; align-items: center; z-index: 3;">
           <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.08); font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
             ${isRegistered ? '<span style="color:#059669; font-size: 8px;">●</span>' : ''}
-            <span>${store.name}</span>
+            <span>${escapeHtml(store.name)}</span>
           </div>
           ${badgeLabel ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${isOwner ? '#fef3c7' : '#d1fae5'}; color: ${isOwner ? '#92400e' : '#065f46'}; padding: 1px 5px; border-radius: 9999px; margin-top: 1px; border: 0.5px solid ${isOwner ? '#fde68a' : '#a7f3d0'};">${badgeLabel}</span>` : ''}
         </div>

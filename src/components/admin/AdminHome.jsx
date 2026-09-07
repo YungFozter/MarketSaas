@@ -51,6 +51,7 @@ import { SalesHistory } from './SalesHistory';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { useStore } from '../../context/StoreContext';
+import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
 
 export const AdminHome = ({ onOpenAuthModal }) => {
@@ -303,24 +304,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           </head>
           <body>
             <div class="center">
-              <h3 style="margin:0;">${storeConfig.name}</h3>
+              <h3 style="margin:0;">${escapeHtml(storeConfig.name)}</h3>
               <p style="margin:2px 0;">COMANDA DE COCINA / DESPACHO</p>
               <div class="divider"></div>
-              <p class="bold" style="font-size:16px; margin:4px 0;">ORDEN #${order.id}</p>
-              <p style="margin:2px 0;">${new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p class="bold" style="font-size:16px; margin:4px 0;">ORDEN #${escapeHtml(order.id)}</p>
+              <p style="margin:2px 0;">${escapeHtml(new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))}</p>
               <div class="divider"></div>
             </div>
             <div>
-              <p style="margin:2px 0;"><strong>Cliente:</strong> ${order.customer.name}</p>
-              <p style="margin:2px 0;"><strong>Destino:</strong> ${order.customer.condominium}</p>
-              <p style="margin:2px 0;">${order.customer.tower} - ${order.customer.apartment}</p>
-              <p style="margin:2px 0;"><strong>Tel:</strong> ${order.customer.phone}</p>
+              <p style="margin:2px 0;"><strong>Cliente:</strong> ${escapeHtml(order.customer?.name)}</p>
+              <p style="margin:2px 0;"><strong>Destino:</strong> ${escapeHtml(order.customer?.condominium)}</p>
+              <p style="margin:2px 0;">${escapeHtml(order.customer?.tower)} - ${escapeHtml(order.customer?.apartment)}</p>
+              <p style="margin:2px 0;"><strong>Tel:</strong> ${escapeHtml(order.customer?.phone)}</p>
             </div>
             <div class="divider"></div>
             <p class="bold" style="margin:4px 0;">ITEMS:</p>
             ${order.items.map(item => `
               <div class="row">
-                <span>[ ] ${item.quantity}x ${item.name}</span>
+                <span>[ ] ${escapeHtml(item.quantity)}x ${escapeHtml(item.name)}</span>
                 <span>${(item.price * item.quantity).toFixed(2)}</span>
               </div>
             `).join('')}
@@ -408,11 +409,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           </head>
           <body>
             <div class="center">
-              <h3 style="margin:0;">${storeConfig.name}</h3>
+              <h3 style="margin:0;">${escapeHtml(storeConfig.name)}</h3>
               <p style="margin:2px 0;">ARQUEO & CIERRE DE CAJA DIARIO</p>
               <div class="divider"></div>
               <p style="margin:2px 0;">Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-              <p style="margin:2px 0;">Responsable: ${currentUser?.user_metadata?.full_name || currentUser?.email || 'Administrador'}</p>
+              <p style="margin:2px 0;">Responsable: ${escapeHtml(currentUser?.user_metadata?.full_name || currentUser?.email || 'Administrador')}</p>
               <div class="divider"></div>
             </div>
             
