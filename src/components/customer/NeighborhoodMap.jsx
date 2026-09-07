@@ -718,8 +718,17 @@ export const NeighborhoodMap = ({
             {/* Cabecera de la Tienda */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Store className="w-5 h-5" />
+                <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 shadow-xs ${
+                  activeStore.isOpen !== false ? 'bg-emerald-600' : 'bg-slate-700 border border-rose-400/60'
+                }`}>
+                  {activeStore.isOpen !== false ? (
+                    <Store className="w-5 h-5" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
@@ -760,7 +769,7 @@ export const NeighborhoodMap = ({
                     Abierto
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-full shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                     Cerrado
                   </span>
@@ -781,6 +790,14 @@ export const NeighborhoodMap = ({
               </div>
             </div>
 
+            {/* Aviso de Local Cerrado si corresponde */}
+            {activeStore.isOpen === false && (
+              <div className="bg-rose-50/90 border border-rose-200 rounded-xl p-2 flex items-center gap-2 text-rose-800 text-[10.5px] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                <span>Tienda cerrada en este momento. No recibe pedidos en vivo.</span>
+              </div>
+            )}
+
             {/* Dirección y Distancia */}
             <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-100">
               <span className="truncate flex items-center gap-1">
@@ -797,10 +814,14 @@ export const NeighborhoodMap = ({
               <button
                 type="button"
                 onClick={() => onEnterStore && onEnterStore(activeStore.slug)}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`w-full py-2 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  activeStore.isOpen !== false 
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95' 
+                    : 'bg-slate-700 hover:bg-slate-800 text-white active:scale-95'
+                }`}
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Ver Catálogo</span>
+                <span>{activeStore.isOpen !== false ? 'Ver Catálogo' : 'Ver Catálogo (Cerrado)'}</span>
               </button>
 
               <a
@@ -981,19 +1002,7 @@ export const NeighborhoodMap = ({
         </div>
       )}
 
-      {/* 4. CONTROLES INFERIORES: GPS, SATÉLITE Y ZOOM */}
-      {/* Lado Izquierdo: Estado de Cobertura */}
-      <div className="absolute bottom-3 left-3 sm:left-4 z-[1001] map-floating-control flex items-center gap-2 pointer-events-auto">
-        <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-bold text-emerald-700">
-            {activeLocationType === 'plaza' ? 'Plaza 24 de Septiembre' : 'Google Maps Centrado'}
-          </span>
-          <span className="text-slate-400">•</span>
-          <span>{activeLocationType === 'plaza' ? 'Vista Panorámica Centro' : 'Radio 600m'}</span>
-        </div>
-      </div>
-
+      {/* 4. CONTROLES INFERIORES: TOGGLE SATÉLITE Y ZOOM */}
       {/* Lado Derecho: Toggle Satélite y Zoom */}
       <div className="absolute bottom-3 right-3 sm:right-4 z-[1001] map-floating-control flex items-center gap-2 pointer-events-auto">
         {/* Toggle Mapa / Satélite */}

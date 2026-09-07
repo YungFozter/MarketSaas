@@ -49,7 +49,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   // Estados de búsqueda, filtros y ordenación
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState({
-    openNow: true,
+    openNow: false,
     registeredOnly: false,
     acceptsQr: false,
     topRated: false,
@@ -519,10 +519,17 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                           </h4>
                         </div>
                       </div>
-                      <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        {featuredStore.isOpen ? 'Abierto' : 'Cerrado'}
-                      </span>
+                      {featuredStore.isOpen !== false ? (
+                        <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          Abierto
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          Cerrado
+                        </span>
+                      )}
                     </div>
 
                     {/* Ficha de Detalles */}
