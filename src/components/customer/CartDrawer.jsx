@@ -26,10 +26,13 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
     actualDeliveryFee, 
     isFreeDelivery, 
     appliedCoupon, 
+    applyCouponCode,
     removeCoupon,
     storeConfig,
     selectedLocation 
   } = useStore();
+
+  const [couponInput, setCouponInput] = useState('');
 
   if (!isOpen) return null;
 
@@ -184,19 +187,46 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={() => {
-                    onClose();
-                    onOpenPoints();
-                  }}
-                  className="w-full text-left flex items-center justify-between p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100/80 border border-amber-200 text-xs text-amber-950 font-bold transition-colors"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    ¿Tienes VeciPuntos? Canjea descuentos
-                  </span>
-                  <span className="text-[11px] font-black text-amber-700 underline">Canjear →</span>
-                </button>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Código de cupón..."
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (applyCouponCode(couponInput)) setCouponInput('');
+                        }
+                      }}
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white focus:outline-hidden focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (applyCouponCode(couponInput)) setCouponInput('');
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-2xs active:scale-95 transition-all"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenPoints();
+                    }}
+                    className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/80 text-xs text-amber-950 font-bold transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5 text-[11px]">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      ¿Tienes VeciPuntos? Canjea descuentos
+                    </span>
+                    <span className="text-[11px] font-black text-amber-700 underline">Canjear →</span>
+                  </button>
+                </div>
               )}
 
               {/* Desglose de Precios */}

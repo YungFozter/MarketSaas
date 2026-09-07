@@ -316,7 +316,12 @@ export const StoreProvider = ({ children }) => {
             deliveryFee: c.deliveryFee === 5.00 || c.deliveryFee === 7.00 || c.deliveryFee === 8.00 ? 0.00 : c.deliveryFee
           }));
         }
-        return { ...initialStoreConfig, ...parsed };
+        if (Array.isArray(parsed.coupons)) {
+          parsed.coupons = parsed.coupons.filter(c => c.code !== 'VECINO10');
+        } else {
+          parsed.coupons = [];
+        }
+        return { ...initialStoreConfig, ...parsed, coupons: parsed.coupons };
       } catch (e) {
         return initialStoreConfig;
       }
@@ -327,6 +332,9 @@ export const StoreProvider = ({ children }) => {
   const setStoreConfig = (newConfigData) => {
     const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
     const { adminPassword, admin_pin, ...safeConfig } = rawUpdated;
+    if (Array.isArray(safeConfig.coupons)) {
+      safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10');
+    }
     setStoreConfigState(safeConfig);
     if (supabase) {
       const payload = {
@@ -334,6 +342,7 @@ export const StoreProvider = ({ children }) => {
         tenant_id: tenantSlug,
         name: safeConfig.name || 'Tienda',
         config: safeConfig,
+        coupons: safeConfig.coupons || [],
         owner_id: currentUser?.id || merchantStore?.owner_id || null,
         updated_at: new Date().toISOString()
       };
@@ -416,7 +425,10 @@ export const StoreProvider = ({ children }) => {
       if (storeRecord) {
         const loadedConfig = storeRecord.config || storeRecord;
         const { id, tenant_id, ...configData } = loadedConfig;
-        setStoreConfigState(prev => ({ ...prev, ...configData, name: storeRecord.name || configData.name }));
+        const loadedCoupons = Array.isArray(configData.coupons)
+          ? configData.coupons.filter(c => c.code !== 'VECINO10')
+          : (Array.isArray(storeRecord.coupons) ? storeRecord.coupons.filter(c => c.code !== 'VECINO10') : []);
+        setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: storeRecord.name || configData.name }));
         setMerchantStore(storeRecord);
         setTenantSlug(storeRecord.id);
         localStorage.setItem('marketsaas_active_tenant', storeRecord.id);
@@ -480,7 +492,10 @@ export const StoreProvider = ({ children }) => {
       if (!error && data) {
         const loadedConfig = data.config || data;
         const { id, tenant_id, adminPassword, admin_pin, ...configData } = loadedConfig;
-        setStoreConfigState(prev => ({ ...prev, ...configData, name: data.name || configData.name }));
+        const loadedCoupons = Array.isArray(configData.coupons)
+          ? configData.coupons.filter(c => c.code !== 'VECINO10')
+          : (Array.isArray(data.coupons) ? data.coupons.filter(c => c.code !== 'VECINO10') : []);
+        setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: data.name || configData.name }));
       }
     });
 
@@ -1130,6 +1145,28 @@ export const StoreProvider = ({ children }) => {
     showToast('Cupón removido.', 'info');
   };
 
+  const applyCouponCode = (code) => {
+    if (!code || !code.trim()) {
+      showToast('Ingresa un código de cupón.', 'warning');
+      return false;
+    }
+    const clean = code.trim().toUpperCase();
+    const available = (storeConfig?.coupons || []).find(c => c.code.toUpperCase() === clean);
+    if (!available) {
+      showToast('El cupón ingresado no es válido o no existe en esta tienda.', 'error');
+      return false;
+    }
+    const currency = storeConfig.currencySymbol || 'Bs.';
+    setAppliedCoupon({
+      code: available.code,
+      discount: parseFloat(available.discount || 0),
+      description: available.description || `Descuento de ${currency} ${parseFloat(available.discount || 0).toFixed(2)}`
+    });
+    triggerConfetti();
+    showToast(`¡Cupón "${available.code}" aplicado con éxito!`, 'success');
+    return true;
+  };
+
   // --- MÉTODOS DE AUTENTICACIÓN Y ONBOARDING MULTI-TENANT ---
 
   // 1. Registro de Comerciante (Supabase Auth)
@@ -1203,7 +1240,7 @@ export const StoreProvider = ({ children }) => {
         currency_symbol: 'Bs.',
         is_open: true,
         condominiums: initialStoreConfig.condominiums,
-        coupons: initialStoreConfig.coupons,
+        coupons: [],
         categories: initialStoreConfig.categories,
         payment_methods: initialStoreConfig.paymentMethods,
         config: newConfig,
@@ -1334,6 +1371,7 @@ export const StoreProvider = ({ children }) => {
         isFreeDelivery,
         appliedCoupon,
         redeemPoints,
+        applyCouponCode,
         removeCoupon,
         selectedLocation,
         setSelectedLocation,

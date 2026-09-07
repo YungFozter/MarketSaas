@@ -271,9 +271,7 @@ export const initialStoreConfig = {
     'Snacks & Golosinas',
     'Limpieza & Hogar'
   ],
-  coupons: [
-    { id: 'coup-1', code: 'VECINO10', discount: 10.00, minSubtotal: 50.00, description: 'Descuento 10 Bs. para vecinos en compras mayores a 50 Bs.' }
-  ],
+  coupons: [],
   defaultDeliveryFee: 0.00,
   freeDeliveryThreshold: 80.00,
   phone: '+591 72125280',

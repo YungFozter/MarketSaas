@@ -91,8 +91,27 @@ export const StoreSettings = () => {
     latitude: storeConfig?.googleMapsCoordinates?.lat ?? storeConfig?.latitude ?? -17.78335,
     longitude: storeConfig?.googleMapsCoordinates?.lng ?? storeConfig?.longitude ?? -63.18214,
     ...storeConfig,
+    coupons: Array.isArray(storeConfig?.coupons)
+      ? storeConfig.coupons.filter(c => c.code !== 'VECINO10')
+      : [],
     address: cleanInitialAddress
   });
+
+  // Sincronizar formulario reactivamente cuando storeConfig se cargue desde Supabase o localStorage
+  useEffect(() => {
+    if (storeConfig) {
+      setForm(prev => ({
+        ...prev,
+        ...storeConfig,
+        coupons: Array.isArray(storeConfig.coupons)
+          ? storeConfig.coupons.filter(c => c.code !== 'VECINO10')
+          : [],
+        address: (storeConfig.address && storeConfig.address !== 'Direccion según cada Tienda')
+          ? storeConfig.address
+          : prev.address
+      }));
+    }
+  }, [storeConfig]);
 
   const headerCardRef = useRef(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -167,8 +186,10 @@ export const StoreSettings = () => {
     const { adminPassword, admin_pin, ...safeConfig } = form;
     const lat = parseFloat(form.latitude) || -17.78335;
     const lng = parseFloat(form.longitude) || -63.18214;
+    const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10');
     const configToSave = {
       ...safeConfig,
+      coupons: cleanCoupons,
       address: form.address || '',
       zone: form.zone || '',
       reference: form.reference || '',
@@ -215,13 +236,18 @@ export const StoreSettings = () => {
       discount: discountVal,
       description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}`
     };
+    const updatedCoupons = [...(form.coupons || []).filter(c => c.code !== 'VECINO10'), newCoupon];
     setForm(prev => ({
       ...prev,
-      coupons: [...(prev.coupons || []), newCoupon]
+      coupons: updatedCoupons
+    }));
+    setStoreConfig(prev => ({
+      ...prev,
+      coupons: updatedCoupons
     }));
     setNewCouponCode('');
     setNewCouponDiscount('10.00');
-    showToast(`Cupón "${newCoupon.code}" creado con éxito.`, 'success');
+    showToast(`Cupón "${newCoupon.code}" creado y guardado con éxito.`, 'success');
   };
 
   const handleStartEditCoupon = (coupon) => {
@@ -240,24 +266,34 @@ export const StoreSettings = () => {
       return;
     }
     const cleanCode = editingCoupon.code.toUpperCase().trim();
+    const updatedCoupons = (form.coupons || []).map(c => 
+      c.id === editingCoupon.id 
+        ? { ...c, code: cleanCode, discount: discountVal, description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}` }
+        : c
+    );
     setForm(prev => ({
       ...prev,
-      coupons: (prev.coupons || []).map(c => 
-        c.id === editingCoupon.id 
-          ? { ...c, code: cleanCode, discount: discountVal, description: `Cupón de descuento por Bs. ${discountVal.toFixed(2)}` }
-          : c
-      )
+      coupons: updatedCoupons
+    }));
+    setStoreConfig(prev => ({
+      ...prev,
+      coupons: updatedCoupons
     }));
     setEditingCoupon(null);
-    showToast('Cupón actualizado correctamente.', 'success');
+    showToast('Cupón actualizado y guardado correctamente.', 'success');
   };
 
   const handleRemoveCoupon = (id) => {
+    const updatedCoupons = (form.coupons || []).filter(c => c.id !== id && c.code !== 'VECINO10');
     setForm(prev => ({
       ...prev,
-      coupons: (prev.coupons || []).filter(c => c.id !== id)
+      coupons: updatedCoupons
     }));
-    showToast('Cupón eliminado.');
+    setStoreConfig(prev => ({
+      ...prev,
+      coupons: updatedCoupons
+    }));
+    showToast('Cupón eliminado correctamente.', 'info');
   };
 
   return (
