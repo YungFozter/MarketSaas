@@ -761,21 +761,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           {activeTab === 'kanban' && (
             <div className="space-y-6 animate-fadeIn">
               
-              {/* Section Title & Subhead */}
-              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black">
-                    Panel de Control {storeConfig.name}
-                  </h1>
-                  <span className="text-xs sm:text-sm text-slate-400 font-medium">| Minimarket de Proximidad</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] uppercase tracking-wider font-extrabold border border-emerald-200">
-                    Centro de Operaciones
-                  </span>
-                  <span className="text-slate-300 text-xs">•</span>
-                  <span className="text-xs text-slate-500 font-medium">Jornada Activa</span>
-                </div>
+              {/* Section Title */}
+              <div>
+                <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black">
+                  Panel de Control {storeConfig.name}
+                </h1>
               </div>
 
               {/* 4 TOP GLASSMORPHIC KPI CARDS */}
@@ -885,21 +875,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </div>
 
               {/* ========================================================================= */}
-              {/* TABLERO KANBAN DE DESPACHO EN VIVO                                        */}
+              {/* TABLERO KANBAN DE PEDIDOS                                                 */}
               {/* ========================================================================= */}
               <section className="space-y-3.5">
-                {/* Subheader del Tablero */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-slate-100 shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <div>
-                      <h2 className="text-base sm:text-lg text-slate-900 font-bold tracking-tight">Tablero de Despacho en Vivo</h2>
-                      <p className="text-xs text-slate-400">Sincronización en tiempo real con vecinos y repartidores</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700">
-                      <span>Condominio:</span>
+                {/* Filtro de Condominio (compacto y discreto) */}
+                {storeConfig.condominiums && storeConfig.condominiums.length > 0 && (
+                  <div className="flex justify-end items-center">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
+                      <span className="text-slate-500 text-[11px]">Condominio:</span>
                       <select 
                         value={selectedCondoFilter}
                         onChange={(e) => setSelectedCondoFilter(e.target.value)}
@@ -912,7 +895,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       </select>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* 4 KANBAN COLUMNS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -1203,84 +1186,15 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </section>
 
               {/* ========================================================================= */}
-              {/* 4. BOTTOM BENTO GRID: ACCESOS MODULARES DE OPERACIÓN                      */}
+              {/* 4. ACCESOS MODULARES DE OPERACIÓN: INVENTARIO EXPRÉS                      */}
               {/* ========================================================================= */}
               <section className="space-y-3.5 pt-2">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg text-slate-900 font-bold tracking-tight">Accesos Modulares de Operación</h2>
-                  <span className="text-xs text-slate-400">Atajos de mostrador e inventario activo</span>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  {/* BENTO CARD 1: POS MOSTRADOR RÁPIDO */}
-                  <div className="rounded-2xl bg-white p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Store className="w-5 h-5 text-emerald-600" />
-                          <h3 className="text-base font-bold text-slate-900">POS Caja Mostrador</h3>
-                        </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                          Lector USB/BT Listo
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        Cobro presencial rápido a vecinos que bajan directamente al local.
-                      </p>
-                      
-                      {/* Billetes Rápidos */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Billetes Rápidos (Efectivo):</span>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {['Bs. 10', 'Bs. 20', 'Bs. 50', 'Bs. 100'].map(bill => (
-                            <button
-                              key={bill}
-                              onClick={() => {
-                                setActiveTab('pos');
-                                showToast(`Abriendo caja con billete ${bill}`, 'info');
-                              }}
-                              className="h-9 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-xs text-slate-800 transition-all cursor-pointer"
-                              type="button"
-                            >
-                              {bill}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Favoritos de Mostrador */}
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Favoritos de Mostrador:</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['+ Pan Marraqueta', '+ Leche Entera', '+ Coca-Cola 2L'].map(fav => (
-                            <button
-                              key={fav}
-                              onClick={() => {
-                                setActiveTab('pos');
-                                showToast(`Agregando ${fav} al punto de venta`, 'info');
-                              }}
-                              className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 font-semibold text-xs text-slate-700 transition-all cursor-pointer"
-                              type="button"
-                            >
-                              {fav}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => setActiveTab('pos')}
-                      className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer" 
-                      type="button"
-                    >
-                      <Store className="w-4 h-4 text-emerald-600" />
-                      <span>Abrir Terminal de Cobro Completo</span>
-                    </button>
-                  </div>
-
-                  {/* BENTO CARD 2: CONTROL DE INVENTARIO EXPRÉS */}
+                <div className="grid grid-cols-1 max-w-2xl">
+                  {/* BENTO CARD: CONTROL DE INVENTARIO EXPRÉS */}
                   <div className="rounded-2xl bg-white p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between space-y-4">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -1333,85 +1247,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     >
                       <Package className="w-4 h-4 text-emerald-600" />
                       <span>Ver Catálogo Completo</span>
-                    </button>
-                  </div>
-
-                  {/* BENTO CARD 3: BUZÓN DE SOLICITUDES DE VECINOS */}
-                  <div className="rounded-2xl bg-white p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-amber-500" />
-                          <h3 className="text-base font-bold text-slate-900">Buzón de Vecinos</h3>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 text-[10px] font-bold border border-amber-200">
-                          {pendingRequests.length} Peticiones Nuevas
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        Vecinos sugieren productos que quisieran comprar en el minimarket.
-                      </p>
-
-                      {/* Card Solicitud Destacada */}
-                      <div className="p-3 rounded-xl bg-gradient-to-br from-amber-50/50 to-slate-50 space-y-2 border border-amber-200/60">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <span className="text-xs text-slate-900 font-bold block">
-                              {pendingRequests[0]?.productName || 'Leche Sin Lactosa Descremada 1L'}
-                            </span>
-                            <p className="text-[11px] text-slate-500">
-                              {pendingRequests[0]?.customerName || 'Solicitado por 4 vecinos de Torre B'}
-                            </p>
-                          </div>
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-bold">
-                            Alta Demanda
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex -space-x-1 overflow-hidden">
-                            <div className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-emerald-600 text-white text-[9px] flex items-center justify-center font-bold">TB</div>
-                            <div className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-amber-600 text-white text-[9px] flex items-center justify-center font-bold">TA</div>
-                            <div className="inline-block h-5 w-5 rounded-full ring-2 ring-white bg-slate-800 text-white text-[9px] flex items-center justify-center font-bold">+2</div>
-                          </div>
-                          <span className="text-xs text-slate-500 italic">"Nos urge para los desayunos"</span>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            setActiveTab('inventory');
-                            showToast('Abre el catálogo para agregar el producto solicitado.', 'info');
-                          }}
-                          className="w-full h-9 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer" 
-                          type="button"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span>Crear Producto en 1 Clic</span>
-                        </button>
-                      </div>
-
-                      {/* Segunda sugerencia */}
-                      <div className="p-2 rounded-xl bg-slate-50 flex items-center justify-between text-xs">
-                        <div>
-                          <p className="font-bold text-slate-900">Pilas AA x4 Duracell</p>
-                          <p className="text-[11px] text-slate-400">Torre A Depto 102</p>
-                        </div>
-                        <button 
-                          onClick={() => showToast('Guardado en la lista de compras del minimarket', 'success')}
-                          className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 transition-colors" 
-                          title="Añadir a lista de compras" 
-                          type="button"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => setActiveTab('requests')}
-                      className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer" 
-                      type="button"
-                    >
-                      <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span>Gestionar Todas las Sugerencias</span>
                     </button>
                   </div>
                 </div>
