@@ -63,10 +63,24 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
   // Alternar filtro rápido
   const handleToggleFilter = (filterId) => {
-    setActiveFilters((prev) => ({
-      ...prev,
-      [filterId]: !prev[filterId]
-    }));
+    setActiveFilters((prev) => {
+      const willBeActive = !prev[filterId];
+      const updated = {
+        ...prev,
+        [filterId]: willBeActive
+      };
+
+      // Si se activa "Tiendas Registradas", seleccionar automáticamente la tienda del dueño o la primera registrada en el mapa
+      if (filterId === 'registeredOnly' && willBeActive) {
+        const targetStore = storesWithDistance.find((s) => s.isCurrentOwnerStore && s.isRegisteredStore)
+          || storesWithDistance.find((s) => s.isRegisteredStore);
+        if (targetStore) {
+          setSelectedStoreSlug(targetStore.slug);
+        }
+      }
+
+      return updated;
+    });
   };
 
   const handleSearchSubmit = () => {
@@ -165,6 +179,22 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }
   };
 
+  // Obtener la tienda seleccionada activa o la tienda registrada correspondiente al filtrar
+  const activeSelectedStore = useMemo(() => {
+    if (selectedStoreSlug) {
+      const found = storesWithDistance.find((s) => s.slug === selectedStoreSlug);
+      if (found) return found;
+    }
+    if (activeFilters.registeredOnly) {
+      return (
+        storesWithDistance.find((s) => s.isCurrentOwnerStore && s.isRegisteredStore) ||
+        storesWithDistance.find((s) => s.isRegisteredStore) ||
+        null
+      );
+    }
+    return null;
+  }, [storesWithDistance, selectedStoreSlug, activeFilters.registeredOnly]);
+
   return (
     <main className="store-directory-wrapper w-full bg-slate-50 min-h-screen text-slate-800 antialiased">
       {/* 1. SECCIÓN SUPERIOR: TÍTULO Y SUBTÍTULO */}
@@ -203,9 +233,11 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <NeighborhoodMap
             allStores={storesWithDistance}
             stores={storesWithDistance}
-            selectedStore={storesWithDistance.find((s) => s.slug === selectedStoreSlug)}
+            selectedStore={activeSelectedStore}
             selectedZone="all"
             searchQuery={searchQuery}
+            activeFilters={activeFilters}
+            onToggleFilter={handleToggleFilter}
             onSelectStore={(slug) => setSelectedStoreSlug(slug)}
             onEnterStore={handleStoreNavigation}
             onUserLocationChange={handleUserLocationChange}

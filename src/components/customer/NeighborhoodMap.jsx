@@ -15,7 +15,8 @@ import {
   X,
   Check,
   ChevronDown,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import './NeighborhoodMap.css';
 
@@ -39,6 +40,8 @@ export const NeighborhoodMap = ({
   selectedStore = null,
   selectedZone = 'all',
   searchQuery = '',
+  activeFilters = {},
+  onToggleFilter,
   onSelectStore,
   onEnterStore,
   onUserLocationChange,
@@ -49,16 +52,34 @@ export const NeighborhoodMap = ({
     return allStores.length > 0 ? allStores : stores;
   }, [allStores, stores]);
 
+  // Identificar tiendas registradas y la tienda del dueño actual
+  const registeredStores = useMemo(() => {
+    return masterStores.filter((s) => s.isRegisteredStore);
+  }, [masterStores]);
+
+  const ownerStore = useMemo(() => {
+    return (
+      masterStores.find((s) => s.isCurrentOwnerStore && s.isRegisteredStore) ||
+      masterStores.find((s) => s.isRegisteredStore) ||
+      null
+    );
+  }, [masterStores]);
+
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
-  const [zoomLevel, setZoomLevel] = useState(15); // Ligero zoom (15) para ver con claridad la Plaza 24 de Septiembre
+  const [zoomLevel, setZoomLevel] = useState(15);
   const [isRecentering, setIsRecentering] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const isFirstZoneEffect = useRef(true);
 
-  // La tienda activa se define cuando el usuario hace clic en una tienda
-  const activeStore = selectedStore;
+  // La tienda activa: la seleccionada o la tienda registrada del dueño cuando el filtro "Tiendas Registradas" está activo
+  const activeStore = useMemo(() => {
+    if (selectedStore) return selectedStore;
+    if (activeFilters?.registeredOnly) {
+      return ownerStore;
+    }
+    return null;
+  }, [selectedStore, activeFilters?.registeredOnly, ownerStore]);
 
-  // Estado de coordenadas activas: arranca por defecto en la Plaza 24 de Septiembre
+  // Estado de coordenadas activas: arranca en la tienda activa si existe o en el centro de Santa Cruz
   const [currentCoords, setCurrentCoords] = useState(() => {
     if (activeStore?.googleMapsCoordinates) {
       return activeStore.googleMapsCoordinates;
@@ -87,6 +108,13 @@ export const NeighborhoodMap = ({
     const initialList = allStores.length > 0 ? allStores : stores;
     return initialList.slice(0, 3).map((s) => s.slug);
   });
+
+  // Asegurar que la tienda registrada del dueño esté siempre presente en accesos rápidos
+  useEffect(() => {
+    if (ownerStore && !pinnedSlugs.includes(ownerStore.slug)) {
+      setPinnedSlugs((prev) => [ownerStore.slug, ...prev.filter((s) => s !== ownerStore.slug)].slice(0, 3));
+    }
+  }, [ownerStore]);
 
   // Sincronizar pinnedSlugs por defecto si la lista de tiendas llega de forma asíncrona
   useEffect(() => {
@@ -166,14 +194,18 @@ export const NeighborhoodMap = ({
     return masterStores.slice(0, 3);
   }, [masterStores, pinnedSlugs]);
 
-  // Si cambia la tienda seleccionada desde el directorio o los chips
+  // Si cambia la tienda activa o el filtro de registradas
   useEffect(() => {
-    if (selectedStore?.googleMapsCoordinates) {
-      setCurrentCoords(selectedStore.googleMapsCoordinates);
+    if (activeStore?.googleMapsCoordinates) {
+      setCurrentCoords(activeStore.googleMapsCoordinates);
       setActiveLocationType('store');
       setZoomLevel(16);
+    } else if (!activeStore && activeLocationType === 'store' && !activeFilters?.registeredOnly) {
+      setActiveLocationType('plaza');
+      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
+      setZoomLevel(15);
     }
-  }, [selectedStore]);
+  }, [activeStore, activeFilters?.registeredOnly]);
 
   // Si el usuario escribe en el buscador general, activamos modo búsqueda para mostrar todas las ubicaciones en el mapa
   useEffect(() => {
@@ -273,10 +305,11 @@ export const NeighborhoodMap = ({
       return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Tu+Ubicaci%C3%B3n+GPS)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
     }
 
-    // 2. Si hay una tienda seleccionada específicamente
-    if (activeStore?.googleMapsCoordinates && activeLocationType === 'store') {
-      const storeLabel = encodeURIComponent(activeStore.name);
-      return `https://maps.google.com/maps?q=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}+(${storeLabel})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
+    // 2. Si hay una tienda seleccionada o el filtro de Tiendas Registradas está activado
+    const targetStore = activeStore || (activeFilters?.registeredOnly ? ownerStore : null);
+    if (targetStore?.googleMapsCoordinates && (activeLocationType === 'store' || activeFilters?.registeredOnly)) {
+      const storeLabel = encodeURIComponent(targetStore.name);
+      return `https://maps.google.com/maps?q=${targetStore.googleMapsCoordinates.lat},${targetStore.googleMapsCoordinates.lng}+(${storeLabel})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
     }
 
     // 3. Si hay una búsqueda activa (ej. "Supermercado Tía", "Amarket", etc.)
@@ -290,7 +323,7 @@ export const NeighborhoodMap = ({
 
     // 4. Ubicación por defecto (Centro de Santa Cruz)
     return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Centro+Santa+Cruz)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
-  }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType]);
+  }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType, activeFilters?.registeredOnly, ownerStore]);
 
   return (
     <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
@@ -307,6 +340,46 @@ export const NeighborhoodMap = ({
           referrerPolicy="no-referrer-when-downgrade"
         />
       </div>
+
+      {/* 1.1 BOTÓN FLOTANTE RÁPIDO: TIENDAS REGISTRADAS / MI TIENDA */}
+      {registeredStores.length > 0 && (
+        <div className="absolute top-3 left-3 sm:left-4 z-30 pointer-events-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const target = ownerStore || registeredStores[0];
+              if (target) {
+                handleSelectStoreTarget(target);
+                showFeedback(`📍 Marcador activado: ${target.name}`);
+              }
+              if (onToggleFilter && !activeFilters?.registeredOnly) {
+                onToggleFilter('registeredOnly');
+              }
+            }}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+              activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore)
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-emerald-400/50'
+                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-emerald-300 hover:shadow-lg'
+            }`}
+            title="Ver marcador de tiendas registradas en el mapa"
+          >
+            <CheckCircle2 className={`w-3.5 h-3.5 ${activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore) ? 'text-white' : 'text-emerald-600'}`} />
+            <span className="hidden sm:inline">
+              {ownerStore?.name ? `Tienda Registrada: ${ownerStore.name}` : 'Tiendas Registradas'}
+            </span>
+            <span className="sm:hidden">
+              {ownerStore?.isCurrentOwnerStore ? 'Mi Tienda' : 'Registradas'}
+            </span>
+            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+              activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore)
+                ? 'bg-white/20 text-white'
+                : 'bg-emerald-100 text-emerald-800'
+            }`}>
+              {registeredStores.length}
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* 2. MENÚ DESPLEGABLE FLOTANTE: ACCESO RÁPIDO A MI UBICACIÓN Y TIENDAS FIJADAS (OCULTO POR DEFECTO) */}
       <div ref={quickMenuRef} className="absolute top-3 right-3 sm:right-4 z-30 pointer-events-auto">
@@ -385,6 +458,64 @@ export const NeighborhoodMap = ({
                 )}
               </button>
             </div>
+
+            {/* 1.5 SECCIÓN: TIENDAS OFICIALES REGISTRADAS */}
+            {registeredStores.length > 0 && (
+              <div className="p-2 border-b border-slate-100 bg-emerald-50/40">
+                <div className="px-1.5 pb-1 flex items-center justify-between text-[11px] font-bold text-emerald-900">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Tiendas Registradas ({registeredStores.length})</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-emerald-700">Ver Pin</span>
+                </div>
+
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+                  {registeredStores.map((store) => {
+                    const isSelected = activeStore?.slug === store.slug && activeLocationType === 'store';
+                    return (
+                      <button
+                        key={store.id}
+                        type="button"
+                        onClick={() => {
+                          handleSelectStoreTarget(store);
+                          setIsQuickMenuOpen(false);
+                          showFeedback(`📍 Mostrando ${store.name}`);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs ring-1 ring-white/40'
+                            : 'bg-white hover:bg-emerald-50 text-slate-800 border-emerald-200/80 hover:border-emerald-300'
+                        }`}
+                        title={`Ver marcador de ${store.name} en el mapa`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-2">
+                          <Store className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-emerald-600'}`} />
+                          <div className="text-left min-w-0 truncate">
+                            <div className="truncate font-bold leading-tight flex items-center gap-1">
+                              <span>{store.name}</span>
+                              {store.isCurrentOwnerStore && (
+                                <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${isSelected ? 'bg-white/30 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+                                  Tu Tienda
+                                </span>
+                              )}
+                            </div>
+                            <div className={`text-[10px] truncate ${isSelected ? 'text-emerald-100' : 'text-slate-500'}`}>
+                              {store.address}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          📍 Pin
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 2. SECCIÓN: TIENDAS FIJADAS */}
             <div className="p-2">

@@ -679,16 +679,24 @@ export const StoreProvider = ({ children }) => {
           setStores(prev => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
-              const coords = conf.googleMapsCoordinates || conf.coordinates || {
-                lat: conf.latitude ? parseFloat(conf.latitude) : (-17.78335 + ((idx + 1) * 0.005)),
-                lng: conf.longitude ? parseFloat(conf.longitude) : (-63.18214 - ((idx + 1) * 0.004))
-              };
+              const coords = conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
+                lat: parseFloat(conf.latitude),
+                lng: parseFloat(conf.longitude)
+              } : (rs.latitude && rs.longitude ? {
+                lat: parseFloat(rs.latitude),
+                lng: parseFloat(rs.longitude)
+              } : {
+                lat: -17.78335 + ((idx + 1) * 0.005),
+                lng: -63.18214 - ((idx + 1) * 0.004)
+              }));
+              const isCurrentOwner = currentUser && (rs.owner_id === currentUser.id || conf.owner_id === currentUser.id);
+
               return {
                 id: rs.id || `remote-${idx}`,
                 slug: rs.tenant_id || rs.id,
                 name: rs.name || conf.name || 'Minimarket Registrado',
                 tagline: rs.slogan || conf.tagline || 'Tienda oficial registrada',
-                address: conf.address || 'Ubicación registrada',
+                address: rs.address || conf.address || 'Ubicación registrada',
                 condominium: conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz',
                 reference: conf.reference || '',
                 distance: `A ${(idx + 1) * 180}m`,
@@ -710,6 +718,8 @@ export const StoreProvider = ({ children }) => {
                 isFeatured: true,
                 isRegisteredStore: true,
                 isVerified: true,
+                isCurrentOwnerStore: Boolean(isCurrentOwner),
+                owner_id: rs.owner_id || conf.owner_id || null,
                 totalStockItems: 120,
                 perks: [
                   { id: 'p1', text: '✅ Registrada en el sistema' },
@@ -718,7 +728,7 @@ export const StoreProvider = ({ children }) => {
                 ],
                 featuredProducts: [],
                 googleMapsCoordinates: coords,
-                googleMapsQuery: `${rs.name || conf.name}, ${conf.address || ''}, Santa Cruz de la Sierra`,
+                googleMapsQuery: `${rs.name || conf.name}, ${rs.address || conf.address || ''}, Santa Cruz de la Sierra`,
                 mapPosition: {
                   leftPercent: 40 + ((idx * 18) % 45),
                   bottomPixels: 45 + ((idx * 25) % 60),
@@ -728,9 +738,16 @@ export const StoreProvider = ({ children }) => {
               };
             });
 
+            // Preservar la tienda del dueño actual si ya existía en memoria
+            const currentOwnerStore = prev.find(s => s.isCurrentOwnerStore || s.slug === tenantSlug || s.id === tenantSlug);
             const remoteSlugs = new Set(remoteMapped.map(s => s.slug));
+            let finalStores = [...remoteMapped];
+            if (currentOwnerStore && !remoteSlugs.has(currentOwnerStore.slug)) {
+              finalStores.unshift(currentOwnerStore);
+              remoteSlugs.add(currentOwnerStore.slug);
+            }
             const remaining = initialStores.filter(s => !remoteSlugs.has(s.slug));
-            return [...remoteMapped, ...remaining];
+            return [...finalStores, ...remaining];
           });
         }
       } catch (err) {
@@ -738,13 +755,13 @@ export const StoreProvider = ({ children }) => {
       }
     };
     fetchRemoteStores();
-  }, []);
+  }, [currentUser, tenantSlug]);
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
   useEffect(() => {
     if (!tenantSlug || !storeConfig?.name) return;
     setStores(prev => {
-      const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug);
+      const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
       const coords = storeConfig.googleMapsCoordinates || {
         lat: parseFloat(storeConfig.latitude) || -17.78335,
         lng: parseFloat(storeConfig.longitude) || -63.18214
@@ -776,6 +793,8 @@ export const StoreProvider = ({ children }) => {
         isFeatured: true,
         isRegisteredStore: true,
         isVerified: true,
+        isCurrentOwnerStore: true,
+        owner_id: currentUser?.id || merchantStore?.owner_id || null,
         totalStockItems: 100,
         perks: [
           { id: 'p1', text: '✅ Registrada en el sistema' },
@@ -801,7 +820,7 @@ export const StoreProvider = ({ children }) => {
         return [updatedCurrent, ...prev];
       }
     });
-  }, [storeConfig, tenantSlug]);
+  }, [storeConfig, tenantSlug, currentUser]);
 
   // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {
