@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Package, 
   Plus, 
@@ -17,7 +17,9 @@ import {
   FileSpreadsheet,
   Download,
   UploadCloud,
-  Check
+  Check,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
@@ -80,6 +82,15 @@ export const InventoryManager = () => {
   const [editingProduct, setEditingProduct] = useState(null); // null = modal cerrado
   const [isNew, setIsNew] = useState(false);
 
+  // Paginación y límite de productos en la lista
+  const [itemsPerPage, setItemsPerPage] = useState(10); // 10, 25, 50, 'all'
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reiniciar a la primera página cuando cambian los filtros o el límite
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, itemsPerPage]);
+
   const filteredProducts = products.filter((prod) => {
     const matchesCat = selectedCategory === 'all' || prod.category === selectedCategory;
     const matchesSearch = 
@@ -88,6 +99,34 @@ export const InventoryManager = () => {
       prod.category.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCat && matchesSearch;
   });
+
+  const totalItems = filteredProducts.length;
+  const totalPages = itemsPerPage === 'all' ? 1 : Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+
+  // Productos cortados para la página activa (reactivo, sin recargar pantalla)
+  const paginatedProducts = useMemo(() => {
+    if (itemsPerPage === 'all') return filteredProducts;
+    const start = (safePage - 1) * itemsPerPage;
+    return filteredProducts.slice(start, start + itemsPerPage);
+  }, [filteredProducts, safePage, itemsPerPage]);
+
+  const startIndex = totalItems === 0 ? 0 : (safePage - 1) * (itemsPerPage === 'all' ? totalItems : itemsPerPage) + 1;
+  const endIndex = itemsPerPage === 'all' ? totalItems : Math.min(safePage * itemsPerPage, totalItems);
+
+  // Generador de números de página con elipsis
+  const getPageNumbers = (current, total) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 3) {
+      return [1, 2, 3, 4, '...', total];
+    }
+    if (current >= total - 2) {
+      return [1, '...', total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
 
   const handleOpenNew = () => {
     setIsNew(true);
@@ -157,7 +196,7 @@ export const InventoryManager = () => {
   };
 
   const handleToggleSelectAll = () => {
-    const visibleIds = filteredProducts.map(p => p.id);
+    const visibleIds = paginatedProducts.map(p => p.id);
     const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedProductIds.includes(id));
     if (allSelected) {
       setSelectedProductIds(prev => prev.filter(id => !visibleIds.includes(id)));
@@ -317,32 +356,68 @@ export const InventoryManager = () => {
         </div>
       </div>
 
-      {/* Barra de Acciones Masivas cuando hay productos seleccionados */}
+      {/* Barra de Control de Cantidad por Página y Contador de Productos */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1 text-xs">
+        <div className="text-slate-500 font-medium">
+          Mostrando <span className="font-extrabold text-slate-800">{totalItems === 0 ? 0 : startIndex} - {endIndex}</span> de{' '}
+          <span className="font-extrabold text-slate-800">{totalItems}</span> productos
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <span className="text-slate-500 font-bold text-[11px] uppercase tracking-wider">Mostrar:</span>
+          <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200/80">
+            {[10, 25, 50, 'all'].map((limit) => {
+              const isSelected = itemsPerPage === limit;
+              return (
+                <button
+                  key={limit}
+                  type="button"
+                  onClick={() => setItemsPerPage(limit)}
+                  className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-white text-emerald-700 shadow-2xs font-black'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {limit === 'all' ? 'Todos' : limit}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de Acciones Masivas cuando hay productos seleccionados (Sticky flotante al scrollear) */}
       {selectedProductIds.length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs animate-fadeIn">
+        <div className="sticky top-[60px] sm:top-[68px] z-20 bg-rose-50/95 backdrop-blur-md border border-rose-200/90 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg shadow-rose-950/10 transition-all animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 text-white font-black text-xs shrink-0">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-600 text-white font-black text-xs shrink-0 shadow-xs">
               {selectedProductIds.length}
             </span>
-            <span className="text-xs font-bold text-rose-900">
-              {selectedProductIds.length === 1 
-                ? '1 producto seleccionado para eliminar' 
-                : `${selectedProductIds.length} productos seleccionados para eliminar`}
-            </span>
+            <div>
+              <span className="text-xs font-bold text-rose-900 block leading-tight">
+                {selectedProductIds.length === 1 
+                  ? '1 producto seleccionado para eliminar' 
+                  : `${selectedProductIds.length} productos seleccionados para eliminar`}
+              </span>
+              <span className="text-[11px] text-rose-600/80 font-medium hidden sm:inline">
+                La selección se mantiene aunque navegues entre páginas.
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
             <button
               type="button"
               onClick={() => setSelectedProductIds([])}
-              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition-colors cursor-pointer shadow-2xs"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-rose-100/50 text-slate-700 font-bold text-xs border border-rose-200 transition-colors cursor-pointer shadow-2xs"
             >
               Deseleccionar todos
             </button>
             <button
               type="button"
               onClick={() => setIsBulkDeleteModalOpen(true)}
-              className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Eliminar ({selectedProductIds.length})</span>
@@ -360,17 +435,17 @@ export const InventoryManager = () => {
                 <th className="w-12 py-3.5 px-4 text-center">
                   <input
                     type="checkbox"
-                    checked={filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id))}
+                    checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProductIds.includes(p.id))}
                     ref={el => {
                       if (el) {
-                        const hasSome = filteredProducts.some(p => selectedProductIds.includes(p.id));
-                        const hasAll = filteredProducts.length > 0 && filteredProducts.every(p => selectedProductIds.includes(p.id));
+                        const hasSome = paginatedProducts.some(p => selectedProductIds.includes(p.id));
+                        const hasAll = paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProductIds.includes(p.id));
                         el.indeterminate = hasSome && !hasAll;
                       }
                     }}
                     onChange={handleToggleSelectAll}
                     className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
-                    title="Seleccionar todos los productos visibles"
+                    title="Seleccionar todos los productos visibles de esta página"
                   />
                 </th>
                 <th className="py-3.5 px-4">Producto</th>
@@ -382,7 +457,16 @@ export const InventoryManager = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredProducts.map((prod) => {
+              {paginatedProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <Package className="w-10 h-10 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+                    <p className="font-bold text-sm text-slate-600">No se encontraron productos</p>
+                    <p className="text-xs text-slate-400 mt-1">Prueba cambiando los términos de búsqueda o la categoría seleccionada.</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedProducts.map((prod) => {
                 const isSelected = selectedProductIds.includes(prod.id);
                 const rawCostVal = (() => {
                   const candidates = [prod.cost_price, prod.costPrice, prod.costprice];
@@ -509,11 +593,76 @@ export const InventoryManager = () => {
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+              })
+            )}
+          </tbody>
+        </table>
       </div>
+
+      {/* Barra Inferior de Paginación */}
+      <div className="px-4 py-3.5 bg-slate-50/80 border-t border-slate-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+        <div className="font-medium text-slate-500 text-center sm:text-left">
+          Página <span className="font-extrabold text-slate-800">{safePage}</span> de{' '}
+          <span className="font-extrabold text-slate-800">{totalPages}</span>
+          {itemsPerPage !== 'all' && (
+            <span className="text-slate-400 ml-1.5">({itemsPerPage} por página)</span>
+          )}
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center gap-1.5 select-none">
+            <button
+              type="button"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={safePage <= 1}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              title="Página anterior"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Anterior</span>
+            </button>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers(safePage, totalPages).map((page, idx) => {
+                if (page === '...') {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="px-2 py-1 text-slate-400 font-bold">
+                      ...
+                    </span>
+                  );
+                }
+                const isCurrent = page === safePage;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`min-w-8 h-8 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      isCurrent
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={safePage >= totalPages}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
+              title="Página siguiente"
+            >
+              <span className="hidden sm:inline">Siguiente</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
 
       {/* Modal de Crear / Editar Producto */}
       {editingProduct && (
