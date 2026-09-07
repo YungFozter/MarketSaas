@@ -770,14 +770,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <Bell className="w-3 h-3 text-amber-600" />
               <span className="hidden md:inline">Probar Pedido Demo</span>
             </button>
-
-            <button
-              onClick={() => setActiveTab('pos')}
-              className="h-8 sm:h-9 px-3 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 active:scale-98 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>+ Venta POS</span>
-            </button>
           </div>
         </header>
 
