@@ -479,8 +479,26 @@ export const StoreProvider = ({ children }) => {
     };
   }, []);
 
-  // Cargar datos de Supabase reactivamente cada vez que cambia tenantSlug
+  // Cargar datos reactivamente cada vez que cambia tenantSlug
   useEffect(() => {
+    // 0. Recargar caché local aislada para el tenant seleccionado
+    try {
+      const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
+      if (localProds) {
+        setProducts(JSON.parse(localProds));
+      }
+      const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
+      if (localOrders) {
+        setOrders(JSON.parse(localOrders));
+      }
+      const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
+      if (localCfg) {
+        setStoreConfigState(JSON.parse(localCfg));
+      }
+    } catch (e) {
+      console.warn('Error cargando caché local de tenant:', e);
+    }
+
     if (!supabase) return;
 
     // 1. Cargar productos por tienda de forma aislada a nivel servidor
@@ -1100,13 +1118,15 @@ export const StoreProvider = ({ children }) => {
       const autoCode = `COD-${String(nextNum).padStart(3, '0')}`;
       const newProd = {
         ...payload,
-        id: `prod-${Date.now()}`,
+        id: `${tenantSlug}-prod-${Date.now()}`,
+        tenant_id: tenantSlug,
         code: productData.code && productData.code.trim() ? productData.code.trim() : autoCode,
         image: productData.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'
       };
       const newProdSync = {
         ...syncItem,
         id: newProd.id,
+        tenant_id: tenantSlug,
         code: newProd.code,
         image: newProd.image
       };
@@ -1123,7 +1143,7 @@ export const StoreProvider = ({ children }) => {
   const deleteProduct = (productId) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
     if (supabase) {
-      supabase.from('products').delete().eq('id', productId).then(({ error }) => {
+      supabase.from('products').delete().eq('id', productId).eq('tenant_id', tenantSlug).then(({ error }) => {
         if (error) console.error('Error eliminando producto en Supabase:', error);
       });
     }
@@ -1142,7 +1162,7 @@ export const StoreProvider = ({ children }) => {
         (p.code && ep.code && String(ep.code).trim() === String(p.code).trim()) || 
         (ep.name && ep.name.trim().toLowerCase() === p.name.trim().toLowerCase())
       );
-      const prodId = existing ? existing.id : (p.id || `prod-${Date.now()}-${idx}`);
+      const prodId = existing ? existing.id : `${tenantSlug}-prod-${Date.now()}-${idx}`;
       if (existing) {
         updatedCount++;
       } else {
@@ -1165,25 +1185,27 @@ export const StoreProvider = ({ children }) => {
       });
       const updatedList = Array.from(map.values());
       try {
-        localStorage.setItem(`products_${tenantSlug}`, JSON.stringify(updatedList));
+        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updatedList));
       } catch (e) {
         console.error(e);
       }
       return updatedList;
     });
 
-    // Auto-agregar nuevas categorías si vienen en la importación
-    const importedCategories = Array.from(new Set(
+    // Auto-agregar nuevas categorías si vienen en la importación a la configuración del dueño
+    const currentCats = Array.isArray(storeConfig?.categories) ? storeConfig.categories : [];
+    const newCategories = Array.from(new Set(
       preparedProducts
         .map(p => p.category)
-        .filter(c => c && c !== 'Sin definir' && !categories.some(cat => cat.name === c))
+        .filter(c => c && c !== 'Sin definir' && !currentCats.includes(c))
     ));
 
-    if (importedCategories.length > 0) {
-      setCategories(prev => [
+    if (newCategories.length > 0) {
+      const updatedCategories = [...currentCats, ...newCategories];
+      setStoreConfig(prev => ({
         ...prev,
-        ...importedCategories.map((c, i) => ({ id: `cat-${Date.now()}-${i}`, name: c, icon: 'Package' }))
-      ]);
+        categories: updatedCategories
+      }));
     }
 
     // Sincronizar con Supabase si está disponible
@@ -1225,7 +1247,7 @@ export const StoreProvider = ({ children }) => {
   // Venta en POS de Mostrador (Dueño)
   const completePosSale = (posItems, paymentType = 'cash') => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const saleId = `POS-${Math.floor(1000 + Math.random() * 9000)}`;
+    const saleId = `${tenantSlug}-POS-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Descontar inventario
     setProducts(prevProducts =>
@@ -1262,7 +1284,7 @@ export const StoreProvider = ({ children }) => {
     };
 
     setOrders(prev => [posOrder, ...prev]);
-    if (supabase && tenantSlug && tenantSlug !== 'default') {
+    if (supabase && tenantSlug) {
       supabase.from('orders').insert([posOrder]).then(({ error }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
       });

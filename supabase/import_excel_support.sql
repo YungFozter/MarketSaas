@@ -172,20 +172,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. POLÍTICAS RLS (Garantiza lectura y guardado masivo en Supabase)
+-- 5. POLÍTICAS RLS MULTI-TENANT (Aislamiento estricto por Dueño y Tienda)
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Lectura pública de productos" ON public.products;
 DROP POLICY IF EXISTS "Gestión de productos por dueño" ON public.products;
 DROP POLICY IF EXISTS "Gestión total de productos" ON public.products;
 
--- Permitir lectura a todos (clientes y dueños)
+-- 5.1. Lectura pública de productos (cualquier cliente o dueño puede ver el catálogo de la tienda que visita)
 CREATE POLICY "Lectura pública de productos" ON public.products 
   FOR SELECT USING (true);
 
--- Permitir creación, edición y carga masiva
-CREATE POLICY "Gestión total de productos" ON public.products 
-  FOR ALL USING (true) WITH CHECK (true);
+-- 5.2. Gestión de productos: Cada dueño SOLO puede crear, editar, eliminar o importar productos de SUS propias tiendas
+CREATE POLICY "Gestión de productos por dueño" ON public.products 
+  FOR ALL USING (
+    tenant_id = 'default' OR
+    auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+  ) WITH CHECK (
+    tenant_id = 'default' OR
+    auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+  );
 
 -- 6. REFRESCAR CACHÉ DE ESQUEMA DE SUPABASE POSTGREST
 NOTIFY pgrst, 'reload schema';
