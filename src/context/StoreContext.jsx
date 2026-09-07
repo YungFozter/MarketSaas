@@ -342,12 +342,20 @@ export const StoreProvider = ({ children }) => {
     setStoreConfigState(safeConfig);
     try {
       localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(safeConfig));
+      localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(safeConfig));
     } catch (err) {}
     if (supabase) {
       const payload = {
         id: tenantSlug,
         tenant_id: tenantSlug,
         name: safeConfig.name || 'Tienda',
+        address: safeConfig.address || null,
+        slogan: safeConfig.tagline || null,
+        phone: safeConfig.phone || null,
+        whatsapp: safeConfig.whatsapp || null,
+        is_open: safeConfig.isOpen !== false,
+        enable_delivery: safeConfig.enableDelivery === true,
+        enable_points: safeConfig.enablePoints !== false,
         config: safeConfig,
         coupons: safeConfig.coupons || [],
         owner_id: currentUser?.id || merchantStore?.owner_id || null,
@@ -693,42 +701,81 @@ export const StoreProvider = ({ children }) => {
           setStores(prev => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
-              const isDeliveryActive = conf.enableDelivery === true;
-              const coords = conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
-                lat: parseFloat(conf.latitude),
-                lng: parseFloat(conf.longitude)
-              } : (rs.latitude && rs.longitude ? {
-                lat: parseFloat(rs.latitude),
-                lng: parseFloat(rs.longitude)
-              } : {
-                lat: -17.78335 + ((idx + 1) * 0.005),
-                lng: -63.18214 - ((idx + 1) * 0.004)
-              }));
-              const isCurrentOwner = currentUser && (rs.owner_id === currentUser.id || conf.owner_id === currentUser.id);
+              const isCurrentOwner = Boolean(
+                (currentUser && (rs.owner_id === currentUser.id || conf.owner_id === currentUser.id)) ||
+                rs.tenant_id === tenantSlug || rs.id === tenantSlug
+              );
+
+              // Si es la tienda del dueño actual conectada, storeConfig es la fuente de verdad prioritaria
+              const effectiveName = (isCurrentOwner && storeConfig?.name) 
+                ? storeConfig.name 
+                : (conf.name || rs.name || 'Minimarket Registrado');
+
+              const effectiveTagline = (isCurrentOwner && storeConfig?.tagline) 
+                ? storeConfig.tagline 
+                : (conf.tagline || rs.slogan || 'Tienda oficial registrada');
+
+              // La dirección configurada en config tiene prioridad absoluta sobre la columna de tabla antigua rs.address
+              const effectiveAddress = (isCurrentOwner && storeConfig?.address) 
+                ? storeConfig.address 
+                : (conf.address || rs.address || 'Ubicación registrada');
+
+              const isDeliveryActive = (isCurrentOwner && storeConfig) 
+                ? (storeConfig.enableDelivery === true) 
+                : (conf.enableDelivery === true || rs.enable_delivery === true);
+
+              const coords = (isCurrentOwner && storeConfig?.googleMapsCoordinates)
+                ? storeConfig.googleMapsCoordinates
+                : (conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
+                    lat: parseFloat(conf.latitude),
+                    lng: parseFloat(conf.longitude)
+                  } : (rs.latitude && rs.longitude ? {
+                    lat: parseFloat(rs.latitude),
+                    lng: parseFloat(rs.longitude)
+                  } : {
+                    lat: -17.78335 + ((idx + 1) * 0.005),
+                    lng: -63.18214 - ((idx + 1) * 0.004)
+                  })));
 
               return {
                 id: rs.id || `remote-${idx}`,
                 slug: rs.tenant_id || rs.id,
-                name: rs.name || conf.name || 'Minimarket Registrado',
-                tagline: rs.slogan || conf.tagline || 'Tienda oficial registrada',
-                address: rs.address || conf.address || 'Ubicación registrada',
-                condominium: conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz',
-                reference: conf.reference || '',
+                name: effectiveName,
+                tagline: effectiveTagline,
+                address: effectiveAddress,
+                condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
+                  ? (storeConfig.zone || storeConfig.condominium)
+                  : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
+                reference: (isCurrentOwner && storeConfig?.reference !== undefined)
+                  ? storeConfig.reference
+                  : (conf.reference || ''),
                 distance: `A ${(idx + 1) * 180}m`,
                 distanceMeters: (idx + 1) * 180,
                 rating: 4.9,
                 reviewsCount: 24 + idx * 8,
                 ordersCount: 24 + idx * 8,
-                isOpen: rs.is_open !== false && conf.isOpen !== false,
-                statusBadge: (rs.is_open !== false && conf.isOpen !== false) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
-                imageUrl: conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
-                deliveryTime: isDeliveryActive ? (conf.deliveryTime || '10-20 min') : 'Retiro en Tienda',
-                freeDeliveryThreshold: conf.freeDeliveryThreshold || null,
-                hasFreeDelivery: isDeliveryActive && !!conf.freeDeliveryThreshold,
+                isOpen: (isCurrentOwner && storeConfig?.isOpen !== undefined)
+                  ? storeConfig.isOpen
+                  : (rs.is_open !== false && conf.isOpen !== false),
+                statusBadge: ((isCurrentOwner && storeConfig?.isOpen !== undefined)
+                  ? storeConfig.isOpen
+                  : (rs.is_open !== false && conf.isOpen !== false)) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+                imageUrl: (isCurrentOwner && (storeConfig?.bannerUrl || storeConfig?.logoUrl))
+                  ? (storeConfig.bannerUrl || storeConfig.logoUrl)
+                  : (conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'),
+                deliveryTime: isDeliveryActive 
+                  ? ((isCurrentOwner && storeConfig?.deliveryTime) ? storeConfig.deliveryTime : (conf.deliveryTime || '10-20 min'))
+                  : 'Retiro en Tienda',
+                freeDeliveryThreshold: (isCurrentOwner && storeConfig?.freeDeliveryThreshold !== undefined)
+                  ? storeConfig.freeDeliveryThreshold
+                  : (conf.freeDeliveryThreshold || null),
+                hasFreeDelivery: isDeliveryActive && (isCurrentOwner && storeConfig?.freeDeliveryThreshold ? true : !!conf.freeDeliveryThreshold),
                 acceptsQr: true,
                 hasPickup: true,
                 hasFastDelivery: isDeliveryActive,
-                pointsReward: conf.enablePoints !== false ? '+20 VeciPuntos' : null,
+                pointsReward: ((isCurrentOwner && storeConfig?.enablePoints !== undefined)
+                  ? storeConfig.enablePoints
+                  : (conf.enablePoints !== false)) ? '+20 VeciPuntos' : null,
                 category: 'Minimarket Registrado',
                 isFeatured: true,
                 isRegisteredStore: true,
@@ -743,20 +790,31 @@ export const StoreProvider = ({ children }) => {
                 ],
                 featuredProducts: [],
                 googleMapsCoordinates: coords,
-                googleMapsQuery: `${rs.name || conf.name}, ${rs.address || conf.address || ''}, Santa Cruz de la Sierra`,
+                googleMapsQuery: `${effectiveName}, ${effectiveAddress}, Santa Cruz de la Sierra`,
                 mapPosition: {
                   leftPercent: 40 + ((idx * 18) % 45),
                   bottomPixels: 45 + ((idx * 25) % 60),
-                  label: rs.name || conf.name || 'Minimarket',
-                  badge: 'Registrada'
+                  label: effectiveName,
+                  badge: isCurrentOwner ? 'Tu Tienda' : 'Registrada'
                 }
               };
             });
 
-            // Preservar la tienda del dueño actual si ya existía en memoria
+            // Preservar y fusionar la tienda del dueño actual si ya existía en memoria
             const currentOwnerStore = prev.find(s => s.isCurrentOwnerStore || s.slug === tenantSlug || s.id === tenantSlug);
             const remoteSlugs = new Set(remoteMapped.map(s => s.slug));
-            let finalStores = [...remoteMapped];
+            let finalStores = remoteMapped.map(s => {
+              if (currentOwnerStore && (s.slug === currentOwnerStore.slug || s.id === currentOwnerStore.id)) {
+                return {
+                  ...s,
+                  ...currentOwnerStore,
+                  distance: s.distance,
+                  distanceMeters: s.distanceMeters,
+                  googleMapsCoordinates: currentOwnerStore.googleMapsCoordinates || s.googleMapsCoordinates
+                };
+              }
+              return s;
+            });
             if (currentOwnerStore && !remoteSlugs.has(currentOwnerStore.slug)) {
               finalStores.unshift(currentOwnerStore);
               remoteSlugs.add(currentOwnerStore.slug);
@@ -795,7 +853,7 @@ export const StoreProvider = ({ children }) => {
         supabase.removeChannel(channel);
       }
     };
-  }, [currentUser, tenantSlug]);
+  }, [currentUser, tenantSlug, storeConfig]);
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
   useEffect(() => {
