@@ -73,7 +73,38 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     exportSalesCSV
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState('kanban'); // 'kanban' | 'pos' | 'inventory' | 'requests' | 'settings'
+  const [activeTab, setActiveTabState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab');
+      if (urlTab && ['kanban', 'pos', 'inventory', 'analytics', 'requests', 'settings'].includes(urlTab)) {
+        return urlTab;
+      }
+      try {
+        const saved = localStorage.getItem(`marketsaas_${tenantSlug}_admin_tab`);
+        if (saved && ['kanban', 'pos', 'inventory', 'analytics', 'requests', 'settings'].includes(saved)) {
+          return saved;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return 'kanban';
+  });
+
+  const setActiveTab = (tab) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_admin_tab`, tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', tab);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {
+        // ignore
+      }
+    }
+  };
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);

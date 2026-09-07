@@ -18,7 +18,38 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
     storeConfig 
   } = useStore();
 
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategoryState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const urlCat = params.get('category');
+        if (urlCat) return urlCat;
+        const saved = localStorage.getItem(`marketsaas_${storeConfig?.id || 'default'}_customer_cat`);
+        return saved || 'all';
+      } catch (e) {
+        return 'all';
+      }
+    }
+    return 'all';
+  });
+
+  const setSelectedCategory = (cat) => {
+    setSelectedCategoryState(cat);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`marketsaas_${storeConfig?.id || 'default'}_customer_cat`, cat);
+        const url = new URL(window.location.href);
+        if (cat === 'all') {
+          url.searchParams.delete('category');
+        } else {
+          url.searchParams.set('category', cat);
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {
+        // ignore
+      }
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
 
