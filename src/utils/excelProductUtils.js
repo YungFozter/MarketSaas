@@ -64,6 +64,9 @@ export const parseProductExcel = async (file) => {
 
         const validProducts = [];
         const errors = [];
+        const warnings = [];
+        const seenCodes = new Map(); // code -> index in validProducts
+        const seenNames = new Map(); // name.toLowerCase() -> index in validProducts
 
         rawRows.forEach((row, index) => {
           const rowNum = index + 2; // Considerando cabecera en fila 1
@@ -140,7 +143,7 @@ export const parseProductExcel = async (file) => {
             ? String(rawDescription).trim() 
             : 'Sin definir';
 
-          validProducts.push({
+          const productObj = {
             name: cleanName,
             category,
             code,
@@ -154,10 +157,43 @@ export const parseProductExcel = async (file) => {
             description,
             badge: '',
             isPopular: false
-          });
+          };
+
+          // Detección de duplicados internos dentro del mismo archivo Excel
+          const nameKey = cleanName.toLowerCase();
+          const codeKey = code ? code.trim() : null;
+
+          let existingIndex = -1;
+          let duplicateReason = '';
+
+          if (codeKey && seenCodes.has(codeKey)) {
+            existingIndex = seenCodes.get(codeKey);
+            duplicateReason = `mismo código SKU ("${codeKey}")`;
+          } else if (seenNames.has(nameKey)) {
+            existingIndex = seenNames.get(nameKey);
+            duplicateReason = `mismo nombre de producto ("${cleanName}")`;
+          }
+
+          if (existingIndex >= 0) {
+            // Unificar: actualizar con los datos de la fila más reciente
+            validProducts[existingIndex] = {
+              ...validProducts[existingIndex],
+              ...productObj
+            };
+            warnings.push({
+              row: rowNum,
+              product: cleanName,
+              message: `Fila ${rowNum} ("${cleanName}"): tiene ${duplicateReason} que una fila anterior. Se unificó con la información más reciente.`
+            });
+          } else {
+            const newIndex = validProducts.length;
+            validProducts.push(productObj);
+            if (codeKey) seenCodes.set(codeKey, newIndex);
+            seenNames.set(nameKey, newIndex);
+          }
         });
 
-        resolve({ validProducts, errors, totalRows: rawRows.length });
+        resolve({ validProducts, errors, warnings, totalRows: rawRows.length });
       } catch (err) {
         reject(err);
       }

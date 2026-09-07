@@ -837,6 +837,21 @@ export const InventoryManager = () => {
                 </div>
               )}
 
+              {/* Duplicados detectados y unificados dentro del Excel */}
+              {importPreview?.warnings?.length > 0 && (
+                <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs space-y-1 text-amber-900">
+                  <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span>Productos repetidos unificados en el archivo ({importPreview.warnings.length}):</span>
+                  </p>
+                  <div className="max-h-24 overflow-y-auto space-y-0.5 text-[11px] text-amber-800">
+                    {importPreview.warnings.map((warn, i) => (
+                      <p key={i}>• {warn.message}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Previsualización de productos leídos */}
               {importPreview?.validProducts?.length > 0 && (
                 <div className="space-y-2">
