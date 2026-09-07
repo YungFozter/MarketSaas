@@ -481,7 +481,7 @@ export const NeighborhoodMap = ({
       />
 
       {/* 1.1 BOTONES FLOTANTES SUPERIORES: MI UBICACIÓN Y TIENDAS REGISTRADAS */}
-      <div className="absolute top-3 left-3 sm:left-4 z-30 pointer-events-auto flex items-center gap-2 flex-wrap">
+      <div className="absolute top-3 left-3 sm:left-4 z-[1001] map-floating-control pointer-events-auto flex items-center gap-2 flex-wrap">
         {/* Botón Mi Ubicación */}
         <button
           type="button"
@@ -533,7 +533,7 @@ export const NeighborhoodMap = ({
       </div>
 
       {/* 2. MENÚ DESPLEGABLE FLOTANTE: ACCESO RÁPIDO A MI UBICACIÓN Y TIENDAS FIJADAS (OCULTO POR DEFECTO) */}
-      <div ref={quickMenuRef} className="absolute top-3 right-3 sm:right-4 z-30 pointer-events-auto">
+      <div ref={quickMenuRef} className="absolute top-3 right-3 sm:right-4 z-[1001] map-floating-control pointer-events-auto">
         {/* Botón Disparador del Menú Desplegable */}
         <button
           type="button"
@@ -558,7 +558,7 @@ export const NeighborhoodMap = ({
 
         {/* Panel Desplegable Flotante */}
         {isQuickMenuOpen && (
-          <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-40 transition-all">
+          <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-[1002] map-floating-dropdown transition-all">
             {/* Cabecera del desplegable */}
             <div className="px-3.5 py-2.5 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
@@ -730,7 +730,7 @@ export const NeighborhoodMap = ({
 
       {/* Toast Notificación de Feedback sutil sobre el mapa */}
       {pinFeedbackMessage && !isPinModalOpen && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-slate-700/80 flex items-center gap-1.5 pointer-events-none transition-all">
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[1001] map-floating-control bg-slate-900/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-bold shadow-lg border border-slate-700/80 flex items-center gap-1.5 pointer-events-none transition-all">
           <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span>{pinFeedbackMessage}</span>
         </div>
@@ -738,7 +738,7 @@ export const NeighborhoodMap = ({
 
       {/* 3. CARD FLOTANTE INTERACTIVA DE LA TIENDA SELECCIONADA */}
       {activeStore && (
-        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-20 max-w-[280px] sm:max-w-[320px] w-full pointer-events-auto">
+        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-[1001] map-floating-control max-w-[280px] sm:max-w-[320px] w-full pointer-events-auto">
           <div className="bg-white/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-200/90 flex flex-col gap-2 transition-all transform hover:scale-[1.02]">
             
             {/* Cabecera de la Tienda */}
@@ -838,7 +838,7 @@ export const NeighborhoodMap = ({
 
       {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO */}
       {activeLocationType === 'user' && !activeStore && (
-        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-20 max-w-[290px] sm:max-w-[340px] w-full pointer-events-auto">
+        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-[1001] map-floating-control max-w-[290px] sm:max-w-[340px] w-full pointer-events-auto">
           <div className="bg-slate-900/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-700/80 text-white flex flex-col gap-2.5 transition-all transform hover:scale-[1.02]">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -881,7 +881,7 @@ export const NeighborhoodMap = ({
 
       {/* 4. MODAL GESTIONAR TIENDAS FIJADAS (MÁXIMO 3) */}
       {isPinModalOpen && (
-        <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div className="absolute inset-0 z-[1050] map-modal-overlay bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm sm:max-w-md overflow-hidden flex flex-col">
             {/* Cabecera del modal */}
             <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/90">
@@ -1000,7 +1000,7 @@ export const NeighborhoodMap = ({
 
       {/* 4. CONTROLES INFERIORES: GPS, SATÉLITE Y ZOOM */}
       {/* Lado Izquierdo: Estado de Cobertura */}
-      <div className="absolute bottom-3 left-3 sm:left-4 z-20 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-3 left-3 sm:left-4 z-[1001] map-floating-control flex items-center gap-2 pointer-events-auto">
         <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-md text-slate-800 text-[11px] font-semibold border border-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-bold text-emerald-700">
@@ -1012,7 +1012,7 @@ export const NeighborhoodMap = ({
       </div>
 
       {/* Lado Derecho: Toggle Satélite y Zoom */}
-      <div className="absolute bottom-3 right-3 sm:right-4 z-20 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-3 right-3 sm:right-4 z-[1001] map-floating-control flex items-center gap-2 pointer-events-auto">
         {/* Toggle Mapa / Satélite */}
         <div className="flex items-center bg-white/95 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200">
           <button 

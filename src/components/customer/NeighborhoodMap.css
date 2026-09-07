@@ -114,3 +114,16 @@
   border-radius: 6px;
   padding: 1px 5px !important;
 }
+
+/* Controles y tarjetas flotantes por encima de las capas internas de Leaflet (z-index 400 a 1000) */
+.map-floating-control {
+  z-index: 1001 !important;
+}
+
+.map-floating-dropdown {
+  z-index: 1002 !important;
+}
+
+.map-modal-overlay {
+  z-index: 1050 !important;
+}
