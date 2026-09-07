@@ -52,7 +52,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
   const waUrl = `https://wa.me/${cleanWa}?text=${waMessage}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
       <div 
         className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}

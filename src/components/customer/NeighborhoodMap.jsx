@@ -22,9 +22,9 @@ import {
 import './NeighborhoodMap.css';
 import { escapeHtml } from '../../utils/formatters';
 
-// Proveedor de mapas de alta velocidad y fidelidad (CARTO Voyager & Esri Satellite)
-const CARTO_VOYAGER_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
-const CARTO_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+// Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
+const STREET_MAP_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+const STREET_MAP_ATTRIBUTION = '&copy; Esri &mdash; Street Map';
 const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
 
@@ -48,12 +48,12 @@ export const NeighborhoodMap = ({
   selectedStore = null,
   selectedZone = 'all',
   searchQuery = '',
-  activeFilters = {},
-  onToggleFilter,
-  onSelectStore,
-  onEnterStore,
-  onUserLocationChange,
-  userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' },
+  activeFilters = null,
+  onToggleFilter = null,
+  onSelectStore = null,
+  onEnterStore = null,
+  onUserLocationChange = null,
+  userLocation = null,
   userCoordinates = null,
   hasUserGps = false
 }) => {
@@ -139,17 +139,8 @@ export const NeighborhoodMap = ({
       bgColor = isOwner ? '#78350f' : isRegistered ? '#475569' : '#334155';
       borderColor = isOwner ? '#fde68a' : isRegistered ? '#fca5a5' : '#cbd5e1';
 
-      if (isOwner) {
-        badgeText = '⭐ Tu Tienda • Cerrado';
-        badgeBg = '#fee2e2';
-        badgeColor = '#991b1b';
-        badgeBorder = '#fca5a5';
-      } else if (isRegistered) {
-        badgeText = 'Oficial • Cerrado';
-        badgeBg = '#fee2e2';
-        badgeColor = '#991b1b';
-        badgeBorder = '#fca5a5';
-      }
+      // No se agrega badge redundante debajo cuando está cerrada; el rótulo superior ya indica [CERRADO]
+      badgeText = '';
 
       dotHtml = '<span style="color:#ef4444; font-size: 8px;">●</span>';
       statusPillHtml = '<span style="font-size: 8px; font-weight: 900; background: #fee2e2; color: #b91c1c; padding: 0.5px 4px; border-radius: 4px; margin-left: 3px; border: 0.5px solid #fca5a5;">CERRADO</span>';
@@ -318,9 +309,8 @@ export const NeighborhoodMap = ({
       attributionControl: true
     });
 
-    const streetLayer = L.tileLayer(CARTO_VOYAGER_URL, {
-      attribution: CARTO_ATTRIBUTION,
-      subdomains: 'abcd',
+    const streetLayer = L.tileLayer(STREET_MAP_URL, {
+      attribution: STREET_MAP_ATTRIBUTION,
       maxZoom: 19
     }).addTo(map);
 
@@ -356,9 +346,8 @@ export const NeighborhoodMap = ({
         maxZoom: 18
       }).addTo(map);
     } else {
-      tileLayerRef.current = L.tileLayer(CARTO_VOYAGER_URL, {
-        attribution: CARTO_ATTRIBUTION,
-        subdomains: 'abcd',
+      tileLayerRef.current = L.tileLayer(STREET_MAP_URL, {
+        attribution: STREET_MAP_ATTRIBUTION,
         maxZoom: 19
       }).addTo(map);
     }

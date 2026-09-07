@@ -21,7 +21,7 @@ export const ProductModal = ({ product, onClose, onRequestProduct }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
       <div 
         className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col md:flex-row"
         onClick={(e) => e.stopPropagation()}

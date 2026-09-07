@@ -42,7 +42,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden animate-fadeIn">
+    <div className="fixed inset-0 z-[99999] overflow-hidden animate-fadeIn">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
