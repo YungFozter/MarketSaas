@@ -907,25 +907,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               {/* TABLERO KANBAN DE PEDIDOS                                                 */}
               {/* ========================================================================= */}
               <section className="space-y-3.5">
-                {/* Filtro de Condominio (compacto y discreto) */}
-                {storeConfig.condominiums && storeConfig.condominiums.length > 0 && (
-                  <div className="flex justify-end items-center">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
-                      <span className="text-slate-500 text-[11px]">Condominio:</span>
-                      <select 
-                        value={selectedCondoFilter}
-                        onChange={(e) => setSelectedCondoFilter(e.target.value)}
-                        className="bg-transparent font-bold text-xs text-slate-900 outline-none cursor-pointer"
-                      >
-                        <option value="all">Todos los Condominios</option>
-                        {storeConfig.condominiums?.map(c => (
-                          <option key={c.name} value={c.name}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                )}
-
                 {/* 4 KANBAN COLUMNS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
                   
