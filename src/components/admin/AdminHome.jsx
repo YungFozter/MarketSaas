@@ -797,8 +797,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 </h1>
               </div>
 
-              {/* 4 TOP GLASSMORPHIC KPI CARDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 3 TOP OPERATIONAL KPI CARDS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* KPI 1: Ventas del Día */}
                 <div className="relative overflow-hidden rounded-2xl bg-white p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
@@ -852,28 +852,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     <span>{onTheWayOrders.length} ruta</span>
                   </div>
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-blue-500"></div>
-                </div>
-
-                {/* KPI 3: Ticket Promedio */}
-                <div className="relative overflow-hidden rounded-2xl bg-white p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-0.5">
-                      <span className="text-xs text-slate-500 font-medium">Ticket Promedio</span>
-                      <p className="text-2xl text-slate-900 tracking-tight font-black">
-                        {currency} {averageTicket.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold">
-                      <Package className="w-5 h-5" />
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold">
-                      3.8 items
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">Promedio por canasta</span>
-                  </div>
-                  <div className="absolute bottom-0 inset-x-0 h-1 bg-slate-300"></div>
                 </div>
 
                 {/* KPI 4: Alertas de Stock Crítico */}
