@@ -119,6 +119,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   });
   const [isCashCloseModalOpen, setIsCashCloseModalOpen] = useState(false);
   const [quickSalePaymentType, setQuickSalePaymentType] = useState(null);
+  const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isOpen = storeConfig?.isOpen !== false;
@@ -141,6 +142,34 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalDeliveryCollected = validOrders
     .filter(o => o.deliveryType === 'delivery')
     .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
+
+  // Transacciones recientes para el Feed de Actividad en Vivo
+  const recentTransactions = validOrders
+    .filter(o => {
+      const isPos = o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial');
+      if (feedFilter === 'pos') return isPos;
+      if (feedFilter === 'delivery') return !isPos;
+      return true;
+    })
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .slice(0, 8);
+
+  const formatRelativeTime = (isoString) => {
+    if (!isoString) return 'Hoy';
+    try {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      if (diffMinutes < 1) return 'Hace un momento';
+      if (diffMinutes < 60) return `Hace ${diffMinutes} min`;
+      const diffHours = Math.floor(diffMinutes / 60);
+      if (diffHours < 24) return `Hace ${diffHours} h`;
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } catch {
+      return 'Hoy';
+    }
+  };
 
   // Filtrado de pedidos según condominio seleccionado en el Kanban
   const condoFilteredOrders = orders.filter(o => {
@@ -1186,69 +1215,143 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </section>
 
               {/* ========================================================================= */}
-              {/* 4. ACCESOS MODULARES DE OPERACIÓN: INVENTARIO EXPRÉS                      */}
+              {/* 4. FEED DE ACTIVIDAD & ÚLTIMOS COBROS EN VIVO                              */}
               {/* ========================================================================= */}
               <section className="space-y-3.5 pt-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg text-slate-900 font-bold tracking-tight">Accesos Modulares de Operación</h2>
-                </div>
-
-                <div className="grid grid-cols-1 max-w-2xl">
-                  {/* BENTO CARD: CONTROL DE INVENTARIO EXPRÉS */}
-                  <div className="rounded-2xl bg-white p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-5 h-5 text-rose-600" />
-                          <h3 className="text-base font-bold text-slate-900">Inventario Exprés</h3>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400">{products.length} SKUs Activos</span>
-                      </div>
-                      <p className="text-xs text-slate-500 leading-relaxed">
-                        Productos con stock bajo que requieren reposición inmediata hoy:
-                      </p>
-
-                      <div className="space-y-2">
-                        {products.slice(0, 3).map(prod => (
-                          <div key={prod.id} className="p-2 rounded-xl bg-slate-50 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <img src={prod.image} alt={prod.name} className="w-8 h-8 rounded-lg object-cover bg-white shrink-0" />
-                              <div className="min-w-0">
-                                <p className="font-bold text-xs text-slate-900 truncate">{prod.name}</p>
-                                <p className="text-[11px] text-rose-600 font-bold">{prod.stock} unid. restantes</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button 
-                                onClick={() => handleQuickStockChange(prod.id, -1)}
-                                className="w-6 h-6 rounded-lg bg-white hover:bg-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs shadow-2xs cursor-pointer" 
-                                type="button"
-                              >
-                                -
-                              </button>
-                              <span className="w-5 text-center font-bold text-xs">{prod.stock}</span>
-                              <button 
-                                onClick={() => handleQuickStockChange(prod.id, 1)}
-                                className="w-6 h-6 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-xs shadow-2xs cursor-pointer" 
-                                type="button"
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <div>
+                      <h2 className="text-lg text-slate-900 font-bold tracking-tight">Feed de Actividad & Últimos Cobros</h2>
+                      <p className="text-xs text-slate-400">Auditoría en tiempo real de transacciones y pedidos registrados</p>
                     </div>
+                  </div>
 
-                    <button 
-                      onClick={() => setActiveTab('inventory')}
-                      className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer" 
+                  {/* Filtros rápidos: Todos, Mostrador, Domicilio */}
+                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs self-start sm:self-auto">
+                    <button
                       type="button"
+                      onClick={() => setFeedFilter('all')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        feedFilter === 'all' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
                     >
-                      <Package className="w-4 h-4 text-emerald-600" />
-                      <span>Ver Catálogo Completo</span>
+                      Todos ({validOrders.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedFilter('pos')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        feedFilter === 'pos' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      🏪 Mostrador ({validOrders.filter(o => o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial')).length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFeedFilter('delivery')}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        feedFilter === 'delivery' 
+                          ? 'bg-slate-900 text-white shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      🛵 Domicilio ({validOrders.filter(o => !(o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial'))).length})
                     </button>
                   </div>
+                </div>
+
+                {/* Lista de Transacciones Recientes */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs divide-y divide-slate-100 overflow-hidden">
+                  {recentTransactions.length === 0 ? (
+                    <div className="p-8 text-center space-y-2">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <Receipt className="w-6 h-6" />
+                      </div>
+                      <p className="text-sm font-bold text-slate-700">Aún no hay transacciones registradas</p>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        Cuando realices una venta en el mostrador o un vecino confirme un pedido, se reflejará aquí en tiempo real.
+                      </p>
+                    </div>
+                  ) : (
+                    recentTransactions.map((tx) => {
+                      const isPos = tx.id?.startsWith('POS-') || tx.customer?.name?.includes('Presencial');
+                      const payMethod = tx.paymentMethod || 'cash';
+                      return (
+                        <div 
+                          key={tx.id}
+                          className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          {/* Izquierda: Método de Pago + Datos del Cliente / Origen */}
+                          <div className="flex items-start sm:items-center gap-3 min-w-0">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                              payMethod === 'cash' 
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                : payMethod === 'qr'
+                                ? 'bg-cyan-50 text-cyan-600 border border-cyan-200'
+                                : 'bg-amber-50 text-amber-600 border border-amber-200'
+                            }`}>
+                              {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
+                              {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
+                              {payMethod === 'card' && <CreditCard className="w-5 h-5" />}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                  {isPos ? 'Venta de Mostrador (Presencial)' : `🏢 ${tx.customer?.tower || 'Torre'} • ${tx.customer?.apartment || 'Depto'}`}
+                                </span>
+                                {!isPos && tx.customer?.condominium && (
+                                  <span className="text-[11px] font-semibold text-slate-500">
+                                    • {tx.customer.condominium}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
+                                  {payMethod === 'cash' ? 'Efectivo' : payMethod === 'qr' ? 'QR' : 'Tarjeta'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
+                                <span className="font-mono font-semibold text-slate-500">#{tx.id}</span>
+                                <span>•</span>
+                                <span>{tx.items?.length || 1} {tx.items?.length === 1 ? 'producto' : 'productos'}</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  {formatRelativeTime(tx.createdAt)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Derecha: Estado + Monto cobrado */}
+                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 self-end sm:self-center w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                              tx.status === 'delivered'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : tx.status === 'on_the_way'
+                                ? 'bg-purple-50 text-purple-800 border-purple-200'
+                                : tx.status === 'preparing'
+                                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}>
+                              {tx.status === 'delivered' ? '✓ Cobrado / Entregado' : tx.status === 'on_the_way' ? '🛵 En camino' : tx.status === 'preparing' ? '📦 En preparación' : '⏱️ Pendiente'}
+                            </span>
+
+                            <div className="text-right">
+                              <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                                +{currency} {(tx.total || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </section>
 
