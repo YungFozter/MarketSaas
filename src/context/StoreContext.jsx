@@ -755,6 +755,32 @@ export const StoreProvider = ({ children }) => {
       }
     };
     fetchRemoteStores();
+
+    // Suscribirse a cambios en tiempo real en store_config para que si otro dueño registra o actualiza su ubicación,
+    // se refleje al instante en el mapa de todos los vecinos sin recargar la página
+    let channel = null;
+    if (supabase) {
+      try {
+        channel = supabase
+          .channel('public:store_config_changes')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'store_config' },
+            () => {
+              fetchRemoteStores();
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime subscription error for store_config:', e);
+      }
+    }
+
+    return () => {
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [currentUser, tenantSlug]);
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio

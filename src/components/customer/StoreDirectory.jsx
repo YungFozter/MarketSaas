@@ -70,13 +70,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         [filterId]: willBeActive
       };
 
-      // Si se activa "Tiendas Registradas", seleccionar automáticamente la tienda del dueño o la primera registrada en el mapa
-      if (filterId === 'registeredOnly' && willBeActive) {
-        const targetStore = storesWithDistance.find((s) => s.isCurrentOwnerStore && s.isRegisteredStore)
-          || storesWithDistance.find((s) => s.isRegisteredStore);
-        if (targetStore) {
-          setSelectedStoreSlug(targetStore.slug);
-        }
+      // Si se activa o desactiva "Tiendas Registradas", limpiamos la tienda seleccionada para ver la vista general
+      if (filterId === 'registeredOnly') {
+        setSelectedStoreSlug(null);
       }
 
       return updated;
@@ -179,21 +175,14 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }
   };
 
-  // Obtener la tienda seleccionada activa o la tienda registrada correspondiente al filtrar
+  // Obtener la tienda seleccionada activa SOLO cuando el usuario hace clic en una tienda
   const activeSelectedStore = useMemo(() => {
     if (selectedStoreSlug) {
       const found = storesWithDistance.find((s) => s.slug === selectedStoreSlug);
       if (found) return found;
     }
-    if (activeFilters.registeredOnly) {
-      return (
-        storesWithDistance.find((s) => s.isCurrentOwnerStore && s.isRegisteredStore) ||
-        storesWithDistance.find((s) => s.isRegisteredStore) ||
-        null
-      );
-    }
     return null;
-  }, [storesWithDistance, selectedStoreSlug, activeFilters.registeredOnly]);
+  }, [storesWithDistance, selectedStoreSlug]);
 
   return (
     <main className="store-directory-wrapper w-full bg-slate-50 min-h-screen text-slate-800 antialiased">

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   Store, 
   MapPin, 
@@ -47,6 +49,12 @@ export const NeighborhoodMap = ({
   onUserLocationChange,
   userLocation = { condominium: 'Condominio Las Palmas', tower: 'Torre A', apartment: '302' }
 }) => {
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const tileLayerRef = useRef(null);
+  const markersLayerRef = useRef(null);
+  const userMarkerRef = useRef(null);
+
   // masterStores garantiza acceso al catálogo completo incluso si se aplican filtros de búsqueda
   const masterStores = useMemo(() => {
     return allStores.length > 0 ? allStores : stores;
@@ -70,14 +78,54 @@ export const NeighborhoodMap = ({
   const [isRecentering, setIsRecentering] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
-  // La tienda activa: la seleccionada o la tienda registrada del dueño cuando el filtro "Tiendas Registradas" está activo
+  // Tiendas que se deben graficar con marcadores según los filtros activos
+  const storesToPlot = useMemo(() => {
+    if (activeFilters?.registeredOnly) {
+      return registeredStores;
+    }
+    return masterStores;
+  }, [activeFilters?.registeredOnly, registeredStores, masterStores]);
+
+  // Crear DivIcon HTML personalizado para cada tienda
+  const createStoreDivIcon = (store, isSelected) => {
+    const isRegistered = Boolean(store.isRegisteredStore);
+    const isOwner = Boolean(store.isCurrentOwnerStore);
+    const ringClass = isOwner ? 'owner-pulse-ring' : isRegistered ? 'registered-pulse-ring' : '';
+    const badgeLabel = isOwner ? '⭐ Tu Tienda' : isRegistered ? 'Oficial' : '';
+    const bgColor = isOwner ? '#f59e0b' : isRegistered ? '#059669' : '#334155';
+
+    const html = `
+      <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''}">
+        ${ringClass ? `<div class="${ringClass}"></div>` : ''}
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: ${bgColor}; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2.5px solid #ffffff; z-index: 2;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <div style="margin-top: 4px; display: flex; flex-direction: column; align-items: center; z-index: 3;">
+          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); border: 1px solid rgba(0,0,0,0.08); font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
+            ${isRegistered ? '<span style="color:#059669; font-size: 8px;">●</span>' : ''}
+            <span>${store.name}</span>
+          </div>
+          ${badgeLabel ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${isOwner ? '#fef3c7' : '#d1fae5'}; color: ${isOwner ? '#92400e' : '#065f46'}; padding: 1px 5px; border-radius: 9999px; margin-top: 1px; border: 0.5px solid ${isOwner ? '#fde68a' : '#a7f3d0'};">${badgeLabel}</span>` : ''}
+        </div>
+      </div>
+    `;
+
+    return L.divIcon({
+      className: 'custom-leaflet-pin-wrapper',
+      html,
+      iconSize: [34, 56],
+      iconAnchor: [17, 44]
+    });
+  };
+
+  // La tienda activa: solo si el usuario seleccionó una tienda específica
   const activeStore = useMemo(() => {
     if (selectedStore) return selectedStore;
-    if (activeFilters?.registeredOnly) {
-      return ownerStore;
-    }
     return null;
-  }, [selectedStore, activeFilters?.registeredOnly, ownerStore]);
+  }, [selectedStore]);
 
   // Estado de coordenadas activas: arranca en la tienda activa si existe o en el centro de Santa Cruz
   const [currentCoords, setCurrentCoords] = useState(() => {
@@ -194,33 +242,140 @@ export const NeighborhoodMap = ({
     return masterStores.slice(0, 3);
   }, [masterStores, pinnedSlugs]);
 
-  // Si cambia la tienda activa o el filtro de registradas
+  // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ
   useEffect(() => {
-    if (activeStore?.googleMapsCoordinates) {
-      setCurrentCoords(activeStore.googleMapsCoordinates);
-      setActiveLocationType('store');
-      setZoomLevel(16);
-    } else if (!activeStore && activeLocationType === 'store' && !activeFilters?.registeredOnly) {
-      setActiveLocationType('plaza');
-      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
-      setZoomLevel(15);
-    }
-  }, [activeStore, activeFilters?.registeredOnly]);
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-  // Si el usuario escribe en el buscador general, activamos modo búsqueda para mostrar todas las ubicaciones en el mapa
+    const initialLat = activeStore?.googleMapsCoordinates?.lat || DEFAULT_CITY_CENTER_COORDS.lat;
+    const initialLng = activeStore?.googleMapsCoordinates?.lng || DEFAULT_CITY_CENTER_COORDS.lng;
+
+    const map = L.map(mapContainerRef.current, {
+      center: [initialLat, initialLng],
+      zoom: 14,
+      zoomControl: false,
+      attributionControl: true
+    });
+
+    const streetLayer = L.tileLayer(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }
+    ).addTo(map);
+
+    tileLayerRef.current = streetLayer;
+
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+
+    mapInstanceRef.current = map;
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // 2. CAMBIAR ENTRE TIPO DE MAPA (CALLES / SATÉLITE)
   useEffect(() => {
-    if (searchQuery && searchQuery.trim().length >= 2) {
-      setActiveLocationType('search');
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
     }
-  }, [searchQuery]);
+
+    if (mapType === 'satellite') {
+      tileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; Esri World Imagery',
+          maxZoom: 18
+        }
+      ).addTo(map);
+    } else {
+      tileLayerRef.current = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+        {
+          attribution: '&copy; OpenStreetMap &copy; CARTO',
+          subdomains: 'abcd',
+          maxZoom: 19
+        }
+      ).addTo(map);
+    }
+  }, [mapType]);
+
+  // 3. DIBUJAR Y ACTUALIZAR TODOS LOS MARCADORES DE TIENDAS EN EL MAPA
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const markersLayer = markersLayerRef.current;
+    if (!map || !markersLayer) return;
+
+    markersLayer.clearLayers();
+
+    const validLatLngs = [];
+
+    storesToPlot.forEach((store) => {
+      const coords = store.googleMapsCoordinates;
+      if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+      if (isNaN(coords.lat) || isNaN(coords.lng)) return;
+
+      const isSelected = activeStore?.slug === store.slug;
+      const icon = createStoreDivIcon(store, isSelected);
+
+      const marker = L.marker([coords.lat, coords.lng], { icon });
+
+      marker.on('click', () => {
+        if (onSelectStore) {
+          onSelectStore(store.slug);
+        }
+        map.flyTo([coords.lat, coords.lng], Math.max(map.getZoom(), 15), {
+          duration: 0.8
+        });
+        showFeedback(`📍 Seleccionado: ${store.name}`);
+      });
+
+      marker.addTo(markersLayer);
+      validLatLngs.push([coords.lat, coords.lng]);
+    });
+
+    // Si no hay una tienda seleccionada específicamente, encuadrar la vista para ver todas las tiendas del mapa
+    if (!selectedStore && validLatLngs.length > 1) {
+      const bounds = L.latLngBounds(validLatLngs);
+      map.fitBounds(bounds, { padding: [45, 45], maxZoom: 15 });
+    } else if (!selectedStore && validLatLngs.length === 1) {
+      map.flyTo(validLatLngs[0], 15, { duration: 0.8 });
+    } else if (selectedStore?.googleMapsCoordinates) {
+      const { lat, lng } = selectedStore.googleMapsCoordinates;
+      map.flyTo([lat, lng], 16, { duration: 0.8 });
+    }
+  }, [storesToPlot, selectedStore]);
+
+  // 4. CENTRAR CUANDO CAMBIE LA TIENDA SELECCIONADA ESPECÍFICA
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !selectedStore?.googleMapsCoordinates) return;
+    const { lat, lng } = selectedStore.googleMapsCoordinates;
+    map.flyTo([lat, lng], 16, { duration: 0.8 });
+  }, [selectedStore]);
 
   // Controles de Zoom
   const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 1, 19));
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomIn();
+    }
   };
 
   const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 1, 3));
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomOut();
+    }
   };
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
@@ -232,7 +387,6 @@ export const NeighborhoodMap = ({
 
     setIsLocating(true);
     setIsRecentering(true);
-    if (onSelectStore) onSelectStore(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -240,11 +394,26 @@ export const NeighborhoodMap = ({
         const userCoords = {
           lat: latitude,
           lng: longitude,
-          name: 'Mi Ubicacion'
+          name: 'Mi Ubicación'
         };
-        setCurrentCoords(userCoords);
-        setZoomLevel(17); // Zoom a nivel de calle para la ubicación real del usuario
-        setActiveLocationType('user');
+
+        const map = mapInstanceRef.current;
+        if (map) {
+          if (userMarkerRef.current) {
+            map.removeLayer(userMarkerRef.current);
+          }
+
+          const userIcon = L.divIcon({
+            className: 'custom-leaflet-pin-wrapper',
+            html: '<div class="user-gps-beacon"></div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          });
+
+          userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+          map.flyTo([latitude, longitude], 16, { duration: 1 });
+        }
+
         setIsLocating(false);
         setIsRecentering(false);
         showFeedback('📍 Ubicación GPS detectada en tiempo real');
@@ -257,13 +426,9 @@ export const NeighborhoodMap = ({
         setIsLocating(false);
         setIsRecentering(false);
         let errorMsg = 'No se pudo obtener tu ubicación GPS.';
-        if (error.code === 1) {
-          errorMsg = 'Permiso de ubicación denegado por el navegador.';
-        } else if (error.code === 2) {
-          errorMsg = 'Señal GPS no disponible actualmente.';
-        } else if (error.code === 3) {
-          errorMsg = 'Tiempo de espera agotado al obtener ubicación.';
-        }
+        if (error.code === 1) errorMsg = 'Permiso de ubicación denegado.';
+        else if (error.code === 2) errorMsg = 'Señal GPS no disponible.';
+        else if (error.code === 3) errorMsg = 'Tiempo agotado al obtener GPS.';
         showFeedback(errorMsg);
       },
       {
@@ -274,72 +439,34 @@ export const NeighborhoodMap = ({
     );
   };
 
-  // Selección de tienda desde los chips del mapa
+  // Selección de tienda desde menú o chips
   const handleSelectStoreTarget = (store) => {
-    onSelectStore && onSelectStore(store.slug);
-    if (store.googleMapsCoordinates) {
-      setCurrentCoords(store.googleMapsCoordinates);
-    } else {
-      setCurrentCoords(DEFAULT_CITY_CENTER_COORDS);
+    if (onSelectStore) onSelectStore(store.slug);
+    if (mapInstanceRef.current && store.googleMapsCoordinates) {
+      mapInstanceRef.current.flyTo(
+        [store.googleMapsCoordinates.lat, store.googleMapsCoordinates.lng],
+        16,
+        { duration: 0.8 }
+      );
     }
-    setZoomLevel(16);
-    setActiveLocationType('store');
   };
 
-  // Enlace directo para navegación en la App oficial de Google Maps
+  // Enlace directo para navegación externa en Google Maps
   const externalGoogleMapsUrl = useMemo(() => {
-    if (searchQuery && searchQuery.trim().length >= 2 && activeLocationType !== 'store') {
-      const qText = searchQuery.trim();
-      const queryParam = qText.toLowerCase().includes('santa cruz') ? qText : `${qText} Santa Cruz de la Sierra`;
-      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryParam)}`;
+    if (activeStore?.googleMapsCoordinates) {
+      return `https://www.google.com/maps/search/?api=1&query=${activeStore.googleMapsCoordinates.lat},${activeStore.googleMapsCoordinates.lng}`;
     }
-    return `https://www.google.com/maps/search/?api=1&query=${currentCoords.lat},${currentCoords.lng}`;
-  }, [currentCoords, searchQuery, activeLocationType]);
-
-  // Construcción de la URL de Google Maps Embed interactivo con soporte de búsqueda multi-marcador
-  const googleMapsEmbedUrl = useMemo(() => {
-    const mapTypeCode = mapType === 'satellite' ? 'k' : 'm';
-
-    // 1. Si el usuario activó "Mi Ubicación": Prioridad absoluta para centrar y colocar pin de su GPS
-    if (activeLocationType === 'user') {
-      return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Tu+Ubicaci%C3%B3n+GPS)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
-    }
-
-    // 2. Si hay una tienda seleccionada o el filtro de Tiendas Registradas está activado
-    const targetStore = activeStore || (activeFilters?.registeredOnly ? ownerStore : null);
-    if (targetStore?.googleMapsCoordinates && (activeLocationType === 'store' || activeFilters?.registeredOnly)) {
-      const storeLabel = encodeURIComponent(targetStore.name);
-      return `https://maps.google.com/maps?q=${targetStore.googleMapsCoordinates.lat},${targetStore.googleMapsCoordinates.lng}+(${storeLabel})&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
-    }
-
-    // 3. Si hay una búsqueda activa (ej. "Supermercado Tía", "Amarket", etc.)
-    if (searchQuery && searchQuery.trim().length >= 2) {
-      const qText = searchQuery.trim();
-      const queryParam = qText.toLowerCase().includes('santa cruz')
-        ? qText
-        : `${qText} Santa Cruz de la Sierra`;
-      return `https://maps.google.com/maps?q=${encodeURIComponent(queryParam)}&t=${mapTypeCode}&z=13&hl=es&ie=UTF8&output=embed`;
-    }
-
-    // 4. Ubicación por defecto (Centro de Santa Cruz)
-    return `https://maps.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}+(Centro+Santa+Cruz)&t=${mapTypeCode}&z=${zoomLevel}&hl=es&ie=UTF8&output=embed`;
-  }, [currentCoords, mapType, zoomLevel, searchQuery, activeStore, activeLocationType, activeFilters?.registeredOnly, ownerStore]);
+    return `https://www.google.com/maps/search/?api=1&query=Santa+Cruz+de+la+Sierra`;
+  }, [activeStore]);
 
   return (
     <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
       
-      {/* 1. MOTOR INTERACTIVO GOOGLE MAPS CENTRADO EXACTO CON MARCADORES MÚLTIPLES */}
-      <div className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`}>
-        <iframe
-          key={`${searchQuery}-${activeLocationType}-${currentCoords.lat}-${currentCoords.lng}-${mapType}-${zoomLevel}`}
-          title="Google Maps Hiperlocal MarketSaaS"
-          src={googleMapsEmbedUrl}
-          className="w-full h-full border-0 pointer-events-auto"
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
+      {/* 1. MOTOR INTERACTIVO MULTI-MARCADOR LEAFLET */}
+      <div 
+        ref={mapContainerRef} 
+        className={`w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`} 
+      />
 
       {/* 1.1 BOTÓN FLOTANTE RÁPIDO: TIENDAS REGISTRADAS / MI TIENDA */}
       {registeredStores.length > 0 && (
@@ -347,31 +474,21 @@ export const NeighborhoodMap = ({
           <button
             type="button"
             onClick={() => {
-              const target = ownerStore || registeredStores[0];
-              if (target) {
-                handleSelectStoreTarget(target);
-                showFeedback(`📍 Marcador activado: ${target.name}`);
-              }
-              if (onToggleFilter && !activeFilters?.registeredOnly) {
+              if (onToggleFilter) {
                 onToggleFilter('registeredOnly');
               }
             }}
-            className={`inline-flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
-              activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore)
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+              activeFilters?.registeredOnly
                 ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-600/30 ring-2 ring-emerald-400/50'
                 : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-emerald-300 hover:shadow-lg'
             }`}
-            title="Ver marcador de tiendas registradas en el mapa"
+            title="Mostrar todas las tiendas registradas en el mapa"
           >
-            <CheckCircle2 className={`w-3.5 h-3.5 ${activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore) ? 'text-white' : 'text-emerald-600'}`} />
-            <span className="hidden sm:inline">
-              {ownerStore?.name ? `Tienda Registrada: ${ownerStore.name}` : 'Tiendas Registradas'}
-            </span>
-            <span className="sm:hidden">
-              {ownerStore?.isCurrentOwnerStore ? 'Mi Tienda' : 'Registradas'}
-            </span>
+            <CheckCircle2 className={`w-3.5 h-3.5 ${activeFilters?.registeredOnly ? 'text-white' : 'text-emerald-600'}`} />
+            <span>Tiendas Registradas</span>
             <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-              activeFilters?.registeredOnly || (activeStore && activeStore.isRegisteredStore)
+              activeFilters?.registeredOnly
                 ? 'bg-white/20 text-white'
                 : 'bg-emerald-100 text-emerald-800'
             }`}>
@@ -631,6 +748,19 @@ export const NeighborhoodMap = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   En vivo
                 </span>
+
+                {/* Botón para cerrar tarjeta y volver a la vista general */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectStore) onSelectStore(null);
+                  }}
+                  className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shrink-0 ml-0.5"
+                  title="Cerrar vista de tienda"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
