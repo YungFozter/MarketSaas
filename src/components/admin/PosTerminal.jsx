@@ -13,6 +13,7 @@ import {
   Barcode 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { normalizeSearchText } from '../../utils/formatters';
 import './PosTerminal.css';
 
 export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) => {
@@ -33,9 +34,14 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
 
   const filteredProducts = products.filter((p) => {
     const matchCat = selectedCat === 'all' || p.category === selectedCat;
+    const cleanQuery = normalizeSearchText(searchTerm);
+    if (!cleanQuery) return matchCat;
+
     const matchSearch = 
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchTerm.toLowerCase());
+      normalizeSearchText(p.name).includes(cleanQuery) ||
+      normalizeSearchText(p.code).includes(cleanQuery) ||
+      normalizeSearchText(p.category).includes(cleanQuery);
+
     return matchCat && matchSearch;
   });
 

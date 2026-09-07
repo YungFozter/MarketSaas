@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
+import { normalizeSearchText } from '../../utils/formatters';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -93,10 +94,15 @@ export const InventoryManager = () => {
 
   const filteredProducts = products.filter((prod) => {
     const matchesCat = selectedCategory === 'all' || prod.category === selectedCategory;
+    const cleanQuery = normalizeSearchText(searchTerm);
+    if (!cleanQuery) return matchesCat;
+
     const matchesSearch = 
-      prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prod.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prod.category.toLowerCase().includes(searchTerm.toLowerCase());
+      normalizeSearchText(prod.name).includes(cleanQuery) ||
+      normalizeSearchText(prod.code).includes(cleanQuery) ||
+      normalizeSearchText(prod.category).includes(cleanQuery) ||
+      normalizeSearchText(prod.description).includes(cleanQuery);
+
     return matchesCat && matchesSearch;
   });
 

@@ -5,6 +5,7 @@ import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
 import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
 
 export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
@@ -56,11 +57,14 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
   // Filtrado
   const filteredProducts = products.filter((prod) => {
     const matchesCategory = selectedCategory === 'all' || prod.category === selectedCategory;
-    const matchesSearch = searchQuery.trim() === '' || 
-      prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (prod.description && prod.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const cleanQuery = normalizeSearchText(searchQuery);
+    if (!cleanQuery) return matchesCategory;
+
+    const matchesSearch = 
+      normalizeSearchText(prod.name).includes(cleanQuery) ||
+      normalizeSearchText(prod.category).includes(cleanQuery) ||
+      normalizeSearchText(prod.code).includes(cleanQuery) ||
+      normalizeSearchText(prod.description).includes(cleanQuery);
 
     return matchesCategory && matchesSearch;
   });

@@ -49,3 +49,18 @@ export const cleanPhoneForWhatsApp = (phone) => {
   if (!phone) return '';
   return phone.replace(/[^0-9]/g, '');
 };
+
+/**
+ * Normaliza un texto para búsquedas insensibles a mayúsculas, minúsculas y tildes/acentos
+ * @param {string} text
+ * @returns {string}
+ */
+export const normalizeSearchText = (text) => {
+  if (!text) return '';
+  return String(text)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+};
+
