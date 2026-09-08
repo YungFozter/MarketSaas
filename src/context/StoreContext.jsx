@@ -7,6 +7,119 @@ const StoreContext = createContext();
 
 export const useStore = () => useContext(StoreContext);
 
+// Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
+export const normalizeProduct = (p) => {
+  if (!p || typeof p !== 'object') return p;
+  const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
+
+  let rawOriginalPrice = p.originalPrice ?? p.original_price ?? p.originalprice;
+  let resolvedOriginalPrice = numPrice;
+  if (rawOriginalPrice !== 'Sin definir' && rawOriginalPrice != null && rawOriginalPrice !== '') {
+    const parsed = typeof rawOriginalPrice === 'number' ? rawOriginalPrice : parseFloat(rawOriginalPrice);
+    resolvedOriginalPrice = isNaN(parsed) ? numPrice : parsed;
+  }
+
+  const candidateCosts = [p.cost_price, p.costPrice, p.costprice];
+  let resolvedCost = 'Sin definir';
+  for (const val of candidateCosts) {
+    if (val !== undefined && val !== null && val !== '' && val !== 'Sin definir') {
+      const parsed = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.').replace(/[^\d.]/g, ''));
+      if (!isNaN(parsed) && parsed > 0) {
+        resolvedCost = parsed;
+        break;
+      }
+    }
+  }
+  if (resolvedCost === 'Sin definir') {
+    for (const val of candidateCosts) {
+      if (val === 0 || val === '0' || val === '0.00') {
+        resolvedCost = 0;
+        break;
+      }
+    }
+  }
+
+  let rawStock = p.stock;
+  let resolvedStock = 'Sin definir';
+  if (rawStock !== undefined && rawStock !== null && rawStock !== '' && rawStock !== 'Sin definir') {
+    const parsed = typeof rawStock === 'number' ? Math.floor(rawStock) : parseInt(String(rawStock), 10);
+    resolvedStock = isNaN(parsed) ? 'Sin definir' : parsed;
+  }
+
+  let rawMinStock = p.minStock ?? p.min_stock ?? p.minstock;
+  let resolvedMinStock = 'Sin definir';
+  if (rawMinStock !== undefined && rawMinStock !== null && rawMinStock !== '' && rawMinStock !== 'Sin definir') {
+    const parsed = typeof rawMinStock === 'number' ? Math.floor(rawMinStock) : parseInt(String(rawMinStock), 10);
+    resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
+  }
+
+  return {
+    ...p,
+    price: numPrice,
+    originalPrice: resolvedOriginalPrice,
+    original_price: resolvedOriginalPrice,
+    costPrice: resolvedCost,
+    cost_price: resolvedCost,
+    stock: resolvedStock,
+    minStock: resolvedMinStock,
+    min_stock: resolvedMinStock,
+    category: p.category || 'Sin definir',
+    unit: p.unit || 'Sin definir',
+    description: p.description || 'Sin definir',
+    image: p.image || '/products/producto-sin-imagen.png',
+    code: p.code ? String(p.code) : '',
+    badge: p.badge || '',
+    isPopular: Boolean(p.isPopular ?? p.is_popular),
+    is_popular: Boolean(p.isPopular ?? p.is_popular),
+    isActive: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true),
+    is_active: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true)
+  };
+};
+
+// Deduplicador robusto por ID y por Código para evitar que aparezcan productos duplicados
+export const deduplicateProducts = (productList) => {
+  if (!Array.isArray(productList)) return [];
+  const seenIds = new Set();
+  const seenCodes = new Set();
+  const result = [];
+
+  for (const item of productList) {
+    if (!item || typeof item !== 'object') continue;
+    const cleanId = item.id != null ? String(item.id).trim() : '';
+    const cleanCode = item.code != null ? String(item.code).trim() : '';
+
+    if (cleanId && seenIds.has(cleanId)) continue;
+    if (cleanCode && cleanCode !== 'Sin definir' && cleanCode !== '' && seenCodes.has(cleanCode)) continue;
+
+    if (cleanId) seenIds.add(cleanId);
+    if (cleanCode && cleanCode !== 'Sin definir' && cleanCode !== '') seenCodes.add(cleanCode);
+
+    result.push(item);
+  }
+  return result;
+};
+
+// Filtra automáticamente los 14 productos demo sembrados si la tienda ya cuenta con productos reales/importados
+export const filterOutLegacyDemoProducts = (productList, slug) => {
+  if (!Array.isArray(productList) || !slug || slug === 'default') {
+    return productList;
+  }
+  const hasCustomProducts = productList.some(p => {
+    if (!p || !p.id) return false;
+    return /prod-\d{10,}/.test(p.id) || !p.id.startsWith(`${slug}-prod-`);
+  });
+
+  if (!hasCustomProducts) {
+    return productList;
+  }
+
+  return productList.filter(p => {
+    if (!p || !p.id) return false;
+    const isLegacyDemoId = new RegExp(`^${slug}-prod-([1-9]|1[0-4])$`).test(p.id);
+    return !isLegacyDemoId;
+  });
+};
+
 export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
@@ -159,137 +272,14 @@ export const StoreProvider = ({ children }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.map(prod => {
-          if (prod.id === 'prod-1' || prod.name?.toLowerCase().includes('leche entera') || prod.name?.toLowerCase().includes('pil leche')) {
-            return {
-              ...prod,
-              id: 'prod-1',
-              name: 'Pil Leche Fresca Natural 946 ml',
-              category: 'Lácteos & Huevos',
-              price: 8.00,
-              originalPrice: 8.50,
-              unit: 'Bolsa 946 ml',
-              image: '/products/leche-pil.png',
-              description: 'Leche fluida ultrapasteurizada y homogeneizada Pil, con 2.7% de materia grasa natural. Nutritiva y fresca, ideal para el desayuno familiar y recetas diarias.',
-              badge: 'Ahorro Pack'
-            };
-          }
-          if (prod.id === 'prod-2' || prod.name?.toLowerCase().includes('huevos')) {
-            return {
-              ...prod,
-              id: 'prod-2',
-              name: 'Huevos de 2da (Medio Maple 15u)',
-              category: 'Lácteos & Huevos',
-              price: 15.00,
-              originalPrice: 16.50,
-              unit: 'Medio Maple 15 unidades',
-              description: 'Huevos frescos seleccionados, tamaño mediano con yema dorada natural garantizada.',
-              badge: 'Frescura Garantizada'
-            };
-          }
-          if (prod.id === 'prod-7' || prod.name?.toLowerCase().includes('spaghetti') || prod.name?.toLowerCase().includes('lazzaroni')) {
-            return {
-              ...prod,
-              id: 'prod-7',
-              name: 'Fideos Lazzaroni Cortos 1 Kg',
-              category: 'Abarrotes',
-              price: 15.50,
-              originalPrice: 15.80,
-              unit: 'Bolsa 1 Kg',
-              image: '/products/fideos-lazzaroni.png',
-              description: 'Pasta corta de sémola de trigo seleccionada Lazzaroni, ideal para sopas y guisos.'
-            };
-          }
-          if (prod.id === 'prod-9' || prod.name?.toLowerCase().includes('tomate')) {
-            return {
-              ...prod,
-              id: 'prod-9',
-              name: 'Tomates Frescos',
-              category: 'Frutas & Verduras',
-              price: 5.00,
-              originalPrice: 5.00,
-              unit: 'Por Onza',
-              description: 'Tomates frescos y jugosos seleccionados por onza, ideales para ensaladas frescas, salsas caseras y preparaciones diarias.',
-              badge: 'Directo del Campo'
-            };
-          }
-          if (prod.id === 'prod-10' || prod.name?.toLowerCase().includes('manantial') || prod.name?.toLowerCase().includes('vital')) {
-            return {
-              ...prod,
-              id: 'prod-10',
-              name: 'Agua Vital sin Gas 600 ml',
-              category: 'Bebidas & Licores',
-              price: 5.00,
-              originalPrice: 5.50,
-              unit: 'Botella 600 ml',
-              image: '/products/agua-vital-600ml.png',
-              description: 'Agua purificada de mesa Vital sin gas en botella de 600 ml. Hidratación pura, ligera y refrescante para cualquier momento del día.',
-              badge: 'Hidratación'
-            };
-          }
-          if (prod.id === 'prod-11' || prod.name?.toLowerCase().includes('cola clásica') || prod.name?.toLowerCase().includes('coca-cola')) {
-            return {
-              ...prod,
-              id: 'prod-11',
-              name: 'Soda Coca-Cola 2 L',
-              category: 'Bebidas & Licores',
-              price: 13.00,
-              originalPrice: 13.00,
-              unit: 'Botella 2L',
-              image: '/products/coca-cola-2l.png',
-              description: 'Bebida gaseosa Coca-Cola Sabor Original en botella familiar de 2 Litros. El refresco ideal para acompañar tus comidas y compartir en familia.',
-              badge: 'Bien Helada'
-            };
-          }
-          if (prod.id === 'prod-12' || prod.name?.toLowerCase().includes('papas fritas') || prod.name?.toLowerCase().includes('lays')) {
-            return {
-              ...prod,
-              id: 'prod-12',
-              name: 'Papas Lays Clásicas Bolsa Pequeña 70g',
-              category: 'Snacks & Golosinas',
-              price: 5.50,
-              originalPrice: 5.50,
-              unit: 'Bolsa 70g',
-              image: '/products/lays-clasicas.png',
-              description: 'Papas fritas Lay\'s Clásicas crocantes con el toque justo de sal en práctica bolsa de 70g. El snack perfecto para disfrutar a cualquier hora.',
-              badge: 'Favorito Vecinos'
-            };
-          }
-          if (prod.id === 'prod-13' || prod.name?.toLowerCase().includes('detergente') || prod.name?.toLowerCase().includes('omo')) {
-            return {
-              ...prod,
-              id: 'prod-13',
-              name: 'Detergente Omo Limon Con Jabón 1.8K',
-              category: 'Limpieza & Hogar',
-              price: 51.30,
-              originalPrice: 53.10,
-              unit: 'Bolsa 1.8 Kg',
-              image: '/products/omo-limon-1.8k.png',
-              description: 'Detergente en polvo Omo Limón con bicarbonato y fórmula con el poder del jabón en bolsa de 1.8 kg. Remueve las manchas más difíciles en el primer lavado dejando un aroma fresco.',
-              badge: 'Máximo Ahorro'
-            };
-          }
-          if (prod.id === 'prod-14' || prod.name?.toLowerCase().includes('papel higi') || prod.name?.toLowerCase().includes('nacional selecto')) {
-            return {
-              ...prod,
-              id: 'prod-14',
-              name: 'Nacional Selecto Papel Higienico Th 3D X 6 Unidades',
-              category: 'Limpieza & Hogar',
-              price: 19.00,
-              originalPrice: 19.70,
-              unit: 'Pack 6 rollos x 30m',
-              image: '/products/papel-nacional-selecto-6u.jpg',
-              description: 'Papel higiénico Nacional Selecto Triple Hoja con tecnología 3D acolchonada en pack de 6 unidades x 30 metros. Máxima suavidad, resistencia y rendimiento para el hogar.',
-              badge: 'Básico del Hogar'
-            };
-          }
-          return prod;
-        });
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug);
+        }
       } catch (e) {
-        return initialProducts;
+        // fallback
       }
     }
-    return initialProducts;
+    return tenantSlug === 'default' ? initialProducts.map(normalizeProduct) : [];
   });
 
   // 3. Configuración de Tienda
@@ -383,8 +373,13 @@ export const StoreProvider = ({ children }) => {
 
   // 6. Pedidos
   const [orders, setOrders] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
-    return saved ? JSON.parse(saved) : initialOrders;
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
+      return saved ? JSON.parse(saved) : (tenantSlug === 'default' ? initialOrders : []);
+    } catch (e) {
+      console.warn('Error reading stored orders:', e);
+      return tenantSlug === 'default' ? initialOrders : [];
+    }
   });
 
   // 7. Puntos de Fidelidad / VeciPuntos del cliente
@@ -393,8 +388,14 @@ export const StoreProvider = ({ children }) => {
     return saved ? parseInt(saved, 10) : 340;
   });
 
-  // 8. Solicitudes de productos (En Modo Demostración inicia siempre con el listado limpio por defecto)
-  const [productRequests, setProductRequests] = useState(initialProductRequests);
+  // 8. Solicitudes de productos (En Modo Demostración inicia con listado de ejemplo; en tiendas registradas con su lista o vacía)
+  const [productRequests, setProductRequests] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return tenantSlug === 'default' ? initialProductRequests : [];
+  });
 
   // 9. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -501,75 +502,6 @@ export const StoreProvider = ({ children }) => {
     };
   }, []);
 
-  // Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
-  const normalizeProduct = (p) => {
-    if (!p || typeof p !== 'object') return p;
-    const numPrice = typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0);
-
-    let rawOriginalPrice = p.originalPrice ?? p.original_price ?? p.originalprice;
-    let resolvedOriginalPrice = numPrice;
-    if (rawOriginalPrice !== 'Sin definir' && rawOriginalPrice != null && rawOriginalPrice !== '') {
-      const parsed = typeof rawOriginalPrice === 'number' ? rawOriginalPrice : parseFloat(rawOriginalPrice);
-      resolvedOriginalPrice = isNaN(parsed) ? numPrice : parsed;
-    }
-
-    const candidateCosts = [p.cost_price, p.costPrice, p.costprice];
-    let resolvedCost = 'Sin definir';
-    for (const val of candidateCosts) {
-      if (val !== undefined && val !== null && val !== '' && val !== 'Sin definir') {
-        const parsed = typeof val === 'number' ? val : parseFloat(String(val).replace(',', '.').replace(/[^\d.]/g, ''));
-        if (!isNaN(parsed) && parsed > 0) {
-          resolvedCost = parsed;
-          break;
-        }
-      }
-    }
-    if (resolvedCost === 'Sin definir') {
-      for (const val of candidateCosts) {
-        if (val === 0 || val === '0' || val === '0.00') {
-          resolvedCost = 0;
-          break;
-        }
-      }
-    }
-
-    let rawStock = p.stock;
-    let resolvedStock = 'Sin definir';
-    if (rawStock !== undefined && rawStock !== null && rawStock !== '' && rawStock !== 'Sin definir') {
-      const parsed = typeof rawStock === 'number' ? Math.floor(rawStock) : parseInt(String(rawStock), 10);
-      resolvedStock = isNaN(parsed) ? 'Sin definir' : parsed;
-    }
-
-    let rawMinStock = p.minStock ?? p.min_stock ?? p.minstock;
-    let resolvedMinStock = 'Sin definir';
-    if (rawMinStock !== undefined && rawMinStock !== null && rawMinStock !== '' && rawMinStock !== 'Sin definir') {
-      const parsed = typeof rawMinStock === 'number' ? Math.floor(rawMinStock) : parseInt(String(rawMinStock), 10);
-      resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
-    }
-
-    return {
-      ...p,
-      price: numPrice,
-      originalPrice: resolvedOriginalPrice,
-      original_price: resolvedOriginalPrice,
-      costPrice: resolvedCost,
-      cost_price: resolvedCost,
-      stock: resolvedStock,
-      minStock: resolvedMinStock,
-      min_stock: resolvedMinStock,
-      category: p.category || 'Sin definir',
-      unit: p.unit || 'Sin definir',
-      description: p.description || 'Sin definir',
-      image: p.image || '/products/producto-sin-imagen.png',
-      code: p.code ? String(p.code) : '',
-      badge: p.badge || '',
-      isPopular: Boolean(p.isPopular ?? p.is_popular),
-      is_popular: Boolean(p.isPopular ?? p.is_popular),
-      isActive: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true),
-      is_active: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true)
-    };
-  };
-
   useEffect(() => {
     if (!tenantSlug) return;
 
@@ -578,7 +510,10 @@ export const StoreProvider = ({ children }) => {
       if (tenantSlug !== 'default') {
         const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
         if (localProds) {
-          setProducts(JSON.parse(localProds).map(normalizeProduct));
+          const parsed = JSON.parse(localProds);
+          if (Array.isArray(parsed)) {
+            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug));
+          }
         }
         const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
         if (localOrders) {
@@ -595,14 +530,15 @@ export const StoreProvider = ({ children }) => {
 
     if (!supabase) return;
 
-    // 1. Cargar productos por tienda de forma aislada a nivel servidor
+    // 1. Cargar productos por tienda de forma aislada a nivel servidor con deduplicación y purga de demo
     const productQuery = tenantSlug === 'default'
       ? supabase.from('products').select('*').or(`tenant_id.eq.${tenantSlug},tenant_id.is.null`)
       : supabase.from('products').select('*').eq('tenant_id', tenantSlug);
 
     productQuery.then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        setProducts(data.map(normalizeProduct));
+        const cleaned = filterOutLegacyDemoProducts(deduplicateProducts(data.map(normalizeProduct)), tenantSlug);
+        setProducts(cleaned);
       }
     });
 
@@ -670,9 +606,9 @@ export const StoreProvider = ({ children }) => {
         filter: `tenant_id=eq.${tenantSlug}`
       }, payload => {
         if (payload.eventType === 'INSERT') {
-          setProducts(prev => [normalizeProduct(payload.new), ...prev.filter(p => p.id !== payload.new.id)]);
+          setProducts(prev => filterOutLegacyDemoProducts(deduplicateProducts([normalizeProduct(payload.new), ...prev.filter(p => p.id !== payload.new.id)]), tenantSlug));
         } else if (payload.eventType === 'UPDATE') {
-          setProducts(prev => prev.map(p => (p.id === payload.new.id ? normalizeProduct(payload.new) : p)));
+          setProducts(prev => filterOutLegacyDemoProducts(deduplicateProducts(prev.map(p => (p.id === payload.new.id ? normalizeProduct(payload.new) : p))), tenantSlug));
         } else if (payload.eventType === 'DELETE') {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id));
         }
@@ -855,6 +791,35 @@ export const StoreProvider = ({ children }) => {
     };
   }, [currentUser, tenantSlug, storeConfig]);
 
+  // Limpieza automática en Supabase si el dueño legítimo está autenticado y tiene productos demo residuales
+  useEffect(() => {
+    if (!supabase || !currentUser || !tenantSlug || tenantSlug === 'default') return;
+    const isOwner = Boolean(
+      merchantStore && (
+        currentUser.id === merchantStore.owner_id || 
+        merchantStore.tenant_id === tenantSlug || 
+        merchantStore.id === tenantSlug
+      )
+    );
+    if (!isOwner) return;
+
+    const legacyDemoIds = [];
+    for (let i = 1; i <= 14; i++) {
+      legacyDemoIds.push(`${tenantSlug}-prod-${i}`);
+    }
+
+    supabase
+      .from('products')
+      .delete()
+      .in('id', legacyDemoIds)
+      .eq('tenant_id', tenantSlug)
+      .then(({ error, count }) => {
+        if (!error && count && count > 0) {
+          console.log(`Eliminados ${count} productos demo residuales de ${tenantSlug} en Supabase.`);
+        }
+      });
+  }, [currentUser, merchantStore, tenantSlug]);
+
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
   useEffect(() => {
     if (!tenantSlug || !storeConfig?.name) return;
@@ -924,30 +889,40 @@ export const StoreProvider = ({ children }) => {
   // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {
     localStorage.setItem(`marketsaas_${tenantSlug}_viewMode`, viewMode);
-    // En Modo Demostración: al cambiar de sección o recargar, se limpia el carrito y se restablecen las peticiones iniciales
     setCart([]);
-    setProductRequests(initialProductRequests);
     try {
       localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
-      localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
     } catch (e) {}
+
+    // En Modo Demostración ('default'): restablecer peticiones iniciales
+    if (tenantSlug === 'default') {
+      setProductRequests(initialProductRequests);
+      try {
+        localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
+      } catch (e) {}
+    }
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-04-v9-demo-cleanup';
+  const CURRENT_SCHEMA_VER = '2026-09-08-v11-clean-inventory';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
       if (storedVer !== CURRENT_SCHEMA_VER) {
         localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
-        setProducts(initialProducts);
-        setStoreConfigState(initialStoreConfig);
-        setCart([]);
-        setProductRequests(initialProductRequests);
-        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts));
-        localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
-        localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
-        localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
+        if (tenantSlug === 'default') {
+          setProducts(initialProducts);
+          setStoreConfigState(initialStoreConfig);
+          setCart([]);
+          setProductRequests(initialProductRequests);
+          localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts));
+          localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
+          localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
+          localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
+        } else {
+          // Si es una tienda personalizada registrada, limpiar la caché local para forzar recarga limpia desde Supabase
+          localStorage.removeItem(`marketsaas_${tenantSlug}_products`);
+        }
       }
     } catch (e) {
       console.warn('Error syncing catalog version:', e);
@@ -1689,24 +1664,8 @@ export const StoreProvider = ({ children }) => {
       setMerchantStore(storeRecord);
       localStorage.setItem('marketsaas_active_tenant', cleanSlug);
 
-      // Sembrar catálogo inicial para esta tienda si se desea
-      const seededProducts = initialProducts.map(p => ({
-        id: `${cleanSlug}-${p.id}`,
-        tenant_id: cleanSlug,
-        name: p.name,
-        category: p.category,
-        price: p.price,
-        original_price: p.originalPrice || p.price,
-        unit: p.unit,
-        stock: p.stock,
-        image: p.image,
-        badge: p.badge || null,
-        is_active: true,
-        code: p.code
-      }));
-
-      await supabase.from('products').insert(seededProducts);
-      setProducts(seededProducts);
+      // Las tiendas de comerciantes inician con inventario limpio listo para cargar sus propios productos o importar Excel
+      setProducts([]);
 
       // Actualizar parámetro en la URL
       const newUrl = new URL(window.location.href);

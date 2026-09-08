@@ -1,4 +1,6 @@
-// Catálogo inicial realista para tiendas de barrio, minimarkets y condominios
+// Catálogo inicial y datos semilla para el Modo Demostración (tenant: 'default').
+// NOTA: Las tiendas registradas (SaaS) gestionan su propio inventario en Supabase
+// y no se ven afectadas por este archivo.
 export const initialProducts = [
   {
     id: 'prod-1',
@@ -138,7 +140,7 @@ export const initialProducts = [
     costPrice: 3.50,
     stock: 25,
     minStock: 5,
-    unit: 'Por Onza',
+    unit: 'Por Kilo',
     image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80',
     description: 'Tomates frescos y jugosos seleccionados por onza, ideales para ensaladas frescas, salsas caseras y preparaciones diarias.',
     badge: 'Directo del Campo',
@@ -299,74 +301,74 @@ export const initialOrders = [
     id: 'ORD-9821',
     customer: {
       name: 'Camila Rojas',
-      phone: '+56 9 7123 4567',
+      phone: '+591 71234567',
       condominium: 'Condominio Las Palmas',
       tower: 'Torre B',
       apartment: 'Depto 402',
       notes: 'Tocar el timbre 402, el ascensor está operativo.'
     },
     items: [
-      { id: 'prod-1', name: 'Leche Entera Selección 1L', quantity: 2, price: 1.25 },
-      { id: 'prod-3', name: 'Pan Marraqueta Tradicional (1 Kg)', quantity: 1, price: 1.95 },
-      { id: 'prod-2', name: 'Huevos de Campo Grado A', quantity: 1, price: 3.40 }
+      { id: 'prod-1', name: 'Pil Leche Fresca Natural 946 ml', quantity: 2, price: 8.00 },
+      { id: 'prod-3', name: 'Pan Marraqueta', quantity: 5, price: 1.00 },
+      { id: 'prod-2', name: 'Huevos de 2da (Medio Maple 15u)', quantity: 1, price: 15.00 }
     ],
-    subtotal: 7.85,
-    deliveryFee: 1.00,
+    subtotal: 36.00,
+    deliveryFee: 0.00,
     discount: 0.00,
-    total: 8.85,
+    total: 36.00,
     deliveryType: 'delivery', // 'delivery' | 'pickup'
     paymentMethod: 'cash',
-    cashChangeFor: 10.00,
+    cashChangeFor: 50.00,
     status: 'preparing', // 'pending' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled'
     createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    pointsEarned: 78
+    pointsEarned: 360
   },
   {
     id: 'ORD-9820',
     customer: {
       name: 'Ignacio Fuentes',
-      phone: '+56 9 6543 2198',
+      phone: '+591 76543219',
       condominium: 'Condominio Las Palmas',
       tower: 'Torre A',
       apartment: 'Depto 701',
       notes: 'Dejar en conserjería si no contesto el citófono.'
     },
     items: [
-      { id: 'prod-11', name: 'Gaseosa Cola Clásica 1.5L', quantity: 2, price: 2.20 },
-      { id: 'prod-12', name: 'Papas Fritas Artesanales 180g', quantity: 2, price: 2.30 }
+      { id: 'prod-11', name: 'Soda Coca-Cola 2 L', quantity: 2, price: 13.00 },
+      { id: 'prod-12', name: 'Papas Lays Clásicas Bolsa Pequeña 70g', quantity: 2, price: 5.50 }
     ],
-    subtotal: 9.00,
-    deliveryFee: 1.00,
-    discount: 1.00,
-    total: 9.00,
+    subtotal: 37.00,
+    deliveryFee: 0.00,
+    discount: 0.00,
+    total: 37.00,
     deliveryType: 'delivery',
     paymentMethod: 'qr',
     status: 'on_the_way',
     createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-    pointsEarned: 90
+    pointsEarned: 370
   },
   {
     id: 'ORD-9819',
     customer: {
       name: 'Matías Silva',
-      phone: '+56 9 8877 6655',
+      phone: '+591 78877665',
       condominium: 'Edificio Vista Sol',
       tower: 'Piso 1-12',
       apartment: 'Depto 305',
       notes: 'Paso a retirar en 5 minutos'
     },
     items: [
-      { id: 'prod-4', name: 'Café Tostado Gourmet 250g', quantity: 1, price: 4.80 }
+      { id: 'prod-4', name: 'Café Nescafé', quantity: 1, price: 90.00 }
     ],
-    subtotal: 4.80,
+    subtotal: 90.00,
     deliveryFee: 0.00,
     discount: 0.00,
-    total: 4.80,
+    total: 90.00,
     deliveryType: 'pickup',
     paymentMethod: 'card',
     status: 'delivered',
     createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    pointsEarned: 48
+    pointsEarned: 900
   }
 ];
 
