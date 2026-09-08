@@ -172,14 +172,14 @@ export const InventoryManager = () => {
     setEditingProduct({
       name: '',
       code: `780${Math.floor(10000000 + Math.random() * 90000000)}`,
-      category: 'Abarrotes',
+      category: activeCategories[0] || 'Abarrotes',
       price: 1.50,
       originalPrice: 1.50,
       costPrice: 0.90,
       stock: 20,
       minStock: 5,
       unit: 'Unidad',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+      image: '/products/producto-sin-imagen.png',
       description: 'Producto fresco de alta calidad para la despensa del hogar.',
       badge: '',
       isPopular: false
@@ -204,7 +204,8 @@ export const InventoryManager = () => {
     setEditingProduct({ 
       ...product,
       costPrice: resolvedCost,
-      cost_price: resolvedCost
+      cost_price: resolvedCost,
+      image: (product.image && product.image.trim()) ? product.image.trim() : '/products/producto-sin-imagen.png'
     });
   };
 
@@ -215,8 +216,13 @@ export const InventoryManager = () => {
       return;
     }
     const cost = editingProduct.costPrice ?? editingProduct.cost_price;
+    const finalImage = (editingProduct.image && editingProduct.image.trim())
+      ? editingProduct.image.trim()
+      : '/products/producto-sin-imagen.png';
+
     saveProduct({
       ...editingProduct,
+      image: finalImage,
       costPrice: cost !== undefined ? cost : 'Sin definir',
       cost_price: cost !== undefined ? cost : 'Sin definir'
     });
@@ -973,12 +979,16 @@ export const InventoryManager = () => {
                 <label className="text-xs font-bold text-slate-800 block">Foto del Producto (Cargar desde Archivo o Enlace)</label>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
-                    {editingProduct.image ? (
-                      <img src={editingProduct.image} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[10px] text-slate-400">Sin Foto</span>
-                    )}
+                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-2xs">
+                    <img 
+                      src={editingProduct.image?.trim() || '/products/producto-sin-imagen.png'} 
+                      alt="Preview" 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/products/producto-sin-imagen.png';
+                      }}
+                    />
                   </div>
 
                   <div className="flex-1 space-y-2 w-full">
@@ -997,13 +1007,25 @@ export const InventoryManager = () => {
                       }}
                       className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
                     />
-                    <input
-                      type="url"
-                      placeholder="O pega una URL de foto en Internet..."
-                      value={editingProduct.image || ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="O pega una URL de foto en Internet (opcional)..."
+                        value={editingProduct.image || ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-hidden focus:border-emerald-500"
+                      />
+                      {editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingProduct({ ...editingProduct, image: '/products/producto-sin-imagen.png' })}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 hover:text-rose-600 font-bold px-2 py-0.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
+                          title="Usar imagen predeterminada"
+                        >
+                          Quitar foto
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

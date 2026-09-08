@@ -1209,9 +1209,18 @@ export const StoreProvider = ({ children }) => {
 
   // Crear o Editar Producto (Dueño)
   const saveProduct = (productData) => {
-    const payload = { ...productData, tenant_id: tenantSlug };
+    const cleanImage = (productData.image && productData.image.trim()) 
+      ? productData.image.trim() 
+      : '/products/producto-sin-imagen.png';
+
+    const payload = { 
+      ...productData, 
+      image: cleanImage,
+      tenant_id: tenantSlug 
+    };
     const syncItem = {
       ...payload,
+      image: cleanImage,
       cost_price: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
       costPrice: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
       min_stock: payload.minStock != null ? String(payload.minStock) : 'Sin definir',
@@ -1243,14 +1252,14 @@ export const StoreProvider = ({ children }) => {
         id: `${tenantSlug}-prod-${Date.now()}`,
         tenant_id: tenantSlug,
         code: productData.code && productData.code.trim() ? productData.code.trim() : autoCode,
-        image: productData.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80'
+        image: cleanImage
       };
       const newProdSync = {
         ...syncItem,
         id: newProd.id,
         tenant_id: tenantSlug,
         code: newProd.code,
-        image: newProd.image
+        image: cleanImage
       };
       setProducts(prev => [newProd, ...prev]);
       if (supabase) {
