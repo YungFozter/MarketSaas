@@ -31,6 +31,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     setSelectedLocation, 
     storeConfig, 
     selectedStore,
+    stores,
     createCustomerOrder, 
     showToast,
     customerPhone: storedCustomerPhone,
@@ -243,7 +244,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     });
 
     // 2. Extraer número de WhatsApp / Teléfono del dueño de la tienda
-    const rawOwnerPhone = storeConfig?.whatsapp || storeConfig?.phone || selectedStore?.whatsapp || selectedStore?.phone || '';
+    const foundStore = stores?.find(s => s.slug === tenantSlug || s.id === tenantSlug);
+    const rawOwnerPhone = storeConfig?.whatsapp || storeConfig?.phone || selectedStore?.whatsapp || selectedStore?.phone || foundStore?.whatsapp || foundStore?.phone || '';
     let cleanWa = rawOwnerPhone.replace(/[^0-9]/g, '');
 
     // Si tiene 8 dígitos (celulares en Bolivia), anteponer código país 591
@@ -253,30 +255,66 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
     if (cleanWa && cleanWa.length >= 8) {
       const orderNum = newOrder?.id || `PED-${Date.now().toString().slice(-4)}`;
-      const storeDisplayName = storeConfig?.name || selectedStore?.name || 'la tienda';
-      const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency}${(i.price * i.quantity).toFixed(2)})`).join('\n');
+      const storeDisplayName = storeConfig?.name || selectedStore?.name || foundStore?.name || 'la tienda';
+      const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency} ${(i.price * i.quantity).toFixed(2)})`).join('\n');
       
-      const paymentMethodLabel = paymentMethod === 'qr' 
-        ? 'Transferencia / QR Digital' 
-        : paymentMethod === 'cash' 
-          ? `Efectivo (${effectiveDeliveryType === 'pickup' ? 'En caja al recoger' : `Contra entrega - Vuelto para ${currency}${cashAmount}`})` 
-          : 'Tarjeta en Tienda (POS)';
-
       const deliveryDetails = effectiveDeliveryType === 'delivery'
         ? `📍 *Modalidad:* Delivery a domicilio\n   *Condominio:* ${condoName}\n   *Sector/Torre:* ${tower}\n   *Nº/Depto:* ${apartment}${notes ? `\n   *Indicaciones:* ${notes}` : ''}`
         : `🛍️ *Modalidad:* Retiro en Tienda`;
 
-      const waText = `¡Hola *${storeDisplayName}*! Acabo de realizar el pago de mi pedido y adjunto mi comprobante para verificación:\n\n` +
-        `📦 *PEDIDO #${orderNum}*\n` +
-        `👤 *Cliente:* ${customerName}\n` +
-        `📱 *Mi Teléfono:* ${customerPhone}\n` +
-        `${deliveryDetails}\n` +
-        `💳 *Forma de Pago:* ${paymentMethodLabel}\n` +
-        (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency}${newOrder.discount.toFixed(2)}\n` : '') +
-        `\n` +
-        `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
-        `💰 *TOTAL PAGADO:* ${currency}${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
-        `📎 _(Adjunto imagen/captura de mi comprobante a continuación)_ 👇`;
+      let waText = '';
+
+      if (paymentMethod === 'cash') {
+        const cashPayAmount = parseFloat(cashAmount) || 0;
+        const paymentLines = [
+          `💳 *Forma de Pago:* Efectivo (${effectiveDeliveryType === 'pickup' ? 'Pagar al Recoger en Caja' : 'Pagar contra entrega'})`
+        ];
+        if (cashPayAmount > 0) {
+          paymentLines.push(`💵 *Pagaré con:* ${currency} ${cashPayAmount.toFixed(2)}`);
+          if (cashPayAmount > finalTotal) {
+            paymentLines.push(`🪙 *Vuelto a entregarme en caja:* ${currency} ${changeToReturn}`);
+          }
+        }
+
+        waText = `¡Hola *${storeDisplayName}*! Quiero realizar el siguiente pedido para pagar en *Efectivo* al ${effectiveDeliveryType === 'pickup' ? 'recoger en el local' : 'recibir a domicilio'}:\n\n` +
+          `📦 *PEDIDO #${orderNum}*\n` +
+          `👤 *Cliente:* ${customerName}\n` +
+          `📱 *Mi Teléfono:* ${customerPhone}\n` +
+          `${deliveryDetails}\n` +
+          `${paymentLines.join('\n')}\n` +
+          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          `\n` +
+          `📋 *DETALLE DE LA LISTA DE COMPRA:*\n${itemsList}\n\n` +
+          `💰 *TOTAL A PAGAR:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
+          (effectiveDeliveryType === 'pickup'
+            ? `🛒 _Por favor preparar mi lista de compra para pasar a recogerla y pagar en caja. ¡Muchas gracias!_`
+            : `🛵 _Por favor confirmar mi pedido para enviarlo a mi domicilio. ¡Muchas gracias!_`);
+      } else if (paymentMethod === 'card') {
+        waText = `¡Hola *${storeDisplayName}*! Quiero realizar el siguiente pedido para pagar con *Tarjeta en Tienda (POS)*:\n\n` +
+          `📦 *PEDIDO #${orderNum}*\n` +
+          `👤 *Cliente:* ${customerName}\n` +
+          `📱 *Mi Teléfono:* ${customerPhone}\n` +
+          `${deliveryDetails}\n` +
+          `💳 *Forma de Pago:* Tarjeta en Tienda (POS)\n` +
+          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          `\n` +
+          `📋 *DETALLE DE LA LISTA DE COMPRA:*\n${itemsList}\n\n` +
+          `💰 *TOTAL A PAGAR:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
+          `💳 _Por favor preparar mi lista de compra para pasar a pagar con tarjeta y recogerla. ¡Muchas gracias!_`;
+      } else {
+        // QR Digital
+        waText = `¡Hola *${storeDisplayName}*! Acabo de realizar el pago por *QR Digital* de mi pedido y adjunto mi comprobante para verificación:\n\n` +
+          `📦 *PEDIDO #${orderNum}*\n` +
+          `👤 *Cliente:* ${customerName}\n` +
+          `📱 *Mi Teléfono:* ${customerPhone}\n` +
+          `${deliveryDetails}\n` +
+          `💳 *Forma de Pago:* Transferencia / QR Digital\n` +
+          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          `\n` +
+          `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
+          `💰 *TOTAL PAGADO:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
+          `📎 _(Adjunto imagen/captura de mi comprobante a continuación)_ 👇`;
+      }
 
       const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
       
@@ -763,24 +801,42 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     <span>Volver</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={handleConfirmAndSendWhatsApp}
-                    className="flex-1 py-3 sm:py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center cursor-pointer text-center"
-                    title="Registrar pedido y enviar comprobante a la tienda por WhatsApp"
-                  >
-                    <div className="flex items-center justify-center gap-2.5">
-                      <MessageCircle className="w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 text-white fill-white/20" />
-                      <div className="text-left sm:text-center leading-tight">
-                        <span className="block text-sm sm:text-base font-black tracking-wide">
-                          Ya pagué
-                        </span>
-                        <span className="block text-[10.5px] sm:text-xs font-semibold text-emerald-100 opacity-95 mt-0.5">
-                          Enviar comprobante para verificación
-                        </span>
-                      </div>
-                    </div>
-                  </button>
+                  {(() => {
+                    let mainText = 'Ya pagué';
+                    let subText = 'Enviar comprobante para verificación';
+                    let buttonTitle = 'Registrar pedido y enviar comprobante a la tienda por WhatsApp';
+
+                    if (paymentMethod === 'cash') {
+                      mainText = effectiveDeliveryType === 'delivery' ? 'Pagar contra Entrega' : 'Pagar al Recoger';
+                      subText = 'Enviar lista de compra';
+                      buttonTitle = 'Registrar pedido y enviar lista de compra a la tienda por WhatsApp';
+                    } else if (paymentMethod === 'card') {
+                      mainText = effectiveDeliveryType === 'delivery' ? 'Pagar con Tarjeta al Recibir' : 'Pagar al Recoger';
+                      subText = 'Enviar lista de compra';
+                      buttonTitle = 'Registrar pedido y coordinar pago con tarjeta por WhatsApp';
+                    }
+
+                    return (
+                      <button
+                        type="button"
+                        onClick={handleConfirmAndSendWhatsApp}
+                        className="flex-1 py-3 sm:py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center cursor-pointer text-center"
+                        title={buttonTitle}
+                      >
+                        <div className="flex items-center justify-center gap-2.5">
+                          <MessageCircle className="w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 text-white fill-white/20" />
+                          <div className="text-left sm:text-center leading-tight">
+                            <span className="block text-sm sm:text-base font-black tracking-wide">
+                              {mainText}
+                            </span>
+                            <span className="block text-[10.5px] sm:text-xs font-semibold text-emerald-100 opacity-95 mt-0.5">
+                              {subText}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
