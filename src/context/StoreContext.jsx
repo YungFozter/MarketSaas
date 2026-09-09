@@ -1722,8 +1722,8 @@ export const StoreProvider = ({ children }) => {
     if (!trimmedProduct) return;
 
     const reqId = `REQ-${Date.now().toString().slice(-6)}`;
-    const effectiveLocation = location || (selectedLocation ? `${selectedLocation.tower || ''} ${selectedLocation.apartment || ''}`.trim() : '');
-    const effectiveCustomer = customerName?.trim() || (effectiveLocation ? `Vecino (${effectiveLocation})` : 'Vecino');
+    const effectiveCustomer = customerName?.trim() || 'Vecino';
+    const effectiveLocation = location?.trim() || '';
 
     const newReq = normalizeProductRequest({
       id: reqId,

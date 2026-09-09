@@ -21,8 +21,7 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
     submitProductRequest, 
     voteProductRequest, 
     storeConfig, 
-    tenantSlug, 
-    selectedLocation 
+    tenantSlug 
   } = useStore();
 
   const [productName, setProductName] = useState(initialProductName);
@@ -54,15 +53,7 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
 
     setIsSubmitting(true);
     try {
-      const defaultCustomer = selectedLocation?.apartment 
-        ? `Vecino (${selectedLocation.tower ? `${selectedLocation.tower} ` : ''}${selectedLocation.apartment})`
-        : 'Vecino';
-      
-      const effectiveLocation = selectedLocation?.apartment 
-        ? `${selectedLocation.condominium ? `${selectedLocation.condominium} - ` : ''}${selectedLocation.tower ? `${selectedLocation.tower} ` : ''}${selectedLocation.apartment}`
-        : '';
-
-      await submitProductRequest(defaultCustomer, productName.trim(), notes.trim(), effectiveLocation);
+      await submitProductRequest('Vecino', productName.trim(), notes.trim(), '');
       setProductName('');
       setNotes('');
       onClose();
