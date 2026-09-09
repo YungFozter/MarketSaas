@@ -754,14 +754,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
           {/* Quick Action CTA Buttons */}
           <div className="flex items-center gap-2">
-            {/* Botón de Ventas del Día */}
+            {/* Botón de Venta Rápida */}
             <button
               onClick={() => setIsCashCloseModalOpen(true)}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Ver resumen de Ventas e iniciar ventas rápidas"
+              title="Abrir panel de Venta Rápida y arqueo de caja"
             >
               <Receipt className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Ventas</span>
+              <span>Venta Rápida</span>
             </button>
 
             <button
