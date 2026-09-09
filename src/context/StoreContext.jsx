@@ -92,9 +92,9 @@ export const normalizeProductRequest = (req) => {
     }
   }
 
-  const pName = req.productName || req.product_name || 'Producto sugerido';
-  const cName = req.customerName || req.customer_name || 'Vecino';
-  const cLoc = req.customerLocation || req.customer_location || '';
+  const pName = req.productName || req.product_name || req.productname || 'Producto sugerido';
+  const cName = req.customerName || req.customer_name || req.customername || 'Vecino';
+  const cLoc = req.customerLocation || req.customer_location || req.customerlocation || '';
 
   return {
     id: String(req.id),
@@ -1739,12 +1739,13 @@ export const StoreProvider = ({ children }) => {
       created_at: new Date().toISOString()
     });
 
-    setProductRequests(prev => [newReq, ...prev.filter(r => r.id !== reqId)]);
-
-    try {
-      const current = [newReq, ...productRequests.filter(r => r.id !== reqId)];
-      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(current));
-    } catch (e) {}
+    setProductRequests(prev => {
+      const updated = [newReq, ...prev.filter(r => r.id !== reqId)];
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     if (supabase && tenantSlug && tenantSlug !== 'default') {
       try {
@@ -1752,15 +1753,15 @@ export const StoreProvider = ({ children }) => {
           id: newReq.id,
           tenant_id: newReq.tenant_id,
           product_name: newReq.product_name,
-          productName: newReq.productName,
-          customer_name: newReq.customer_name,
-          customerName: newReq.customerName,
-          customer_location: newReq.customer_location,
-          notes: newReq.notes,
-          votes: newReq.votes,
-          status: newReq.status
+          customer_name: newReq.customer_name || 'Vecino',
+          customer_location: newReq.customer_location || '',
+          notes: newReq.notes || '',
+          votes: 1,
+          status: 'pending'
         }]);
-        if (error) console.error('Error insertando solicitud de producto en Supabase:', error);
+        if (error) {
+          console.error('Error insertando solicitud de producto en Supabase:', error);
+        }
       } catch (err) {
         console.error('Excepción al insertar solicitud de producto:', err);
       }
