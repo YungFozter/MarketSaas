@@ -276,6 +276,36 @@ export const InventoryManager = () => {
     }
   };
 
+  // Estado para eliminación individual de producto con modal estilizado
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isDeletingSingle, setIsDeletingSingle] = useState(false);
+
+  const handleConfirmDeleteSingle = async () => {
+    if (!productToDelete) return;
+    try {
+      setIsDeletingSingle(true);
+      await deleteProduct(productToDelete.id);
+      setProductToDelete(null);
+    } catch (err) {
+      console.error('Error al eliminar producto:', err);
+      showToast('Error al eliminar el producto del catálogo.', 'error');
+    } finally {
+      setIsDeletingSingle(false);
+    }
+  };
+
+  // Atajo de teclado Escape para cerrar modal de confirmación
+  useEffect(() => {
+    if (!productToDelete) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !isDeletingSingle) {
+        setProductToDelete(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [productToDelete, isDeletingSingle]);
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -697,11 +727,7 @@ export const InventoryManager = () => {
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            if (window.confirm(`¿Eliminar ${prod.name} del catálogo?`)) {
-                              deleteProduct(prod.id);
-                            }
-                          }}
+                          onClick={() => setProductToDelete(prod)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                           title="Eliminar producto"
                         >
@@ -1082,32 +1108,50 @@ export const InventoryManager = () => {
               </div>
 
               {/* Botones */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setEditingProduct(null)}
-                  disabled={isSavingProduct}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingProduct || isCompressingImage}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-60 transition-all"
-                >
-                  {isSavingProduct ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Guardando en Nube...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Guardar Producto</span>
-                    </>
-                  )}
-                </button>
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2.5">
+                {!isNew ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prod = editingProduct;
+                      setEditingProduct(null);
+                      setProductToDelete(prod);
+                    }}
+                    className="px-3 py-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Eliminar este producto permanentemente"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Eliminar producto</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    disabled={isSavingProduct}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingProduct || isCompressingImage}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-60 transition-all"
+                  >
+                    {isSavingProduct ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Guardando en Nube...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Guardar Producto</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1436,6 +1480,119 @@ export const InventoryManager = () => {
                   )}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Eliminación Individual de Producto */}
+      {productToDelete && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn"
+          onClick={() => {
+            if (!isDeletingSingle) setProductToDelete(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 animate-scaleIn relative overflow-hidden text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botón cerrar X */}
+            <button
+              type="button"
+              disabled={isDeletingSingle}
+              onClick={() => setProductToDelete(null)}
+              className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40"
+              title="Cerrar ventana"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Cabecera con ícono de advertencia */}
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200/70 text-rose-600 flex items-center justify-center shrink-0 shadow-xs">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-rose-100/70 text-rose-700 mb-0.5">
+                  Confirmar Eliminación
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                  ¿Eliminar este producto?
+                </h3>
+              </div>
+            </div>
+
+            {/* Tarjeta de previsualización del producto */}
+            <div className="p-3 sm:p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 flex items-center gap-3.5">
+              <img 
+                src={productToDelete.image || '/products/producto-sin-imagen.png'} 
+                alt={productToDelete.name}
+                className="w-14 h-14 rounded-xl object-contain bg-white border border-slate-200 shrink-0 p-1 shadow-2xs"
+                onError={(e) => { e.target.src = '/products/producto-sin-imagen.png'; }}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-slate-700 border border-slate-200 shadow-2xs">
+                    {productToDelete.category || 'Sin categoría'}
+                  </span>
+                  {productToDelete.code && (
+                    <span className="text-[10px] font-mono text-slate-400">
+                      #{productToDelete.code}
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-extrabold text-slate-900 truncate mt-1" title={productToDelete.name}>
+                  {productToDelete.name}
+                </h4>
+                <div className="flex items-center gap-2 mt-0.5 text-xs">
+                  <span className="font-extrabold text-emerald-700">
+                    {currency} {Number(productToDelete.price || 0).toFixed(2)}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-500 font-medium text-[11px]">
+                    Stock: <span className="font-bold text-slate-700">{productToDelete.stock !== 'Sin definir' ? `${productToDelete.stock} u.` : 'Sin definir'}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Nota informativa de advertencia */}
+            <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                Este producto se quitará de forma permanente de tu <strong>Vista Vecino</strong> (catálogo online) y de la base de datos de tu tienda.
+              </p>
+            </div>
+
+            {/* Botones de acción */}
+            <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isDeletingSingle}
+                onClick={() => setProductToDelete(null)}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50 text-center"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingSingle}
+                onClick={handleConfirmDeleteSingle}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-[0.98] disabled:opacity-50 text-white font-extrabold text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {isDeletingSingle ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Eliminando de la nube...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Sí, eliminar producto</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

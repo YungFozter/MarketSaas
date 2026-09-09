@@ -1386,12 +1386,28 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
-  const deleteProduct = (productId) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
+  const deleteProduct = async (productId) => {
+    let nextProducts = [];
+    setProducts(prev => {
+      nextProducts = prev.filter(p => p.id !== productId);
+      return nextProducts;
+    });
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
+    } catch (e) {
+      console.warn('Error guardando en localStorage tras eliminar producto:', e);
+    }
     if (supabase) {
-      supabase.from('products').delete().eq('id', productId).eq('tenant_id', tenantSlug).then(({ error }) => {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', productId)
+          .eq('tenant_id', tenantSlug);
         if (error) console.error('Error eliminando producto en Supabase:', error);
-      });
+      } catch (err) {
+        console.error('Error de red al eliminar producto en Supabase:', err);
+      }
     }
     showToast('Producto eliminado del catálogo.', 'warning');
   };
