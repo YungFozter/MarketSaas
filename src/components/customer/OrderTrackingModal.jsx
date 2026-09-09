@@ -51,7 +51,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
 
   // Generar link de WhatsApp directo para hablar con el dueño sobre este pedido
   const waMessage = encodeURIComponent(
-    `¡Hola ${storeConfig?.name || 'Tienda'}! Consulta sobre pedido #${order.id} (Modo Demo) a nombre de ${order.customer?.name || 'Vecino'}.`
+    `¡Hola ${storeConfig?.name || 'Tienda'}! Consulta sobre pedido #${order.id} a nombre de ${order.customer?.name || 'Vecino'}.`
   );
   const cleanWa = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
   const waUrl = `https://wa.me/${cleanWa}?text=${waMessage}`;
@@ -172,7 +172,9 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   <div>
                     <p className="font-extrabold text-xs sm:text-sm">{stages[currentIndex].desc}</p>
                     <p className="text-[11px] text-emerald-700 font-medium">
-                      Destino: Calle C, Casa 27
+                      Destino: {order.deliveryType === 'delivery' 
+                        ? [order.customer?.condominium, order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'Entrega a Domicilio'
+                        : 'Retiro en Local'}
                     </p>
                   </div>
                 </div>

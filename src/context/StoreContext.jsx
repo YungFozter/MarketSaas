@@ -128,6 +128,59 @@ export const normalizeCustomerPhone = (phone) => {
   return `+591 ${cleanDigits.slice(0, 8)}`;
 };
 
+// Normalizador canónico de Pedidos (Asegura consistencia entre Supabase, Kanban y LocalStorage)
+export const normalizeOrder = (o) => {
+  if (!o || typeof o !== 'object') return o;
+
+  let payMethod = 'cash';
+  let cashChange = null;
+
+  if (typeof o.payment_method === 'string') {
+    payMethod = o.payment_method;
+  } else if (o.payment_method && typeof o.payment_method === 'object') {
+    payMethod = o.payment_method.type || o.payment_method.method || 'cash';
+    cashChange = o.payment_method.cashChangeFor || o.payment_method.cash_change_for || null;
+  } else if (typeof o.paymentMethod === 'string') {
+    payMethod = o.paymentMethod;
+  } else if (o.paymentMethod && typeof o.paymentMethod === 'object') {
+    payMethod = o.paymentMethod.type || o.paymentMethod.method || 'cash';
+    cashChange = o.paymentMethod.cashChangeFor || o.paymentMethod.cash_change_for || null;
+  }
+
+  const dType = o.delivery_type || o.deliveryType || 'pickup';
+  const dFee = o.delivery_fee != null ? Number(o.delivery_fee) : (o.deliveryFee != null ? Number(o.deliveryFee) : 0);
+  const created = o.created_at || o.createdAt || new Date().toISOString();
+  const cCode = o.coupon_code || o.couponCode || null;
+
+  return {
+    ...o,
+    id: String(o.id),
+    tenant_id: o.tenant_id || 'default',
+    owner_id: o.owner_id || null,
+    customer: o.customer || { name: 'Vecino', phone: '' },
+    items: Array.isArray(o.items) ? o.items : [],
+    subtotal: Number(o.subtotal || 0),
+    total: Number(o.total || 0),
+    discount: Number(o.discount || 0),
+    status: o.status || 'pending',
+    // Compatibilidad dual snake_case y camelCase
+    delivery_type: dType,
+    deliveryType: dType,
+    delivery_fee: dFee,
+    deliveryFee: dFee,
+    payment_method: payMethod,
+    paymentMethod: payMethod,
+    cashChangeFor: cashChange || o.cashChangeFor || o.cash_change_for || null,
+    cash_change_for: cashChange || o.cashChangeFor || o.cash_change_for || null,
+    coupon_code: cCode,
+    couponCode: cCode,
+    created_at: created,
+    createdAt: created,
+    points_earned: o.points_earned || o.pointsEarned || 0,
+    pointsEarned: o.points_earned || o.pointsEarned || 0
+  };
+};
+
 // Generador de iconos inteligente para categorías
 export const getCategoryIconName = (name) => {
   if (!name) return 'Layers';
@@ -438,14 +491,18 @@ export const StoreProvider = ({ children }) => {
     };
   });
 
-  // 6. Pedidos
+  // 6. Pedidos (Normalizados para compatibilidad frontend y base de datos)
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
-      return saved ? JSON.parse(saved) : (tenantSlug === 'default' ? initialOrders : []);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.map(normalizeOrder);
+      }
+      return tenantSlug === 'default' ? initialOrders.map(normalizeOrder) : [];
     } catch (e) {
       console.warn('Error reading stored orders:', e);
-      return tenantSlug === 'default' ? initialOrders : [];
+      return tenantSlug === 'default' ? initialOrders.map(normalizeOrder) : [];
     }
   });
 
@@ -747,14 +804,20 @@ export const StoreProvider = ({ children }) => {
       }
     });
 
-    // 3. Cargar pedidos por tienda con filtro server-side seguro (Previene fuga cross-tenant)
+    // 3. Cargar pedidos por tienda con filtro server-side seguro y normalización canónica
     supabase.from('orders')
       .select('*')
       .eq('tenant_id', tenantSlug)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
-        if (!error && data) {
-          setOrders(data);
+        if (error) {
+          console.warn('Aviso cargando pedidos en Supabase:', error.message);
+        } else if (Array.isArray(data)) {
+          const normalized = data.map(normalizeOrder);
+          setOrders(normalized);
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
+          } catch (e) {}
         }
       });
 
@@ -786,11 +849,21 @@ export const StoreProvider = ({ children }) => {
         table: 'orders',
         filter: `tenant_id=eq.${tenantSlug}`
       }, payload => {
-        if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new, ...prev.filter(o => o.id !== payload.new.id)]);
-        } else if (payload.eventType === 'UPDATE') {
-          setOrders(prev => prev.map(o => (o.id === payload.new.id ? payload.new : o)));
-        } else if (payload.eventType === 'DELETE') {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const normalized = normalizeOrder(payload.new);
+          setOrders(prev => {
+            const exists = prev.some(o => o.id === normalized.id);
+            if (!exists) {
+              try {
+                window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalized }));
+              } catch (e) {}
+            }
+            return [normalized, ...prev.filter(o => o.id !== normalized.id)];
+          });
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const normalized = normalizeOrder(payload.new);
+          setOrders(prev => prev.map(o => (o.id === normalized.id ? normalized : o)));
+        } else if (payload.eventType === 'DELETE' && payload.old) {
           setOrders(prev => prev.filter(o => o.id !== payload.old.id));
         }
       })
@@ -1392,16 +1465,16 @@ export const StoreProvider = ({ children }) => {
     const pointsRatio = Number(storeConfig?.pointsRatio) || 10;
     const earnedPoints = isPointsActive ? Math.round(cartSubtotal * pointsRatio) : 0;
 
-    const newOrder = {
+    const dbPayload = {
       id: orderId,
       tenant_id: tenantSlug,
       owner_id: storeConfig?.owner_id || null,
       customer: {
-        name: orderData.name,
-        phone: orderData.phone,
-        condominium: orderData.condominium,
-        tower: orderData.tower,
-        apartment: orderData.apartment,
+        name: orderData.name || 'Vecino',
+        phone: orderData.phone || '',
+        condominium: orderData.condominium || '',
+        tower: orderData.tower || '',
+        apartment: orderData.apartment || '',
         notes: orderData.notes || ''
       },
       items: cart.map(item => ({
@@ -1411,18 +1484,29 @@ export const StoreProvider = ({ children }) => {
         price: item.price
       })),
       subtotal: cartSubtotal,
-      deliveryFee: orderData.deliveryType === 'delivery' ? actualDeliveryFee : 0,
       discount: discountAmount,
-      couponCode: appliedCoupon ? appliedCoupon.code : null,
-      coupon_code: appliedCoupon ? appliedCoupon.code : null,
+      delivery_fee: orderData.deliveryType === 'delivery' ? actualDeliveryFee : 0,
+      delivery_type: orderData.deliveryType || 'pickup',
       total: orderData.deliveryType === 'delivery' ? cartTotal : Math.max(0, cartSubtotal - discountAmount),
-      deliveryType: orderData.deliveryType, // 'delivery' | 'pickup'
+      status: 'pending',
+      payment_method: orderData.cashChangeFor 
+        ? { method: orderData.paymentMethod, cashChangeFor: orderData.cashChangeFor }
+        : { method: orderData.paymentMethod },
+      coupon_code: appliedCoupon ? appliedCoupon.code : null,
+      created_at: new Date().toISOString()
+    };
+
+    const newOrder = normalizeOrder({
+      ...dbPayload,
+      deliveryFee: dbPayload.delivery_fee,
+      deliveryType: dbPayload.delivery_type,
       paymentMethod: orderData.paymentMethod,
       cashChangeFor: orderData.cashChangeFor || null,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      pointsEarned: earnedPoints
-    };
+      couponCode: dbPayload.coupon_code,
+      createdAt: dbPayload.created_at,
+      pointsEarned: earnedPoints,
+      points_earned: earnedPoints
+    });
 
     // Descontar inventario de forma segura
     setProducts(prevProducts =>
@@ -1505,9 +1589,17 @@ export const StoreProvider = ({ children }) => {
 
     // Agregar a la lista de pedidos y persistir en Supabase
     setOrders(prev => [newOrder, ...prev]);
+    try {
+      window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: newOrder }));
+    } catch (e) {}
+
     if (supabase) {
-      supabase.from('orders').insert([newOrder]).then(({ error }) => {
-        if (error) console.error('Error insertando pedido en Supabase:', error);
+      supabase.from('orders').insert([dbPayload]).then(({ error }) => {
+        if (error) {
+          console.error('Error insertando pedido en Supabase:', error);
+        } else {
+          console.log('Pedido insertado con éxito en Supabase:', orderId);
+        }
       });
 
       // Descontar inventario de forma atómica en Supabase (RPC) para productos con stock numérico definido

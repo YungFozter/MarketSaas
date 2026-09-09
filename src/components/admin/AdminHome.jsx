@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -227,6 +227,29 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       console.warn('Audio play error:', e);
     }
   };
+
+  const notifiedOrderIds = useRef(new Set());
+
+  // Escuchar pedidos entrantes en tiempo real para activar sonido y notificación acústica
+  useEffect(() => {
+    const handleIncomingOrder = (e) => {
+      const order = e?.detail;
+      if (!order || !order.id) return;
+      if (notifiedOrderIds.current.has(order.id)) return;
+      notifiedOrderIds.current.add(order.id);
+
+      playNotificationSound();
+      showToast?.(
+        `¡Nuevo pedido entrante #${order.id} de ${order.customer?.name || 'Vecino'}!`,
+        'success'
+      );
+    };
+
+    window.addEventListener('marketsaas:new_order', handleIncomingOrder);
+    return () => {
+      window.removeEventListener('marketsaas:new_order', handleIncomingOrder);
+    };
+  }, [soundAlertsActive, showToast]);
 
   // Toggle de apertura / cierre en vivo
   const handleToggleStoreOpen = (targetState) => {
