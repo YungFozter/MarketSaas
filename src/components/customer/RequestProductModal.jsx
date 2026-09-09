@@ -27,7 +27,6 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
 
   const [productName, setProductName] = useState(initialProductName);
   const [notes, setNotes] = useState('');
-  const [customerName, setCustomerName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [votedMap, setVotedMap] = useState(() => {
     try {
@@ -55,19 +54,17 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
 
     setIsSubmitting(true);
     try {
-      const defaultName = selectedLocation?.apartment 
+      const defaultCustomer = selectedLocation?.apartment 
         ? `Vecino (${selectedLocation.tower ? `${selectedLocation.tower} ` : ''}${selectedLocation.apartment})`
         : 'Vecino';
       
-      const effectiveCustomer = customerName.trim() || defaultName;
       const effectiveLocation = selectedLocation?.apartment 
         ? `${selectedLocation.condominium ? `${selectedLocation.condominium} - ` : ''}${selectedLocation.tower ? `${selectedLocation.tower} ` : ''}${selectedLocation.apartment}`
         : '';
 
-      await submitProductRequest(effectiveCustomer, productName.trim(), notes.trim(), effectiveLocation);
+      await submitProductRequest(defaultCustomer, productName.trim(), notes.trim(), effectiveLocation);
       setProductName('');
       setNotes('');
-      setCustomerName('');
       onClose();
     } catch (err) {
       console.error('Error al enviar petición:', err);
@@ -155,20 +152,13 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
               <input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Detalle o marca preferida (opcional)"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium text-xs bg-white focus:border-emerald-500 focus:outline-hidden placeholder:text-slate-400"
-              />
-              <input
-                type="text"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder={selectedLocation?.apartment ? `Tu torre/depto (${selectedLocation.tower ? `${selectedLocation.tower} ` : ''}${selectedLocation.apartment})` : "Tu nombre o torre/depto"}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium text-xs bg-white focus:border-emerald-500 focus:outline-hidden placeholder:text-slate-400"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium text-xs sm:text-sm bg-white focus:border-emerald-500 focus:outline-hidden placeholder:text-slate-400"
               />
             </div>
 
