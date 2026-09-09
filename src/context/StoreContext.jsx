@@ -119,6 +119,15 @@ export const filterOutTestRequests = (requests) => {
   return requests.filter(r => r && r.id && !String(r.id).startsWith('TEST-') && !String(r.id).startsWith('VERIFY-'));
 };
 
+// Normalizador estándar de número de celular / WhatsApp boliviano (+591 XXXXXXXX)
+export const normalizeCustomerPhone = (phone) => {
+  if (!phone) return '';
+  const digits = String(phone).replace(/\D/g, '');
+  if (!digits) return '';
+  const cleanDigits = digits.startsWith('591') ? digits.slice(3) : digits;
+  return `+591 ${cleanDigits.slice(0, 8)}`;
+};
+
 // Generador de iconos inteligente para categorías
 export const getCategoryIconName = (name) => {
   if (!name) return 'Layers';
@@ -440,11 +449,105 @@ export const StoreProvider = ({ children }) => {
     }
   });
 
-  // 7. Puntos de Fidelidad / VeciPuntos del cliente
+  // 7. Identidad del Cliente / Vecino (Teléfono/WhatsApp y Nombre)
+  const [customerPhone, setCustomerPhoneState] = useState(() => {
+    try {
+      return localStorage.getItem('marketsaas_customer_phone') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [customerName, setCustomerNameState] = useState(() => {
+    try {
+      return localStorage.getItem('marketsaas_customer_name') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const setCustomerPhone = (phone) => {
+    setCustomerPhoneState(phone || '');
+    try {
+      if (phone) {
+        localStorage.setItem('marketsaas_customer_phone', phone);
+      } else {
+        localStorage.removeItem('marketsaas_customer_phone');
+      }
+    } catch {}
+  };
+
+  const setCustomerName = (name) => {
+    setCustomerNameState(name || '');
+    try {
+      if (name) {
+        localStorage.setItem('marketsaas_customer_name', name);
+      } else {
+        localStorage.removeItem('marketsaas_customer_name');
+      }
+    } catch {}
+  };
+
+  // 7.1 Puntos de Fidelidad / VeciPuntos del cliente (Oficial)
   const [veciPoints, setVeciPoints] = useState(() => {
     const saved = localStorage.getItem(`marketsaas_${tenantSlug}_points`);
-    return saved ? parseInt(saved, 10) : 340;
+    return saved ? parseInt(saved, 10) : 0;
   });
+
+  // Consulta saldo oficial de VeciPuntos en Supabase para el vecino y tienda actual
+  const fetchCustomerPoints = async (phoneOverride = null) => {
+    const rawTarget = phoneOverride !== null ? phoneOverride : customerPhone;
+    const cleanTarget = normalizeCustomerPhone(rawTarget);
+    if (!cleanTarget) {
+      setVeciPoints(0);
+      return 0;
+    }
+
+    if (!supabase) {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
+      const val = saved ? parseInt(saved, 10) : 0;
+      setVeciPoints(val);
+      return val;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('customer_points')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .eq('customer_phone', cleanTarget)
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Consulta de puntos en Supabase fallback local:', error.message);
+        const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
+        const val = saved ? parseInt(saved, 10) : 0;
+        setVeciPoints(val);
+        return val;
+      }
+
+      const balance = data?.points_balance != null ? Number(data.points_balance) : 0;
+      setVeciPoints(balance);
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(balance));
+        localStorage.setItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`, String(balance));
+      } catch {}
+      return balance;
+    } catch (err) {
+      console.warn('Excepción consultando saldo de puntos:', err);
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
+      const val = saved ? parseInt(saved, 10) : 0;
+      setVeciPoints(val);
+      return val;
+    }
+  };
+
+  // Carga automática de puntos cuando cambia el número o la tienda
+  useEffect(() => {
+    if (customerPhone) {
+      fetchCustomerPoints(customerPhone);
+    }
+  }, [customerPhone, tenantSlug]);
 
   // 8. Solicitudes de productos (En Modo Demostración inicia con listado de ejemplo; en tiendas registradas con su lista o vacía)
   const [productRequests, setProductRequests] = useState(() => {
@@ -1275,7 +1378,19 @@ export const StoreProvider = ({ children }) => {
   // Crear Pedido desde la vista de Cliente
   const createCustomerOrder = (orderData) => {
     const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const earnedPoints = Math.round(cartSubtotal * storeConfig.pointsRatio);
+
+    // Guardar identidad del cliente para futuras visitas y fidelización
+    if (orderData.phone) {
+      setCustomerPhone(orderData.phone);
+    }
+    if (orderData.name) {
+      setCustomerName(orderData.name);
+    }
+
+    const cleanPhone = normalizeCustomerPhone(orderData.phone);
+    const isPointsActive = storeConfig?.enablePoints !== false;
+    const pointsRatio = Number(storeConfig?.pointsRatio) || 10;
+    const earnedPoints = isPointsActive ? Math.round(cartSubtotal * pointsRatio) : 0;
 
     const newOrder = {
       id: orderId,
@@ -1325,8 +1440,42 @@ export const StoreProvider = ({ children }) => {
       })
     );
 
-    // Sumar puntos al cliente
-    setVeciPoints(prev => prev + earnedPoints);
+    // Sumar puntos al cliente si la tienda los tiene habilitados
+    if (isPointsActive && earnedPoints > 0) {
+      setVeciPoints(prev => {
+        const nextVal = (Number(prev) || 0) + earnedPoints;
+        try {
+          localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(nextVal));
+          if (cleanPhone) {
+            localStorage.setItem(`marketsaas_${tenantSlug}_${cleanPhone}_points`, String(nextVal));
+          }
+        } catch {}
+        return nextVal;
+      });
+
+      if (supabase && cleanPhone) {
+        supabase.rpc('adjust_customer_points', {
+          p_tenant_id: tenantSlug,
+          p_customer_phone: cleanPhone,
+          p_customer_name: orderData.name || 'Vecino',
+          p_delta: earnedPoints
+        }).then(({ error }) => {
+          if (error) {
+            console.warn('RPC adjust_customer_points no disponible, guardando en tabla customer_points:', error.message);
+            supabase.from('customer_points').upsert({
+              tenant_id: tenantSlug,
+              customer_phone: cleanPhone,
+              customer_name: orderData.name || 'Vecino',
+              points_balance: earnedPoints,
+              total_earned: earnedPoints,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'tenant_id,customer_phone' }).then(({ error: upsertErr }) => {
+              if (upsertErr) console.warn('Aviso upsert customer_points:', upsertErr.message);
+            });
+          }
+        });
+      }
+    }
 
     // Si se aplicó un cupón, marcarlo como USADO (1 solo uso) y persistir
     if (appliedCoupon && appliedCoupon.code) {
@@ -1990,14 +2139,56 @@ export const StoreProvider = ({ children }) => {
     showToast('Petición descartada.', 'info');
   };
 
-  // Canjear VeciPuntos por Cupón
-  const redeemPoints = (pointsCost, discountValue, couponName) => {
-    const currency = storeConfig.currencySymbol || 'Bs.';
-    if (veciPoints < pointsCost) {
-      showToast('No tienes suficientes VeciPuntos para este cupón.', 'error');
+  // Canjear VeciPuntos por Cupón (Oficial y Persistente en Supabase)
+  const redeemPoints = async (pointsCost, discountValue, couponName) => {
+    const currency = storeConfig?.currencySymbol || 'Bs.';
+
+    if (storeConfig?.enablePoints === false) {
+      showToast('Esta tienda no tiene activo el programa de VeciPuntos.', 'warning');
       return false;
     }
-    setVeciPoints(prev => prev - pointsCost);
+
+    if (veciPoints < pointsCost) {
+      showToast(`Te faltan ${pointsCost - veciPoints} puntos para canjear este cupón.`, 'error');
+      return false;
+    }
+
+    const cleanPhone = normalizeCustomerPhone(customerPhone);
+    const newBalance = Math.max(0, veciPoints - pointsCost);
+    setVeciPoints(newBalance);
+
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(newBalance));
+      if (cleanPhone) {
+        localStorage.setItem(`marketsaas_${tenantSlug}_${cleanPhone}_points`, String(newBalance));
+      }
+    } catch {}
+
+    // Descontar atómicamente en Supabase
+    if (supabase && cleanPhone) {
+      try {
+        const { error } = await supabase.rpc('adjust_customer_points', {
+          p_tenant_id: tenantSlug,
+          p_customer_phone: cleanPhone,
+          p_customer_name: customerName || 'Vecino',
+          p_delta: -pointsCost
+        });
+        if (error) {
+          console.warn('RPC adjust_customer_points no disponible al canjear, actualizando tabla directa:', error.message);
+          await supabase
+            .from('customer_points')
+            .update({
+              points_balance: newBalance,
+              updated_at: new Date().toISOString()
+            })
+            .eq('tenant_id', tenantSlug)
+            .eq('customer_phone', cleanPhone);
+        }
+      } catch (err) {
+        console.warn('Excepción al registrar canje en Supabase:', err);
+      }
+    }
+
     setAppliedCoupon({
       code: couponName,
       discount: discountValue,
@@ -2246,6 +2437,12 @@ export const StoreProvider = ({ children }) => {
         importProductsBatch,
         veciPoints,
         setVeciPoints,
+        customerPhone,
+        setCustomerPhone,
+        customerName,
+        setCustomerName,
+        fetchCustomerPoints,
+        normalizeCustomerPhone,
         productRequests,
         submitProductRequest,
         voteProductRequest,

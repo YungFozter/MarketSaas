@@ -213,19 +213,21 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                     </button>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenPoints();
-                    }}
-                    className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/80 text-xs text-amber-950 font-bold transition-colors"
-                  >
-                    <span className="flex items-center gap-1.5 text-[11px]">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      ¿Tienes VeciPuntos? Canjea descuentos
-                    </span>
-                    <span className="text-[11px] font-black text-amber-700 underline">Canjear →</span>
-                  </button>
+                  {storeConfig?.enablePoints !== false && (
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenPoints();
+                      }}
+                      className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/80 text-xs text-amber-950 font-bold transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        ¿Tienes VeciPuntos? Canjea descuentos
+                      </span>
+                      <span className="text-[11px] font-black text-amber-700 underline">Canjear →</span>
+                    </button>
+                  )}
                 </div>
               )}
 

@@ -32,7 +32,9 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     storeConfig, 
     selectedStore,
     createCustomerOrder, 
-    showToast 
+    showToast,
+    customerPhone: storedCustomerPhone,
+    customerName: storedCustomerName
   } = useStore();
 
   const [step, setStep] = useState(1); // 1: Dirección y Entrega, 2: Método de Pago
@@ -45,8 +47,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     ? storeConfig.condominiums
     : [{ id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C'], deliveryFee: 0, estTime: '10-15 min' }];
 
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(storedCustomerName || '');
+  const [customerPhone, setCustomerPhone] = useState(storedCustomerPhone || '');
   const [formErrors, setFormErrors] = useState({ name: false, phone: false });
   const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
   const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
@@ -63,11 +65,11 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       setStep(1);
-      setCustomerName('');
-      setCustomerPhone('');
+      if (storedCustomerName) setCustomerName(storedCustomerName);
+      if (storedCustomerPhone) setCustomerPhone(storedCustomerPhone);
       setFormErrors({ name: false, phone: false });
     }
-  }, [isOpen]);
+  }, [isOpen, storedCustomerName, storedCustomerPhone]);
 
   const handlePhoneChange = (e) => {
     const val = e.target.value;
