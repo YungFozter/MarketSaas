@@ -38,7 +38,7 @@ const normalizeText = (str) =>
     .trim();
 
 export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
-  const { stores, selectedLocation, goToStore } = useStore();
+  const { stores, selectedLocation, goToStore, showToast } = useStore();
 
   // Estados de geolocalización del usuario
   const [userCoords, setUserCoords] = useState(DEFAULT_REFERENCE_COORDS);
@@ -63,43 +63,63 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     if (!navigator.geolocation) {
       setGpsStatus('denied');
       setGpsErrorMsg('Tu navegador no admite geolocalización.');
+      showToast?.('Tu navegador no admite geolocalización GPS.', 'warning');
       return;
     }
 
     setGpsStatus('loading');
     setGpsErrorMsg('');
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          name: 'Mi Ubicación GPS'
-        };
-        setUserCoords(coords);
-        setHasUserGps(true);
-        setGpsStatus('granted');
-        setGpsErrorMsg('');
-        setSortBy('nearest');
-      },
-      (error) => {
-        console.warn('Geolocation request failed or denied:', error);
-        setGpsStatus('denied');
-        if (error.code === 1) {
-          setGpsErrorMsg('Permiso de ubicación denegado.');
-        } else if (error.code === 2) {
-          setGpsErrorMsg('Señal GPS no disponible.');
-        } else {
-          setGpsErrorMsg('Tiempo de espera agotado al obtener GPS.');
+    const onLocationSuccess = (position) => {
+      const coords = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        name: 'Mi Ubicación GPS'
+      };
+      setUserCoords(coords);
+      setHasUserGps(true);
+      setGpsStatus('granted');
+      setGpsErrorMsg('');
+      setSortBy('nearest');
+      showToast?.('📍 Ubicación GPS detectada. Tiendas ordenadas por cercanía.', 'success');
+    };
+
+    const onLocationError = (error) => {
+      console.warn('Geolocation high accuracy failed on device, trying network fallback:', error);
+      navigator.geolocation.getCurrentPosition(
+        onLocationSuccess,
+        (fallbackErr) => {
+          console.warn('Geolocation fallback failed:', fallbackErr);
+          setGpsStatus('denied');
+          let msg = 'No se pudo obtener tu ubicación GPS.';
+          if (fallbackErr.code === 1) {
+            msg = 'Permiso de ubicación denegado en tu navegador/teléfono.';
+          } else if (fallbackErr.code === 2) {
+            msg = 'Señal GPS no disponible temporalmente.';
+          } else {
+            msg = 'Tiempo de espera agotado al conectar con el GPS.';
+          }
+          setGpsErrorMsg(msg);
+          showToast?.(msg, 'warning');
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000
         }
-      },
+      );
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      onLocationSuccess,
+      onLocationError,
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 7000,
         maximumAge: 60000
       }
     );
-  }, []);
+  }, [showToast]);
 
   // Solicitar automáticamente la ubicación al montar la pantalla vecino
   useEffect(() => {

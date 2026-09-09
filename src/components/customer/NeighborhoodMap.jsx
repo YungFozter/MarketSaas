@@ -13,6 +13,7 @@ import {
   X,
   ArrowRight
 } from 'lucide-react';
+import { useStore } from '../../context/StoreContext';
 import './NeighborhoodMap.css';
 import { escapeHtml } from '../../utils/formatters';
 
@@ -51,6 +52,14 @@ export const NeighborhoodMap = ({
   userCoordinates = null,
   hasUserGps = false
 }) => {
+  const { showToast } = useStore();
+
+  const showFeedback = (msg, type = 'info') => {
+    if (showToast) {
+      showToast(msg, type);
+    }
+  };
+
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -402,69 +411,95 @@ export const NeighborhoodMap = ({
       }
       setActiveLocationType('user');
       setCurrentCoords(userCoordinates);
-      showFeedback('📍 Centrado en tu ubicación GPS');
+      showFeedback('📍 Centrado en tu ubicación GPS', 'success');
       return;
     }
 
     if (!navigator.geolocation) {
-      showFeedback('Tu navegador no soporta geolocalización GPS.');
+      showFeedback('Tu navegador o dispositivo no soporta geolocalización GPS.', 'warning');
+      return;
+    }
+
+    // Advertencia si no es contexto seguro HTTPS (requerido por navegadores móviles)
+    if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      showFeedback('La geolocalización GPS en teléfonos móviles requiere conexión segura HTTPS.', 'warning');
       return;
     }
 
     setIsLocating(true);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        if (typeof latitude !== 'number' || typeof longitude !== 'number' || isNaN(latitude) || isNaN(longitude)) {
+    const onLocationSuccess = (position) => {
+      const { latitude, longitude } = position.coords;
+      if (typeof latitude !== 'number' || typeof longitude !== 'number' || isNaN(latitude) || isNaN(longitude)) {
+        setIsLocating(false);
+        showFeedback('Coordenadas GPS no válidas.', 'warning');
+        return;
+      }
+
+      const userCoords = {
+        lat: latitude,
+        lng: longitude,
+        name: 'Mi Ubicación GPS'
+      };
+
+      const map = mapInstanceRef.current;
+      if (map) {
+        if (userMarkerRef.current) {
+          map.removeLayer(userMarkerRef.current);
+        }
+
+        const userIcon = L.divIcon({
+          className: 'custom-leaflet-pin-wrapper',
+          html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+
+        userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+        safeFlyOrPanTo(map, latitude, longitude, 15);
+      }
+
+      setIsLocating(false);
+      setActiveLocationType('user');
+      setCurrentCoords(userCoords);
+      showFeedback('📍 Ubicación GPS detectada con éxito', 'success');
+      if (onUserLocationChange) {
+        onUserLocationChange(userCoords);
+      }
+    };
+
+    const onLocationError = (error) => {
+      console.warn('GPS de alta precisión no disponible, intentando red celular/wifi:', error);
+      // Fallback a baja precisión (enableHighAccuracy: false) ideal para interiores y teléfonos
+      navigator.geolocation.getCurrentPosition(
+        onLocationSuccess,
+        (fallbackErr) => {
+          console.warn('Fallo final de geolocalización:', fallbackErr);
           setIsLocating(false);
-          showFeedback('Coordenadas GPS no válidas.');
-          return;
-        }
-
-        const userCoords = {
-          lat: latitude,
-          lng: longitude,
-          name: 'Mi Ubicación'
-        };
-
-        const map = mapInstanceRef.current;
-        if (map) {
-          if (userMarkerRef.current) {
-            map.removeLayer(userMarkerRef.current);
+          let errorMsg = 'No se pudo obtener tu ubicación GPS.';
+          if (fallbackErr.code === 1) {
+            errorMsg = 'Permiso de ubicación denegado. Permite el acceso al GPS en los ajustes de tu teléfono/navegador.';
+          } else if (fallbackErr.code === 2) {
+            errorMsg = 'Señal GPS no disponible en este momento.';
+          } else if (fallbackErr.code === 3) {
+            errorMsg = 'Tiempo de espera agotado al conectar con el GPS.';
           }
-
-          const userIcon = L.divIcon({
-            className: 'custom-leaflet-pin-wrapper',
-            html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
-          });
-
-          userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
-          safeFlyOrPanTo(map, latitude, longitude, 15);
+          showFeedback(errorMsg, 'warning');
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 60000
         }
+      );
+    };
 
-        setIsLocating(false);
-        setActiveLocationType('user');
-        setCurrentCoords(userCoords);
-        showFeedback('📍 Ubicación GPS detectada');
-        if (onUserLocationChange) {
-          onUserLocationChange(userCoords);
-        }
-      },
-      (error) => {
-        console.warn('Geolocation error:', error);
-        setIsLocating(false);
-        let errorMsg = 'No se pudo obtener tu ubicación GPS.';
-        if (error.code === 1) errorMsg = 'Permiso de ubicación denegado.';
-        else if (error.code === 2) errorMsg = 'Señal GPS no disponible.';
-        else if (error.code === 3) errorMsg = 'Tiempo agotado al obtener GPS.';
-        showFeedback(errorMsg);
-      },
+    navigator.geolocation.getCurrentPosition(
+      onLocationSuccess,
+      onLocationError,
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 7000,
         maximumAge: 30000
       }
     );
