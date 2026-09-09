@@ -248,7 +248,7 @@ export const presetBanners = [
 ];
 
 export const initialStoreConfig = {
-  name: 'Minimarket Saas',
+  name: 'Mi Tienda',
   tagline: 'Tu tienda de confianza a pasos de tu puerta',
   address: '',
   themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'

@@ -14,7 +14,8 @@ import {
   Copy, 
   Clock,
   MessageCircle,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './CheckoutModal.css';
@@ -29,6 +30,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     selectedLocation, 
     setSelectedLocation, 
     storeConfig, 
+    selectedStore,
     createCustomerOrder, 
     showToast 
   } = useStore();
@@ -45,6 +47,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [formErrors, setFormErrors] = useState({ name: false, phone: false });
   const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
   const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
   const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Casa 27');
@@ -62,6 +65,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       setStep(1);
       setCustomerName('');
       setCustomerPhone('');
+      setFormErrors({ name: false, phone: false });
     }
   }, [isOpen]);
 
@@ -93,14 +97,26 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   };
 
   const handleProceedToPayment = () => {
+    let hasError = false;
+    const newErrors = { name: false, phone: false };
+
     if (!customerName.trim()) {
+      newErrors.name = true;
+      hasError = true;
       showToast('Por favor escribe tu nombre completo.', 'warning');
-      return;
     }
     
     const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
     if (!customerPhone.trim() || rawDigits.length < 7) {
-      showToast('Por favor ingresa tu número de teléfono o WhatsApp.', 'warning');
+      newErrors.phone = true;
+      hasError = true;
+      if (!newErrors.name) {
+        showToast('Por favor ingresa tu número de teléfono o WhatsApp.', 'warning');
+      }
+    }
+
+    if (hasError) {
+      setFormErrors(newErrors);
       return;
     }
 
@@ -110,6 +126,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       return;
     }
     
+    setFormErrors({ name: false, phone: false });
     setStep(2);
   };
 
@@ -121,12 +138,14 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
 
-  const bankDetails = storeConfig?.bankDetails || {
+  const bankDetails = storeConfig?.bankDetails || selectedStore?.bankDetails || {
     bank: 'Banco Unión / Billetera Simple QR',
     accountNumber: '1000-2495-8120',
     holder: 'Minimarket Saas S.R.L.',
     aliasQR: 'MINIMARKET-SAAS.PAGO'
   };
+
+  const qrImage = storeConfig?.qrImageUrl || selectedStore?.qrImageUrl;
 
   const handleCopyBankInfo = () => {
     const text = `Banco: ${bankDetails.bank || 'Banco Unión'}\nCuenta: ${bankDetails.accountNumber || ''}\nTitular: ${bankDetails.holder || ''}\nAlias QR: ${bankDetails.aliasQR || ''}`;
@@ -136,9 +155,59 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     setTimeout(() => setCopiedBank(false), 3000);
   };
 
-  const handleSubmitOrder = (shouldOpenWa = false) => {
+  const handleDownloadQr = async () => {
+    if (!qrImage) {
+      showToast('No hay imagen QR disponible para descargar.', 'warning');
+      return;
+    }
+
+    try {
+      const storeNameClean = (storeConfig?.name || selectedStore?.name || 'Tienda').replace(/\s+/g, '-');
+      const fileName = `QR-Pago-${storeNameClean}.png`;
+
+      // Si es Data URL (Base64)
+      if (qrImage.startsWith('data:')) {
+        const link = document.createElement('a');
+        link.href = qrImage;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('¡Imagen QR descargada! Ya puedes subirla en tu app de banco.', 'success');
+        return;
+      }
+
+      // Si es URL remota, convertir a Blob
+      const response = await fetch(qrImage);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      showToast('¡Imagen QR descargada! Ya puedes subirla en tu app de banco.', 'success');
+    } catch (err) {
+      console.warn('Descarga directa de QR no permitida por CORS, abriendo enlace:', err);
+      const win = window.open(qrImage, '_blank');
+      if (win) {
+        showToast('Abriendo imagen QR. Mantén presionada la imagen para guardarla.', 'info');
+      } else {
+        showToast('No se pudo descargar automáticamente. Mantén presionada la imagen para guardarla.', 'warning');
+      }
+    }
+  };
+
+  const handleConfirmAndSendWhatsApp = () => {
     const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
     if (!customerName.trim() || !customerPhone.trim() || rawDigits.length < 7) {
+      setStep(1);
+      setFormErrors({
+        name: !customerName.trim(),
+        phone: !customerPhone.trim() || rawDigits.length < 7
+      });
       showToast('Por favor completa tu nombre y un teléfono válido para coordinar la entrega.', 'warning');
       return;
     }
@@ -151,7 +220,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       notes
     });
 
-    // Crear el pedido
+    // 1. Crear el pedido en el sistema (registra en Supabase/estado, actualiza inventario e inicia tracking)
     const newOrder = createCustomerOrder({
       name: customerName,
       phone: customerPhone,
@@ -164,25 +233,48 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
     });
 
-    // Solo abrir WhatsApp si el usuario explícitamente desea probarlo
-    if (shouldOpenWa && newOrder && storeConfig?.whatsapp) {
+    // 2. Extraer número de WhatsApp / Teléfono del dueño de la tienda
+    const rawOwnerPhone = storeConfig?.whatsapp || storeConfig?.phone || selectedStore?.whatsapp || selectedStore?.phone || '';
+    let cleanWa = rawOwnerPhone.replace(/[^0-9]/g, '');
+
+    // Si tiene 8 dígitos (celulares en Bolivia), anteponer código país 591
+    if (cleanWa.length === 8) {
+      cleanWa = `591${cleanWa}`;
+    }
+
+    if (cleanWa && cleanWa.length >= 8) {
+      const orderNum = newOrder?.id || `PED-${Date.now().toString().slice(-4)}`;
+      const storeDisplayName = storeConfig?.name || selectedStore?.name || 'la tienda';
       const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency}${(i.price * i.quantity).toFixed(2)})`).join('\n');
-      const waText = `🛒 *NUEVO PEDIDO #${newOrder.id} (MODO DEMO)*\n` +
+      
+      const paymentMethodLabel = paymentMethod === 'qr' 
+        ? 'Transferencia / QR Digital' 
+        : paymentMethod === 'cash' 
+          ? `Efectivo (${effectiveDeliveryType === 'pickup' ? 'En caja al recoger' : `Contra entrega - Vuelto para ${currency}${cashAmount}`})` 
+          : 'Tarjeta en Tienda (POS)';
+
+      const deliveryDetails = effectiveDeliveryType === 'delivery'
+        ? `📍 *Modalidad:* Delivery a domicilio\n   *Condominio:* ${condoName}\n   *Sector/Torre:* ${tower}\n   *Nº/Depto:* ${apartment}${notes ? `\n   *Indicaciones:* ${notes}` : ''}`
+        : `🛍️ *Modalidad:* Retiro en Tienda`;
+
+      const waText = `¡Hola *${storeDisplayName}*! Acabo de realizar el pago de mi pedido y adjunto mi comprobante para verificación:\n\n` +
+        `📦 *PEDIDO #${orderNum}*\n` +
         `👤 *Cliente:* ${customerName}\n` +
-        `📱 *Teléfono:* ${customerPhone}\n` +
-        `📍 *Ubicación:* ${condoName} - ${tower} (${apartment})\n` +
-        `🛵 *Tipo:* ${effectiveDeliveryType === 'delivery' ? 'Delivery a puerta' : 'Retiro en tienda'}\n` +
-        `💳 *Pago:* ${paymentMethod === 'cash' ? `Efectivo (Vuelto para ${currency}${cashAmount})` : paymentMethod === 'qr' ? 'Transferencia / QR' : 'Tarjeta (POS)'}\n` +
-        (newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* ${newOrder.couponCode || 'Descuento'} (-${currency}${newOrder.discount.toFixed(2)})\n` : '') +
+        `📱 *Mi Teléfono:* ${customerPhone}\n` +
+        `${deliveryDetails}\n` +
+        `💳 *Forma de Pago:* ${paymentMethodLabel}\n` +
+        (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency}${newOrder.discount.toFixed(2)}\n` : '') +
         `\n` +
         `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
-        `💰 *TOTAL A PAGAR:* ${currency}${newOrder.total.toFixed(2)}`;
+        `💰 *TOTAL PAGADO:* ${currency}${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
+        `📎 _(Adjunto imagen/captura de mi comprobante a continuación)_ 👇`;
+
+      const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
       
-      const cleanWa = storeConfig.whatsapp.replace(/[^0-9]/g, '');
-      if (cleanWa) {
-        const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
-        window.open(waUrl, '_blank');
-      }
+      showToast('¡Pedido registrado con éxito! Abriendo chat de WhatsApp...', 'success');
+      window.open(waUrl, '_blank');
+    } else {
+      showToast('¡Pedido registrado en el sistema! (Aviso: La tienda aún no ha configurado su número de WhatsApp).', 'warning');
     }
 
     onClose();
@@ -307,10 +399,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     type="text"
                     required
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      if (formErrors.name) setFormErrors(prev => ({ ...prev, name: false }));
+                    }}
                     placeholder="Ej. Valeria Soto"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium text-xs sm:text-sm focus:border-emerald-500 focus:outline-hidden"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${
+                      formErrors.name 
+                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20' 
+                        : 'border-slate-200 focus:border-emerald-500'
+                    }`}
                   />
+                  {formErrors.name && (
+                    <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                      Por favor escribe tu nombre completo
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -321,10 +426,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     type="tel"
                     required
                     value={customerPhone}
-                    onChange={handlePhoneChange}
+                    onChange={(e) => {
+                      handlePhoneChange(e);
+                      if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: false }));
+                    }}
                     placeholder="+591 12345678"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-medium text-xs sm:text-sm focus:border-emerald-500 focus:outline-hidden"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${
+                      formErrors.phone 
+                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20' 
+                        : 'border-slate-200 focus:border-emerald-500'
+                    }`}
                   />
+                  {formErrors.phone && (
+                    <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                      Ingresa tu número de teléfono o WhatsApp
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -492,10 +610,26 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
                     {paymentMethod === 'qr' && (
                       <div className="mt-3 pt-3 border-t border-emerald-200/60 text-xs space-y-2.5 bg-white p-3.5 rounded-2xl border border-slate-200">
-                        {storeConfig.qrImageUrl ? (
-                          <div className="flex flex-col items-center text-center pb-2 border-b border-slate-100">
+                        {qrImage ? (
+                          <div className="flex flex-col items-center text-center pb-2.5 border-b border-slate-100">
                             <p className="text-[11px] font-bold text-slate-700 mb-1.5">Escanea este Código QR para Pagar:</p>
-                            <img src={storeConfig.qrImageUrl} alt="Código QR de Cobro" className="w-44 h-44 object-contain rounded-2xl border-2 border-amber-300 shadow-sm p-1.5 bg-white" />
+                            <img 
+                              src={qrImage} 
+                              alt="Código QR de Cobro" 
+                              className="w-48 h-48 object-contain rounded-2xl border-2 border-amber-300 shadow-sm p-1.5 bg-white" 
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadQr();
+                              }}
+                              className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                              title="Descargar imagen QR en tu teléfono para subirla en tu app de banco"
+                            >
+                              <Download className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Descargar Imagen QR</span>
+                            </button>
                           </div>
                         ) : (
                           <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
@@ -609,28 +743,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
                   <button
                     type="button"
-                    onClick={() => handleSubmitOrder(false)}
-                    className="flex-1 py-3 sm:py-3.5 px-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center cursor-pointer text-center"
+                    onClick={handleConfirmAndSendWhatsApp}
+                    className="flex-1 py-3 sm:py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black shadow-lg shadow-emerald-600/30 hover:scale-[1.01] active:scale-99 transition-all flex items-center justify-center cursor-pointer text-center"
+                    title="Registrar pedido y enviar comprobante a la tienda por WhatsApp"
                   >
-                    <div className="inline-flex items-center justify-center gap-2 text-left sm:text-center">
-                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-white" />
-                      <span className="leading-tight">
-                        <span className="block sm:inline font-black">Simular Confirmación </span>
-                        <span className="block sm:inline text-[10px] sm:text-xs font-semibold text-emerald-100 sm:text-white sm:font-black">(Ver Tracking en Vivo)</span>
-                      </span>
+                    <div className="flex items-center justify-center gap-2.5">
+                      <MessageCircle className="w-5 h-5 sm:w-5.5 sm:h-5.5 shrink-0 text-white fill-white/20" />
+                      <div className="text-left sm:text-center leading-tight">
+                        <span className="block text-sm sm:text-base font-black tracking-wide">
+                          Ya pagué
+                        </span>
+                        <span className="block text-[10.5px] sm:text-xs font-semibold text-emerald-100 opacity-95 mt-0.5">
+                          Enviar comprobante para verificación
+                        </span>
+                      </div>
                     </div>
                   </button>
                 </div>
-
-                {/* Opción secundaria para probar WhatsApp opcionalmente */}
-                <button
-                  type="button"
-                  onClick={() => handleSubmitOrder(true)}
-                  className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Opcional: Confirmar y Probar Mensaje en WhatsApp</span>
-                </button>
               </div>
             </div>
           )}

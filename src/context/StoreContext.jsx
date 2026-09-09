@@ -181,7 +181,7 @@ export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || 'don-vecino';
+    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || null;
   };
   const [tenantSlug, setTenantSlug] = useState(getInitialTenantSlug);
 
@@ -774,8 +774,12 @@ export const StoreProvider = ({ children }) => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
               const isCurrentOwner = Boolean(
-                (currentUser && (rs.owner_id === currentUser.id || conf.owner_id === currentUser.id)) ||
-                rs.tenant_id === tenantSlug || rs.id === tenantSlug
+                currentUser && (
+                  rs.owner_id === currentUser.id || 
+                  conf.owner_id === currentUser.id ||
+                  merchantStore?.id === rs.id ||
+                  merchantStore?.tenant_id === rs.tenant_id
+                )
               );
 
               // Si es la tienda del dueño actual conectada, storeConfig es la fuente de verdad prioritaria
@@ -815,6 +819,10 @@ export const StoreProvider = ({ children }) => {
                 name: effectiveName,
                 tagline: effectiveTagline,
                 address: effectiveAddress,
+                phone: conf.phone || conf.whatsapp || rs.phone || '',
+                whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
+                qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
+                bankDetails: conf.bankDetails || rs.bank_details || null,
                 condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
                   ? (storeConfig.zone || storeConfig.condominium)
                   : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
@@ -872,8 +880,15 @@ export const StoreProvider = ({ children }) => {
               };
             });
 
-            // Preservar y fusionar la tienda del dueño actual si ya existía en memoria
-            const currentOwnerStore = prev.find(s => s.isCurrentOwnerStore || s.slug === tenantSlug || s.id === tenantSlug);
+            // Si no hay tenantSlug activo, sincronizar con la primera tienda registrada legítima
+            if (!tenantSlug && remoteMapped.length > 0) {
+              setTenantSlug(remoteMapped[0].slug);
+            }
+
+            // Preservar y fusionar la tienda del dueño actual si ya existía en memoria y está autenticado
+            const currentOwnerStore = currentUser
+              ? prev.find(s => s.isCurrentOwnerStore && (s.slug === tenantSlug || s.id === tenantSlug))
+              : null;
             const remoteSlugs = new Set(remoteMapped.map(s => s.slug));
             let finalStores = remoteMapped.map(s => {
               if (currentOwnerStore && (s.slug === currentOwnerStore.slug || s.id === currentOwnerStore.id)) {
@@ -927,9 +942,9 @@ export const StoreProvider = ({ children }) => {
     };
   }, [currentUser, tenantSlug, storeConfig]);
 
-  // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
+  // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio SOLO si el dueño está autenticado
   useEffect(() => {
-    if (!tenantSlug || !storeConfig?.name) return;
+    if (!currentUser || !merchantStore || !tenantSlug || !storeConfig?.name) return;
     setStores(prev => {
       const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
       const isDeliveryActive = storeConfig.enableDelivery === true;

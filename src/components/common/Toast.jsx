@@ -23,7 +23,7 @@ export const Toast = () => {
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-gentle max-w-sm w-[calc(100%-2rem)] sm:w-full transition-all duration-300">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[100001] animate-bounce-gentle max-w-sm w-[calc(100%-2rem)] sm:w-full transition-all duration-300">
       <div className={`flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border shadow-xl ${bgColors[toast.type] || bgColors.success}`}>
         {icons[toast.type] || icons.success}
         <p className="text-xs sm:text-sm font-medium leading-snug flex-1">{toast.message}</p>
