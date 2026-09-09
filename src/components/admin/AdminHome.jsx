@@ -58,6 +58,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const { 
     orders, 
     updateOrderStatus,
+    cancelOrder,
+    deleteOrder,
     createCustomerOrder,
     products, 
     setProducts,
@@ -944,9 +946,23 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               </p>
                               <p className="text-[11px] text-slate-400">{order.customer.condominium}</p>
                             </div>
-                            <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-700 shrink-0">
-                              {order.deliveryType === 'delivery' ? 'Delivery' : 'Retiro Local'}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-700">
+                                {order.deliveryType === 'delivery' ? 'Delivery' : 'Retiro Local'}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
+                                    deleteOrder(order.id);
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Descartar / Eliminar pedido"
+                                type="button"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
@@ -1050,9 +1066,23 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               <p className="text-xs font-semibold text-slate-900">{order.customer.tower || 'Torre B'} • {order.customer.apartment || 'S/N'}</p>
                               <p className="text-xs text-slate-400">{order.customer.name}</p>
                             </div>
-                            <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
-                              {order.paymentMethod === 'qr' ? 'QR Pagado' : 'Efectivo'}
-                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
+                                {order.paymentMethod === 'qr' ? 'QR Pagado' : 'Efectivo'}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
+                                    deleteOrder(order.id);
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Descartar / Eliminar pedido"
+                                type="button"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Barra de progreso de empaque */}
@@ -1115,7 +1145,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               <p className="text-xs font-semibold text-slate-900">{order.customer.tower} • {order.customer.apartment}</p>
                               <p className="text-xs text-purple-600 font-bold">En camino 🛵</p>
                             </div>
-                            <span className="text-sm font-black text-slate-900">{currency} {order.total.toFixed(2)}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-sm font-black text-slate-900">{currency} {order.total.toFixed(2)}</span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
+                                    deleteOrder(order.id);
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Descartar / Eliminar pedido"
+                                type="button"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           <div className="p-2 rounded-xl bg-slate-50 flex items-center gap-2">
@@ -1182,7 +1226,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                             </div>
                             <p className="text-xs font-semibold text-slate-800">{order.customer.tower || 'Torre B'} • {order.customer.apartment || 'S/N'}</p>
                           </div>
-                          <span className="text-sm font-bold text-slate-900">{currency} {order.total.toFixed(2)}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-sm font-bold text-slate-900">{currency} {order.total.toFixed(2)}</span>
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`¿Deseas eliminar del registro el pedido #${order.id}?`)) {
+                                  deleteOrder(order.id);
+                                }
+                              }}
+                              className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Eliminar pedido"
+                              type="button"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between text-slate-400 text-xs pt-1 border-t border-slate-100">
                           <span>{order.paymentMethod.toUpperCase()}</span>
@@ -1327,10 +1385,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               {tx.status === 'delivered' ? '✓ Cobrado / Entregado' : tx.status === 'on_the_way' ? '🛵 En camino' : tx.status === 'preparing' ? '📦 En preparación' : '⏱️ Pendiente'}
                             </span>
 
-                            <div className="text-right">
-                              <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                                +{currency} {(tx.total || 0).toFixed(2)}
-                              </span>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right">
+                                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                                  +{currency} {(tx.total || 0).toFixed(2)}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Deseas descartar/eliminar la transacción #${tx.id}?`)) {
+                                    deleteOrder(tx.id);
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Eliminar transacción"
+                                type="button"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
                         </div>

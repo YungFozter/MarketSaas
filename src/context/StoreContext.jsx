@@ -497,7 +497,11 @@ export const StoreProvider = ({ children }) => {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.map(normalizeOrder);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}')
+            .map(normalizeOrder);
+        }
       }
       return tenantSlug === 'default' ? initialOrders.map(normalizeOrder) : [];
     } catch (e) {
@@ -813,7 +817,9 @@ export const StoreProvider = ({ children }) => {
         if (error) {
           console.warn('Aviso cargando pedidos en Supabase:', error.message);
         } else if (Array.isArray(data)) {
-          const normalized = data.map(normalizeOrder);
+          const normalized = data
+            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}')
+            .map(normalizeOrder);
           setOrders(normalized);
           try {
             localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
@@ -1654,6 +1660,23 @@ export const StoreProvider = ({ children }) => {
   // Cancelar pedido
   const cancelOrder = (orderId) => {
     updateOrderStatus(orderId, 'cancelled');
+  };
+
+  // Eliminar pedido permanentemente (Dueño)
+  const deleteOrder = (orderId) => {
+    setOrders(prev => {
+      const filtered = prev.filter(ord => ord.id !== orderId);
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(filtered));
+      } catch (e) {}
+      return filtered;
+    });
+    if (supabase) {
+      supabase.from('orders').delete().eq('id', orderId).then(({ error }) => {
+        if (error) console.error('Error eliminando pedido en Supabase:', error);
+      });
+    }
+    showToast(`Pedido #${orderId} eliminado del tablero.`, 'info');
   };
 
   // Crear o Editar Producto (Dueño) con persistencia garantizada en Nube y Local
@@ -2522,6 +2545,7 @@ export const StoreProvider = ({ children }) => {
         createCustomerOrder,
         updateOrderStatus,
         cancelOrder,
+        deleteOrder,
         completePosSale,
         saveProduct,
         deleteProduct,
