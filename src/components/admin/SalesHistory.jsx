@@ -864,18 +864,18 @@ export const SalesHistory = () => {
                     <span className="font-semibold text-slate-700">{selectedSale.customer.phone}</span>
                   </div>
                 )}
-                {selectedSale.customer?.condominium && selectedSale.customer.condominium !== 'En Tienda' && (
+                {selectedSale.deliveryType === 'delivery' && (
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Destino:</span>
                     <span className="font-semibold text-slate-700">
-                      {selectedSale.customer.condominium} • {selectedSale.customer.tower || ''} {selectedSale.customer.apartment || ''}
+                      {[selectedSale.customer?.condominium, selectedSale.customer?.tower, selectedSale.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200">
                   <span className="text-slate-400">Tipo de Entrega:</span>
                   <span className="font-bold text-emerald-800">
-                    {selectedSale.deliveryType === 'delivery' ? '🛵 Delivery Vecino' : '🏪 Venta en Mostrador'}
+                    {selectedSale.deliveryType === 'delivery' ? '🛵 Delivery Vecino' : '🏪 Retiro en Tienda / Mostrador'}
                   </span>
                 </div>
               </div>

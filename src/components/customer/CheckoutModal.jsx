@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Truck, 
-  Store, 
-  MapPin, 
-  Banknote, 
-  QrCode, 
-  CreditCard, 
-  CheckCircle2, 
-  ArrowLeft, 
-  ShieldCheck, 
-  Sparkles, 
-  Copy, 
+import {
+  X,
+  Truck,
+  Store,
+  MapPin,
+  Banknote,
+  QrCode,
+  CreditCard,
+  CheckCircle2,
+  ArrowLeft,
+  ShieldCheck,
+  Sparkles,
+  Copy,
   Clock,
   MessageCircle,
   AlertCircle,
@@ -21,18 +21,18 @@ import { useStore } from '../../context/StoreContext';
 import './CheckoutModal.css';
 
 export const CheckoutModal = ({ isOpen, onClose }) => {
-  const { 
-    cart, 
-    cartSubtotal, 
-    actualDeliveryFee, 
-    cartTotal, 
-    appliedCoupon, 
-    selectedLocation, 
-    setSelectedLocation, 
-    storeConfig, 
+  const {
+    cart,
+    cartSubtotal,
+    actualDeliveryFee,
+    cartTotal,
+    appliedCoupon,
+    selectedLocation,
+    setSelectedLocation,
+    storeConfig,
     selectedStore,
     stores,
-    createCustomerOrder, 
+    createCustomerOrder,
     showToast,
     customerPhone: storedCustomerPhone,
     customerName: storedCustomerName,
@@ -60,8 +60,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const [formErrors, setFormErrors] = useState({ name: false, phone: false });
   const [condoName, setCondoName] = useState(selectedLocation?.condominium || condominiums[0]?.name || 'Condominio Las Palmas');
   const [tower, setTower] = useState(selectedLocation?.tower || condominiums[0]?.towers?.[0] || 'Torre A');
-  const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Casa 27');
-  const [notes, setNotes] = useState(selectedLocation?.notes || 'Dejar en conserjería o timbrar en el depto.');
+  const [apartment, setApartment] = useState(selectedLocation?.apartment || '');
+  const [notes, setNotes] = useState(selectedLocation?.notes || '');
   const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card'
   const [cashAmount, setCashAmount] = useState('50.00');
   const [copiedBank, setCopiedBank] = useState(false);
@@ -81,7 +81,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   const handlePhoneChange = (e) => {
     const val = e.target.value;
-    
+
     // Si borró todo o solo quedan partes del prefijo, dejamos vacío para que se vea el placeholder visual
     if (!val || ['+', '+5', '+59', '+591', '+591 '].includes(val.trim())) {
       setCustomerPhone('');
@@ -90,7 +90,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
     // Extraer solo dígitos ingresados
     let digits = val.replace(/[^0-9]/g, '');
-    
+
     // Si los dígitos comienzan con el código de país 591, evitar duplicación
     if (digits.startsWith('591')) {
       digits = digits.slice(3);
@@ -115,7 +115,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       hasError = true;
       showToast('Por favor escribe tu nombre completo.', 'warning');
     }
-    
+
     const rawDigits = customerPhone.replace(/[^0-9]/g, '').replace(/^591/, '');
     if (!customerPhone.trim() || rawDigits.length < 7) {
       newErrors.phone = true;
@@ -135,7 +135,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       showToast(`El pedido mínimo para delivery en esta tienda es de ${curr} ${minOrder.toFixed(2)}. Agrega ${curr} ${missingToMinOrder.toFixed(2)} más o elige retiro en tienda.`, 'warning');
       return;
     }
-    
+
     setFormErrors({ name: false, phone: false });
     setStep(2);
   };
@@ -231,13 +231,14 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     });
 
     // 1. Crear el pedido en el sistema (registra en Supabase/estado, actualiza inventario e inicia tracking)
+    const isPickup = effectiveDeliveryType === 'pickup';
     const newOrder = createCustomerOrder({
       name: customerName,
       phone: customerPhone,
-      condominium: condoName,
-      tower,
-      apartment,
-      notes,
+      condominium: isPickup ? 'Retiro en Tienda' : condoName,
+      tower: isPickup ? '' : tower,
+      apartment: isPickup ? 'Mostrador' : (apartment || 'S/N'),
+      notes: notes || '',
       deliveryType: effectiveDeliveryType,
       paymentMethod,
       cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
@@ -257,7 +258,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       const orderNum = newOrder?.id || `PED-${Date.now().toString().slice(-4)}`;
       const storeDisplayName = storeConfig?.name || selectedStore?.name || foundStore?.name || 'la tienda';
       const itemsList = cart.map(i => `• ${i.quantity}x ${i.name} (${currency} ${(i.price * i.quantity).toFixed(2)})`).join('\n');
-      
+
       const deliveryDetails = effectiveDeliveryType === 'delivery'
         ? `📍 *Modalidad:* Delivery a domicilio\n   *Condominio:* ${condoName}\n   *Sector/Torre:* ${tower}\n   *Nº/Depto:* ${apartment}${notes ? `\n   *Indicaciones:* ${notes}` : ''}`
         : `🛍️ *Modalidad:* Retiro en Tienda`;
@@ -287,7 +288,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           `📋 *DETALLE DE LA LISTA DE COMPRA:*\n${itemsList}\n\n` +
           `💰 *TOTAL A PAGAR:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
           (effectiveDeliveryType === 'pickup'
-            ? `🛒 _Por favor preparar mi lista de compra para pasar a recogerla y pagar en caja. ¡Muchas gracias!_`
+            ? `🛒 _¡Muchas gracias!_`
             : `🛵 _Por favor confirmar mi pedido para enviarlo a mi domicilio. ¡Muchas gracias!_`);
       } else if (paymentMethod === 'card') {
         waText = `¡Hola *${storeDisplayName}*! Quiero realizar el siguiente pedido para pagar con *Tarjeta en Tienda (POS)*:\n\n` +
@@ -317,7 +318,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       }
 
       const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
-      
+
       showToast('¡Pedido registrado con éxito! Abriendo chat de WhatsApp...', 'success');
       window.open(waUrl, '_blank');
     } else {
@@ -329,7 +330,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
-      <div 
+      <div
         className="relative bg-white w-full max-w-xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -340,8 +341,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               Paso {step} de 2
             </span>
             <h2 className="text-base sm:text-xl font-extrabold text-slate-900 leading-tight">
-              {step === 1 
-                ? (effectiveDeliveryType === 'delivery' ? 'Dirección y Entrega' : 'Confirmar Pedido (Retiro en Tienda)') 
+              {step === 1
+                ? (effectiveDeliveryType === 'delivery' ? 'Dirección y Entrega' : 'Confirmar Pedido (Retiro en Tienda)')
                 : 'Método de Pago'}
             </h2>
           </div>
@@ -392,11 +393,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => setDeliveryType('delivery')}
-                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                        effectiveDeliveryType === 'delivery'
+                      className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${effectiveDeliveryType === 'delivery'
                           ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                           : 'border-slate-200 bg-white hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className={`p-2 rounded-xl ${effectiveDeliveryType === 'delivery' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
@@ -429,11 +429,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={() => setDeliveryType('pickup')}
-                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                      effectiveDeliveryType === 'pickup'
+                    className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between ${effectiveDeliveryType === 'pickup'
                         ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className={`p-2 rounded-xl ${effectiveDeliveryType === 'pickup' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
@@ -464,11 +463,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       if (formErrors.name) setFormErrors(prev => ({ ...prev, name: false }));
                     }}
                     placeholder="Ej. Valeria Soto"
-                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${
-                      formErrors.name 
-                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20' 
+                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${formErrors.name
+                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20'
                         : 'border-slate-200 focus:border-emerald-500'
-                    }`}
+                      }`}
                   />
                   {formErrors.name && (
                     <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
@@ -491,11 +489,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       if (formErrors.phone) setFormErrors(prev => ({ ...prev, phone: false }));
                     }}
                     placeholder="+591 12345678"
-                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${
-                      formErrors.phone 
-                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20' 
+                    className={`w-full px-3.5 py-2.5 rounded-xl border font-medium text-xs sm:text-sm focus:outline-hidden transition-all ${formErrors.phone
+                        ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-400/20'
                         : 'border-slate-200 focus:border-emerald-500'
-                    }`}
+                      }`}
                   />
                   {formErrors.phone && (
                     <p className="text-[11px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
@@ -588,11 +585,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={handleProceedToPayment}
-                className={`w-full py-3.5 rounded-2xl text-white font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  isBelowMinOrder 
-                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30' 
+                className={`w-full py-3.5 rounded-2xl text-white font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${isBelowMinOrder
+                    ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
                     : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
-                }`}
+                  }`}
               >
                 <span>Continuar al Pago ({currency} {finalTotal.toFixed(2)})</span>
                 <span>→</span>
@@ -606,15 +602,14 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   Selecciona tu forma de pago favorita:
                 </label>
                 <div className="space-y-2.5">
-                  
+
                   {/* Opción 1: Efectivo */}
-                  <div 
+                  <div
                     onClick={() => setPaymentMethod('cash')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'cash'
+                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'cash'
                         ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-xl ${paymentMethod === 'cash' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
@@ -650,13 +645,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* Opción 2: QR / Transferencia */}
-                  <div 
+                  <div
                     onClick={() => setPaymentMethod('qr')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'qr'
+                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'qr'
                         ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-xl ${paymentMethod === 'qr' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
@@ -673,10 +667,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         {qrImage ? (
                           <div className="flex flex-col items-center text-center pb-2.5 border-b border-slate-100">
                             <p className="text-[11px] font-bold text-slate-700 mb-1.5">Escanea este Código QR para Pagar:</p>
-                            <img 
-                              src={qrImage} 
-                              alt="Código QR de Cobro" 
-                              className="w-48 h-48 object-contain rounded-2xl border-2 border-amber-300 shadow-sm p-1.5 bg-white" 
+                            <img
+                              src={qrImage}
+                              alt="Código QR de Cobro"
+                              className="w-48 h-48 object-contain rounded-2xl border-2 border-amber-300 shadow-sm p-1.5 bg-white"
                             />
                             <button
                               type="button"
@@ -718,13 +712,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* Opción 3: Tarjeta POS */}
-                  <div 
+                  <div
                     onClick={() => setPaymentMethod('card')}
-                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'card'
+                    className={`p-4 rounded-2xl border cursor-pointer transition-all ${paymentMethod === 'card'
                         ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20'
                         : 'border-slate-200 bg-white hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-xl ${paymentMethod === 'card' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>

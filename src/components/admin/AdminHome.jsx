@@ -3,6 +3,7 @@ import {
   LayoutDashboard, 
   ShoppingBag, 
   Package, 
+  PackageCheck,
   Store, 
   Sparkles, 
   Settings,
@@ -342,10 +343,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <div class="divider"></div>
             </div>
             <div>
-              <p style="margin:2px 0;"><strong>Cliente:</strong> ${escapeHtml(order.customer?.name)}</p>
-              <p style="margin:2px 0;"><strong>Destino:</strong> ${escapeHtml(order.customer?.condominium)}</p>
-              <p style="margin:2px 0;">${escapeHtml(order.customer?.tower)} - ${escapeHtml(order.customer?.apartment)}</p>
-              <p style="margin:2px 0;"><strong>Tel:</strong> ${escapeHtml(order.customer?.phone)}</p>
+              <p style="margin:2px 0;"><strong>Cliente:</strong> ${escapeHtml(order.customer?.name || 'Vecino')}</p>
+              <p style="margin:2px 0;"><strong>Modalidad:</strong> ${order.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda / Mostrador'}</p>
+              ${order.deliveryType === 'delivery' ? `
+                <p style="margin:2px 0;"><strong>Destino:</strong> ${escapeHtml(order.customer?.condominium || '')}</p>
+                <p style="margin:2px 0;">${escapeHtml([order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' - '))}</p>
+              ` : ''}
+              <p style="margin:2px 0;"><strong>Tel:</strong> ${escapeHtml(order.customer?.phone || '')}</p>
             </div>
             <div class="divider"></div>
             <p class="bold" style="margin:4px 0;">ITEMS:</p>
@@ -877,7 +881,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     <span>{preparingOrders.length} empaque</span>
                     <span className="text-slate-300">•</span>
                     <span className="inline-block w-2 h-2 rounded-full bg-purple-500"></span>
-                    <span>{onTheWayOrders.length} ruta</span>
+                    <span>
+                      {storeConfig?.enableDelivery === false
+                        ? `${onTheWayOrders.length} listos`
+                        : `${onTheWayOrders.filter(o => o.deliveryType !== 'delivery').length} listos / ${onTheWayOrders.filter(o => o.deliveryType === 'delivery').length} ruta`}
+                    </span>
                   </div>
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-blue-500"></div>
                 </div>
@@ -941,10 +949,20 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                   Nuevo ⏱️
                                 </span>
                               </div>
-                              <p className="text-xs font-semibold text-slate-900 mt-1">
-                                🏢 {order.customer.tower || 'Torre A'} • {order.customer.apartment || 'S/N'}
-                              </p>
-                              <p className="text-[11px] text-slate-400">{order.customer.condominium}</p>
+                              {order.deliveryType === 'delivery' ? (
+                                <>
+                                  <p className="text-xs font-semibold text-slate-900 mt-1">
+                                    🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                                  </p>
+                                  {order.customer?.condominium && (
+                                    <p className="text-[11px] text-slate-400">{order.customer.condominium}</p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-xs font-bold text-emerald-800 mt-1 flex items-center gap-1">
+                                  <span>🏪 Retiro en Tienda (Mostrador)</span>
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span className="px-2 py-0.5 rounded-lg bg-slate-100 text-[10px] font-bold text-slate-700">
@@ -1063,8 +1081,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           <div className="flex items-start justify-between">
                             <div>
                               <span className="text-base font-bold text-slate-900">#{order.id}</span>
-                              <p className="text-xs font-semibold text-slate-900">{order.customer.tower || 'Torre B'} • {order.customer.apartment || 'S/N'}</p>
-                              <p className="text-xs text-slate-400">{order.customer.name}</p>
+                              {order.deliveryType === 'delivery' ? (
+                                <p className="text-xs font-semibold text-slate-900">{[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}</p>
+                              ) : (
+                                <p className="text-xs font-bold text-emerald-800">🏪 Retiro en Mostrador</p>
+                              )}
+                              <p className="text-xs text-slate-400">{order.customer?.name}</p>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
@@ -1104,13 +1126,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           <button 
                             onClick={() => {
                               updateOrderStatus(order.id, 'on_the_way');
-                              showToast(`Pedido #${order.id} despachado.`, 'info');
+                              showToast(
+                                order.deliveryType === 'delivery'
+                                  ? `Pedido #${order.id} despachado a ruta.`
+                                  : `Pedido #${order.id} listo para retiro en mostrador.`,
+                                'info'
+                              );
                             }}
-                            className="w-full h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-blue-700 shadow-xs transition-all cursor-pointer"
+                            className={`w-full h-9 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer ${
+                              order.deliveryType === 'delivery'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                            }`}
                             type="button"
                           >
-                            <span>{order.deliveryType === 'delivery' ? 'Despachar / Enviar Repartidor' : 'Listo para Retiro en Caja ➔'}</span>
-                            <Bike className="w-4 h-4" />
+                            <span>{order.deliveryType === 'delivery' ? 'Despachar / Enviar Repartidor ➔' : 'Listo para Recoger en Tienda ➔'}</span>
+                            {order.deliveryType === 'delivery' ? <Bike className="w-4 h-4" /> : <PackageCheck className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
@@ -1122,83 +1153,152 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     )}
                   </div>
 
-                  {/* COLUMNA 3: 🟣 EN RUTA */}
+                  {/* COLUMNA 3: 🟣 EN RUTA / LISTOS */}
                   <div className="rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                       <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-                        <h3 className="text-sm font-bold text-slate-900">En Ruta</h3>
-                        <span className="px-2 py-0.2 rounded-full bg-purple-100 text-purple-800 text-xs font-bold">
+                        <span className={`w-2.5 h-2.5 rounded-full ${storeConfig?.enableDelivery === false ? 'bg-emerald-500' : 'bg-purple-500'}`}></span>
+                        <h3 className="text-sm font-bold text-slate-900">
+                          {storeConfig?.enableDelivery === false ? 'Listos para Recoger' : 'Listos / En Ruta'}
+                        </h3>
+                        <span className={`px-2 py-0.2 rounded-full text-xs font-bold ${
+                          storeConfig?.enableDelivery === false 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
                           {onTheWayOrders.length}
                         </span>
                       </div>
-                      <Truck className="w-4 h-4 text-purple-500" />
+                      {storeConfig?.enableDelivery === false ? (
+                        <ShoppingBag className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Truck className="w-4 h-4 text-purple-500" />
+                      )}
                     </div>
 
-                    {onTheWayOrders.map(order => (
-                      <div key={order.id} className="group relative rounded-xl bg-white p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all">
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl bg-purple-500"></div>
-                        <div className="pl-2 space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span className="text-base font-bold text-slate-900">#{order.id}</span>
-                              <p className="text-xs font-semibold text-slate-900">{order.customer.tower} • {order.customer.apartment}</p>
-                              <p className="text-xs text-purple-600 font-bold">En camino 🛵</p>
+                    {onTheWayOrders.map(order => {
+                      const isPickup = order.deliveryType !== 'delivery';
+                      return (
+                        <div 
+                          key={order.id} 
+                          className="group relative rounded-xl bg-white p-3.5 shadow-xs border border-slate-100 hover:shadow-md transition-all"
+                        >
+                          <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl ${isPickup ? 'bg-emerald-500' : 'bg-purple-500'}`}></div>
+                          <div className="pl-2 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-base font-bold text-slate-900">#{order.id}</span>
+                                  <span className={`px-1.5 py-0.5 rounded-full font-bold text-[10px] ${
+                                    isPickup 
+                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                                      : 'bg-purple-50 text-purple-800 border border-purple-200'
+                                  }`}>
+                                    {isPickup ? 'Listo en Tienda 🛍️' : 'En camino 🛵'}
+                                  </span>
+                                </div>
+                                {isPickup ? (
+                                  <p className="text-xs font-bold text-emerald-800 mt-0.5">
+                                    🏪 Mostrador: Esperando al vecino
+                                  </p>
+                                ) : (
+                                  <p className="text-xs font-semibold text-slate-900 mt-0.5">
+                                    🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                                  </p>
+                                )}
+                                <p className="text-[11px] text-slate-500 font-medium">
+                                  {order.customer?.name} {order.customer?.phone ? `• ${order.customer.phone}` : ''}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-sm font-black text-slate-900">
+                                  {currency} {order.total.toFixed(2)}
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
+                                      deleteOrder(order.id);
+                                    }
+                                  }}
+                                  className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="Descartar / Eliminar pedido"
+                                  type="button"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="text-sm font-black text-slate-900">{currency} {order.total.toFixed(2)}</span>
-                              <button
+
+                            {/* Banner informativo de estado de entrega */}
+                            {isPickup ? (
+                              <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-100 flex items-center gap-2">
+                                <Store className="w-4 h-4 text-emerald-700 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-emerald-950 truncate">
+                                    {order.paymentMethod === 'cash' 
+                                      ? `Cobrar en caja: ${currency} ${order.total.toFixed(2)}` 
+                                      : order.paymentMethod === 'qr' 
+                                      ? 'Pagado vía QR Digital' 
+                                      : 'Cobrar con Tarjeta en Tienda'}
+                                  </p>
+                                  <p className="text-[10px] text-emerald-700 truncate">
+                                    {order.paymentMethod === 'cash' && order.cashChangeFor 
+                                      ? `Paga con ${currency} ${order.cashChangeFor} (Vuelto: ${currency} ${(order.cashChangeFor - order.total).toFixed(2)})` 
+                                      : 'Productos listos en mostrador'}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded-xl bg-purple-50/70 border border-purple-100 flex items-center gap-2">
+                                <Bike className="w-4 h-4 text-purple-600 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-purple-950 truncate">Repartidor en Ruta</p>
+                                  <p className="text-[10px] text-purple-700 truncate">Hacia la puerta del vecino</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Botones de acción y WhatsApp */}
+                            <div className="space-y-1.5 pt-1">
+                              <button 
                                 onClick={() => {
-                                  if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
-                                    deleteOrder(order.id);
-                                  }
+                                  updateOrderStatus(order.id, 'delivered');
+                                  showToast(
+                                    isPickup 
+                                      ? `¡Pedido #${order.id} entregado en mostrador!` 
+                                      : `¡Pedido #${order.id} marcado como entregado!`, 
+                                    'success'
+                                  );
                                 }}
-                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Descartar / Eliminar pedido"
+                                className="w-full h-9 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-700 shadow-xs transition-all cursor-pointer"
                                 type="button"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>{isPickup ? 'Entregar al Vecino en Caja [✓]' : 'Confirmar Entrega [✓]'}</span>
+                              </button>
+
+                              <button 
+                                onClick={() => handleNotifyWhatsApp(
+                                  order, 
+                                  isPickup 
+                                    ? `¡Hola ${order.customer?.name || 'Vecino'}! Tu pedido #${order.id} en ${storeConfig?.name || 'la tienda'} ya está empacado y listo para que pases a recogerlo en el local. ¡Te esperamos!` 
+                                    : `¡Hola ${order.customer?.name || 'Vecino'}! El repartidor ya está abajo con tu pedido #${order.id}.`
+                                )}
+                                className="w-full h-8 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-100 transition-colors cursor-pointer"
+                                type="button"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>{isPickup ? 'Avisar que ya puede recoger' : 'Avisar que está abajo'}</span>
                               </button>
                             </div>
                           </div>
-
-                          <div className="p-2 rounded-xl bg-slate-50 flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-[10px]">
-                              M
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-slate-900 truncate">Repartidor Interno</p>
-                              <p className="text-[10px] text-slate-400 truncate">Hacia recepción / puerta</p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5 pt-1">
-                            <button 
-                              onClick={() => {
-                                updateOrderStatus(order.id, 'delivered');
-                                showToast(`¡Pedido #${order.id} marcado como entregado!`, 'success');
-                              }}
-                              className="w-full h-9 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-700 shadow-xs transition-all cursor-pointer"
-                              type="button"
-                            >
-                              <CheckCircle2 className="w-4 h-4" />
-                              <span>Confirmar Entrega [✓]</span>
-                            </button>
-                            <button 
-                              onClick={() => handleNotifyWhatsApp(order, `¡Hola ${order.customer.name}! El repartidor ya está abajo con tu pedido #${order.id}.`)}
-                              className="w-full h-8 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-100 transition-colors cursor-pointer"
-                              type="button"
-                            >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Avisar que está abajo</span>
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {onTheWayOrders.length === 0 && (
                       <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-                        No hay pedidos en ruta
+                        {storeConfig?.enableDelivery === false ? 'No hay pedidos listos para recoger' : 'No hay pedidos en ruta ni listos'}
                       </div>
                     )}
                   </div>
@@ -1224,7 +1324,15 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               <span className="text-sm font-bold text-slate-900">#{order.id}</span>
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             </div>
-                            <p className="text-xs font-semibold text-slate-800">{order.customer.tower || 'Torre B'} • {order.customer.apartment || 'S/N'}</p>
+                            {order.deliveryType === 'delivery' ? (
+                              <p className="text-xs font-semibold text-slate-800">
+                                🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                              </p>
+                            ) : (
+                              <p className="text-xs font-bold text-emerald-800">
+                                🏪 Retirado en Mostrador
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className="text-sm font-bold text-slate-900">{currency} {order.total.toFixed(2)}</span>
