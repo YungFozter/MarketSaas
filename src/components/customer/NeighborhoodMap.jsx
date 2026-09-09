@@ -83,7 +83,6 @@ export const NeighborhoodMap = ({
 
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
   const [zoomLevel, setZoomLevel] = useState(15);
-  const [isRecentering, setIsRecentering] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
 
   // Tiendas que se deben graficar con marcadores según los filtros activos
@@ -311,6 +310,7 @@ export const NeighborhoodMap = ({
 
     const streetLayer = L.tileLayer(STREET_MAP_URL, {
       attribution: STREET_MAP_ATTRIBUTION,
+      maxNativeZoom: 18,
       maxZoom: 19
     }).addTo(map);
 
@@ -343,11 +343,13 @@ export const NeighborhoodMap = ({
     if (mapType === 'satellite') {
       tileLayerRef.current = L.tileLayer(SATELLITE_URL, {
         attribution: SATELLITE_ATTRIBUTION,
-        maxZoom: 18
+        maxNativeZoom: 18,
+        maxZoom: 19
       }).addTo(map);
     } else {
       tileLayerRef.current = L.tileLayer(STREET_MAP_URL, {
         attribution: STREET_MAP_ATTRIBUTION,
+        maxNativeZoom: 18,
         maxZoom: 19
       }).addTo(map);
     }
@@ -377,9 +379,7 @@ export const NeighborhoodMap = ({
         if (onSelectStore) {
           onSelectStore(store.slug);
         }
-        map.flyTo([coords.lat, coords.lng], Math.max(map.getZoom(), 15), {
-          duration: 0.8
-        });
+        safeFlyOrPanTo(map, coords.lat, coords.lng, Math.max(map.getZoom(), 15));
         showFeedback(`📍 Seleccionado: ${store.name}`);
       });
 
@@ -388,12 +388,51 @@ export const NeighborhoodMap = ({
     });
   }, [storesToPlot, selectedStore]);
 
+  // Movimiento seguro que evita el bug de división por cero / NaN de flyTo en distancias cortas
+  const safeFlyOrPanTo = (map, targetLat, targetLng, targetZoom = 15) => {
+    if (!map || typeof targetLat !== 'number' || typeof targetLng !== 'number' || isNaN(targetLat) || isNaN(targetLng)) return;
+
+    try {
+      const currentCenter = map.getCenter();
+      const currentZoom = map.getZoom();
+      const distanceMeters = currentCenter.distanceTo(L.latLng(targetLat, targetLng));
+
+      // Si la distancia es corta (< 300m), usamos panTo o setView directo
+      // para evitar que flyTo entre en cálculo parabólico con delta cero y deje el mapa en blanco
+      if (distanceMeters < 300) {
+        if (currentZoom === targetZoom) {
+          map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
+        } else {
+          map.setView([targetLat, targetLng], targetZoom, { animate: true, duration: 0.5 });
+        }
+      } else {
+        map.flyTo([targetLat, targetLng], targetZoom, { duration: 0.8 });
+      }
+
+      // Asegurar redibujado de teselas tras completar la animación
+      map.once('moveend', () => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 850);
+    } catch (err) {
+      console.warn('Error en animación de mapa, fallback a setView:', err);
+      map.setView([targetLat, targetLng], targetZoom);
+      map.invalidateSize();
+    }
+  };
+
   // 4. CENTRAR CUANDO CAMBIE LA TIENDA SELECCIONADA ESPECÍFICA
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !selectedStore?.googleMapsCoordinates) return;
     const { lat, lng } = selectedStore.googleMapsCoordinates;
-    map.flyTo([lat, lng], 16, { duration: 0.8 });
+    safeFlyOrPanTo(map, lat, lng, 16);
   }, [selectedStore]);
 
   // 4.1 SINCRONIZAR MARCADOR GPS DEL USUARIO
@@ -427,17 +466,34 @@ export const NeighborhoodMap = ({
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
   const handleGetUserLocation = () => {
+    // Si ya tenemos coordenadas GPS válidas en memoria o props, centrar inmediatamente
+    if (userCoordinates?.lat && userCoordinates?.lng && hasUserGps) {
+      const map = mapInstanceRef.current;
+      if (map) {
+        safeFlyOrPanTo(map, userCoordinates.lat, userCoordinates.lng, 15);
+      }
+      setActiveLocationType('user');
+      setCurrentCoords(userCoordinates);
+      showFeedback('📍 Centrado en tu ubicación GPS');
+      return;
+    }
+
     if (!navigator.geolocation) {
       showFeedback('Tu navegador no soporta geolocalización GPS.');
       return;
     }
 
     setIsLocating(true);
-    setIsRecentering(true);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        if (typeof latitude !== 'number' || typeof longitude !== 'number' || isNaN(latitude) || isNaN(longitude)) {
+          setIsLocating(false);
+          showFeedback('Coordenadas GPS no válidas.');
+          return;
+        }
+
         const userCoords = {
           lat: latitude,
           lng: longitude,
@@ -458,19 +514,12 @@ export const NeighborhoodMap = ({
           });
 
           userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
-          map.flyTo([latitude, longitude], 15, { duration: 0.8 });
-
-          // Asegurar que Leaflet recalcule dimensiones y cargue todas las teselas sin dejar mapa en blanco
-          setTimeout(() => {
-            if (mapInstanceRef.current) {
-              mapInstanceRef.current.invalidateSize();
-            }
-          }, 850);
+          safeFlyOrPanTo(map, latitude, longitude, 15);
         }
 
         setIsLocating(false);
-        setIsRecentering(false);
         setActiveLocationType('user');
+        setCurrentCoords(userCoords);
         showFeedback('📍 Ubicación GPS detectada');
         if (onUserLocationChange) {
           onUserLocationChange(userCoords);
@@ -479,7 +528,6 @@ export const NeighborhoodMap = ({
       (error) => {
         console.warn('Geolocation error:', error);
         setIsLocating(false);
-        setIsRecentering(false);
         let errorMsg = 'No se pudo obtener tu ubicación GPS.';
         if (error.code === 1) errorMsg = 'Permiso de ubicación denegado.';
         else if (error.code === 2) errorMsg = 'Señal GPS no disponible.';
@@ -489,7 +537,7 @@ export const NeighborhoodMap = ({
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 0
+        maximumAge: 30000
       }
     );
   };
@@ -498,10 +546,11 @@ export const NeighborhoodMap = ({
   const handleSelectStoreTarget = (store) => {
     if (onSelectStore) onSelectStore(store.slug);
     if (mapInstanceRef.current && store.googleMapsCoordinates) {
-      mapInstanceRef.current.flyTo(
-        [store.googleMapsCoordinates.lat, store.googleMapsCoordinates.lng],
-        16,
-        { duration: 0.8 }
+      safeFlyOrPanTo(
+        mapInstanceRef.current,
+        store.googleMapsCoordinates.lat,
+        store.googleMapsCoordinates.lng,
+        16
       );
     }
   };
@@ -520,7 +569,7 @@ export const NeighborhoodMap = ({
       {/* 1. MOTOR INTERACTIVO MULTI-MARCADOR LEAFLET */}
       <div 
         ref={mapContainerRef} 
-        className={`w-full h-full transition-opacity duration-300 ${isRecentering ? 'opacity-70' : 'opacity-100'}`} 
+        className="w-full h-full" 
       />
 
       {/* 1.1 BOTONES FLOTANTES SUPERIORES: MI UBICACIÓN Y TIENDAS REGISTRADAS */}
