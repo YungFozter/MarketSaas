@@ -473,7 +473,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
   const navItems = [
     { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
-    { id: 'pos', label: 'Terminal POS', icon: Store },
+    { id: 'pos', label: 'Punto de Venta', icon: Store },
     { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
@@ -1320,7 +1320,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
-          {/* TAB 2: TERMINAL POS */}
+          {/* TAB 2: PUNTO DE VENTA */}
           {activeTab === 'pos' && (
             <div className="animate-fadeIn">
               <PosTerminal />
@@ -1542,7 +1542,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </button>
             </div>
 
-            {/* Contenido interactivo: Terminal de Venta POS */}
+            {/* Contenido interactivo: Punto de Venta */}
             <div className="p-3 sm:p-5 overflow-y-auto flex-1">
               <PosTerminal 
                 initialPaymentType={quickSalePaymentType} 
