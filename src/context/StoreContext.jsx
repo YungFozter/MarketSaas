@@ -76,6 +76,43 @@ export const normalizeProduct = (p) => {
   };
 };
 
+// Normalizador canónico de peticiones de productos ("Pídelo si no está")
+export const normalizeProductRequest = (req) => {
+  if (!req || typeof req !== 'object') return null;
+  const createdDate = req.created_at || req.createdAt || req.date;
+  let formattedDate = 'Hoy';
+  if (createdDate) {
+    try {
+      const d = new Date(createdDate);
+      formattedDate = !isNaN(d.getTime()) 
+        ? d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : String(createdDate);
+    } catch {
+      formattedDate = String(createdDate);
+    }
+  }
+
+  const pName = req.productName || req.product_name || 'Producto sugerido';
+  const cName = req.customerName || req.customer_name || 'Vecino';
+  const cLoc = req.customerLocation || req.customer_location || '';
+
+  return {
+    id: String(req.id),
+    tenant_id: req.tenant_id || 'default',
+    productName: pName,
+    product_name: pName,
+    customerName: cName,
+    customer_name: cName,
+    customerLocation: cLoc,
+    customer_location: cLoc,
+    notes: req.notes || '',
+    votes: typeof req.votes === 'number' ? req.votes : (parseInt(req.votes, 10) || 1),
+    status: req.status || 'pending', // 'pending' | 'approved' | 'stocked' | 'rejected'
+    date: formattedDate,
+    created_at: req.created_at || req.createdAt || new Date().toISOString()
+  };
+};
+
 // Deduplicador robusto por ID y por Código para evitar que aparezcan productos duplicados
 export const deduplicateProducts = (productList) => {
   if (!Array.isArray(productList)) return [];
@@ -392,9 +429,12 @@ export const StoreProvider = ({ children }) => {
   const [productRequests, setProductRequests] = useState(() => {
     try {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.map(normalizeProductRequest);
+      }
     } catch (e) {}
-    return tenantSlug === 'default' ? initialProductRequests : [];
+    return tenantSlug === 'default' ? initialProductRequests.map(normalizeProductRequest) : [];
   });
 
   // 9. Cupones de descuento aplicados
@@ -523,6 +563,17 @@ export const StoreProvider = ({ children }) => {
         if (localCfg) {
           setStoreConfigState(JSON.parse(localCfg));
         }
+        const localReqs = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
+        if (localReqs) {
+          const parsed = JSON.parse(localReqs);
+          if (Array.isArray(parsed)) {
+            setProductRequests(parsed.map(normalizeProductRequest));
+          }
+        } else {
+          setProductRequests([]);
+        }
+      } else {
+        setProductRequests(initialProductRequests.map(normalizeProductRequest));
       }
     } catch (e) {
       console.warn('Error cargando caché local de tenant:', e);
@@ -572,8 +623,14 @@ export const StoreProvider = ({ children }) => {
         .eq('tenant_id', tenantSlug)
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
-          if (!error && data) {
-            setProductRequests(data);
+          if (!error && Array.isArray(data)) {
+            const normalized = data.map(normalizeProductRequest);
+            setProductRequests(normalized);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(normalized));
+            } catch (e) {}
+          } else if (error) {
+            console.warn('Error cargando solicitudes de productos de Supabase:', error);
           }
         });
     }
@@ -615,9 +672,30 @@ export const StoreProvider = ({ children }) => {
       })
       .subscribe();
 
+    const requestsChannel = supabase
+      .channel(`public:product_requests:${tenantSlug}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'product_requests',
+        filter: `tenant_id=eq.${tenantSlug}`
+      }, payload => {
+        if (payload.eventType === 'INSERT') {
+          const norm = normalizeProductRequest(payload.new);
+          setProductRequests(prev => [norm, ...prev.filter(r => r.id !== norm.id)]);
+        } else if (payload.eventType === 'UPDATE') {
+          const norm = normalizeProductRequest(payload.new);
+          setProductRequests(prev => prev.map(r => (r.id === norm.id ? norm : r)));
+        } else if (payload.eventType === 'DELETE') {
+          setProductRequests(prev => prev.filter(r => r.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(productsChannel);
+      supabase.removeChannel(requestsChannel);
     };
   }, [tenantSlug]);
 
@@ -1639,43 +1717,136 @@ export const StoreProvider = ({ children }) => {
   };
 
   // Solicitar producto ("Pídelo si no está")
-  const submitProductRequest = (customerName, productName, notes) => {
-    const newReq = {
-      id: `REQ-${Math.floor(100 + Math.random() * 900)}`,
-      tenant_id: tenantSlug,
-      customerName: customerName || 'Vecino anónimo',
-      productName,
-      notes,
+  const submitProductRequest = async (customerName, productName, notes, location = '') => {
+    const trimmedProduct = productName?.trim();
+    if (!trimmedProduct) return;
+
+    const reqId = `REQ-${Date.now().toString().slice(-6)}`;
+    const effectiveLocation = location || (selectedLocation ? `${selectedLocation.tower || ''} ${selectedLocation.apartment || ''}`.trim() : '');
+    const effectiveCustomer = customerName?.trim() || (effectiveLocation ? `Vecino (${effectiveLocation})` : 'Vecino');
+
+    const newReq = normalizeProductRequest({
+      id: reqId,
+      tenant_id: tenantSlug || 'default',
+      product_name: trimmedProduct,
+      productName: trimmedProduct,
+      customer_name: effectiveCustomer,
+      customerName: effectiveCustomer,
+      customer_location: effectiveLocation,
+      notes: notes?.trim() || '',
       votes: 1,
       status: 'pending',
-      date: new Date().toISOString().split('T')[0]
-    };
-    setProductRequests(prev => [newReq, ...prev]);
+      created_at: new Date().toISOString()
+    });
+
+    setProductRequests(prev => [newReq, ...prev.filter(r => r.id !== reqId)]);
+
+    try {
+      const current = [newReq, ...productRequests.filter(r => r.id !== reqId)];
+      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(current));
+    } catch (e) {}
+
     if (supabase && tenantSlug && tenantSlug !== 'default') {
-      supabase.from('product_requests').insert([newReq]).then(({ error }) => {
+      try {
+        const { error } = await supabase.from('product_requests').insert([{
+          id: newReq.id,
+          tenant_id: newReq.tenant_id,
+          product_name: newReq.product_name,
+          productName: newReq.productName,
+          customer_name: newReq.customer_name,
+          customerName: newReq.customerName,
+          customer_location: newReq.customer_location,
+          notes: newReq.notes,
+          votes: newReq.votes,
+          status: newReq.status
+        }]);
         if (error) console.error('Error insertando solicitud de producto en Supabase:', error);
-      });
+      } catch (err) {
+        console.error('Excepción al insertar solicitud de producto:', err);
+      }
     }
-    showToast('¡Solicitud enviada! El dueño de la tienda la evaluará pronto.', 'success');
+
+    const storeName = storeConfig?.name || 'la tienda';
+    showToast(`¡Petición enviada al dueño de ${storeName}! La evaluará pronto.`, 'success');
   };
 
-  const voteProductRequest = (requestId) => {
+  const voteProductRequest = async (requestId) => {
+    let nextVotes = 1;
     setProductRequests(prev =>
-      prev.map(r => (r.id === requestId ? { ...r, votes: r.votes + 1 } : r))
+      prev.map(r => {
+        if (r.id === requestId) {
+          nextVotes = (r.votes || 0) + 1;
+          return { ...r, votes: nextVotes };
+        }
+        return r;
+      })
     );
     showToast('¡Voto registrado! Entre más vecinos voten, más rápido llegará.', 'success');
+
+    try {
+      const updated = productRequests.map(r => r.id === requestId ? { ...r, votes: (r.votes || 0) + 1 } : r);
+      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(updated));
+    } catch (e) {}
+
+    if (supabase && tenantSlug && tenantSlug !== 'default') {
+      try {
+        const { data, error: rpcErr } = await supabase.rpc('vote_product_request', { p_request_id: requestId });
+        if (rpcErr) {
+          await supabase.from('product_requests').update({ votes: nextVotes }).eq('id', requestId);
+        } else if (typeof data === 'number') {
+          setProductRequests(prev =>
+            prev.map(r => (r.id === requestId ? { ...r, votes: data } : r))
+          );
+        }
+      } catch (err) {
+        console.warn('Error persistiendo voto en Supabase:', err);
+      }
+    }
   };
 
-  const updateRequestStatus = (requestId, status) => {
+  const updateRequestStatus = async (requestId, status) => {
     setProductRequests(prev =>
       prev.map(r => (r.id === requestId ? { ...r, status } : r))
     );
+
+    try {
+      const updated = productRequests.map(r => r.id === requestId ? { ...r, status } : r);
+      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(updated));
+    } catch (e) {}
+
     if (supabase && tenantSlug && tenantSlug !== 'default') {
-      supabase.from('product_requests').update({ status }).eq('id', requestId).then(({ error }) => {
+      try {
+        const { error } = await supabase.from('product_requests').update({ status }).eq('id', requestId);
         if (error) console.error('Error actualizando solicitud de producto en Supabase:', error);
-      });
+      } catch (err) {
+        console.error('Excepción al actualizar estado de solicitud:', err);
+      }
     }
-    showToast('Estado de solicitud actualizado.');
+    const label = status === 'approved' 
+      ? 'Petición aprobada para compra.' 
+      : status === 'stocked' 
+      ? 'Producto marcado como disponible en tienda.' 
+      : 'Estado de solicitud actualizado.';
+    showToast(label, 'success');
+  };
+
+  const deleteProductRequest = async (requestId) => {
+    setProductRequests(prev => prev.filter(r => r.id !== requestId));
+
+    try {
+      const updated = productRequests.filter(r => r.id !== requestId);
+      localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(updated));
+    } catch (e) {}
+
+    if (supabase && tenantSlug && tenantSlug !== 'default') {
+      try {
+        const { error } = await supabase.from('product_requests').delete().eq('id', requestId);
+        if (error) console.error('Error eliminando solicitud en Supabase:', error);
+      } catch (err) {
+        console.error('Excepción al eliminar solicitud:', err);
+      }
+    }
+    showToast('Petición descartada.', 'info');
   };
 
   // Canjear VeciPuntos por Cupón
@@ -1938,6 +2109,7 @@ export const StoreProvider = ({ children }) => {
         submitProductRequest,
         voteProductRequest,
         updateRequestStatus,
+        deleteProductRequest,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         isTrackingModalOpen,
