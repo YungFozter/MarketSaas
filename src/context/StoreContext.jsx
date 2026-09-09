@@ -791,35 +791,6 @@ export const StoreProvider = ({ children }) => {
     };
   }, [currentUser, tenantSlug, storeConfig]);
 
-  // Limpieza automática en Supabase si el dueño legítimo está autenticado y tiene productos demo residuales
-  useEffect(() => {
-    if (!supabase || !currentUser || !tenantSlug || tenantSlug === 'default') return;
-    const isOwner = Boolean(
-      merchantStore && (
-        currentUser.id === merchantStore.owner_id || 
-        merchantStore.tenant_id === tenantSlug || 
-        merchantStore.id === tenantSlug
-      )
-    );
-    if (!isOwner) return;
-
-    const legacyDemoIds = [];
-    for (let i = 1; i <= 14; i++) {
-      legacyDemoIds.push(`${tenantSlug}-prod-${i}`);
-    }
-
-    supabase
-      .from('products')
-      .delete()
-      .in('id', legacyDemoIds)
-      .eq('tenant_id', tenantSlug)
-      .then(({ error, count }) => {
-        if (!error && count && count > 0) {
-          console.log(`Eliminados ${count} productos demo residuales de ${tenantSlug} en Supabase.`);
-        }
-      });
-  }, [currentUser, merchantStore, tenantSlug]);
-
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio
   useEffect(() => {
     if (!tenantSlug || !storeConfig?.name) return;
