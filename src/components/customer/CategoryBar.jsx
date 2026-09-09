@@ -42,10 +42,12 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }) => {
       {/* Barra de scroll horizontal limpia */}
       <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth">
         {categories.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          const count = cat.id === 'all'
-            ? products.length
-            : products.filter(p => p.category === cat.id).length;
+          const isSelected = selectedCategory === cat.id || (selectedCategory !== 'all' && selectedCategory?.toLowerCase()?.trim() === cat.id?.toLowerCase()?.trim());
+          const count = cat.count !== undefined
+            ? cat.count
+            : (cat.id === 'all'
+              ? products.length
+              : products.filter(p => (p.category || '').toLowerCase().trim() === (cat.id || '').toLowerCase().trim()).length);
 
           return (
             <button

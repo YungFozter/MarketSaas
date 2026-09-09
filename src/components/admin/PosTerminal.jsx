@@ -33,7 +33,10 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
   }, [initialPaymentType]);
 
   const filteredProducts = products.filter((p) => {
-    const matchCat = selectedCat === 'all' || p.category === selectedCat;
+    const matchCat = 
+      selectedCat === 'all' || 
+      p.category === selectedCat || 
+      (p.category && selectedCat && p.category.toLowerCase().trim() === selectedCat.toLowerCase().trim());
     const cleanQuery = normalizeSearchText(searchTerm);
     if (!cleanQuery) return matchCat;
 

@@ -58,7 +58,10 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
 
   // Filtrado
   const filteredProducts = products.filter((prod) => {
-    const matchesCategory = selectedCategory === 'all' || prod.category === selectedCategory;
+    const matchesCategory = 
+      selectedCategory === 'all' || 
+      prod.category === selectedCategory || 
+      (prod.category && selectedCategory && prod.category.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
     const cleanQuery = normalizeSearchText(searchQuery);
     if (!cleanQuery) return matchesCategory;
 

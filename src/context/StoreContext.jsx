@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
@@ -117,6 +117,20 @@ export const normalizeProductRequest = (req) => {
 export const filterOutTestRequests = (requests) => {
   if (!Array.isArray(requests)) return [];
   return requests.filter(r => r && r.id && !String(r.id).startsWith('TEST-') && !String(r.id).startsWith('VERIFY-'));
+};
+
+// Generador de iconos inteligente para categorías
+export const getCategoryIconName = (name) => {
+  if (!name) return 'Layers';
+  const lower = name.toLowerCase();
+  if (lower.includes('lacte') || lower.includes('huev') || lower.includes('leche') || lower.includes('queso') || lower.includes('yogur')) return 'Milk';
+  if (lower.includes('pan') || lower.includes('desayun') || lower.includes('cafe') || lower.includes('café') || lower.includes('croissant') || lower.includes('reposter')) return 'Croissant';
+  if (lower.includes('abarrot') || lower.includes('despensa') || lower.includes('arroz') || lower.includes('fideo') || lower.includes('pasta') || lower.includes('enlatad') || lower.includes('aceite')) return 'Package';
+  if (lower.includes('frut') || lower.includes('verdur') || lower.includes('vegetal') || lower.includes('hortaliz')) return 'Apple';
+  if (lower.includes('bebid') || lower.includes('licor') || lower.includes('jugo') || lower.includes('gaseosa') || lower.includes('refresco') || lower.includes('cervez') || lower.includes('vino') || lower.includes('agua') || lower.includes('soda')) return 'Coffee';
+  if (lower.includes('snack') || lower.includes('golosin') || lower.includes('dulce') || lower.includes('gallet') || lower.includes('chocolate') || lower.includes('caramelo')) return 'Cookie';
+  if (lower.includes('limpiez') || lower.includes('hogar') || lower.includes('aseo') || lower.includes('detergente') || lower.includes('lavand')) return 'Sparkle';
+  return 'Layers';
 };
 
 // Deduplicador robusto por ID y por Código para evitar que aparezcan productos duplicados
@@ -389,6 +403,7 @@ export const StoreProvider = ({ children }) => {
         is_open: safeConfig.isOpen !== false,
         enable_delivery: safeConfig.enableDelivery === true,
         enable_points: safeConfig.enablePoints !== false,
+        categories: safeConfig.categories || [],
         config: safeConfig,
         coupons: safeConfig.coupons || [],
         owner_id: currentUser?.id || merchantStore?.owner_id || null,
@@ -504,7 +519,16 @@ export const StoreProvider = ({ children }) => {
         const loadedCoupons = Array.isArray(configData.coupons)
           ? configData.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : (Array.isArray(storeRecord.coupons) ? storeRecord.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511') : []);
-        setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: storeRecord.name || configData.name }));
+        const loadedCategories = (Array.isArray(configData.categories) && configData.categories.length > 0)
+          ? configData.categories
+          : (Array.isArray(storeRecord.categories) && storeRecord.categories.length > 0 ? storeRecord.categories : undefined);
+        setStoreConfigState(prev => ({
+          ...prev,
+          ...configData,
+          ...(loadedCategories ? { categories: loadedCategories } : {}),
+          coupons: loadedCoupons,
+          name: storeRecord.name || configData.name
+        }));
         setMerchantStore(storeRecord);
         setTenantSlug(storeRecord.id);
         localStorage.setItem('marketsaas_active_tenant', storeRecord.id);
@@ -607,7 +631,16 @@ export const StoreProvider = ({ children }) => {
         const loadedCoupons = Array.isArray(configData.coupons)
           ? configData.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : (Array.isArray(data.coupons) ? data.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511') : []);
-        setStoreConfigState(prev => ({ ...prev, ...configData, coupons: loadedCoupons, name: data.name || configData.name }));
+        const loadedCategories = (Array.isArray(configData.categories) && configData.categories.length > 0)
+          ? configData.categories
+          : (Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : undefined);
+        setStoreConfigState(prev => ({
+          ...prev,
+          ...configData,
+          ...(loadedCategories ? { categories: loadedCategories } : {}),
+          coupons: loadedCoupons,
+          name: data.name || configData.name
+        }));
       }
     });
 
@@ -1156,6 +1189,73 @@ export const StoreProvider = ({ children }) => {
   // Total final
   const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;
   const cartTotal = cart.length === 0 ? 0 : Math.max(0, cartSubtotal + actualDeliveryFee - discountAmount);
+
+  // Categorías activas de la tienda: fusiona dinámicamente las predeterminadas con las configuradas en storeConfig y las presentes en productos
+  const categories = useMemo(() => {
+    // 1. Categorías predeterminadas canónicas
+    const baseDefaultCategories = [
+      { id: 'Lácteos & Huevos', name: 'Lácteos & Huevos', icon: 'Milk' },
+      { id: 'Panadería & Desayuno', name: 'Panadería & Desayuno', icon: 'Croissant' },
+      { id: 'Abarrotes', name: 'Abarrotes', icon: 'Package' },
+      { id: 'Frutas & Verduras', name: 'Frutas & Verduras', icon: 'Apple' },
+      { id: 'Bebidas & Licores', name: 'Bebidas & Licores', icon: 'Coffee' },
+      { id: 'Snacks & Golosinas', name: 'Snacks & Golosinas', icon: 'Cookie' },
+      { id: 'Limpieza & Hogar', name: 'Limpieza & Hogar', icon: 'Sparkle' }
+    ];
+
+    const categoryMap = new Map();
+
+    // Registrar predeterminadas primero
+    baseDefaultCategories.forEach(cat => {
+      categoryMap.set(cat.id.toLowerCase().trim(), {
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon
+      });
+    });
+
+    // 2. Incorporar categorías configuradas en la tienda (creadas manualmente por el dueño en storeConfig.categories)
+    const storeCategories = Array.isArray(storeConfig?.categories) ? storeConfig.categories : [];
+    storeCategories.forEach(rawCat => {
+      const catName = typeof rawCat === 'string' ? rawCat.trim() : (rawCat?.name || rawCat?.id || '').trim();
+      if (!catName || catName.toLowerCase() === 'all' || catName.toLowerCase() === 'todos' || catName === 'Sin definir') return;
+      const key = catName.toLowerCase();
+      if (!categoryMap.has(key)) {
+        categoryMap.set(key, {
+          id: catName,
+          name: catName,
+          icon: (typeof rawCat === 'object' && rawCat.icon) ? rawCat.icon : getCategoryIconName(catName)
+        });
+      }
+    });
+
+    // 3. Incorporar cualquier categoría que tengan los productos del catálogo de la tienda
+    if (Array.isArray(products)) {
+      products.forEach(p => {
+        const prodCat = (p?.category || '').trim();
+        if (!prodCat || prodCat.toLowerCase() === 'all' || prodCat === 'Sin definir') return;
+        const key = prodCat.toLowerCase();
+        if (!categoryMap.has(key)) {
+          categoryMap.set(key, {
+            id: prodCat,
+            name: prodCat,
+            icon: getCategoryIconName(prodCat)
+          });
+        }
+      });
+    }
+
+    // 4. Calcular conteo exacto de productos en stock por cada categoría
+    const categoryList = Array.from(categoryMap.values()).map(cat => ({
+      ...cat,
+      count: (products || []).filter(p => (p.category || '').toLowerCase().trim() === cat.id.toLowerCase().trim()).length
+    }));
+
+    return [
+      { id: 'all', name: 'Todos', icon: 'Sparkles', count: (products || []).length },
+      ...categoryList
+    ];
+  }, [storeConfig?.categories, products]);
 
   // Crear Pedido desde la vista de Cliente
   const createCustomerOrder = (orderData) => {
@@ -2101,7 +2201,7 @@ export const StoreProvider = ({ children }) => {
         goToDirectory,
         products,
         setProducts,
-        categories: initialCategories,
+        categories,
         storeConfig,
         setStoreConfig,
         cart,

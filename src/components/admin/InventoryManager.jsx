@@ -42,17 +42,18 @@ export const InventoryManager = () => {
   } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
-  const activeCategories = storeConfig?.categories && storeConfig.categories.length > 0
-    ? storeConfig.categories
-    : [
-        'Lácteos & Huevos',
-        'Panadería & Desayuno',
-        'Abarrotes',
-        'Frutas & Verduras',
-        'Bebidas & Licores',
-        'Snacks & Golosinas',
-        'Limpieza & Hogar'
-      ];
+  const baseDefaults = [
+    'Lácteos & Huevos',
+    'Panadería & Desayuno',
+    'Abarrotes',
+    'Frutas & Verduras',
+    'Bebidas & Licores',
+    'Snacks & Golosinas',
+    'Limpieza & Hogar'
+  ];
+  const configured = Array.isArray(storeConfig?.categories) ? storeConfig.categories : [];
+  const fromProds = (products || []).map(p => (p.category || '').trim()).filter(c => c && c !== 'Sin definir' && c !== 'all');
+  const activeCategories = Array.from(new Set([...baseDefaults, ...configured, ...fromProds]));
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
