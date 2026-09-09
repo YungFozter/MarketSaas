@@ -20,11 +20,13 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
 import { normalizeSearchText } from '../../utils/formatters';
+import { compressImage } from '../../utils/imageUtils';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -83,6 +85,8 @@ export const InventoryManager = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [editingProduct, setEditingProduct] = useState(null); // null = modal cerrado
   const [isNew, setIsNew] = useState(false);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const categoryDropdownRef = useRef(null);
 
@@ -209,7 +213,7 @@ export const InventoryManager = () => {
     });
   };
 
-  const handleSaveForm = (e) => {
+  const handleSaveForm = async (e) => {
     e.preventDefault();
     if (!editingProduct.name.trim()) {
       showToast('Ingresa el nombre del producto', 'warning');
@@ -220,13 +224,20 @@ export const InventoryManager = () => {
       ? editingProduct.image.trim()
       : '/products/producto-sin-imagen.png';
 
-    saveProduct({
-      ...editingProduct,
-      image: finalImage,
-      costPrice: cost !== undefined ? cost : 'Sin definir',
-      cost_price: cost !== undefined ? cost : 'Sin definir'
-    });
-    setEditingProduct(null);
+    setIsSavingProduct(true);
+    try {
+      await saveProduct({
+        ...editingProduct,
+        image: finalImage,
+        costPrice: cost !== undefined ? cost : 'Sin definir',
+        cost_price: cost !== undefined ? cost : 'Sin definir'
+      });
+      setEditingProduct(null);
+    } catch (err) {
+      console.error('Error al guardar producto:', err);
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
   // Estado de selección múltiple para eliminar productos
@@ -979,33 +990,47 @@ export const InventoryManager = () => {
                 <label className="text-xs font-bold text-slate-800 block">Foto del Producto (Cargar desde Archivo o Enlace)</label>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-2xs">
-                    <img 
-                      src={editingProduct.image?.trim() || '/products/producto-sin-imagen.png'} 
-                      alt="Preview" 
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = '/products/producto-sin-imagen.png';
-                      }}
-                    />
+                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-2xs relative">
+                    {isCompressingImage ? (
+                      <div className="flex flex-col items-center justify-center gap-0.5 text-emerald-600">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="text-[8px] font-bold">Optimizando...</span>
+                      </div>
+                    ) : (
+                      <img 
+                        src={editingProduct.image?.trim() || '/products/producto-sin-imagen.png'} 
+                        alt="Preview" 
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = '/products/producto-sin-imagen.png';
+                        }}
+                      />
+                    )}
                   </div>
 
                   <div className="flex-1 space-y-2 w-full">
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      disabled={isCompressingImage || isSavingProduct}
+                      onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setEditingProduct({ ...editingProduct, image: reader.result });
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            setIsCompressingImage(true);
+                            const compressed = await compressImage(file, 800, 800, 0.82);
+                            setEditingProduct(prev => ({ ...prev, image: compressed }));
+                            showToast('Foto cargada y optimizada para la base de datos', 'success');
+                          } catch (err) {
+                            console.error('Error procesando imagen:', err);
+                            showToast('No se pudo optimizar la imagen seleccionada', 'error');
+                          } finally {
+                            setIsCompressingImage(false);
+                          }
                         }
                       }}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer"
+                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer disabled:opacity-50"
                     />
                     <div className="relative">
                       <input
@@ -1013,7 +1038,8 @@ export const InventoryManager = () => {
                         placeholder="O pega una URL de foto en Internet (opcional)..."
                         value={editingProduct.image || ''}
                         onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-hidden focus:border-emerald-500"
+                        disabled={isCompressingImage || isSavingProduct}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-hidden focus:border-emerald-500 disabled:bg-slate-100"
                       />
                       {editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' && (
                         <button
@@ -1060,16 +1086,27 @@ export const InventoryManager = () => {
                 <button
                   type="button"
                   onClick={() => setEditingProduct(null)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100"
+                  disabled={isSavingProduct}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-100 cursor-pointer disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5"
+                  disabled={isSavingProduct || isCompressingImage}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-60 transition-all"
                 >
-                  <Save className="w-4 h-4" />
-                  <span>Guardar Producto</span>
+                  {isSavingProduct ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Guardando en Nube...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Guardar Producto</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

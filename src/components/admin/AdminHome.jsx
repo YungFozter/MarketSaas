@@ -375,7 +375,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     const prod = products.find(p => p.id === productId);
     if (!prod) return;
     const newStock = Math.max(0, prod.stock + delta);
-    saveProduct({ ...prod, stock: newStock });
+    saveProduct({ ...prod, stock: newStock }, { silent: true });
     showToast(`Stock de "${prod.name}" actualizado a ${newStock} unidades`, 'info');
   };
 

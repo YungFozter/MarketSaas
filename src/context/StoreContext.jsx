@@ -930,7 +930,11 @@ export const StoreProvider = ({ children }) => {
   }, [tenantSlug]);
 
   useEffect(() => {
-    localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(products));
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(products));
+    } catch (e) {
+      console.warn('Advertencia al guardar catálogo en localStorage (cuota o tamaño de imagen):', e);
+    }
   }, [products, tenantSlug]);
 
   useEffect(() => {
@@ -1207,67 +1211,178 @@ export const StoreProvider = ({ children }) => {
     updateOrderStatus(orderId, 'cancelled');
   };
 
-  // Crear o Editar Producto (Dueño)
-  const saveProduct = (productData) => {
+  // Crear o Editar Producto (Dueño) con persistencia garantizada en Nube y Local
+  const saveProduct = async (productData, options = {}) => {
+    const { silent = false } = options;
     const cleanImage = (productData.image && productData.image.trim()) 
       ? productData.image.trim() 
       : '/products/producto-sin-imagen.png';
 
-    const payload = { 
-      ...productData, 
+    const isEdit = Boolean(productData.id);
+    const prodId = productData.id || `${tenantSlug}-prod-${Date.now()}`;
+    const nextNum = products.length + 1;
+    const autoCode = `COD-${String(nextNum).padStart(3, '0')}`;
+    const resolvedCode = (productData.code && String(productData.code).trim()) 
+      ? String(productData.code).trim() 
+      : autoCode;
+
+    const numPrice = typeof productData.price === 'number' ? productData.price : (parseFloat(productData.price) || 0);
+    const rawOrigPrice = productData.originalPrice ?? productData.original_price;
+    const origPrice = (rawOrigPrice != null && rawOrigPrice !== '' && rawOrigPrice !== 'Sin definir')
+      ? (typeof rawOrigPrice === 'number' ? rawOrigPrice : (parseFloat(rawOrigPrice) || numPrice))
+      : numPrice;
+
+    const costVal = productData.costPrice ?? productData.cost_price ?? 'Sin definir';
+    const stockVal = productData.stock != null ? String(productData.stock) : 'Sin definir';
+    const minStockVal = productData.minStock ?? productData.min_stock ?? 'Sin definir';
+    const isPop = Boolean(productData.isPopular ?? productData.is_popular);
+    const isAct = productData.isActive !== undefined ? Boolean(productData.isActive) : (productData.is_active !== undefined ? Boolean(productData.is_active) : true);
+
+    // Registro sanitizado canónico con todas las columnas soportadas en Supabase
+    const dbRecord = {
+      id: prodId,
+      tenant_id: tenantSlug,
+      name: productData.name?.trim() || 'Producto Sin Nombre',
+      category: productData.category?.trim() || 'Sin definir',
+      price: numPrice,
+      original_price: origPrice,
+      originalprice: origPrice,
+      originalPrice: origPrice,
+      cost_price: String(costVal),
+      costPrice: String(costVal),
+      unit: productData.unit?.trim() || 'Sin definir',
+      stock: stockVal,
+      min_stock: String(minStockVal),
+      minStock: String(minStockVal),
       image: cleanImage,
-      tenant_id: tenantSlug 
-    };
-    const syncItem = {
-      ...payload,
-      image: cleanImage,
-      cost_price: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
-      costPrice: payload.costPrice != null ? String(payload.costPrice) : 'Sin definir',
-      min_stock: payload.minStock != null ? String(payload.minStock) : 'Sin definir',
-      minStock: payload.minStock != null ? String(payload.minStock) : 'Sin definir',
-      stock: payload.stock != null ? String(payload.stock) : 'Sin definir',
-      original_price: payload.originalPrice,
-      originalPrice: payload.originalPrice,
-      is_popular: Boolean(payload.isPopular),
-      isPopular: Boolean(payload.isPopular)
+      badge: productData.badge?.trim() || '',
+      code: resolvedCode,
+      description: productData.description?.trim() || 'Sin definir',
+      is_popular: isPop,
+      isPopular: isPop,
+      is_active: isAct,
+      isactive: isAct,
+      isActive: isAct,
+      updated_at: new Date().toISOString()
     };
 
-    if (productData.id) {
-      // Editar
-      setProducts(prev =>
-        prev.map(p => (p.id === productData.id ? { ...p, ...payload } : p))
-      );
-      if (supabase) {
-        supabase.from('products').upsert([syncItem]).then(({ error }) => {
-          if (error) console.error('Error guardando producto en Supabase:', error);
-        });
-      }
-      showToast(`Producto "${productData.name}" actualizado.`);
+    const normalizedProd = normalizeProduct(dbRecord);
+
+    // 1. Actualización inmediata en Estado React (Optimistic UI)
+    let nextProducts;
+    if (isEdit) {
+      nextProducts = products.map(p => (p.id === prodId ? { ...p, ...normalizedProd } : p));
     } else {
-      // Nuevo - Código auto-incrementable por defecto si el dueño no ingresa uno
-      const nextNum = products.length + 1;
-      const autoCode = `COD-${String(nextNum).padStart(3, '0')}`;
-      const newProd = {
-        ...payload,
-        id: `${tenantSlug}-prod-${Date.now()}`,
-        tenant_id: tenantSlug,
-        code: productData.code && productData.code.trim() ? productData.code.trim() : autoCode,
-        image: cleanImage
-      };
-      const newProdSync = {
-        ...syncItem,
-        id: newProd.id,
-        tenant_id: tenantSlug,
-        code: newProd.code,
-        image: cleanImage
-      };
-      setProducts(prev => [newProd, ...prev]);
-      if (supabase) {
-        supabase.from('products').insert([newProdSync]).then(({ error }) => {
-          if (error) console.error('Error insertando producto en Supabase:', error);
-        });
+      nextProducts = [normalizedProd, ...products];
+    }
+    setProducts(nextProducts);
+
+    // 2. Persistencia en LocalStorage protegida contra cuota
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
+    } catch (lsErr) {
+      console.warn('Aviso: Cuota de LocalStorage al guardar producto:', lsErr);
+    }
+
+    // 3. Persistencia en Supabase
+    if (supabase) {
+      try {
+        let savedSuccessfully = false;
+        let lastError = null;
+
+        if (isEdit) {
+          // Intentar actualización directa
+          const { data: updateData, error: updateErr } = await supabase
+            .from('products')
+            .update(dbRecord)
+            .eq('id', prodId)
+            .select();
+
+          if (!updateErr && updateData && updateData.length > 0) {
+            savedSuccessfully = true;
+          } else {
+            lastError = updateErr;
+            // Si retornó 0 filas (p.ej. el producto no existía en la nube), intentar upsert
+            const { data: upsertData, error: upsertErr } = await supabase
+              .from('products')
+              .upsert([dbRecord])
+              .select();
+
+            if (!upsertErr && upsertData && upsertData.length > 0) {
+              savedSuccessfully = true;
+            } else if (upsertErr) {
+              lastError = upsertErr;
+            }
+          }
+        } else {
+          // Inserción directa para nuevo producto
+          const { data: insertData, error: insertErr } = await supabase
+            .from('products')
+            .insert([dbRecord])
+            .select();
+
+          if (!insertErr && insertData && insertData.length > 0) {
+            savedSuccessfully = true;
+          } else {
+            lastError = insertErr;
+            // Si el ID ya existiera, intentar upsert
+            const { data: upsertData, error: upsertErr } = await supabase
+              .from('products')
+              .upsert([dbRecord])
+              .select();
+
+            if (!upsertErr && upsertData && upsertData.length > 0) {
+              savedSuccessfully = true;
+            } else if (upsertErr) {
+              lastError = upsertErr;
+            }
+          }
+        }
+
+        // Si falló por RLS u otra razón, intentar RPC de contingencia si existe
+        if (!savedSuccessfully) {
+          try {
+            const { data: rpcData, error: rpcErr } = await supabase.rpc('save_product_secure', {
+              p_product: dbRecord
+            });
+            if (!rpcErr && rpcData) {
+              savedSuccessfully = true;
+            }
+          } catch (rpcEx) {
+            // Silencioso si la función RPC aún no ha sido instalada
+          }
+        }
+
+        if (savedSuccessfully) {
+          if (!silent) {
+            showToast(
+              isEdit ? `Producto "${dbRecord.name}" guardado y sincronizado.` : `Nuevo producto "${dbRecord.name}" creado (${dbRecord.code}).`,
+              'success'
+            );
+          }
+          return { success: true, product: normalizedProd };
+        } else {
+          console.error('Error guardando producto en Supabase:', lastError);
+          if (!silent) {
+            showToast(
+              `Producto guardado en este equipo, pero pendiente de sincronizar en la nube (${lastError?.message || 'verifica permisos de dueño en Supabase'}).`,
+              'warning'
+            );
+          }
+          return { success: false, product: normalizedProd, error: lastError };
+        }
+      } catch (cloudErr) {
+        console.error('Excepción de red al guardar en Supabase:', cloudErr);
+        if (!silent) {
+          showToast(`Guardado localmente. Error de conexión con la nube.`, 'warning');
+        }
+        return { success: false, product: normalizedProd, error: cloudErr };
       }
-      showToast(`Nuevo producto "${newProd.name}" creado (${newProd.code}).`);
+    } else {
+      if (!silent) {
+        showToast(isEdit ? `Producto "${dbRecord.name}" actualizado.` : `Nuevo producto creado.`, 'success');
+      }
+      return { success: true, product: normalizedProd };
     }
   };
 
