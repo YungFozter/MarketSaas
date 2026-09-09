@@ -185,7 +185,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const onTheWayOrders = condoFilteredOrders.filter(o => o.status === 'on_the_way');
   const deliveredOrders = condoFilteredOrders.filter(o => o.status === 'delivered');
 
-  const lowStockProducts = products.filter(p => p.stock <= p.minStock);
+  const lowStockProducts = products.filter(p => {
+    if (p.stock === 'Sin definir' || p.stock == null || p.minStock === 'Sin definir' || p.minStock == null) return false;
+    const numStock = Number(p.stock);
+    const numMin = Number(p.minStock);
+    return !isNaN(numStock) && !isNaN(numMin) && numStock <= numMin;
+  });
   const pendingRequests = productRequests.filter(r => r.status === 'pending');
 
   // Enlace público de la tienda
@@ -374,7 +379,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const handleQuickStockChange = (productId, delta) => {
     const prod = products.find(p => p.id === productId);
     if (!prod) return;
-    const newStock = Math.max(0, prod.stock + delta);
+    const currentStock = (prod.stock !== 'Sin definir' && prod.stock != null && !isNaN(parseInt(prod.stock, 10)))
+      ? parseInt(prod.stock, 10)
+      : 0;
+    const newStock = Math.max(0, currentStock + delta);
     saveProduct({ ...prod, stock: newStock }, { silent: true });
     showToast(`Stock de "${prod.name}" actualizado a ${newStock} unidades`, 'info');
   };

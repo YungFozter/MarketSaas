@@ -46,7 +46,10 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
   });
 
   const addToPosCart = (product) => {
-    if (product.stock <= 0) {
+    const isDefined = product.stock !== 'Sin definir' && product.stock != null;
+    const numStock = isDefined ? Number(product.stock) : null;
+
+    if (isDefined && numStock <= 0) {
       showToast(`¡Sin stock de ${product.name}!`, 'warning');
       return;
     }
@@ -54,7 +57,7 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
     setPosCart((prev) => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) {
-        if (existing.quantity >= product.stock) {
+        if (isDefined && existing.quantity >= numStock) {
           showToast(`No hay más stock disponible de ${product.name}`, 'warning');
           return prev;
         }
@@ -70,7 +73,8 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
       return;
     }
     const product = products.find(p => p.id === id);
-    if (product && newQty > product.stock) {
+    const isDefined = product && product.stock !== 'Sin definir' && product.stock != null;
+    if (isDefined && newQty > Number(product.stock)) {
       showToast('Stock máximo alcanzado', 'warning');
       return;
     }
@@ -109,27 +113,31 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar o escanear código de barra..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-slate-50 focus:bg-white focus:outline-hidden focus:border-emerald-500"
+              placeholder="Buscar por código, nombre o categoría..."
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-hidden focus:border-emerald-500 font-medium"
             />
           </div>
 
-          {/* Categorías */}
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1">
+          {/* Filtro Rápido de Categorías en Barra */}
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
             <button
               onClick={() => setSelectedCat('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                selectedCat === 'all' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                selectedCat === 'all'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Todos
+              Todos ({products.length})
             </button>
-            {categories.filter(c => c.id !== 'all').map(cat => (
+            {categories.filter(c => c.id !== 'all').map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCat(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  selectedCat === cat.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedCat === cat.id
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {cat.name}
@@ -138,20 +146,28 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
           </div>
         </div>
 
-        {/* Grid de Productos para POS */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 max-h-[68vh] overflow-y-auto pr-1">
+        {/* Grid de Productos Táctiles */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 max-h-[640px] overflow-y-auto p-1 scrollbar-thin">
           {filteredProducts.map((p) => {
             const inCart = posCart.find(i => i.id === p.id);
+            const isOutOfStock = p.stock !== 'Sin definir' && p.stock != null && Number(p.stock) <= 0;
+
             return (
               <div
                 key={p.id}
-                onClick={() => addToPosCart(p)}
-                className="group relative bg-white p-3 rounded-2xl border border-slate-200/90 hover:border-emerald-500 shadow-2xs hover:shadow-md cursor-pointer transition-all flex flex-col justify-between"
+                onClick={() => !isOutOfStock && addToPosCart(p)}
+                className={`group bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-emerald-500/50 transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden select-none active:scale-[0.98] ${
+                  isOutOfStock ? 'opacity-50 grayscale cursor-not-allowed' : ''
+                }`}
               >
-                <div className="relative aspect-square w-full rounded-xl overflow-hidden mb-2 bg-slate-100">
-                  <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                <div className="aspect-square w-full rounded-xl bg-slate-50 mb-2 overflow-hidden relative flex items-center justify-center p-2">
+                  <img 
+                    src={p.image} 
+                    alt={p.name} 
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform" 
+                  />
                   {inCart && (
-                    <span className="absolute top-1.5 right-1.5 bg-emerald-600 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-md">
+                    <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-xs">
                       {inCart.quantity}
                     </span>
                   )}
@@ -161,7 +177,9 @@ export const PosTerminal = ({ initialPaymentType = 'cash', onSaleCompleted }) =>
                   <h4 className="font-bold text-slate-900 text-xs line-clamp-2 leading-tight mb-1">{p.name}</h4>
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-sm text-emerald-700">{currency} {p.price.toFixed(2)}</span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{p.stock} u.</span>
+                    <span className="text-[10px] text-slate-400 font-semibold">
+                      {p.stock === 'Sin definir' || p.stock == null ? 'Sin definir' : `${p.stock} u.`}
+                    </span>
                   </div>
                 </div>
               </div>

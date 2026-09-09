@@ -1013,7 +1013,10 @@ export const StoreProvider = ({ children }) => {
 
   // Métodos del Carrito
   const addToCart = (product, quantity = 1) => {
-    if (product.stock <= 0) {
+    const isDefined = product.stock !== 'Sin definir' && product.stock != null;
+    const numStock = isDefined ? Number(product.stock) : null;
+
+    if (isDefined && numStock <= 0) {
       showToast(`¡Lo sentimos! ${product.name} está agotado.`, 'error');
       return;
     }
@@ -1021,12 +1024,14 @@ export const StoreProvider = ({ children }) => {
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
-        const newQty = Math.min(existing.quantity + quantity, product.stock);
+        const candidateQty = existing.quantity + quantity;
+        const newQty = isDefined ? Math.min(candidateQty, numStock) : candidateQty;
         return prev.map(item =>
           item.id === product.id ? { ...item, quantity: newQty } : item
         );
       }
-      return [...prev, { ...product, quantity: Math.min(quantity, product.stock) }];
+      const initialQty = isDefined ? Math.min(quantity, numStock) : quantity;
+      return [...prev, { ...product, quantity: initialQty }];
     });
 
     showToast(`Agregado: ${product.name}`, 'success');
@@ -1038,7 +1043,8 @@ export const StoreProvider = ({ children }) => {
       removeFromCart(productId);
       return;
     }
-    if (product && newQty > product.stock) {
+    const isDefined = product && product.stock !== 'Sin definir' && product.stock != null;
+    if (isDefined && newQty > Number(product.stock)) {
       showToast(`Solo quedan ${product.stock} unidades disponibles.`, 'warning');
       return;
     }
@@ -1114,12 +1120,17 @@ export const StoreProvider = ({ children }) => {
       pointsEarned: earnedPoints
     };
 
-    // Descontar inventario
+    // Descontar inventario de forma segura
     setProducts(prevProducts =>
       prevProducts.map(prod => {
         const cartItem = cart.find(c => c.id === prod.id);
         if (cartItem) {
-          return { ...prod, stock: Math.max(0, prod.stock - cartItem.quantity) };
+          if (prod.stock === 'Sin definir' || prod.stock == null) {
+            return prod;
+          }
+          const numStock = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock, 10);
+          if (isNaN(numStock)) return prod;
+          return { ...prod, stock: Math.max(0, numStock - cartItem.quantity) };
         }
         return prod;
       })
@@ -1161,14 +1172,18 @@ export const StoreProvider = ({ children }) => {
         if (error) console.error('Error insertando pedido en Supabase:', error);
       });
 
-      // Descontar inventario de forma atómica en Supabase (RPC)
+      // Descontar inventario de forma atómica en Supabase (RPC) para productos con stock numérico definido
       cart.forEach(item => {
-        supabase.rpc('decrement_stock', { product_id: item.id, quantity: item.quantity }).then(({ error }) => {
-          if (error) {
-            // Si RPC falla, hacemos fallback a upsert
-            supabase.from('products').update({ stock: Math.max(0, item.stock - item.quantity) }).eq('id', item.id);
-          }
-        });
+        if (item.stock !== 'Sin definir' && item.stock != null) {
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: item.quantity }).then(({ error }) => {
+            if (error) {
+              const numStock = typeof item.stock === 'number' ? item.stock : parseInt(item.stock, 10);
+              if (!isNaN(numStock)) {
+                supabase.from('products').update({ stock: Math.max(0, numStock - item.quantity) }).eq('id', item.id);
+              }
+            }
+          });
+        }
       });
     }
 
@@ -1576,18 +1591,33 @@ export const StoreProvider = ({ children }) => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const saleId = `${tenantSlug}-POS-${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // Descontar inventario
-    setProducts(prevProducts =>
-      prevProducts.map(prod => {
+    // 1. Descontar inventario de forma segura
+    let nextProducts = [];
+    setProducts(prevProducts => {
+      nextProducts = prevProducts.map(prod => {
         const item = posItems.find(i => i.id === prod.id);
         if (item) {
-          return { ...prod, stock: Math.max(0, prod.stock - item.quantity) };
+          if (prod.stock === 'Sin definir' || prod.stock == null) {
+            return prod;
+          }
+          const currentNum = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock, 10);
+          if (isNaN(currentNum)) return prod;
+          const safeStock = Math.max(0, currentNum - item.quantity);
+          return { ...prod, stock: safeStock };
         }
         return prod;
-      })
-    );
+      });
+      return nextProducts;
+    });
 
-    // Registrar como pedido completado directo
+    // Persistir estado local de productos de inmediato
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
+    } catch (e) {
+      console.warn('Error al guardar en localStorage tras venta POS:', e);
+    }
+
+    // 2. Registrar como pedido completado directo
     const posOrder = {
       id: saleId,
       tenant_id: tenantSlug,
@@ -1615,6 +1645,21 @@ export const StoreProvider = ({ children }) => {
     if (supabase && tenantSlug) {
       supabase.from('orders').insert([posOrder]).then(({ error }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
+      });
+
+      // 3. Descontar inventario de forma atómica en Supabase para productos con stock numérico definido
+      posItems.forEach(item => {
+        const prod = products.find(p => p.id === item.id);
+        if (prod && prod.stock !== 'Sin definir' && prod.stock != null) {
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: item.quantity }).then(({ error }) => {
+            if (error) {
+              const currentNum = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock, 10);
+              if (!isNaN(currentNum)) {
+                supabase.from('products').update({ stock: Math.max(0, currentNum - item.quantity) }).eq('id', item.id);
+              }
+            }
+          });
+        }
       });
     }
     triggerConfetti();
