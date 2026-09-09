@@ -131,14 +131,6 @@
   z-index: 1001 !important;
 }
 
-.map-floating-dropdown {
-  z-index: 1002 !important;
-}
-
-.map-modal-overlay {
-  z-index: 1050 !important;
-}
-
 /* Protección para que las imágenes de teselas de Leaflet no colapsen */
 .leaflet-container img.leaflet-tile {
   max-width: none !important;
