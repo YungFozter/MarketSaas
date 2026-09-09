@@ -15,9 +15,14 @@ import { useStore } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
-  const { orders, storeConfig, updateOrderStatus, showToast } = useStore();
+  const { orders, storeConfig, selectedStore, tenantSlug, updateOrderStatus, showToast } = useStore();
 
   const order = orders.find(o => o.id === orderId);
+
+  const isOfficialStore = Boolean(
+    (tenantSlug && tenantSlug !== 'default') ||
+    (selectedStore && selectedStore.id && selectedStore.id !== 'default')
+  );
 
   if (!order) return null;
 
@@ -80,16 +85,28 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
           </button>
         </div>
 
-        {/* Banner Informativo de Demostración */}
-        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-b border-emerald-500/20 px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-emerald-950 font-medium shrink-0">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Simulación de Seguimiento en Tiempo Real (Modo Demostración)
-          </span>
-          <span className="text-[10px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
-            Sin cobro real
-          </span>
-        </div>
+        {/* Banner Informativo de Seguimiento */}
+        {!isOfficialStore ? (
+          <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-b border-emerald-500/20 px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-emerald-950 font-medium shrink-0">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Simulación de Seguimiento en Tiempo Real (Modo Demostración)
+            </span>
+            <span className="text-[10px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
+              Sin cobro real
+            </span>
+          </div>
+        ) : (
+          <div className="bg-emerald-50 border-b border-emerald-100 px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-emerald-950 font-medium shrink-0">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Seguimiento de Pedido en Vivo
+            </span>
+            <span className="text-[10px] font-extrabold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded-md uppercase">
+              En Vivo
+            </span>
+          </div>
+        )}
 
         <div className="p-4 sm:p-8 space-y-5 overflow-y-auto flex-1">
           {/* Alerta de Cancelado si aplica */}
@@ -164,37 +181,39 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                 </span>
               </div>
 
-              {/* Controles Interactivos de Simulación de Etapas (Modo Demostración) */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-left w-full sm:w-auto">
-                  <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Simulador de Etapas (Modo Demo):
-                  </p>
-                  <p className="text-[10px] text-slate-500 font-medium">
-                    Haz clic para simular el avance de este pedido en tiempo real:
-                  </p>
+              {/* Controles Interactivos de Simulación de Etapas (Solo en Modo Demostración) */}
+              {!isOfficialStore && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-left w-full sm:w-auto">
+                    <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      Simulador de Etapas (Modo Demo):
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Haz clic para simular el avance de este pedido en tiempo real:
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
+                    {stages.map((st, idx) => (
+                      <button
+                        key={st.key}
+                        type="button"
+                        onClick={() => {
+                          updateOrderStatus(order.id, st.key);
+                          showToast?.(`Estado actualizado: ${st.title}`);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+                          order.status === st.key
+                            ? 'bg-emerald-600 text-white shadow-xs scale-102 ring-2 ring-emerald-500/20'
+                            : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300'
+                        }`}
+                      >
+                        {idx + 1}. {st.title}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
-                  {stages.map((st, idx) => (
-                    <button
-                      key={st.key}
-                      type="button"
-                      onClick={() => {
-                        updateOrderStatus(order.id, st.key);
-                        showToast?.(`Estado actualizado: ${st.title}`);
-                      }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                        order.status === st.key
-                          ? 'bg-emerald-600 text-white shadow-xs scale-102 ring-2 ring-emerald-500/20'
-                          : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300'
-                      }`}
-                    >
-                      {idx + 1}. {st.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
 

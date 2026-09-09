@@ -34,8 +34,15 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     createCustomerOrder, 
     showToast,
     customerPhone: storedCustomerPhone,
-    customerName: storedCustomerName
+    customerName: storedCustomerName,
+    tenantSlug
   } = useStore();
+
+  const isOfficialStore = Boolean(
+    (tenantSlug && tenantSlug !== 'default') ||
+    (selectedStore && selectedStore.id && selectedStore.id !== 'default')
+  );
+  const storeDisplayName = storeConfig?.name || selectedStore?.name || 'Mi Tienda';
 
   const [step, setStep] = useState(1); // 1: Dirección y Entrega, 2: Método de Pago
   const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
@@ -308,16 +315,29 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Banner Informativo de Modo Demostración */}
-        <div className="bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-b border-amber-500/25 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs shrink-0">
-          <div className="flex items-center gap-2 text-amber-950 font-medium">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
-            <span><strong className="font-bold text-amber-900">Modo Demostración:</strong> Estás probando la experiencia de compra. No se realizará ningún cobro real.</span>
+        {/* Banner Informativo de Tienda Oficial o Demostración */}
+        {!isOfficialStore ? (
+          <div className="bg-gradient-to-r from-amber-500/15 to-orange-500/10 border-b border-amber-500/25 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs shrink-0">
+            <div className="flex items-center gap-2 text-amber-950 font-medium">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+              <span><strong className="font-bold text-amber-900">Modo Demostración:</strong> Estás probando la experiencia de compra de muestra.</span>
+            </div>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-900 font-black text-[10px] tracking-wide uppercase shrink-0">
+              Simulador
+            </span>
           </div>
-          <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-900 font-black text-[10px] tracking-wide uppercase shrink-0">
-            Simulador
-          </span>
-        </div>
+        ) : (
+          <div className="bg-emerald-50/90 border-b border-emerald-100 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-2 text-xs shrink-0">
+            <div className="flex items-center gap-2 text-emerald-950 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <span>Comprando en: <strong className="font-extrabold text-emerald-900">{storeDisplayName}</strong></span>
+            </div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-900 font-black text-[10px] tracking-wide uppercase shrink-0">
+              <Store className="w-3 h-3 text-emerald-700" />
+              Tienda Oficial
+            </span>
+          </div>
+        )}
 
         {/* Contenido del Checkout */}
         <div className="p-4 sm:p-8 overflow-y-auto flex-1">
