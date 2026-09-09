@@ -113,6 +113,12 @@ export const normalizeProductRequest = (req) => {
   };
 };
 
+// Filtra automáticamente solicitudes de prueba de diagnósticos
+export const filterOutTestRequests = (requests) => {
+  if (!Array.isArray(requests)) return [];
+  return requests.filter(r => r && r.id && !String(r.id).startsWith('TEST-') && !String(r.id).startsWith('VERIFY-'));
+};
+
 // Deduplicador robusto por ID y por Código para evitar que aparezcan productos duplicados
 export const deduplicateProducts = (productList) => {
   if (!Array.isArray(productList)) return [];
@@ -431,7 +437,7 @@ export const StoreProvider = ({ children }) => {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.map(normalizeProductRequest);
+        if (Array.isArray(parsed)) return filterOutTestRequests(parsed.map(normalizeProductRequest));
       }
     } catch (e) {}
     return tenantSlug === 'default' ? initialProductRequests.map(normalizeProductRequest) : [];
@@ -567,7 +573,7 @@ export const StoreProvider = ({ children }) => {
         if (localReqs) {
           const parsed = JSON.parse(localReqs);
           if (Array.isArray(parsed)) {
-            setProductRequests(parsed.map(normalizeProductRequest));
+            setProductRequests(filterOutTestRequests(parsed.map(normalizeProductRequest)));
           }
         } else {
           setProductRequests([]);
@@ -624,7 +630,7 @@ export const StoreProvider = ({ children }) => {
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
           if (!error && Array.isArray(data)) {
-            const normalized = data.map(normalizeProductRequest);
+            const normalized = filterOutTestRequests(data.map(normalizeProductRequest));
             setProductRequests(normalized);
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(normalized));
@@ -682,10 +688,14 @@ export const StoreProvider = ({ children }) => {
       }, payload => {
         if (payload.eventType === 'INSERT') {
           const norm = normalizeProductRequest(payload.new);
-          setProductRequests(prev => [norm, ...prev.filter(r => r.id !== norm.id)]);
+          if (norm && !String(norm.id).startsWith('TEST-') && !String(norm.id).startsWith('VERIFY-')) {
+            setProductRequests(prev => [norm, ...prev.filter(r => r.id !== norm.id)]);
+          }
         } else if (payload.eventType === 'UPDATE') {
           const norm = normalizeProductRequest(payload.new);
-          setProductRequests(prev => prev.map(r => (r.id === norm.id ? norm : r)));
+          if (norm && !String(norm.id).startsWith('TEST-') && !String(norm.id).startsWith('VERIFY-')) {
+            setProductRequests(prev => prev.map(r => (r.id === norm.id ? norm : r)));
+          }
         } else if (payload.eventType === 'DELETE') {
           setProductRequests(prev => prev.filter(r => r.id !== payload.old.id));
         }
@@ -698,6 +708,21 @@ export const StoreProvider = ({ children }) => {
       supabase.removeChannel(requestsChannel);
     };
   }, [tenantSlug]);
+
+  // Auto-purga en Supabase de peticiones de prueba residuales generadas durante diagnósticos
+  useEffect(() => {
+    if (currentUser && tenantSlug && tenantSlug !== 'default' && supabase) {
+      supabase
+        .from('product_requests')
+        .delete()
+        .in('id', ['TEST-1788978771317', 'VERIFY-1'])
+        .then(({ error }) => {
+          if (!error) {
+            setProductRequests(prev => filterOutTestRequests(prev));
+          }
+        });
+    }
+  }, [currentUser, tenantSlug]);
 
   // Cargar tiendas registradas en Supabase y fusionarlas reactivamente con initialStores
   useEffect(() => {

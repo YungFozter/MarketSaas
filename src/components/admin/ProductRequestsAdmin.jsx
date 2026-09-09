@@ -1,13 +1,14 @@
 import React from 'react';
 import { Sparkles, ThumbsUp, CheckCircle, Clock, Trash2, Plus, Store, CheckCircle2 } from 'lucide-react';
-import { useStore } from '../../context/StoreContext';
+import { useStore, filterOutTestRequests } from '../../context/StoreContext';
 import './ProductRequestsAdmin.css';
 
 export const ProductRequestsAdmin = ({ onAddNewProductWithData }) => {
   const { productRequests, updateRequestStatus, deleteProductRequest, storeConfig } = useStore();
 
-  const pendingCount = productRequests.filter(r => !r.status || r.status === 'pending').length;
-  const approvedCount = productRequests.filter(r => r.status === 'approved').length;
+  const visibleRequests = filterOutTestRequests(productRequests);
+  const pendingCount = visibleRequests.filter(r => !r.status || r.status === 'pending').length;
+  const approvedCount = visibleRequests.filter(r => r.status === 'approved').length;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -38,7 +39,7 @@ export const ProductRequestsAdmin = ({ onAddNewProductWithData }) => {
       </div>
 
       {/* Listado o Empty State */}
-      {productRequests.length === 0 ? (
+      {visibleRequests.length === 0 ? (
         <div className="bg-white p-12 rounded-3xl border border-slate-200/90 shadow-2xs text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto shadow-xs">
             <Sparkles className="w-7 h-7" />
@@ -52,7 +53,7 @@ export const ProductRequestsAdmin = ({ onAddNewProductWithData }) => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {productRequests.map((req) => (
+          {visibleRequests.map((req) => (
             <div
               key={req.id}
               className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-colors"
