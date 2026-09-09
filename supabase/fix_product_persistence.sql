@@ -1,4 +1,4 @@
-﻿-- ==============================================================================
+-- ==============================================================================
 -- MarketSaaS: FIX DE PERMANENCIA Y PERMISOS DE PRODUCTOS POR DUEÑO
 -- Ejecutar en: Supabase Dashboard -> SQL Editor -> New Query -> Run
 -- ==============================================================================
@@ -20,24 +20,24 @@ ALTER TABLE public.products ADD COLUMN IF NOT EXISTS isActive BOOLEAN DEFAULT tr
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 
 -- 3. ELIMINAR POLÍTICAS OBSOLETAS O RESTRICTIVAS PREVIAS
-DROP POLICY IF EXISTS  products_owner_update ON public.products;
+DROP POLICY IF EXISTS products_owner_update ON public.products;
 DROP POLICY IF EXISTS products_owner_insert ON public.products;
 DROP POLICY IF EXISTS products_owner_delete ON public.products;
 DROP POLICY IF EXISTS products_owner_management ON public.products;
-DROP POLICY IF EXISTS Gestión de productos por dueño ON public.products;
-DROP POLICY IF EXISTS Gestión total de productos ON public.products;
+DROP POLICY IF EXISTS "Gestión de productos por dueño" ON public.products;
+DROP POLICY IF EXISTS "Gestión total de productos" ON public.products;
 DROP POLICY IF EXISTS products_public_read ON public.products;
-DROP POLICY IF EXISTS Lectura pública de productos ON public.products;
+DROP POLICY IF EXISTS "Lectura pública de productos" ON public.products;
 
 -- 4. POLÍTICA DE LECTURA PÚBLICA (Vecinos, clientes y administradores pueden ver productos)
-CREATE POLICY products_public_read 
+CREATE POLICY "products_public_read" 
 ON public.products 
 FOR SELECT 
 USING (true);
 
 -- 5. POLÍTICA DE GESTIÓN TOTAL PARA DUEÑOS AUTENTICADOS
 -- Permite crear, modificar y eliminar productos si el usuario es el dueño legítimo de la tienda
-CREATE POLICY products_owner_management 
+CREATE POLICY "products_owner_management" 
 ON public.products 
 FOR ALL 
 USING (
@@ -84,7 +84,7 @@ WITH CHECK (
 -- 6. RPC DE PERSISTENCIA SEGURA (SECURITY DEFINER)
 -- Garantiza que cualquier dueño autenticado pueda guardar productos con imágenes sin bloqueos de esquema
 CREATE OR REPLACE FUNCTION public.save_product_secure(p_product JSONB)
-RETURNS JSONB AS 
+RETURNS JSONB AS $$
 DECLARE
   v_id TEXT := p_product->>'id';
   v_tenant_id TEXT := p_product->>'tenant_id';
@@ -154,7 +154,7 @@ BEGIN
 
   RETURN v_result;
 END;
- LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 7. REFRESCAR CACHÉ DE ESQUEMA DE POSTGREST
 NOTIFY pgrst, 'reload schema';
