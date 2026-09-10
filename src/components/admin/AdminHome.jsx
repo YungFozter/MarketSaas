@@ -70,6 +70,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     setStoreConfig,
     tenantSlug, 
     currentUser, 
+    merchantStore,
     isAuthLoading,
     signOutMerchant,
     setViewMode,
@@ -509,13 +510,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];
 
-  // Auto-abrir modal de login si intenta ver el panel sin sesión
-  useEffect(() => {
-    if (!isAuthLoading && !currentUser && onOpenAuthModal) {
-      onOpenAuthModal();
-    }
-  }, [isAuthLoading, currentUser, onOpenAuthModal]);
-
   // Auth Guard: Comprobación de estado de autenticación
   if (isAuthLoading) {
     return (
@@ -551,7 +545,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
           <div className="space-y-3">
             <button
-              onClick={() => onOpenAuthModal?.()}
+              onClick={() => onOpenAuthModal?.('login')}
               className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
             >
               <LogIn className="w-4 h-4" />
@@ -564,6 +558,62 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             >
               <ShoppingBag className="w-4 h-4 text-emerald-400" />
               <span>Volver a la Vista Vecino (Catálogo)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Si el usuario tiene cuenta pero todavía no ha registrado su tienda
+  if (!merchantStore) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
+        {/* Luces de fondo ambient */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/3 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-md w-full bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 shadow-2xl text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20 text-slate-950">
+            <Store className="w-8 h-8" />
+          </div>
+
+          <span className="inline-block px-3 py-1 rounded-full bg-emerald-400/10 text-emerald-400 text-xs font-black uppercase tracking-wider mb-3 border border-emerald-400/20">
+            Cuenta Creada • Falta Registrar Tienda
+          </span>
+
+          <h2 className="text-2xl font-black text-white tracking-tight mb-2">
+            ¡Hola, {currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Comerciante'}!
+          </h2>
+          <p className="text-sm text-slate-400 leading-relaxed mb-8">
+            Ya tienes tu cuenta de dueño activa, pero aún no has registrado tu minimarket. Completa los datos de tu tienda para comenzar a recibir pedidos.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => onOpenAuthModal?.('register')}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-slate-950 font-black text-sm transition-all shadow-lg shadow-emerald-500/25 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+            >
+              <Store className="w-4 h-4" />
+              <span>Completar Registro de mi Tienda</span>
+            </button>
+
+            <button
+              onClick={() => setViewMode('customer')}
+              className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs transition-colors border border-slate-700/60 cursor-pointer flex items-center justify-center gap-2"
+            >
+              <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              <span>Volver a la Vista Vecino (Catálogo)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                signOutMerchant();
+                setViewMode('customer');
+              }}
+              className="w-full py-2.5 px-4 text-xs font-bold text-rose-400 hover:text-rose-300 hover:underline cursor-pointer"
+            >
+              Cerrar Sesión
             </button>
           </div>
         </div>

@@ -154,9 +154,13 @@ export const Navbar = ({
               <button
                 onClick={() => {
                   if (currentUser) {
-                    setViewMode('admin');
+                    if (merchantStore) {
+                      setViewMode('admin');
+                    } else {
+                      if (onOpenAuthModal) onOpenAuthModal('register');
+                    }
                   } else {
-                    if (onOpenAuthModal) onOpenAuthModal();
+                    if (onOpenAuthModal) onOpenAuthModal('login');
                     else if (onRequestAdminAccess) onRequestAdminAccess();
                   }
                 }}
@@ -297,9 +301,17 @@ export const Navbar = ({
                 {/* Botón Principal de Acceso Dueños */}
                 <button
                   onClick={() => {
-                    if (currentUser) setViewMode('admin');
-                    else if (onOpenAuthModal) onOpenAuthModal();
-                    else if (onRequestAdminAccess) onRequestAdminAccess();
+                    if (currentUser) {
+                      if (merchantStore) {
+                        setViewMode('admin');
+                      } else {
+                        if (onOpenAuthModal) onOpenAuthModal('register');
+                      }
+                    } else if (onOpenAuthModal) {
+                      onOpenAuthModal('login');
+                    } else if (onRequestAdminAccess) {
+                      onRequestAdminAccess();
+                    }
                   }}
                   className="relative group overflow-hidden px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl font-bold sm:font-extrabold text-[11px] sm:text-xs md:text-sm text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 hover:from-emerald-950 hover:to-slate-900 border border-slate-700/80 shadow-xs hover:shadow-md hover:shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap"
                   title={currentUser ? 'Ir a panel de administración' : 'Iniciar sesión o registrar tu tienda'}

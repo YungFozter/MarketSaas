@@ -92,6 +92,17 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     prevIsOpenRef.current = isOpen;
   }, [isOpen, initialMode, currentUser]);
 
+  // Cerrar modal con tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Manejador de Login
@@ -240,7 +251,12 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-3 sm:p-4 animate-fade-in"
+    >
       <div className="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 relative overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Botón Cerrar */}
@@ -663,10 +679,16 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   <div className="flex gap-2 pt-1">
                     <button
                       type="button"
-                      onClick={() => setRegisterStep(1)}
+                      onClick={() => {
+                        if (currentUser) {
+                          onClose();
+                        } else {
+                          setRegisterStep(1);
+                        }
+                      }}
                       className="px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      Atrás
+                      {currentUser ? 'Cancelar' : 'Atrás'}
                     </button>
                     <button
                       type="submit"
@@ -693,8 +715,19 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
         </div>
 
+        {/* Enlace para Salir y Volver al Catálogo */}
+        <div className="py-2.5 bg-slate-50/50 border-t border-slate-100 text-center shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <span>← Salir y volver a la tienda o catálogo</span>
+          </button>
+        </div>
+
         {/* Footer Informativo */}
-        <div className="bg-slate-50 px-5 py-3 border-t border-slate-100 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5 shrink-0">
+        <div className="bg-slate-50 px-5 py-2.5 border-t border-slate-100 text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5 shrink-0">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
           <span>Acceso encriptado y protegido con Supabase Auth</span>
         </div>

@@ -29,7 +29,9 @@ const AppContent = () => {
     setIsTrackingModalOpen,
     cart,
     cartTotal,
-    storeConfig
+    storeConfig,
+    currentUser,
+    merchantStore
   } = useStore();
 
   // Estados de Modales
@@ -40,7 +42,21 @@ const AppContent = () => {
   const [requestPreloadName, setRequestPreloadName] = useState('');
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState('login');
   const [spectatorShowcaseTab, setSpectatorShowcaseTab] = useState('residents');
+
+  const handleOpenAuthModal = (mode = 'login') => {
+    setAuthModalMode(typeof mode === 'string' ? mode : 'login');
+    setIsAuthModalOpen(true);
+  };
+
+  const handleCloseAuthModal = () => {
+    setIsAuthModalOpen(false);
+    // Si el usuario intentó acceder a admin pero no tiene sesión ni tienda, volver a vista vecino para no dejarlo atrapado
+    if (viewMode === 'admin' && (!currentUser || !merchantStore)) {
+      setViewMode('customer');
+    }
+  };
 
   const handleOpenCheckout = () => {
     setIsCartOpen(false);
@@ -62,8 +78,8 @@ const AppContent = () => {
           onOpenPoints={() => setIsPointsOpen(true)}
           onOpenRequests={() => handleOpenRequests('')}
           onOpenLocationModal={() => setIsLocationOpen(true)}
-          onRequestAdminAccess={() => setIsAuthModalOpen(true)}
-          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          onRequestAdminAccess={() => handleOpenAuthModal('login')}
+          onOpenAuthModal={handleOpenAuthModal}
           activeSpectatorTab={spectatorShowcaseTab}
           onSelectSpectatorTab={setSpectatorShowcaseTab}
         />
@@ -74,7 +90,7 @@ const AppContent = () => {
         {viewMode === 'spectator' ? (
           <SpectatorHome
             onExploreStore={() => setViewMode('customer')}
-            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+            onOpenAuthModal={handleOpenAuthModal}
             activeShowcaseTab={spectatorShowcaseTab}
             onSelectShowcaseTab={setSpectatorShowcaseTab}
           />
@@ -82,7 +98,7 @@ const AppContent = () => {
           customerSubView === 'directory' ? (
             <StoreDirectory
               onSelectStore={goToStore}
-              onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              onOpenAuthModal={handleOpenAuthModal}
             />
           ) : (
             <CustomerHome
@@ -93,7 +109,7 @@ const AppContent = () => {
             />
           )
         ) : (
-          <AdminHome onOpenAuthModal={() => setIsAuthModalOpen(true)} />
+          <AdminHome onOpenAuthModal={handleOpenAuthModal} />
         )}
       </div>
 
@@ -148,7 +164,8 @@ const AppContent = () => {
 
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        onClose={handleCloseAuthModal}
+        initialMode={authModalMode}
       />
 
       {/* Barra Flotante Fija de Carrito en Móvil */}
