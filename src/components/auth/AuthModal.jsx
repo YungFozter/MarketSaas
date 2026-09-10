@@ -73,19 +73,23 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
   }, [storeName, isSlugManual]);
 
-  // Reset al abrir
+  const prevIsOpenRef = React.useRef(false);
+
+  // Reset al abrir: únicamente cuando el modal pasa de cerrado (false) a abierto (true)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       setErrorMsg('');
       setLoading(false);
-      setRegisteredUser(null);
-      if (initialMode) setMode(initialMode);
+      setMode(initialMode || 'login');
       if (currentUser) {
+        setRegisteredUser(currentUser);
         setRegisterStep(2);
       } else {
+        setRegisteredUser(null);
         setRegisterStep(1);
       }
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, initialMode, currentUser]);
 
   if (!isOpen) return null;
@@ -651,8 +655,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-emerald-950 text-xs flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold block">¡Inicialización Automática!</span>
-                      <span>Configuraremos tu catálogo inicial de demostración con 14 productos listos para personalizar.</span>
+                      <span className="font-bold block">¡Inicialización Inmediata!</span>
+                      <span>Tu tienda se creará lista para subir tus propios productos o importar tu inventario desde Excel.</span>
                     </div>
                   </div>
 
