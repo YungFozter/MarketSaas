@@ -2397,6 +2397,20 @@ export const StoreProvider = ({ children }) => {
         }
       });
       if (error) throw error;
+
+      // Si Supabase no devolvió sesión inmediata en el cliente, intentar inicio de sesión automático
+      if (!data?.session) {
+        try {
+          const signInRes = await supabase.auth.signInWithPassword({ email, password });
+          if (signInRes.data?.session) {
+            data.session = signInRes.data.session;
+            data.user = signInRes.data.user || data.user;
+          }
+        } catch (signInErr) {
+          console.warn('Aviso de auto-login tras signUp:', signInErr);
+        }
+      }
+
       if (data?.user) {
         setCurrentUser(data.user);
       }
@@ -2434,7 +2448,8 @@ export const StoreProvider = ({ children }) => {
         return { data: null, error: { message: `El enlace "${cleanSlug}" ya está en uso. Por favor elige otro.` } };
       }
 
-      const userId = ownerId || currentUser?.id || (await supabase.auth.getUser())?.data?.user?.id || null;
+      const sessionUser = (await supabase.auth.getUser())?.data?.user;
+      const userId = ownerId || sessionUser?.id || currentUser?.id || null;
 
       const { adminPassword, admin_pin, ...baseConfig } = initialStoreConfig;
       const newConfig = {
@@ -2465,7 +2480,17 @@ export const StoreProvider = ({ children }) => {
       };
 
       const { error } = await supabase.from('store_config').insert([storeRecord]).select();
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501' || error.message?.includes('row-level security')) {
+          return {
+            data: null,
+            error: {
+              message: 'Error de políticas de seguridad RLS en Supabase: Ejecuta el script "fix_store_config_rls.sql" en el SQL Editor de tu proyecto en Supabase para permitir el registro de tiendas.'
+            }
+          };
+        }
+        throw error;
+      }
 
       // Actualizar estados reactivos
       setTenantSlug(cleanSlug);

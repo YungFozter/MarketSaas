@@ -233,12 +233,13 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
 
     setLoading(true);
+    const resolvedOwnerId = registeredUser?.id || currentUser?.id || (await supabase?.auth?.getUser())?.data?.user?.id;
     const { data, error } = await createMerchantStore({
       storeName: storeName.trim(),
       slug: storeSlug.trim(),
       phone: phone.trim(),
       whatsapp: phone.trim().replace(/[^0-9]/g, ''),
-      ownerId: registeredUser?.id || currentUser?.id
+      ownerId: resolvedOwnerId
     });
     setLoading(false);
 
