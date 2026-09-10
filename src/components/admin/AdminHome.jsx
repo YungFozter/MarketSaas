@@ -769,8 +769,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 <p className="font-bold text-xs text-slate-900 truncate">
                   {currentUser?.user_metadata?.full_name || storeConfig.name || 'Don Vecino'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">
-                  {storeConfig.condominiums?.[0]?.name || 'Condominio Central'}
+                <p 
+                  className="text-[10px] text-slate-400 truncate"
+                  title={storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Sin ubicación'}
+                >
+                  {storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Sin ubicación'}
                 </p>
               </div>
             </div>

@@ -2459,7 +2459,11 @@ export const StoreProvider = ({ children }) => {
         phone: phone || '',
         whatsapp: whatsapp || phone || '',
         themeColor: themeColor || 'emerald',
-        owner_id: userId
+        owner_id: userId,
+        address: '',
+        zone: '',
+        reference: '',
+        condominiums: []
       };
 
       const storeRecord = {
@@ -2470,7 +2474,8 @@ export const StoreProvider = ({ children }) => {
         theme_color: themeColor || 'emerald',
         currency_symbol: 'Bs.',
         is_open: true,
-        condominiums: initialStoreConfig.condominiums,
+        address: '',
+        condominiums: [],
         coupons: [],
         categories: initialStoreConfig.categories,
         payment_methods: initialStoreConfig.paymentMethods,

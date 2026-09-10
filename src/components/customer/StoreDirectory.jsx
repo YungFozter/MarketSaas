@@ -81,7 +81,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       setGpsStatus('granted');
       setGpsErrorMsg('');
       setSortBy('nearest');
-      showToast?.('📍 Ubicación GPS detectada. Tiendas ordenadas por cercanía.', 'success');
     };
 
     const onLocationError = (error) => {
