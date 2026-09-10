@@ -2437,19 +2437,29 @@ export const StoreProvider = ({ children }) => {
     }
 
     try {
-      // Validar si ya existe ese slug
+      const sessionUser = (await supabase.auth.getUser())?.data?.user;
+      const userId = ownerId || sessionUser?.id || currentUser?.id || null;
+
+      // Validar si ya existe ese slug en la base de datos
       const { data: existing } = await supabase
         .from('store_config')
-        .select('id')
+        .select('id, owner_id')
         .eq('id', cleanSlug)
         .maybeSingle();
 
       if (existing) {
-        return { data: null, error: { message: `El enlace "${cleanSlug}" ya está en uso. Por favor elige otro.` } };
+        // Si la tienda existente le pertenece al usuario actual, permitimos actualizarla
+        if (existing.owner_id && userId && existing.owner_id === userId) {
+          // El mismo usuario está finalizando su registro
+        } else {
+          return { 
+            data: null, 
+            error: { 
+              message: `El nombre o enlace "${cleanSlug}" ya está registrado en la base de datos. Si eliminaste la cuenta anterior en Supabase Auth, debes ejecutar el script "cleanup_and_cascade_stores.sql" en el SQL Editor para liberar el nombre de la tienda.` 
+            } 
+          };
+        }
       }
-
-      const sessionUser = (await supabase.auth.getUser())?.data?.user;
-      const userId = ownerId || sessionUser?.id || currentUser?.id || null;
 
       const { adminPassword, admin_pin, ...baseConfig } = initialStoreConfig;
       const newConfig = {
@@ -2484,7 +2494,7 @@ export const StoreProvider = ({ children }) => {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase.from('store_config').insert([storeRecord]).select();
+      const { error } = await supabase.from('store_config').upsert([storeRecord]).select();
       if (error) {
         if (error.code === '42501' || error.message?.includes('row-level security')) {
           return {
