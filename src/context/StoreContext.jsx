@@ -499,7 +499,7 @@ export const StoreProvider = ({ children }) => {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           return parsed
-            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}')
+            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
             .map(normalizeOrder);
         }
       }
@@ -628,7 +628,13 @@ export const StoreProvider = ({ children }) => {
   // 10. Pedido activo para seguimiento y modal de tracking
   const [activeTrackingOrderId, setActiveTrackingOrderId] = useState(() => {
     try {
-      return localStorage.getItem(`marketsaas_${tenantSlug}_active_order`) || null;
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_active_order`);
+      if (saved === 'ORD-1319' || String(saved).startsWith('TEST-') || String(saved).startsWith('CHECK-')) {
+        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+        localStorage.removeItem('marketsaas_default_active_order');
+        return null;
+      }
+      return saved || null;
     } catch (e) {
       return null;
     }
@@ -818,12 +824,24 @@ export const StoreProvider = ({ children }) => {
           console.warn('Aviso cargando pedidos en Supabase:', error.message);
         } else if (Array.isArray(data)) {
           const normalized = data
-            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}')
+            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
             .map(normalizeOrder);
           setOrders(normalized);
           try {
             localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
           } catch (e) {}
+
+          // Auto-limpieza si el pedido activo en cliente ya no existe en la base de datos
+          setActiveTrackingOrderId(prev => {
+            if (prev && !normalized.some(o => o.id === prev)) {
+              try {
+                localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+                localStorage.removeItem('marketsaas_default_active_order');
+              } catch (err) {}
+              return null;
+            }
+            return prev;
+          });
         }
       });
 
@@ -1647,6 +1665,16 @@ export const StoreProvider = ({ children }) => {
       });
     }
 
+    if (newStatus === 'delivered' || newStatus === 'cancelled') {
+      if (activeTrackingOrderId === orderId) {
+        setActiveTrackingOrderId(null);
+        try {
+          localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+          localStorage.removeItem('marketsaas_default_active_order');
+        } catch (e) {}
+      }
+    }
+
     const statusLabels = {
       pending: 'Pendiente',
       preparing: 'En Preparación',
@@ -1671,6 +1699,13 @@ export const StoreProvider = ({ children }) => {
       } catch (e) {}
       return filtered;
     });
+    if (activeTrackingOrderId === orderId) {
+      setActiveTrackingOrderId(null);
+      try {
+        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+        localStorage.removeItem('marketsaas_default_active_order');
+      } catch (e) {}
+    }
     if (supabase) {
       supabase.from('orders').delete().eq('id', orderId).then(({ error }) => {
         if (error) console.error('Error eliminando pedido en Supabase:', error);

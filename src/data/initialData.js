@@ -254,7 +254,6 @@ export const initialStoreConfig = {
   themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'
   currencySymbol: 'Bs.',
   adminEmail: 'admin@tienda.com',
-  adminPassword: 'admin',
   logoUrl: '',
   bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
   qrImageUrl: '',

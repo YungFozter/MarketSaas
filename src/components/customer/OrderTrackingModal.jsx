@@ -15,7 +15,7 @@ import { useStore } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
-  const { orders, storeConfig, selectedStore, tenantSlug, updateOrderStatus, showToast } = useStore();
+  const { orders, storeConfig, selectedStore, tenantSlug } = useStore();
 
   const order = orders.find(o => o.id === orderId);
 
@@ -27,13 +27,34 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
   if (!order) return null;
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
+  const isPickup = order.deliveryType === 'pickup' || order.delivery_type === 'pickup';
 
   // Estados: pending -> preparing -> on_the_way -> delivered
   const stages = [
-    { key: 'pending', title: 'Recibido', desc: 'Tu tienda ya recibió el pedido', icon: Store },
-    { key: 'preparing', title: 'En Preparación', desc: 'Empacando tus productos frescos', icon: PackageCheck },
-    { key: 'on_the_way', title: order.deliveryType === 'delivery' ? 'En Camino' : 'Listo para Retiro', desc: order.deliveryType === 'delivery' ? 'Repartidor rumbo a tu puerta' : 'Puedes pasar al local', icon: Truck },
-    { key: 'delivered', title: 'Entregado', desc: '¡Disfruta tus productos!', icon: CheckCircle2 }
+    { 
+      key: 'pending', 
+      title: 'Recibido', 
+      desc: isPickup ? 'La tienda ya recibió tu pedido para alistar' : 'Tu tienda ya recibió el pedido', 
+      icon: Store 
+    },
+    { 
+      key: 'preparing', 
+      title: 'En Preparación', 
+      desc: isPickup ? 'Alistando tus productos para entrega en mostrador' : 'Empacando tus productos frescos', 
+      icon: PackageCheck 
+    },
+    { 
+      key: 'on_the_way', 
+      title: isPickup ? 'Listo para Retiro' : 'En Camino', 
+      desc: isPickup ? `Tu compra está lista en el mostrador de ${storeConfig?.name || 'la tienda'}` : 'Repartidor rumbo a tu puerta', 
+      icon: isPickup ? Store : Truck 
+    },
+    { 
+      key: 'delivered', 
+      title: isPickup ? 'Retirado' : 'Entregado', 
+      desc: '¡Disfruta tus productos!', 
+      icon: CheckCircle2 
+    }
   ];
 
   const getStageIndex = (status) => {
@@ -136,31 +157,25 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   const isCurrent = idx === currentIndex;
 
                   return (
-                    <button 
+                    <div 
                       key={st.key} 
-                      type="button"
-                      onClick={() => {
-                        updateOrderStatus(order.id, st.key);
-                        showToast?.(`Estado actualizado: ${st.title}`);
-                      }}
-                      className="relative z-10 flex flex-col items-center cursor-pointer group focus:outline-hidden"
-                      title={`Simular paso: ${st.title}`}
+                      className="relative z-10 flex flex-col items-center select-none"
                     >
                       <div 
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-md group-hover:scale-110 ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all shadow-md ${
                           isDone
                             ? isCurrent
                               ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 scale-110'
                               : 'bg-emerald-500 text-white'
-                            : 'bg-white text-slate-400 border-2 border-slate-200 group-hover:border-emerald-400 group-hover:text-emerald-600'
+                            : 'bg-white text-slate-400 border-2 border-slate-200'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
                       </div>
-                      <span className={`text-[11px] mt-2 font-bold whitespace-nowrap transition-colors ${isCurrent ? 'text-emerald-800 font-extrabold' : isDone ? 'text-slate-700' : 'text-slate-400 group-hover:text-emerald-700'}`}>
+                      <span className={`text-[11px] mt-2 font-bold whitespace-nowrap transition-colors ${isCurrent ? 'text-emerald-800 font-extrabold' : isDone ? 'text-slate-700' : 'text-slate-400'}`}>
                         {st.title}
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -170,52 +185,20 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
                   <div>
-                    <p className="font-extrabold text-xs sm:text-sm">{stages[currentIndex].desc}</p>
+                    <p className="font-extrabold text-xs sm:text-sm">{stages[currentIndex]?.desc || 'En preparación'}</p>
                     <p className="text-[11px] text-emerald-700 font-medium">
-                      Destino: {order.deliveryType === 'delivery' 
-                        ? [order.customer?.condominium, order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'Entrega a Domicilio'
-                        : 'Retiro en Local'}
+                      {isPickup ? (
+                        <span>🏪 Retiro en Mostrador ({storeConfig?.name || 'Local'})</span>
+                      ) : (
+                        <span>Destino: {[order.customer?.condominium, order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'Entrega a Domicilio'}</span>
+                      )}
                     </p>
                   </div>
                 </div>
                 <span className="text-xs font-black text-emerald-800 bg-white px-2.5 py-1 rounded-xl shadow-2xs">
-                  {order.deliveryType === 'delivery' ? 'Delivery' : 'Retiro'}
+                  {isPickup ? '🏪 Retiro en Tienda' : '🛵 Delivery'}
                 </span>
               </div>
-
-              {/* Controles Interactivos de Simulación de Etapas (Solo en Modo Demostración) */}
-              {!isOfficialStore && (
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="text-left w-full sm:w-auto">
-                    <p className="text-[11px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      Simulador de Etapas (Modo Demo):
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-medium">
-                      Haz clic para simular el avance de este pedido en tiempo real:
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
-                    {stages.map((st, idx) => (
-                      <button
-                        key={st.key}
-                        type="button"
-                        onClick={() => {
-                          updateOrderStatus(order.id, st.key);
-                          showToast?.(`Estado actualizado: ${st.title}`);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
-                          order.status === st.key
-                            ? 'bg-emerald-600 text-white shadow-xs scale-102 ring-2 ring-emerald-500/20'
-                            : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300'
-                        }`}
-                      >
-                        {idx + 1}. {st.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

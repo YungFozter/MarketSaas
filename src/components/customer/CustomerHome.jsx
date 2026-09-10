@@ -3,7 +3,7 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
-import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle, X } from 'lucide-react';
+import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -81,6 +81,36 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
     o => o.id === activeTrackingOrderId && ['pending', 'preparing', 'on_the_way'].includes(o.status)
   );
 
+  const isPickup = activeOrder ? (activeOrder.deliveryType === 'pickup' || activeOrder.delivery_type === 'pickup') : false;
+
+  const orderTitle = activeOrder ? (
+    isPickup
+      ? activeOrder.status === 'on_the_way'
+        ? `¡Tu pedido está listo para recoger! (#${activeOrder.id})`
+        : activeOrder.status === 'preparing'
+          ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
+          : `¡Pedido recibido! (#${activeOrder.id})`
+      : activeOrder.status === 'on_the_way'
+        ? `¡Tienes un pedido en camino! (#${activeOrder.id})`
+        : activeOrder.status === 'preparing'
+          ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
+          : `¡Pedido recibido! (#${activeOrder.id})`
+  ) : '';
+
+  const orderSubtitle = activeOrder ? (
+    isPickup
+      ? activeOrder.status === 'on_the_way'
+        ? `Pasa a retirarlo por el mostrador de ${storeConfig?.name || 'la tienda'}`
+        : activeOrder.status === 'preparing'
+          ? `Empacando tus productos para entrega en mostrador`
+          : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
+      : activeOrder.status === 'on_the_way'
+        ? `El repartidor va rumbo a ${activeOrder.customer?.condominium || activeOrder.customer?.apartment || selectedLocation?.condominium || 'tu dirección'}`
+        : activeOrder.status === 'preparing'
+          ? `Empacando tus productos frescos para el despacho`
+          : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
+  ) : '';
+
   const handleDismissActiveOrder = (e) => {
     e?.stopPropagation?.();
     setActiveTrackingOrderId(null);
@@ -141,14 +171,19 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
         <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse-glow relative">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 flex items-center justify-center font-bold shrink-0">
-              <ShoppingBag className="w-5 h-5" />
+              {isPickup ? <Store className="w-5 h-5 text-white" /> : <ShoppingBag className="w-5 h-5 text-white" />}
             </div>
             <div>
-              <p className="font-black text-xs sm:text-sm">
-                ¡Tienes un pedido {activeOrder.status === 'on_the_way' ? 'en camino' : activeOrder.status === 'preparing' ? 'en preparación' : 'recibido'} (#{activeOrder.id})!
-              </p>
-              <p className="text-[11px] sm:text-xs text-emerald-100 font-medium">
-                Revisa en qué etapa viene hacia {selectedLocation?.condominium || 'tu ubicación'}
+              <div className="flex items-center gap-2">
+                <p className="font-black text-xs sm:text-sm">
+                  {orderTitle}
+                </p>
+                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white">
+                  {isPickup ? 'Mostrador' : 'Delivery'}
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-emerald-100 font-medium mt-0.5">
+                {orderSubtitle}
               </p>
             </div>
           </div>
