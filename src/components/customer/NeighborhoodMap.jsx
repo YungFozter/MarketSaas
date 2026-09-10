@@ -87,6 +87,7 @@ export const NeighborhoodMap = ({
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
   const [zoomLevel, setZoomLevel] = useState(15);
   const [isLocating, setIsLocating] = useState(false);
+  const [isGpsCardCollapsed, setIsGpsCardCollapsed] = useState(false);
 
   // Tiendas que se deben graficar con marcadores según los filtros activos
   const storesToPlot = useMemo(() => {
@@ -403,6 +404,7 @@ export const NeighborhoodMap = ({
 
   // Obtener la ubicación GPS real del usuario desde el navegador y centrar el mapa
   const handleGetUserLocation = () => {
+    setIsGpsCardCollapsed(false);
     // Si ya tenemos coordenadas GPS válidas en memoria o props, centrar inmediatamente
     if (userCoordinates?.lat && userCoordinates?.lng && hasUserGps) {
       const map = mapInstanceRef.current;
@@ -461,6 +463,7 @@ export const NeighborhoodMap = ({
 
       setIsLocating(false);
       setActiveLocationType('user');
+      setIsGpsCardCollapsed(false);
       setCurrentCoords(userCoords);
       showFeedback('📍 Ubicación GPS detectada con éxito', 'success');
       if (onUserLocationChange) {
@@ -673,44 +676,92 @@ export const NeighborhoodMap = ({
         </div>
       )}
 
-      {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO */}
-      {activeLocationType === 'user' && !activeStore && (
-        <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-[1001] map-floating-control max-w-[290px] sm:max-w-[340px] w-full pointer-events-auto">
-          <div className="bg-slate-900/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-700/80 text-white flex flex-col gap-2.5 transition-all transform hover:scale-[1.02]">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0 shadow-xs">
-                  <Navigation className="w-5 h-5" />
+      {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO (COLAPSADA) */}
+      {activeLocationType === 'user' && !activeStore && isGpsCardCollapsed && (
+        <div className="absolute left-3 sm:left-4 bottom-12 sm:bottom-14 z-[1001] map-floating-control pointer-events-auto animate-fade-in">
+          <button
+            type="button"
+            onClick={() => setIsGpsCardCollapsed(false)}
+            className="bg-slate-900/95 hover:bg-slate-900 active:scale-95 backdrop-blur-md text-white pl-2.5 pr-2 py-1.5 rounded-xl border border-slate-700/80 shadow-lg flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer group"
+            title="Revelar información de tu ubicación GPS (>)"
+            aria-label="Revelar tarjeta de GPS"
+          >
+            <div className="w-5 h-5 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+              <Navigation className="w-3 h-3" />
+            </div>
+            <span className="text-slate-200 group-hover:text-white">Tu GPS</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] font-black bg-slate-800 text-emerald-400 rounded-md border border-slate-700 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-colors flex items-center justify-center">
+              &gt;
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO (EXPANDIDA) */}
+      {activeLocationType === 'user' && !activeStore && !isGpsCardCollapsed && (
+        <div className="absolute left-3 sm:left-4 bottom-12 sm:bottom-14 z-[1001] map-floating-control max-w-[245px] xs:max-w-[270px] sm:max-w-[310px] w-full pointer-events-auto transition-all animate-fade-in">
+          <div className="bg-slate-900/95 backdrop-blur-xl p-2.5 sm:p-3 rounded-2xl shadow-xl border border-slate-700/80 text-white flex flex-col gap-2 transition-all">
+            {/* Cabecera compacta con Toggle >/< y Cerrar */}
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-400/30 flex items-center justify-center shrink-0 shadow-xs">
+                  <Navigation className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-bold text-xs sm:text-sm text-white leading-tight flex items-center gap-1.5">
-                    <span>Tu Ubicación GPS</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <h4 className="font-bold text-xs sm:text-sm text-white leading-tight flex items-center gap-1">
+                    <span className="truncate">Tu GPS</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   </h4>
-                  <p className="text-[11px] text-slate-300 truncate mt-0.5">
+                  <p className="text-[10px] sm:text-[11px] text-slate-300 font-mono truncate">
                     {currentCoords.lat.toFixed(4)}, {currentCoords.lng.toFixed(4)}
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full shrink-0">
-                En vivo
-              </span>
+
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="hidden xs:inline-block text-[9px] font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.5 rounded-full">
+                  En vivo
+                </span>
+                {/* Botón > / < para ocultar */}
+                <button
+                  type="button"
+                  onClick={() => setIsGpsCardCollapsed(true)}
+                  className="px-1.5 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-[11px] font-black transition-colors cursor-pointer border border-slate-700"
+                  title="Ocultar tarjeta (<)"
+                  aria-label="Ocultar tarjeta de GPS"
+                >
+                  &lt;
+                </button>
+                {/* Botón X para descartar */}
+                <button
+                  type="button"
+                  onClick={() => setActiveLocationType('plaza')}
+                  className="w-5 h-5 rounded-lg bg-slate-800/80 hover:bg-rose-950/60 hover:text-rose-400 text-slate-400 flex items-center justify-center transition-colors cursor-pointer border border-slate-700/60"
+                  title="Cerrar tarjeta"
+                  aria-label="Cerrar tarjeta de GPS"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             </div>
 
-            <p className="text-[11px] text-slate-300 leading-snug">
-              El mapa y el listado inferior se han actualizado con las distancias reales a tus minimarkets más cercanos.
+            {/* Texto informativo breve adaptado a móvil */}
+            <p className="text-[10px] sm:text-[11px] text-slate-300 leading-snug line-clamp-2">
+              Distancias calculadas en tiempo real a tus minimarkets cercanos.
             </p>
 
+            {/* Botón de acción estilizado y compacto */}
             <button
               type="button"
               onClick={() => {
                 const el = document.getElementById('stores-grid-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-1.5 px-2.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-[11px] sm:text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span>Ver tiendas más cercanas abajo</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span className="truncate">Ver tiendas abajo</span>
+              <ArrowRight className="w-3 h-3 shrink-0" />
             </button>
           </div>
         </div>
