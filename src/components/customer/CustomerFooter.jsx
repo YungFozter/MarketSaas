@@ -12,7 +12,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 
 export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => {
-  const { storeConfig } = useStore();
+  const { storeConfig, customerSubView } = useStore();
 
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
   const merchantWaMessage = "¡Hola!. Me gustaría crear mi Tienda Digital en MarketSaaS. 🚀 Quisiera recibir información sobre cómo activar mi propio minimarket online, digitalizar mi catálogo y comenzar a recibir pedidos por WhatsApp. 🛒📦";
@@ -68,7 +68,7 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
               </button>
             )}
 
-            {onOpenRequests && (
+            {onOpenRequests && customerSubView === 'storefront' && (
               <button
                 onClick={onOpenRequests}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"

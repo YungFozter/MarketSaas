@@ -311,15 +311,17 @@ export const Navbar = ({
               </div>
             ) : viewMode === 'customer' ? (
               <>
-                {/* Botón de Solicitar Producto ("Pídelo si no está") */}
-                <button
-                  onClick={onOpenRequests}
-                  className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl border border-slate-200 transition-all shadow-2xs"
-                  title="¿Falta algún producto en el catálogo? Pídelo a la tienda"
-                >
-                  <PlusCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Pídelo si no está</span>
-                </button>
+                {/* Botón de Solicitar Producto ("Pídelo si no está") - Solo dentro de una tienda */}
+                {customerSubView === 'storefront' && (
+                  <button
+                    onClick={onOpenRequests}
+                    className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl border border-slate-200 transition-all shadow-2xs cursor-pointer"
+                    title="¿Falta algún producto en el catálogo? Pídelo a la tienda"
+                  >
+                    <PlusCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Pídelo si no está</span>
+                  </button>
+                )}
 
                 {/* VeciPuntos / Fidelidad (Opcional según la tienda) */}
                 {storeConfig.enablePoints !== false && (
@@ -434,14 +436,14 @@ export const Navbar = ({
               </button>
             )}
 
-            {viewMode === 'customer' && (
+            {viewMode === 'customer' && customerSubView === 'storefront' && (
               <>
                 <button
                   onClick={() => {
                     onOpenRequests();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700 hover:bg-emerald-50 transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200 text-left text-xs font-bold text-slate-700 hover:bg-emerald-50 transition-colors cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>Pídelo si no está en la tienda</span>

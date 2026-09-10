@@ -21,7 +21,8 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
     submitProductRequest, 
     voteProductRequest, 
     storeConfig, 
-    tenantSlug 
+    tenantSlug,
+    customerSubView 
   } = useStore();
 
   const [productName, setProductName] = useState(initialProductName);
@@ -45,7 +46,7 @@ export const RequestProductModal = ({ isOpen, onClose, initialProductName = '' }
     }
   }, [isOpen, initialProductName]);
 
-  if (!isOpen) return null;
+  if (!isOpen || customerSubView !== 'storefront') return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

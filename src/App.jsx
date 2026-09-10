@@ -48,6 +48,7 @@ const AppContent = () => {
   };
 
   const handleOpenRequests = (preloadName = '') => {
+    if (customerSubView !== 'storefront') return;
     setRequestPreloadName(typeof preloadName === 'string' ? preloadName : '');
     setIsRequestsOpen(true);
   };
