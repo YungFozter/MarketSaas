@@ -68,10 +68,9 @@ GRANT SELECT, INSERT ON public.store_config TO anon;
 GRANT ALL ON public.store_config TO authenticated;
 
 -- 6. AUTO-CONFIRMAR USUARIOS PENDIENTES EN auth.users
--- Garantiza que las cuentas creadas no queden esperando verificación de correo por SMTP
+-- (En Supabase moderno, confirmed_at es columna generada automáticamente al actualizar email_confirmed_at)
 UPDATE auth.users 
-SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
-    confirmed_at = COALESCE(confirmed_at, now())
+SET email_confirmed_at = COALESCE(email_confirmed_at, now())
 WHERE email_confirmed_at IS NULL;
 
 -- 7. TRIGGER DE AUTO-CONFIRMACIÓN PARA NUEVOS REGISTROS
@@ -79,7 +78,6 @@ CREATE OR REPLACE FUNCTION public.auto_confirm_merchant_user()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.email_confirmed_at = COALESCE(NEW.email_confirmed_at, now());
-  NEW.confirmed_at = COALESCE(NEW.confirmed_at, now());
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
