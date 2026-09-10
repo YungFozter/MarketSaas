@@ -13,3 +13,8 @@
 .settings-color-swatch:hover {
   transform: scale(1.08);
 }
+
+.custom-location-picker-pin {
+  background: transparent !important;
+  border: none !important;
+}

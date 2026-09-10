@@ -1,8 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   Settings, 
   Save, 
   Plus, 
+  Minus,
   Trash2, 
   Edit3,
   QrCode, 
@@ -28,6 +31,233 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
 import './StoreSettings.css';
+
+// Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
+const STREET_MAP_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+const STREET_MAP_ATTRIBUTION = '&copy; Esri &mdash; Street Map';
+const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
+
+const createStoreMarkerIcon = (storeName) => {
+  return L.divIcon({
+    className: 'custom-location-picker-pin',
+    html: `
+      <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); pointer-events: auto; cursor: grab;">
+        <div style="position: relative; width: 42px; height: 42px; border-radius: 50%; background: #059669; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.35); border: 3px solid white; z-index: 2;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+        <div style="margin-top: 4px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); color: white; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); z-index: 3;">
+          ${storeName ? storeName : 'Tu Tienda'}
+        </div>
+      </div>
+    `,
+    iconSize: [42, 65],
+    iconAnchor: [21, 65]
+  });
+};
+
+const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) => {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const tileLayerRef = useRef(null);
+  const [mapType, setMapType] = useState('map');
+
+  const validLat = typeof latitude === 'number' && !isNaN(latitude) && latitude !== 0 ? latitude : -17.78335;
+  const validLng = typeof longitude === 'number' && !isNaN(longitude) && longitude !== 0 ? longitude : -63.18214;
+
+  // 1. Inicializar mapa Leaflet
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+
+    const map = L.map(containerRef.current, {
+      center: [validLat, validLng],
+      zoom: 16,
+      zoomControl: false,
+      attributionControl: true
+    });
+
+    const streetLayer = L.tileLayer(STREET_MAP_URL, {
+      attribution: STREET_MAP_ATTRIBUTION,
+      maxNativeZoom: 18,
+      maxZoom: 19
+    }).addTo(map);
+
+    tileLayerRef.current = streetLayer;
+
+    // Crear marcador inicial interactivo
+    const icon = createStoreMarkerIcon(storeName);
+    const marker = L.marker([validLat, validLng], {
+      icon,
+      draggable: true,
+      autoPan: true
+    }).addTo(map);
+
+    // Evento arrastre del marcador
+    marker.on('dragend', (e) => {
+      const pos = e.target.getLatLng();
+      const newLat = parseFloat(pos.lat.toFixed(6));
+      const newLng = parseFloat(pos.lng.toFixed(6));
+      if (onChange) onChange(newLat, newLng);
+    });
+
+    // Evento clic / toque en cualquier punto del mapa (PC mouse y teléfono táctil)
+    map.on('click', (e) => {
+      const newLat = parseFloat(e.latlng.lat.toFixed(6));
+      const newLng = parseFloat(e.latlng.lng.toFixed(6));
+      marker.setLatLng([newLat, newLng]);
+      if (onChange) onChange(newLat, newLng);
+    });
+
+    markerRef.current = marker;
+    mapRef.current = map;
+
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
+    return () => {
+      clearTimeout(timer);
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, []);
+
+  // 2. Conmutar satélite / mapa
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+    const newLayer = mapType === 'satellite'
+      ? L.tileLayer(SATELLITE_URL, { attribution: SATELLITE_ATTRIBUTION, maxNativeZoom: 18, maxZoom: 19 })
+      : L.tileLayer(STREET_MAP_URL, { attribution: STREET_MAP_ATTRIBUTION, maxNativeZoom: 18, maxZoom: 19 });
+    newLayer.addTo(map);
+    tileLayerRef.current = newLayer;
+  }, [mapType]);
+
+  // 3. Sincronizar marcador si cambian las coordenadas externas
+  useEffect(() => {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+
+    const currentPos = marker.getLatLng();
+    const diffLat = Math.abs(currentPos.lat - validLat);
+    const diffLng = Math.abs(currentPos.lng - validLng);
+
+    if (diffLat > 0.00001 || diffLng > 0.00001) {
+      marker.setLatLng([validLat, validLng]);
+      map.panTo([validLat, validLng]);
+    }
+  }, [validLat, validLng]);
+
+  // 4. Actualizar etiqueta del marcador si cambia el nombre de la tienda
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.setIcon(createStoreMarkerIcon(storeName));
+    }
+  }, [storeName]);
+
+  const handleCenterOnMarker = () => {
+    if (mapRef.current && markerRef.current) {
+      const pos = markerRef.current.getLatLng();
+      mapRef.current.setView(pos, 16);
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (mapRef.current) mapRef.current.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    if (mapRef.current) mapRef.current.zoomOut();
+  };
+
+  return (
+    <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
+      <div ref={containerRef} className="w-full h-full" />
+
+      {/* Banner superior con instrucciones interactivas */}
+      <div className="absolute top-3 left-3 right-3 sm:right-auto z-[1000] pointer-events-none">
+        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-xl shadow-lg border border-slate-700/80 flex items-center gap-2 max-w-md pointer-events-auto">
+          <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <MapPin className="w-3.5 h-3.5" />
+          </div>
+          <p className="text-[11px] font-semibold leading-tight text-slate-200">
+            <span className="text-emerald-400 font-bold">¡Toca o haz clic en el mapa!</span> Coloca o arrastra el marcador exactamente donde está tu tienda.
+          </p>
+        </div>
+      </div>
+
+      {/* Controles de mapa, satélite y zoom */}
+      <div className="absolute bottom-3 right-3 z-[1000] flex items-center gap-2 pointer-events-auto">
+        <div className="flex items-center bg-white/95 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setMapType('map')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+              mapType === 'map' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            🗺️ Mapa
+          </button>
+          <button
+            type="button"
+            onClick={() => setMapType('satellite')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+              mapType === 'satellite' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            🛰️ Satélite
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCenterOnMarker}
+          className="w-8 h-8 rounded-xl bg-white/95 hover:bg-white text-slate-700 hover:text-emerald-600 backdrop-blur-md flex items-center justify-center shadow-md border border-slate-200 transition-colors cursor-pointer"
+          title="Centrar en el marcador de la tienda"
+        >
+          <Crosshair className="w-4 h-4" />
+        </button>
+
+        <div className="flex flex-col bg-white/95 backdrop-blur-md rounded-xl shadow-md overflow-hidden border border-slate-200">
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200 transition-colors"
+            title="Acercar mapa"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <div className="h-[1px] bg-slate-200" />
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 text-slate-800 font-bold text-sm cursor-pointer active:bg-slate-200 transition-colors"
+            title="Alejar mapa"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Chip inferior con coordenadas activas */}
+      <div className="absolute bottom-3 left-3 z-[1000] pointer-events-auto">
+        <div className="bg-slate-900/90 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl border border-slate-700/80 shadow-md flex items-center gap-2 text-[11px] font-mono">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span>{validLat.toFixed(6)}, {validLng.toFixed(6)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Helper de compresión de imágenes con Canvas para prevenir desbordamientos de localStorage y Supabase
 const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
@@ -733,25 +963,29 @@ export const StoreSettings = () => {
             </div>
           </div>
 
-          {/* Previsualización en Vivo de Google Maps */}
-          <div className="space-y-1.5 pt-2">
+          {/* Mapa Interactivo con Marcador Colocable / Arrastrable */}
+          <div className="space-y-2 pt-2">
             <div className="flex items-center justify-between text-[11px] text-slate-500">
-              <span className="font-bold text-slate-700 flex items-center gap-1">
+              <span className="font-bold text-slate-700 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Vista Previa del Pin en Google Maps:</span>
+                <span>Mapa Interactivo de Fijación de Ubicación:</span>
               </span>
-              <span>{form.latitude}, {form.longitude}</span>
+              <span className="font-mono font-bold text-slate-700">{form.latitude}, {form.longitude}</span>
             </div>
 
-            <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100">
-              <iframe
-                key={`${form.latitude}-${form.longitude}`}
-                title="Vista previa del mapa de la tienda"
-                src={`https://maps.google.com/maps?q=${form.latitude},${form.longitude}+(${encodeURIComponent(form.name || 'Mi Tienda')})&z=16&hl=es&ie=UTF8&output=embed`}
-                className="w-full h-full border-0 pointer-events-auto"
-                loading="lazy"
-              />
-            </div>
+            <StoreLocationPickerMap
+              latitude={parseFloat(form.latitude) || -17.78335}
+              longitude={parseFloat(form.longitude) || -63.18214}
+              storeName={form.name || 'Mi Tienda'}
+              onChange={(newLat, newLng) => {
+                setForm(prev => ({
+                  ...prev,
+                  latitude: newLat,
+                  longitude: newLng,
+                  googleMapsCoordinates: { lat: newLat, lng: newLng }
+                }));
+              }}
+            />
           </div>
         </div>
       </div>
