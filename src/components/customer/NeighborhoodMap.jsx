@@ -112,7 +112,7 @@ export const NeighborhoodMap = ({
     });
   }, [masterStores, activeFilters]);
 
-  // Crear DivIcon HTML personalizado para cada tienda (diferenciando abiertas vs cerradas)
+  // Crear DivIcon HTML personalizado para cada tienda (con punta de aguja de precisión milimétrica 1:1)
   const createStoreDivIcon = (store, isSelected) => {
     const isRegistered = Boolean(store.isRegisteredStore);
     const isOwner = Boolean(store.isCurrentOwnerStore);
@@ -123,9 +123,8 @@ export const NeighborhoodMap = ({
       ? (isOwner ? 'owner-pulse-ring' : isRegistered ? 'registered-pulse-ring' : '')
       : '';
 
-    // Estilos según si la tienda está ABIERTA o CERRADA
-    let bgColor;
-    let borderColor;
+    let pinColor;
+    let strokeColor;
     let badgeText = '';
     let badgeBg = '';
     let badgeColor = '';
@@ -134,43 +133,39 @@ export const NeighborhoodMap = ({
     let statusPillHtml = '';
 
     if (!isOpen) {
-      // 🔴 TIENDA CERRADA: Marcador sobrio pizarra/grafito con ribete de alerta suave
-      bgColor = isOwner ? '#78350f' : isRegistered ? '#475569' : '#334155';
-      borderColor = isOwner ? '#fde68a' : isRegistered ? '#fca5a5' : '#cbd5e1';
-
-      // No se agrega badge redundante debajo cuando está cerrada; el rótulo superior ya indica [CERRADO]
-      badgeText = '';
-
+      pinColor = '#475569';
+      strokeColor = '#334155';
       dotHtml = '<span style="color:#ef4444; font-size: 8px;">●</span>';
       statusPillHtml = '<span style="font-size: 8px; font-weight: 900; background: #fee2e2; color: #b91c1c; padding: 0.5px 4px; border-radius: 4px; margin-left: 3px; border: 0.5px solid #fca5a5;">CERRADO</span>';
+    } else if (isOwner) {
+      pinColor = '#059669';
+      strokeColor = '#047857';
+      badgeText = '⭐ Tu Tienda';
+      badgeBg = '#fef3c7';
+      badgeColor = '#92400e';
+      badgeBorder = '#fde68a';
+      dotHtml = '<span style="color:#f59e0b; font-size: 8px;">●</span>';
+    } else if (isRegistered) {
+      pinColor = '#059669';
+      strokeColor = '#047857';
+      badgeText = 'Oficial';
+      badgeBg = '#d1fae5';
+      badgeColor = '#065f46';
+      badgeBorder = '#a7f3d0';
+      dotHtml = '<span style="color:#059669; font-size: 8px;">●</span>';
     } else {
-      // 🟢 TIENDA ABIERTA: Marcador verde esmeralda / ámbar vibrante
-      bgColor = isOwner ? '#f59e0b' : isRegistered ? '#059669' : '#334155';
-      borderColor = '#ffffff';
-
-      if (isOwner) {
-        badgeText = '⭐ Tu Tienda';
-        badgeBg = '#fef3c7';
-        badgeColor = '#92400e';
-        badgeBorder = '#fde68a';
-      } else if (isRegistered) {
-        badgeText = 'Oficial';
-        badgeBg = '#d1fae5';
-        badgeColor = '#065f46';
-        badgeBorder = '#a7f3d0';
-      }
-
-      dotHtml = isRegistered ? '<span style="color:#059669; font-size: 8px;">●</span>' : '';
+      pinColor = '#334155';
+      strokeColor = '#1e293b';
     }
 
     // Icono SVG: Candado si está cerrada, casita de tienda si está abierta
     const iconSvg = !isOpen ? `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.95;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pinColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
       </svg>
     ` : `
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${pinColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
       </svg>
@@ -179,16 +174,33 @@ export const NeighborhoodMap = ({
     const html = `
       <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''} ${!isOpen ? 'is-closed' : ''}">
         ${ringClass ? `<div class="${ringClass}"></div>` : ''}
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: ${bgColor}; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 2.5px solid ${borderColor}; z-index: 2;">
-          ${iconSvg}
-        </div>
-        <div style="margin-top: 4px; display: flex; flex-direction: column; align-items: center; z-index: 3;">
-          <div style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); border: 1px solid ${!isOpen ? 'rgba(239,68,68,0.3)' : 'rgba(0,0,0,0.08)'}; font-size: 10px; font-weight: 800; color: #0f172a; white-space: nowrap; max-width: 155px; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 3px;">
+
+        <!-- Rótulo flotante superior (desacoplado de la altura de la aguja para no desfasar el anclaje) -->
+        <div style="position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <div style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); font-size: 10px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis;">
             ${dotHtml}
-            <span>${escapeHtml(store.name)}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(store.name)}</span>
             ${statusPillHtml}
           </div>
-          ${badgeText ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${badgeBg}; color: ${badgeColor}; padding: 1px 6px; border-radius: 9999px; margin-top: 1px; border: 0.5px solid ${badgeBorder};">${badgeText}</span>` : ''}
+          ${badgeText ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${badgeBg}; color: ${badgeColor}; padding: 0.5px 6px; border-radius: 9999px; border: 0.5px solid ${badgeBorder}; box-shadow: 0 1px 4px rgba(0,0,0,0.15);">${badgeText}</span>` : ''}
+        </div>
+
+        <!-- SVG Pin de alta fidelidad con punta de contacto exactamente en (18, 44) -->
+        <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; overflow: visible;">
+          <!-- Sombra de contacto en el suelo centrada en (18, 44) -->
+          <ellipse cx="18" cy="44" rx="6" ry="2.2" fill="rgba(15, 23, 42, 0.45)"/>
+          <!-- Diana de precisión en el suelo (18, 44) -->
+          <circle cx="18" cy="44" r="2.2" fill="${strokeColor}"/>
+          <circle cx="18" cy="44" r="0.9" fill="#ffffff"/>
+          <!-- Aguja cónica que apunta exactamente al suelo (18, 43.5) -->
+          <path d="M18 43.5C18 43.5 32 28 32 16.5C32 8.5 25.7 2 18 2C10.3 2 4 8.5 4 16.5C4 28 18 43.5 18 43.5Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="1.8"/>
+          <!-- Centro blanco -->
+          <circle cx="18" cy="16.5" r="10" fill="#FFFFFF"/>
+        </svg>
+
+        <!-- Icono dentro del centro del pin -->
+        <div style="position: absolute; top: 8.5px; left: 10.5px; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 3;">
+          ${iconSvg}
         </div>
       </div>
     `;
@@ -196,8 +208,8 @@ export const NeighborhoodMap = ({
     return L.divIcon({
       className: 'custom-leaflet-pin-wrapper',
       html,
-      iconSize: [34, 56],
-      iconAnchor: [17, 44]
+      iconSize: [36, 44],
+      iconAnchor: [18, 44]
     });
   };
 

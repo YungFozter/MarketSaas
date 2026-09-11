@@ -451,6 +451,36 @@ export const StoreProvider = ({ children }) => {
       localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(safeConfig));
       localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(safeConfig));
     } catch (err) {}
+
+    // Sincronizar INMEDIATAMENTE las coordenadas en la lista de tiendas stores para que el mapa de Vista Vecino se actualice en tiempo real sin desfase
+    const effectiveLat = safeConfig.latitude !== '' && safeConfig.latitude != null ? parseFloat(safeConfig.latitude) : safeConfig.googleMapsCoordinates?.lat;
+    const effectiveLng = safeConfig.longitude !== '' && safeConfig.longitude != null ? parseFloat(safeConfig.longitude) : safeConfig.googleMapsCoordinates?.lng;
+    const validCoords = (typeof effectiveLat === 'number' && !isNaN(effectiveLat) && typeof effectiveLng === 'number' && !isNaN(effectiveLng))
+      ? { lat: effectiveLat, lng: effectiveLng }
+      : null;
+
+    if (validCoords) {
+      setStores(prev => {
+        const found = prev.some(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
+        if (found) {
+          return prev.map(s => {
+            if (s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore) {
+              return {
+                ...s,
+                name: safeConfig.name || s.name,
+                address: safeConfig.address || s.address,
+                tagline: safeConfig.tagline || s.tagline,
+                googleMapsCoordinates: validCoords,
+                isCurrentOwnerStore: true
+              };
+            }
+            return s;
+          });
+        }
+        return prev;
+      });
+    }
+
     if (supabase) {
       const payload = {
         id: tenantSlug,
@@ -466,6 +496,8 @@ export const StoreProvider = ({ children }) => {
         config: safeConfig,
         coupons: safeConfig.coupons || [],
         owner_id: currentUser?.id || merchantStore?.owner_id || null,
+        latitude: validCoords ? validCoords.lat : null,
+        longitude: validCoords ? validCoords.lng : null,
         updated_at: new Date().toISOString()
       };
       supabase.from('store_config').upsert([payload]).then(({ error }) => {
