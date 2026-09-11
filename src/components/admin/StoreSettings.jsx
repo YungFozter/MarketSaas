@@ -38,6 +38,36 @@ const STREET_MAP_ATTRIBUTION = '&copy; Esri &mdash; Street Map';
 const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
 const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
 
+// Helper para obtener coordenadas geográficas de precisión milimétrica en cualquier dispositivo (PC y móvil)
+const getExactLatLng = (mapInstance, containerEl, e) => {
+  if (!mapInstance || !containerEl) return e.latlng;
+  const orig = e.originalEvent;
+  if (!orig) return e.latlng;
+
+  let clientX = null;
+  let clientY = null;
+
+  if (orig.touches && orig.touches.length > 0) {
+    clientX = orig.touches[0].clientX;
+    clientY = orig.touches[0].clientY;
+  } else if (orig.changedTouches && orig.changedTouches.length > 0) {
+    clientX = orig.changedTouches[0].clientX;
+    clientY = orig.changedTouches[0].clientY;
+  } else if (typeof orig.clientX === 'number') {
+    clientX = orig.clientX;
+    clientY = orig.clientY;
+  }
+
+  if (typeof clientX === 'number' && typeof clientY === 'number') {
+    const rect = containerEl.getBoundingClientRect();
+    const containerX = clientX - rect.left;
+    const containerY = clientY - rect.top;
+    return mapInstance.containerPointToLatLng(L.point(containerX, containerY));
+  }
+
+  return e.latlng;
+};
+
 const createStoreMarkerIcon = (storeName) => {
   const label = storeName ? storeName : 'Tu Tienda';
   return L.divIcon({
@@ -47,10 +77,18 @@ const createStoreMarkerIcon = (storeName) => {
         <div style="position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); color: white; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); pointer-events: none; text-align: center; line-height: 1.2;">
           ${label}
         </div>
-        <svg width="36" height="48" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); display: block;">
-          <path d="M18 48C18 48 34 30.5 34 18C34 9.16344 26.8366 2 18 2C9.16344 2 2 9.16344 2 18C2 30.5 18 48 18 48Z" fill="#059669" stroke="#047857" stroke-width="1.5"/>
-          <circle cx="18" cy="18" r="11" fill="#FFFFFF"/>
-          <path d="M13 14h10l1 3.5H12L13 14z M12 17.5v5.5a1 1 0 001 1h10a1 1 0 001-1v-5.5 M16 24v-3h4v3" stroke="#059669" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="36" height="48" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; overflow: visible;">
+          <!-- Sombra de suelo milimétrica en el punto de contacto exacto (18, 48) -->
+          <ellipse cx="18" cy="48" rx="6" ry="2.2" fill="rgba(15, 23, 42, 0.45)"/>
+          <!-- Punto de contacto / diana exacto en (18, 48) -->
+          <circle cx="18" cy="48" r="2.2" fill="#047857"/>
+          <circle cx="18" cy="48" r="0.9" fill="#ffffff"/>
+          <!-- Aguja del pin que apunta directamente a (18, 47.5) -->
+          <path d="M18 47.5C18 47.5 33 30 33 17.5C33 9.2 26.3 2.5 18 2.5C9.7 2.5 3 9.2 3 17.5C3 30 18 47.5 18 47.5Z" fill="#059669" stroke="#047857" stroke-width="1.8"/>
+          <!-- Centro del pin -->
+          <circle cx="18" cy="17.5" r="10" fill="#FFFFFF"/>
+          <!-- Icono de tienda -->
+          <path d="M13 13.5h10l1 3.5H12L13 13.5z M12 17v5.5a1 1 0 001 1h10a1 1 0 001-1V17 M16 23.5v-3h4v3" stroke="#059669" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
     `,
@@ -82,7 +120,8 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
       center: [activeLat, activeLng],
       zoom: hasCoords ? 16 : 14,
       zoomControl: false,
-      attributionControl: true
+      attributionControl: true,
+      tap: false // Desactivar emulación legacy de tap para máxima precisión en móviles táctiles
     });
 
     const streetLayer = L.tileLayer(STREET_MAP_URL, {
@@ -115,8 +154,14 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
 
     // Evento clic / toque en cualquier punto del mapa (PC mouse y teléfono táctil)
     map.on('click', (e) => {
-      const newLat = parseFloat(e.latlng.lat.toFixed(6));
-      const newLng = parseFloat(e.latlng.lng.toFixed(6));
+      // Ignorar clics si se pulsó en un control interactivo
+      if (e.originalEvent?.target?.closest?.('.leaflet-control, button, a')) {
+        return;
+      }
+
+      const exactLatLng = getExactLatLng(map, containerRef.current, e);
+      const newLat = parseFloat(exactLatLng.lat.toFixed(6));
+      const newLng = parseFloat(exactLatLng.lng.toFixed(6));
 
       if (!markerRef.current) {
         // Crear el marcador dinámicamente en el primer toque/clic
@@ -145,12 +190,23 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
 
     mapRef.current = map;
 
+    // Observar cambios de tamaño del contenedor para mantener alineación perfecta
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize({ debounceMoveEnd: true });
+      }
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 250);
 
     return () => {
       clearTimeout(timer);
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -234,7 +290,7 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
 
   return (
     <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
       {/* Banner superior con instrucciones interactivas */}
       <div className="absolute top-3 left-3 right-3 sm:right-auto z-[1000] pointer-events-none">
