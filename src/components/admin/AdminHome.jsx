@@ -309,8 +309,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       paymentMethod: Math.random() > 0.5 ? 'qr' : 'cash',
       cashChangeFor: total > 50 ? 100 : 50,
       status: 'pending',
-      createdAt: new Date().toISOString(),
-      pointsEarned: Math.round(subtotal)
+      createdAt: new Date().toISOString()
     };
 
     createCustomerOrder(newOrder);

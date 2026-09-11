@@ -14,7 +14,7 @@ import {
 import { useStore } from '../../context/StoreContext';
 import './CartDrawer.css';
 
-export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints }) => {
+export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
   const { 
     cart, 
     updateCartQuantity, 
@@ -172,7 +172,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
           {cart.length > 0 && (
             <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50/80 space-y-3">
               
-              {/* Cupón aplicado o botón para canjear puntos */}
+              {/* Cupón aplicado */}
               {appliedCoupon ? (
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-100/70 border border-emerald-300 text-xs">
                   <div className="flex items-center gap-2 text-emerald-900 font-bold">
@@ -212,22 +212,6 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                       Aplicar
                     </button>
                   </div>
-
-                  {storeConfig?.enablePoints !== false && (
-                    <button
-                      onClick={() => {
-                        onClose();
-                        onOpenPoints();
-                      }}
-                      className="w-full text-left flex items-center justify-between p-2 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/80 text-xs text-amber-950 font-bold transition-colors cursor-pointer"
-                    >
-                      <span className="flex items-center gap-1.5 text-[11px]">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        ¿Tienes VeciPuntos? Canjea descuentos
-                      </span>
-                      <span className="text-[11px] font-black text-amber-700 underline">Canjear →</span>
-                    </button>
-                  )}
                 </div>
               )}
 
@@ -281,18 +265,6 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout, onOpenPoints })
                   <span>Total a Pagar</span>
                   <span className="text-xl font-black text-emerald-700">{currency} {cartTotal.toFixed(2)}</span>
                 </div>
-
-                {storeConfig?.enablePoints !== false && cartSubtotal > 0 && (
-                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Con este pedido acumulas:</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black">
-                      +{Math.round(cartSubtotal * (storeConfig?.pointsRatio || 1))} pts
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Botón de Checkout */}

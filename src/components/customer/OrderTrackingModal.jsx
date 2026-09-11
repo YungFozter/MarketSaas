@@ -238,17 +238,6 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                 <span className="text-emerald-700">{currency} {order.total.toFixed(2)}</span>
               </div>
             </div>
-
-            {/* Puntos Ganados */}
-            {order.pointsEarned > 0 && (
-              <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 font-bold">
-                <span className="flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                  VeciPuntos acumulados con esta compra:
-                </span>
-                <span>+{order.pointsEarned} pts</span>
-              </div>
-            )}
           </div>
 
           {/* Botones de Acción */}

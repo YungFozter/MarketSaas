@@ -52,8 +52,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     openNow: false,
     registeredOnly: false,
     acceptsQr: false,
-    topRated: false,
-    hasPoints: false
+    topRated: false
   });
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
@@ -208,7 +207,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       if (activeFilters.registeredOnly && !store.isRegisteredStore) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
       if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
-      if (activeFilters.hasPoints && !store.pointsReward) return false;
 
       return true;
     });
@@ -430,8 +428,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   openNow: false,
                   registeredOnly: false,
                   acceptsQr: false,
-                  topRated: false,
-                  hasPoints: false
+                  topRated: false
                 });
               }}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"

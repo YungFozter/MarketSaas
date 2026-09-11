@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
-export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => {
+export const CustomerFooter = ({ onOpenCart, onOpenRequests }) => {
   const { storeConfig, customerSubView } = useStore();
 
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
@@ -55,16 +55,6 @@ export const CustomerFooter = ({ onOpenCart, onOpenPoints, onOpenRequests }) => 
               >
                 <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Mi Canasta</span>
-              </button>
-            )}
-
-            {onOpenPoints && (
-              <button
-                onClick={onOpenPoints}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>VeciPuntos</span>
               </button>
             )}
 

@@ -175,9 +175,7 @@ export const normalizeOrder = (o) => {
     coupon_code: cCode,
     couponCode: cCode,
     created_at: created,
-    createdAt: created,
-    points_earned: o.points_earned || o.pointsEarned || 0,
-    pointsEarned: o.points_earned || o.pointsEarned || 0
+    createdAt: created
   };
 };
 
@@ -464,7 +462,6 @@ export const StoreProvider = ({ children }) => {
         whatsapp: safeConfig.whatsapp || null,
         is_open: safeConfig.isOpen !== false,
         enable_delivery: safeConfig.enableDelivery === true,
-        enable_points: safeConfig.enablePoints !== false,
         categories: safeConfig.categories || [],
         config: safeConfig,
         coupons: safeConfig.coupons || [],
@@ -549,67 +546,6 @@ export const StoreProvider = ({ children }) => {
     } catch {}
   };
 
-  // 7.1 Puntos de Fidelidad / VeciPuntos del cliente (Oficial)
-  const [veciPoints, setVeciPoints] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_points`);
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  // Consulta saldo oficial de VeciPuntos en Supabase para el vecino y tienda actual
-  const fetchCustomerPoints = async (phoneOverride = null) => {
-    const rawTarget = phoneOverride !== null ? phoneOverride : customerPhone;
-    const cleanTarget = normalizeCustomerPhone(rawTarget);
-    if (!cleanTarget) {
-      setVeciPoints(0);
-      return 0;
-    }
-
-    if (!supabase) {
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
-      const val = saved ? parseInt(saved, 10) : 0;
-      setVeciPoints(val);
-      return val;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('customer_points')
-        .select('*')
-        .eq('tenant_id', tenantSlug)
-        .eq('customer_phone', cleanTarget)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Consulta de puntos en Supabase fallback local:', error.message);
-        const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
-        const val = saved ? parseInt(saved, 10) : 0;
-        setVeciPoints(val);
-        return val;
-      }
-
-      const balance = data?.points_balance != null ? Number(data.points_balance) : 0;
-      setVeciPoints(balance);
-      try {
-        localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(balance));
-        localStorage.setItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`, String(balance));
-      } catch {}
-      return balance;
-    } catch (err) {
-      console.warn('Excepción consultando saldo de puntos:', err);
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_${cleanTarget}_points`);
-      const val = saved ? parseInt(saved, 10) : 0;
-      setVeciPoints(val);
-      return val;
-    }
-  };
-
-  // Carga automática de puntos cuando cambia el número o la tienda
-  useEffect(() => {
-    if (customerPhone) {
-      fetchCustomerPoints(customerPhone);
-    }
-  }, [customerPhone, tenantSlug]);
-
   // 8. Solicitudes de productos (En Modo Demostración inicia con listado de ejemplo; en tiendas registradas con su lista o vacía)
   const [productRequests, setProductRequests] = useState(() => {
     try {
@@ -692,13 +628,29 @@ export const StoreProvider = ({ children }) => {
         const loadedCategories = (Array.isArray(configData.categories) && configData.categories.length > 0)
           ? configData.categories
           : (Array.isArray(storeRecord.categories) && storeRecord.categories.length > 0 ? storeRecord.categories : undefined);
-        setStoreConfigState(prev => ({
-          ...prev,
+
+        const isBadAddress = (addr) => !addr || 
+          addr === 'Direccion según cada Tienda' || 
+          addr === 'Av. Principal entre 2do y 3er Anillo' || 
+          addr === 'Calle 1, Casa 7';
+
+        const rawAddr = storeRecord.address ?? configData.address ?? '';
+        const cleanStoreAddress = isBadAddress(rawAddr) ? '' : rawAddr;
+
+        const resolvedConfig = {
+          ...initialStoreConfig,
           ...configData,
+          address: cleanStoreAddress,
+          zone: storeRecord.zone || configData.zone || '',
+          reference: storeRecord.reference || configData.reference || '',
+          latitude: storeRecord.latitude ?? configData.latitude ?? null,
+          longitude: storeRecord.longitude ?? configData.longitude ?? null,
           ...(loadedCategories ? { categories: loadedCategories } : {}),
           coupons: loadedCoupons,
-          name: storeRecord.name || configData.name
-        }));
+          name: storeRecord.name || configData.name || 'Mi Tienda'
+        };
+
+        setStoreConfigState(resolvedConfig);
         setMerchantStore(storeRecord);
         setTenantSlug(storeRecord.id);
         localStorage.setItem('marketsaas_active_tenant', storeRecord.id);
@@ -734,6 +686,7 @@ export const StoreProvider = ({ children }) => {
       } else {
         setCurrentUser(null);
         setMerchantStore(null);
+        setStoreConfigState(initialStoreConfig);
       }
     });
 
@@ -1053,9 +1006,6 @@ export const StoreProvider = ({ children }) => {
                 acceptsQr: true,
                 hasPickup: true,
                 hasFastDelivery: isDeliveryActive,
-                pointsReward: ((isCurrentOwner && storeConfig?.enablePoints !== undefined)
-                  ? storeConfig.enablePoints
-                  : (conf.enablePoints !== false)) ? '+20 VeciPuntos' : null,
                 category: 'Minimarket Registrado',
                 isFeatured: true,
                 isRegisteredStore: true,
@@ -1174,7 +1124,6 @@ export const StoreProvider = ({ children }) => {
         acceptsQr: true,
         hasPickup: true,
         hasFastDelivery: isDeliveryActive,
-        pointsReward: storeConfig.enablePoints !== false ? '+20 VeciPuntos' : null,
         category: 'Minimarket Registrado',
         isFeatured: true,
         isRegisteredStore: true,
@@ -1270,10 +1219,6 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(orders));
   }, [orders, tenantSlug]);
-
-  useEffect(() => {
-    localStorage.setItem(`marketsaas_${tenantSlug}_points`, veciPoints.toString());
-  }, [veciPoints, tenantSlug]);
 
   useEffect(() => {
     if (tenantSlug && tenantSlug !== 'default') {
@@ -1485,9 +1430,6 @@ export const StoreProvider = ({ children }) => {
     }
 
     const cleanPhone = normalizeCustomerPhone(orderData.phone);
-    const isPointsActive = storeConfig?.enablePoints !== false;
-    const pointsRatio = Number(storeConfig?.pointsRatio) || 10;
-    const earnedPoints = isPointsActive ? Math.round(cartSubtotal * pointsRatio) : 0;
 
     const dbPayload = {
       id: orderId,
@@ -1527,9 +1469,7 @@ export const StoreProvider = ({ children }) => {
       paymentMethod: orderData.paymentMethod,
       cashChangeFor: orderData.cashChangeFor || null,
       couponCode: dbPayload.coupon_code,
-      createdAt: dbPayload.created_at,
-      pointsEarned: earnedPoints,
-      points_earned: earnedPoints
+      createdAt: dbPayload.created_at
     });
 
     // Descontar inventario de forma segura
@@ -1547,43 +1487,6 @@ export const StoreProvider = ({ children }) => {
         return prod;
       })
     );
-
-    // Sumar puntos al cliente si la tienda los tiene habilitados
-    if (isPointsActive && earnedPoints > 0) {
-      setVeciPoints(prev => {
-        const nextVal = (Number(prev) || 0) + earnedPoints;
-        try {
-          localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(nextVal));
-          if (cleanPhone) {
-            localStorage.setItem(`marketsaas_${tenantSlug}_${cleanPhone}_points`, String(nextVal));
-          }
-        } catch {}
-        return nextVal;
-      });
-
-      if (supabase && cleanPhone) {
-        supabase.rpc('adjust_customer_points', {
-          p_tenant_id: tenantSlug,
-          p_customer_phone: cleanPhone,
-          p_customer_name: orderData.name || 'Vecino',
-          p_delta: earnedPoints
-        }).then(({ error }) => {
-          if (error) {
-            console.warn('RPC adjust_customer_points no disponible, guardando en tabla customer_points:', error.message);
-            supabase.from('customer_points').upsert({
-              tenant_id: tenantSlug,
-              customer_phone: cleanPhone,
-              customer_name: orderData.name || 'Vecino',
-              points_balance: earnedPoints,
-              total_earned: earnedPoints,
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'tenant_id,customer_phone' }).then(({ error: upsertErr }) => {
-              if (upsertErr) console.warn('Aviso upsert customer_points:', upsertErr.message);
-            });
-          }
-        });
-      }
-    }
 
     // Si se aplicó un cupón, marcarlo como USADO (1 solo uso) y persistir
     if (appliedCoupon && appliedCoupon.code) {
@@ -2125,8 +2028,7 @@ export const StoreProvider = ({ children }) => {
       deliveryType: 'pickup',
       paymentMethod: paymentType,
       status: 'delivered',
-      createdAt: new Date().toISOString(),
-      pointsEarned: 0
+      createdAt: new Date().toISOString()
     };
 
     setOrders(prev => [posOrder, ...prev]);
@@ -2289,65 +2191,7 @@ export const StoreProvider = ({ children }) => {
     showToast('Petición descartada.', 'info');
   };
 
-  // Canjear VeciPuntos por Cupón (Oficial y Persistente en Supabase)
-  const redeemPoints = async (pointsCost, discountValue, couponName) => {
-    const currency = storeConfig?.currencySymbol || 'Bs.';
 
-    if (storeConfig?.enablePoints === false) {
-      showToast('Esta tienda no tiene activo el programa de VeciPuntos.', 'warning');
-      return false;
-    }
-
-    if (veciPoints < pointsCost) {
-      showToast(`Te faltan ${pointsCost - veciPoints} puntos para canjear este cupón.`, 'error');
-      return false;
-    }
-
-    const cleanPhone = normalizeCustomerPhone(customerPhone);
-    const newBalance = Math.max(0, veciPoints - pointsCost);
-    setVeciPoints(newBalance);
-
-    try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_points`, String(newBalance));
-      if (cleanPhone) {
-        localStorage.setItem(`marketsaas_${tenantSlug}_${cleanPhone}_points`, String(newBalance));
-      }
-    } catch {}
-
-    // Descontar atómicamente en Supabase
-    if (supabase && cleanPhone) {
-      try {
-        const { error } = await supabase.rpc('adjust_customer_points', {
-          p_tenant_id: tenantSlug,
-          p_customer_phone: cleanPhone,
-          p_customer_name: customerName || 'Vecino',
-          p_delta: -pointsCost
-        });
-        if (error) {
-          console.warn('RPC adjust_customer_points no disponible al canjear, actualizando tabla directa:', error.message);
-          await supabase
-            .from('customer_points')
-            .update({
-              points_balance: newBalance,
-              updated_at: new Date().toISOString()
-            })
-            .eq('tenant_id', tenantSlug)
-            .eq('customer_phone', cleanPhone);
-        }
-      } catch (err) {
-        console.warn('Excepción al registrar canje en Supabase:', err);
-      }
-    }
-
-    setAppliedCoupon({
-      code: couponName,
-      discount: discountValue,
-      description: `Descuento de ${currency} ${discountValue.toFixed(2)} por VeciPuntos`
-    });
-    triggerConfetti();
-    showToast(`¡Cupón "${couponName}" canjeado y aplicado a tu carrito!`, 'success');
-    return true;
-  };
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
@@ -2584,7 +2428,6 @@ export const StoreProvider = ({ children }) => {
         signInMerchant,
         createMerchantStore,
         signOutMerchant,
-        tenantSlug,
         viewMode,
         setViewMode,
         customerSubView,
@@ -2611,7 +2454,6 @@ export const StoreProvider = ({ children }) => {
         actualDeliveryFee,
         isFreeDelivery,
         appliedCoupon,
-        redeemPoints,
         applyCouponCode,
         removeCoupon,
         selectedLocation,
@@ -2626,13 +2468,10 @@ export const StoreProvider = ({ children }) => {
         deleteProduct,
         deleteProductsBatch,
         importProductsBatch,
-        veciPoints,
-        setVeciPoints,
         customerPhone,
         setCustomerPhone,
         customerName,
         setCustomerName,
-        fetchCustomerPoints,
         normalizeCustomerPhone,
         productRequests,
         submitProductRequest,

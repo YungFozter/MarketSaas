@@ -113,7 +113,6 @@ export const SpectatorShowcase = ({
   const milkPrice = 8.00;
   const totalCartItems = milkQuantity + breadQuantity;
   const totalCartPrice = (milkQuantity * milkPrice) + (breadQuantity * breadPrice);
-  const totalVeciPoints = (milkQuantity * 8) + (breadQuantity * 5);
 
   // Estado interactivo dentro del simulador de Kanban (Para Comerciantes)
   const [soundActive, setSoundActive] = useState(false);
@@ -263,8 +262,8 @@ export const SpectatorShowcase = ({
                   ✓
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Club de VeciPuntos:</strong>
-                  <span className="text-slate-500 text-xs sm:text-sm">Acumula puntos canjeables en cada compra para obtener descuentos directos en tu tienda favorita. (Puntos disponibles según decisión de cada tienda)</span>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Cupones y Ofertas Barriales:</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm">Aprovecha códigos de descuento y promociones especiales creadas por las tiendas de tu vecindario.</span>
                 </div>
               </div>
 
@@ -428,7 +427,7 @@ export const SpectatorShowcase = ({
                       </span>
                       <div className="text-left">
                         <div className="text-[11px] font-extrabold leading-none">Pedir por WhatsApp</div>
-                        <div className="text-[9px] opacity-90">+{totalVeciPoints} VeciPuntos</div>
+                        <div className="text-[9px] opacity-90">Confirmación directa</div>
                       </div>
                     </div>
                     <span className="text-xs font-black">Bs. {totalCartPrice.toFixed(2)}</span>

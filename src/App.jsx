@@ -9,7 +9,6 @@ import { AdminHome } from './components/admin/AdminHome';
 import { CartDrawer } from './components/customer/CartDrawer';
 import { CheckoutModal } from './components/customer/CheckoutModal';
 import { OrderTrackingModal } from './components/customer/OrderTrackingModal';
-import { LoyaltyPointsModal } from './components/customer/LoyaltyPointsModal';
 import { RequestProductModal } from './components/customer/RequestProductModal';
 import { LocationModal } from './components/customer/LocationModal';
 import { CustomerFooter } from './components/customer/CustomerFooter';
@@ -37,7 +36,6 @@ const AppContent = () => {
   // Estados de Modales
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isPointsOpen, setIsPointsOpen] = useState(false);
   const [isRequestsOpen, setIsRequestsOpen] = useState(false);
   const [requestPreloadName, setRequestPreloadName] = useState('');
   const [isLocationOpen, setIsLocationOpen] = useState(false);
@@ -75,7 +73,6 @@ const AppContent = () => {
       {viewMode !== 'admin' && (
         <Navbar
           onOpenCart={() => setIsCartOpen(true)}
-          onOpenPoints={() => setIsPointsOpen(true)}
           onOpenRequests={() => handleOpenRequests('')}
           onOpenLocationModal={() => setIsLocationOpen(true)}
           onRequestAdminAccess={() => handleOpenAuthModal('login')}
@@ -103,7 +100,6 @@ const AppContent = () => {
           ) : (
             <CustomerHome
               onOpenCart={() => setIsCartOpen(true)}
-              onOpenPoints={() => setIsPointsOpen(true)}
               onOpenRequests={handleOpenRequests}
               onOpenLocationModal={() => setIsLocationOpen(true)}
             />
@@ -117,7 +113,6 @@ const AppContent = () => {
       {viewMode === 'customer' && (
         <CustomerFooter
           onOpenCart={() => setIsCartOpen(true)}
-          onOpenPoints={() => setIsPointsOpen(true)}
           onOpenRequests={() => handleOpenRequests('')}
           onOpenLocationModal={() => setIsLocationOpen(true)}
         />
@@ -128,7 +123,6 @@ const AppContent = () => {
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
         onProceedCheckout={handleOpenCheckout}
-        onOpenPoints={() => setIsPointsOpen(true)}
       />
 
       <CheckoutModal
@@ -142,11 +136,6 @@ const AppContent = () => {
           onClose={() => setIsTrackingModalOpen(false)}
         />
       )}
-
-      <LoyaltyPointsModal
-        isOpen={isPointsOpen}
-        onClose={() => setIsPointsOpen(false)}
-      />
 
       <RequestProductModal
         isOpen={isRequestsOpen}

@@ -108,10 +108,6 @@ export const NeighborhoodMap = ({
       if (activeFilters?.topRated && (store.rating || 0) < 4.8) {
         return false;
       }
-      // 5. Filtro "VeciPuntos"
-      if (activeFilters?.hasPoints && !store.pointsReward) {
-        return false;
-      }
       return true;
     });
   }, [masterStores, activeFilters]);

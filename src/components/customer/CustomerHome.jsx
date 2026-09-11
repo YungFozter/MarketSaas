@@ -8,7 +8,7 @@ import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
 
-export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenLocationModal }) => {
+export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }) => {
   const { 
     products, 
     orders,
@@ -163,7 +163,6 @@ export const CustomerHome = ({ onOpenCart, onOpenPoints, onOpenRequests, onOpenL
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onOpenLocationModal={onOpenLocationModal}
-        onOpenPoints={onOpenPoints}
       />
 
       {/* Banner de Pedido en Curso si existe */}

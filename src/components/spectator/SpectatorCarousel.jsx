@@ -9,7 +9,8 @@ import {
   Building2, 
   ShieldCheck, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Tag
 } from 'lucide-react';
 import './SpectatorCarousel.css';
 
@@ -45,14 +46,14 @@ const SYSTEM_FEATURES = [
     stat: '📱 Directo al chat del comerciante'
   },
   {
-    id: 'points',
-    icon: Sparkles,
+    id: 'coupons',
+    icon: Tag,
     color: 'amber',
-    badge: 'LEALTAD',
-    title: 'Club de VeciPuntos',
-    subtitle: 'Recompensas comunitarias',
-    description: 'Cada compra barrial suma puntos que los residentes pueden acumular y canjear por descuentos automáticos y beneficios exclusivos.',
-    stat: '★ +5% retorno en cada compra'
+    badge: 'PROMOCIONES',
+    title: 'Cupones y Ofertas Exclusivas',
+    subtitle: 'Ahorro directo en tu barrio',
+    description: 'Aprovecha cupones de descuento especiales creados por las tiendas de tu zona para ahorrar en tus compras cotidianas.',
+    stat: '🏷️ Descuentos automáticos al instante'
   },
   {
     id: 'kanban',

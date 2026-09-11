@@ -23,7 +23,6 @@ import './Navbar.css';
 
 export const Navbar = ({ 
   onOpenCart, 
-  onOpenPoints, 
   onOpenRequests, 
   onOpenLocationModal, 
   onRequestAdminAccess, 
@@ -41,7 +40,6 @@ export const Navbar = ({
     cartSubtotal,
     cartSavings, 
     selectedLocation, 
-    veciPoints, 
     storeConfig,
     orders,
     currentUser,
@@ -332,22 +330,6 @@ export const Navbar = ({
                   >
                     <PlusCircle className="w-4 h-4 text-emerald-600" />
                     <span>Pídelo si no está</span>
-                  </button>
-                )}
-
-                {/* VeciPuntos / Fidelidad (Opcional según la tienda) */}
-                {storeConfig.enablePoints !== false && (
-                  <button
-                    onClick={onOpenPoints}
-                    className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-amber-900 transition-all shadow-2xs group"
-                  >
-                    <div className="w-5 h-5 rounded-lg bg-amber-400 text-amber-950 flex items-center justify-center font-black text-[10px] sm:text-xs shadow-2xs group-hover:rotate-12 transition-transform">
-                      ★
-                    </div>
-                    <div className="text-left leading-none hidden xs:block">
-                      <span className="text-[9px] uppercase font-bold text-amber-600 block">Puntos</span>
-                      <span className="text-[11px] sm:text-xs font-extrabold text-amber-950">{veciPoints} pts</span>
-                    </div>
                   </button>
                 )}
 

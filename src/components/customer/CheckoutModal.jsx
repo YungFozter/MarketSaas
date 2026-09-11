@@ -752,7 +752,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
                 {appliedCoupon && (
                   <div className="flex justify-between text-emerald-700 font-bold">
-                    <span>Descuento VeciPuntos:</span>
+                    <span>Descuento cupón:</span>
                     <span>-{currency} {appliedCoupon.discount.toFixed(2)}</span>
                   </div>
                 )}
@@ -766,18 +766,6 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                   <div className="text-[11px] text-amber-900 bg-amber-50 p-2 rounded-lg font-bold flex justify-between">
                     <span>{effectiveDeliveryType === 'pickup' ? 'Vuelto a entregarte en caja:' : 'Vuelto que llevará el repartidor:'}</span>
                     <span>{currency} {changeToReturn}</span>
-                  </div>
-                )}
-
-                {storeConfig.enablePoints !== false && cartSubtotal > 0 && (
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 font-bold">
-                    <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                      <span>VeciPuntos que acumularás:</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-black">
-                      +{Math.round(cartSubtotal * (storeConfig.pointsRatio || 1))} pts
-                    </span>
                   </div>
                 )}
               </div>

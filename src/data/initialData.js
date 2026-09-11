@@ -280,8 +280,6 @@ export const initialStoreConfig = {
   schedule: 'Horarios de Atención según cada Tienda',
   isOpen: true,
   enableDelivery: false,
-  enablePoints: true,
-  pointsRatio: 10, // 10 puntos por cada 1 Bs. gastado
   paymentMethods: [
     { id: 'cash', name: 'Efectivo contra entrega', desc: 'Indica con cuánto pagarás para tu vuelto', icon: 'Banknote', enabled: true },
     { id: 'qr', name: 'Transferencia / QR Digital', desc: 'Pago rápido directo al código QR de la tienda', icon: 'QrCode', enabled: true },
@@ -319,8 +317,7 @@ export const initialOrders = [
     paymentMethod: 'cash',
     cashChangeFor: 50.00,
     status: 'preparing', // 'pending' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled'
-    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    pointsEarned: 360
+    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString()
   },
   {
     id: 'ORD-9820',
@@ -343,8 +340,7 @@ export const initialOrders = [
     deliveryType: 'delivery',
     paymentMethod: 'qr',
     status: 'on_the_way',
-    createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-    pointsEarned: 370
+    createdAt: new Date(Date.now() - 35 * 60 * 1000).toISOString()
   },
   {
     id: 'ORD-9819',
@@ -366,8 +362,7 @@ export const initialOrders = [
     deliveryType: 'pickup',
     paymentMethod: 'card',
     status: 'delivered',
-    createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    pointsEarned: 900
+    createdAt: new Date(Date.now() - 90 * 60 * 1000).toISOString()
   }
 ];
 

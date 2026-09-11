@@ -3,7 +3,7 @@ import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin } fro
 import { useStore } from '../../context/StoreContext';
 import './HeroBanner.css';
 
-export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal, onOpenPoints }) => {
+export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal }) => {
   const { storeConfig, selectedLocation, cartSavings } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 

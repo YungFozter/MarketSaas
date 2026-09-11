@@ -47,13 +47,6 @@ export const StoreCard = ({
               <span>{store.statusBadge || 'Abierto'}</span>
             </div>
 
-            {store.pointsReward && (
-              <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 bg-amber-500 text-white text-[10px] font-extrabold tracking-wider uppercase rounded-full shadow-md">
-                <Sparkles className="w-3 h-3" />
-                <span>{store.pointsReward}</span>
-              </div>
-            )}
-
             {/* Distancia flotante inferior con acceso directo a centrar mapa */}
             <button
               type="button"

@@ -4,7 +4,6 @@ import {
   ArrowRight, 
   QrCode, 
   Star, 
-  Gift,
   CheckCircle2,
   Store
 } from 'lucide-react';
@@ -46,13 +45,6 @@ export const StoreSearchBar = ({
       icon: <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />,
       activeClass: 'filter-pill-active',
       baseClass: 'filter-pill-glass'
-    },
-    {
-      id: 'hasPoints',
-      label: 'Club VeciPuntos',
-      icon: <Gift className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />,
-      activeClass: 'filter-pill-active-amber',
-      baseClass: 'filter-pill-amber'
     }
   ];
 

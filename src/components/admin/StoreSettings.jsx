@@ -39,23 +39,23 @@ const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/Worl
 const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
 
 const createStoreMarkerIcon = (storeName) => {
+  const label = storeName ? storeName : 'Tu Tienda';
   return L.divIcon({
     className: 'custom-location-picker-pin',
     html: `
-      <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); pointer-events: auto; cursor: grab;">
-        <div style="position: relative; width: 42px; height: 42px; border-radius: 50%; background: #059669; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.35); border: 3px solid white; z-index: 2;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
-            <circle cx="12" cy="10" r="3"></circle>
-          </svg>
+      <div style="position: relative; width: 36px; height: 48px; pointer-events: auto; cursor: grab;">
+        <div style="position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); color: white; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); pointer-events: none; text-align: center; line-height: 1.2;">
+          ${label}
         </div>
-        <div style="margin-top: 4px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); color: white; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 9999px; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); z-index: 3;">
-          ${storeName ? storeName : 'Tu Tienda'}
-        </div>
+        <svg width="36" height="48" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); display: block;">
+          <path d="M18 48C18 48 34 30.5 34 18C34 9.16344 26.8366 2 18 2C9.16344 2 2 9.16344 2 18C2 30.5 18 48 18 48Z" fill="#059669" stroke="#047857" stroke-width="1.5"/>
+          <circle cx="18" cy="18" r="11" fill="#FFFFFF"/>
+          <path d="M13 14h10l1 3.5H12L13 14z M12 17.5v5.5a1 1 0 001 1h10a1 1 0 001-1v-5.5 M16 24v-3h4v3" stroke="#059669" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
     `,
-    iconSize: [42, 65],
-    iconAnchor: [21, 65]
+    iconSize: [36, 48],
+    iconAnchor: [18, 48]
   });
 };
 
@@ -66,16 +66,21 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
   const tileLayerRef = useRef(null);
   const [mapType, setMapType] = useState('map');
 
-  const validLat = typeof latitude === 'number' && !isNaN(latitude) && latitude !== 0 ? latitude : -17.78335;
-  const validLng = typeof longitude === 'number' && !isNaN(longitude) && longitude !== 0 ? longitude : -63.18214;
+  const hasCoords = typeof latitude === 'number' && !isNaN(latitude) && latitude !== 0 &&
+                    typeof longitude === 'number' && !isNaN(longitude) && longitude !== 0;
+
+  const [hasMarker, setHasMarker] = useState(hasCoords);
+
+  const activeLat = hasCoords ? latitude : -17.78335;
+  const activeLng = hasCoords ? longitude : -63.18214;
 
   // 1. Inicializar mapa Leaflet
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center: [validLat, validLng],
-      zoom: 16,
+      center: [activeLat, activeLng],
+      zoom: hasCoords ? 16 : 14,
       zoomControl: false,
       attributionControl: true
     });
@@ -88,31 +93,56 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
 
     tileLayerRef.current = streetLayer;
 
-    // Crear marcador inicial interactivo
-    const icon = createStoreMarkerIcon(storeName);
-    const marker = L.marker([validLat, validLng], {
-      icon,
-      draggable: true,
-      autoPan: true
-    }).addTo(map);
+    // Solo crear marcador inicial si la tienda YA TIENE coordenadas guardadas
+    if (hasCoords) {
+      const icon = createStoreMarkerIcon(storeName);
+      const marker = L.marker([latitude, longitude], {
+        icon,
+        draggable: true,
+        autoPan: true
+      }).addTo(map);
 
-    // Evento arrastre del marcador
-    marker.on('dragend', (e) => {
-      const pos = e.target.getLatLng();
-      const newLat = parseFloat(pos.lat.toFixed(6));
-      const newLng = parseFloat(pos.lng.toFixed(6));
-      if (onChange) onChange(newLat, newLng);
-    });
+      marker.on('dragend', (e) => {
+        const pos = e.target.getLatLng();
+        const newLat = parseFloat(pos.lat.toFixed(6));
+        const newLng = parseFloat(pos.lng.toFixed(6));
+        if (onChange) onChange(newLat, newLng);
+      });
+
+      markerRef.current = marker;
+      setHasMarker(true);
+    }
 
     // Evento clic / toque en cualquier punto del mapa (PC mouse y teléfono táctil)
     map.on('click', (e) => {
       const newLat = parseFloat(e.latlng.lat.toFixed(6));
       const newLng = parseFloat(e.latlng.lng.toFixed(6));
-      marker.setLatLng([newLat, newLng]);
+
+      if (!markerRef.current) {
+        // Crear el marcador dinámicamente en el primer toque/clic
+        const icon = createStoreMarkerIcon(storeName);
+        const marker = L.marker([newLat, newLng], {
+          icon,
+          draggable: true,
+          autoPan: true
+        }).addTo(map);
+
+        marker.on('dragend', (de) => {
+          const pos = de.target.getLatLng();
+          const dragLat = parseFloat(pos.lat.toFixed(6));
+          const dragLng = parseFloat(pos.lng.toFixed(6));
+          if (onChange) onChange(dragLat, dragLng);
+        });
+
+        markerRef.current = marker;
+        setHasMarker(true);
+      } else {
+        markerRef.current.setLatLng([newLat, newLng]);
+      }
+
       if (onChange) onChange(newLat, newLng);
     });
 
-    markerRef.current = marker;
     mapRef.current = map;
 
     const timer = setTimeout(() => {
@@ -141,21 +171,42 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
     tileLayerRef.current = newLayer;
   }, [mapType]);
 
-  // 3. Sincronizar marcador si cambian las coordenadas externas
+  // 3. Sincronizar marcador si cambian las coordenadas externas (GPS o entrada manual)
   useEffect(() => {
     const map = mapRef.current;
-    const marker = markerRef.current;
-    if (!map || !marker) return;
+    if (!map) return;
 
-    const currentPos = marker.getLatLng();
-    const diffLat = Math.abs(currentPos.lat - validLat);
-    const diffLng = Math.abs(currentPos.lng - validLng);
+    if (hasCoords) {
+      if (!markerRef.current) {
+        const icon = createStoreMarkerIcon(storeName);
+        const marker = L.marker([latitude, longitude], {
+          icon,
+          draggable: true,
+          autoPan: true
+        }).addTo(map);
 
-    if (diffLat > 0.00001 || diffLng > 0.00001) {
-      marker.setLatLng([validLat, validLng]);
-      map.panTo([validLat, validLng]);
+        marker.on('dragend', (e) => {
+          const pos = e.target.getLatLng();
+          const newLat = parseFloat(pos.lat.toFixed(6));
+          const newLng = parseFloat(pos.lng.toFixed(6));
+          if (onChange) onChange(newLat, newLng);
+        });
+
+        markerRef.current = marker;
+        setHasMarker(true);
+        map.setView([latitude, longitude], 16);
+      } else {
+        const currentPos = markerRef.current.getLatLng();
+        const diffLat = Math.abs(currentPos.lat - latitude);
+        const diffLng = Math.abs(currentPos.lng - longitude);
+
+        if (diffLat > 0.00001 || diffLng > 0.00001) {
+          markerRef.current.setLatLng([latitude, longitude]);
+          map.panTo([latitude, longitude]);
+        }
+      }
     }
-  }, [validLat, validLng]);
+  }, [latitude, longitude, hasCoords]);
 
   // 4. Actualizar etiqueta del marcador si cambia el nombre de la tienda
   useEffect(() => {
@@ -168,6 +219,8 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
     if (mapRef.current && markerRef.current) {
       const pos = markerRef.current.getLatLng();
       mapRef.current.setView(pos, 16);
+    } else if (mapRef.current) {
+      mapRef.current.setView([activeLat, activeLng], 14);
     }
   };
 
@@ -190,7 +243,15 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
             <MapPin className="w-3.5 h-3.5" />
           </div>
           <p className="text-[11px] font-semibold leading-tight text-slate-200">
-            <span className="text-emerald-400 font-bold">¡Toca o haz clic en el mapa!</span> Coloca o arrastra el marcador exactamente donde está tu tienda.
+            {hasMarker ? (
+              <>
+                <span className="text-emerald-400 font-bold">¡Ubicación fijada!</span> Puedes arrastrar el pin o tocar en otro lugar para moverlo con precisión.
+              </>
+            ) : (
+              <>
+                <span className="text-amber-400 font-bold">¡Toca en el mapa!</span> Haz clic o pulsa con el dedo en cualquier punto para colocar el marcador de tu tienda.
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -222,7 +283,7 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
           type="button"
           onClick={handleCenterOnMarker}
           className="w-8 h-8 rounded-xl bg-white/95 hover:bg-white text-slate-700 hover:text-emerald-600 backdrop-blur-md flex items-center justify-center shadow-md border border-slate-200 transition-colors cursor-pointer"
-          title="Centrar en el marcador de la tienda"
+          title={hasMarker ? "Centrar en el marcador de la tienda" : "Centrar mapa"}
         >
           <Crosshair className="w-4 h-4" />
         </button>
@@ -248,11 +309,20 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
         </div>
       </div>
 
-      {/* Chip inferior con coordenadas activas */}
+      {/* Chip inferior con coordenadas activas o estado */}
       <div className="absolute bottom-3 left-3 z-[1000] pointer-events-auto">
         <div className="bg-slate-900/90 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl border border-slate-700/80 shadow-md flex items-center gap-2 text-[11px] font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-          <span>{validLat.toFixed(6)}, {validLng.toFixed(6)}</span>
+          {hasMarker && hasCoords ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span>{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+              <span className="text-amber-200">Sin pin colocado &mdash; Toca el mapa</span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -297,9 +367,18 @@ const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) =>
 export const StoreSettings = () => {
   const { storeConfig, setStoreConfig, showToast } = useStore();
 
-  const cleanInitialAddress = (storeConfig?.address && storeConfig.address !== 'Direccion según cada Tienda')
-    ? storeConfig.address
-    : '';
+  const isInvalidAddress = (addr) => !addr || 
+    addr === 'Direccion según cada Tienda' || 
+    addr === 'Av. Principal entre 2do y 3er Anillo' || 
+    addr === 'Calle 1, Casa 7';
+
+  const cleanInitialAddress = isInvalidAddress(storeConfig?.address) ? '' : storeConfig.address;
+  const initialLat = (storeConfig?.latitude !== undefined && storeConfig?.latitude !== null && storeConfig?.latitude !== '') 
+    ? storeConfig.latitude 
+    : (storeConfig?.googleMapsCoordinates?.lat ?? '');
+  const initialLng = (storeConfig?.longitude !== undefined && storeConfig?.longitude !== null && storeConfig?.longitude !== '') 
+    ? storeConfig.longitude 
+    : (storeConfig?.googleMapsCoordinates?.lng ?? '');
 
   const [form, setForm] = useState({ 
     currencySymbol: 'Bs.',
@@ -317,11 +396,11 @@ export const StoreSettings = () => {
       'Snacks & Golosinas',
       'Limpieza & Hogar'
     ],
+    ...storeConfig,
     zone: storeConfig?.zone || storeConfig?.condominium || '',
     reference: storeConfig?.reference || '',
-    latitude: storeConfig?.googleMapsCoordinates?.lat ?? storeConfig?.latitude ?? -17.78335,
-    longitude: storeConfig?.googleMapsCoordinates?.lng ?? storeConfig?.longitude ?? -63.18214,
-    ...storeConfig,
+    latitude: initialLat,
+    longitude: initialLng,
     coupons: Array.isArray(storeConfig?.coupons)
       ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
       : [],
@@ -331,15 +410,26 @@ export const StoreSettings = () => {
   // Sincronizar formulario reactivamente cuando storeConfig se cargue desde Supabase o localStorage
   useEffect(() => {
     if (storeConfig) {
+      const isBadAddr = !storeConfig.address || 
+        storeConfig.address === 'Direccion según cada Tienda' || 
+        storeConfig.address === 'Av. Principal entre 2do y 3er Anillo' || 
+        storeConfig.address === 'Calle 1, Casa 7';
+
       setForm(prev => ({
         ...prev,
         ...storeConfig,
         coupons: Array.isArray(storeConfig.coupons)
           ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : [],
-        address: (storeConfig.address && storeConfig.address !== 'Direccion según cada Tienda')
-          ? storeConfig.address
-          : prev.address
+        address: isBadAddr ? '' : storeConfig.address,
+        zone: storeConfig.zone || storeConfig.condominium || '',
+        reference: storeConfig.reference || '',
+        latitude: (storeConfig.latitude !== undefined && storeConfig.latitude !== null && storeConfig.latitude !== '')
+          ? storeConfig.latitude
+          : (storeConfig.googleMapsCoordinates?.lat ?? ''),
+        longitude: (storeConfig.longitude !== undefined && storeConfig.longitude !== null && storeConfig.longitude !== '')
+          ? storeConfig.longitude
+          : (storeConfig.googleMapsCoordinates?.lng ?? '')
       }));
     }
   }, [storeConfig]);
@@ -415,8 +505,12 @@ export const StoreSettings = () => {
   const handleSave = (e) => {
     e.preventDefault();
     const { adminPassword, admin_pin, ...safeConfig } = form;
-    const lat = parseFloat(form.latitude) || -17.78335;
-    const lng = parseFloat(form.longitude) || -63.18214;
+    const hasValidCoords = form.latitude !== '' && form.latitude !== null && form.latitude !== undefined &&
+      form.longitude !== '' && form.longitude !== null && form.longitude !== undefined &&
+      !isNaN(parseFloat(form.latitude)) && !isNaN(parseFloat(form.longitude));
+
+    const lat = hasValidCoords ? parseFloat(form.latitude) : null;
+    const lng = hasValidCoords ? parseFloat(form.longitude) : null;
     const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     const configToSave = {
       ...safeConfig,
@@ -424,7 +518,7 @@ export const StoreSettings = () => {
       address: form.address || '',
       zone: form.zone || '',
       reference: form.reference || '',
-      googleMapsCoordinates: { lat, lng },
+      googleMapsCoordinates: hasValidCoords ? { lat, lng } : null,
       latitude: lat,
       longitude: lng,
       isRegisteredStore: true
@@ -754,25 +848,6 @@ export const StoreSettings = () => {
           </button>
         </div>
 
-        {/* Switch Programa de Puntos de Fidelidad */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-          <div>
-            <p className="font-bold text-xs sm:text-sm text-slate-900">Programa de VeciPuntos (Fidelidad)</p>
-            <p className="text-[11px] text-slate-500">
-              {form.enablePoints !== false ? 'Tus clientes acumularán puntos en sus compras para canjear descuentos.' : 'Programa de puntos desactivado para los clientes de tu tienda.'}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setForm(prev => ({ ...prev, enablePoints: prev.enablePoints === false ? true : false }))}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-              form.enablePoints !== false ? 'bg-amber-500 text-slate-950 shadow-md' : 'bg-slate-300 text-slate-700'
-            }`}
-          >
-            {form.enablePoints !== false ? '★ ACTIVADO' : '☆ DESACTIVADO'}
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Tienda / Local *</label>
@@ -914,15 +989,21 @@ export const StoreSettings = () => {
               </p>
             </div>
 
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${form.latitude},${form.longitude}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
-            >
-              <span>Abrir en Google Maps</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+            {form.latitude && form.longitude ? (
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${form.latitude},${form.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+              >
+                <span>Abrir en Google Maps</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            ) : (
+              <span className="text-[11px] font-medium text-slate-400 italic">
+                Ubicación no fijada aún
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -931,13 +1012,14 @@ export const StoreSettings = () => {
               <input
                 type="number"
                 step="0.000001"
-                value={form.latitude}
+                placeholder="Ej. -17.783350"
+                value={form.latitude ?? ''}
                 onChange={(e) => {
-                  const val = parseFloat(e.target.value) || 0;
+                  const val = e.target.value === '' ? '' : parseFloat(e.target.value);
                   setForm(prev => ({
                     ...prev,
                     latitude: val,
-                    googleMapsCoordinates: { lat: val, lng: parseFloat(prev.longitude) || -63.18214 }
+                    googleMapsCoordinates: val !== '' && prev.longitude !== '' ? { lat: Number(val), lng: Number(prev.longitude) } : null
                   }));
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
@@ -949,13 +1031,14 @@ export const StoreSettings = () => {
               <input
                 type="number"
                 step="0.000001"
-                value={form.longitude}
+                placeholder="Ej. -63.182140"
+                value={form.longitude ?? ''}
                 onChange={(e) => {
-                  const val = parseFloat(e.target.value) || 0;
+                  const val = e.target.value === '' ? '' : parseFloat(e.target.value);
                   setForm(prev => ({
                     ...prev,
                     longitude: val,
-                    googleMapsCoordinates: { lat: parseFloat(prev.latitude) || -17.78335, lng: val }
+                    googleMapsCoordinates: prev.latitude !== '' && val !== '' ? { lat: Number(prev.latitude), lng: Number(val) } : null
                   }));
                 }}
                 className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono bg-white"
@@ -967,15 +1050,17 @@ export const StoreSettings = () => {
           <div className="space-y-2 pt-2">
             <div className="flex items-center justify-between text-[11px] text-slate-500">
               <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <CheckCircle2 className={`w-3.5 h-3.5 ${form.latitude && form.longitude ? 'text-emerald-600' : 'text-slate-400'}`} />
                 <span>Mapa Interactivo de Fijación de Ubicación:</span>
               </span>
-              <span className="font-mono font-bold text-slate-700">{form.latitude}, {form.longitude}</span>
+              <span className="font-mono font-bold text-slate-700">
+                {form.latitude && form.longitude ? `${Number(form.latitude).toFixed(6)}, ${Number(form.longitude).toFixed(6)}` : 'Sin fijar'}
+              </span>
             </div>
 
             <StoreLocationPickerMap
-              latitude={parseFloat(form.latitude) || -17.78335}
-              longitude={parseFloat(form.longitude) || -63.18214}
+              latitude={form.latitude !== '' && form.latitude !== null && form.latitude !== undefined && !isNaN(Number(form.latitude)) ? Number(form.latitude) : null}
+              longitude={form.longitude !== '' && form.longitude !== null && form.longitude !== undefined && !isNaN(Number(form.longitude)) ? Number(form.longitude) : null}
               storeName={form.name || 'Mi Tienda'}
               onChange={(newLat, newLng) => {
                 setForm(prev => ({
