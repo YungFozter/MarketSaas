@@ -98,11 +98,13 @@ const createStoreMarkerIcon = (storeName) => {
 };
 
 const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) => {
+  const { showToast } = useStore();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const tileLayerRef = useRef(null);
   const [mapType, setMapType] = useState('map');
+  const [isLocating, setIsLocating] = useState(false);
 
   const hasCoords = typeof latitude === 'number' && !isNaN(latitude) && latitude !== 0 &&
                     typeof longitude === 'number' && !isNaN(longitude) && longitude !== 0;
@@ -271,6 +273,85 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
     }
   }, [storeName]);
 
+  // 5. Geolocalización directa del dispositivo (Botón Mi Ubicación)
+  const handleGetDeviceLocation = (e) => {
+    if (e) e.stopPropagation();
+
+    if (!navigator.geolocation) {
+      if (showToast) showToast('Tu dispositivo no admite geolocalización GPS.', 'warning');
+      return;
+    }
+
+    setIsLocating(true);
+
+    const onLocationSuccess = (position) => {
+      setIsLocating(false);
+      const { latitude: posLat, longitude: posLng } = position.coords;
+      if (typeof posLat !== 'number' || typeof posLng !== 'number' || isNaN(posLat) || isNaN(posLng)) {
+        if (showToast) showToast('Coordenadas GPS no válidas.', 'warning');
+        return;
+      }
+
+      const newLat = parseFloat(posLat.toFixed(6));
+      const newLng = parseFloat(posLng.toFixed(6));
+
+      const map = mapRef.current;
+      if (map) {
+        if (!markerRef.current) {
+          const icon = createStoreMarkerIcon(storeName);
+          const marker = L.marker([newLat, newLng], {
+            icon,
+            draggable: true,
+            autoPan: true
+          }).addTo(map);
+
+          marker.on('dragend', (de) => {
+            const pos = de.target.getLatLng();
+            const dragLat = parseFloat(pos.lat.toFixed(6));
+            const dragLng = parseFloat(pos.lng.toFixed(6));
+            if (onChange) onChange(dragLat, dragLng);
+          });
+
+          markerRef.current = marker;
+          setHasMarker(true);
+        } else {
+          markerRef.current.setLatLng([newLat, newLng]);
+        }
+
+        map.setView([newLat, newLng], 16);
+      }
+
+      if (onChange) onChange(newLat, newLng);
+      if (showToast) showToast(`📍 Ubicación GPS detectada con éxito (${newLat}, ${newLng})`, 'success');
+    };
+
+    const onLocationError = (error) => {
+      // Fallback con baja precisión para interiores o conexiones celulares
+      navigator.geolocation.getCurrentPosition(
+        onLocationSuccess,
+        (fallbackErr) => {
+          setIsLocating(false);
+          let errorMsg = 'No se pudo obtener la ubicación GPS.';
+          if (fallbackErr.code === 1) {
+            errorMsg = 'Permiso denegado. Permite el acceso a la ubicación en tu navegador.';
+          } else if (fallbackErr.code === 2) {
+            errorMsg = 'Señal GPS no disponible.';
+          } else if (fallbackErr.code === 3) {
+            errorMsg = 'Tiempo de espera agotado al conectar con el GPS.';
+          }
+          if (showToast) showToast(errorMsg, 'warning');
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+      );
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      onLocationSuccess,
+      onLocationError,
+      { enableHighAccuracy: true, timeout: 7000, maximumAge: 30000 }
+    );
+  };
+
   const handleCenterOnMarker = () => {
     if (mapRef.current && markerRef.current) {
       const pos = markerRef.current.getLatLng();
@@ -292,27 +373,48 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
     <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
-      {/* Banner superior con instrucciones interactivas */}
-      <div className="absolute top-3 left-3 right-3 sm:right-auto z-[1000] pointer-events-none">
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-xl shadow-lg border border-slate-700/80 flex items-center gap-2 max-w-md pointer-events-auto">
-          <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <MapPin className="w-3.5 h-3.5" />
-          </div>
-          <p className="text-[11px] font-semibold leading-tight text-slate-200">
-            {hasMarker ? (
-              <>
-                <span className="text-emerald-400 font-bold">¡Ubicación fijada!</span> Puedes arrastrar el pin o tocar en otro lugar para moverlo con precisión.
-              </>
-            ) : (
-              <>
-                <span className="text-amber-400 font-bold">¡Toca en el mapa!</span> Haz clic o pulsa con el dedo en cualquier punto para colocar el marcador de tu tienda.
-              </>
-            )}
-          </p>
+      {/* 1. Botón "Mi Ubicación" (Superior Izquierda, idéntico al mapa de Vista Vecino) */}
+      <div className="absolute top-3 left-3 z-[1000] pointer-events-auto">
+        <button
+          type="button"
+          onClick={handleGetDeviceLocation}
+          disabled={isLocating}
+          className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+            isLocating
+              ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/50 shadow-blue-600/25'
+              : hasMarker && hasCoords
+                ? 'bg-white/95 hover:bg-white text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30 active:scale-95'
+                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg active:scale-95'
+          }`}
+          title="Detectar mi ubicación GPS actual y colocar el marcador de la tienda"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-white' : hasMarker && hasCoords ? 'text-blue-600' : 'text-slate-600'}`} />
+          <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicación'}</span>
+          {hasMarker && hasCoords && !isLocating && (
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          )}
+        </button>
+      </div>
+
+      {/* 2. Card de Coordenadas del Mapa (Superior Derecha, optimizada para móvil y escritorio) */}
+      <div className="absolute top-3 right-3 z-[1000] pointer-events-auto max-w-[50%] xs:max-w-[55%] sm:max-w-none">
+        <div className="bg-slate-900/95 backdrop-blur-md text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-700/80 shadow-md flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-mono">
+          {hasMarker && hasCoords ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="font-bold text-emerald-400 font-sans hidden sm:inline">GPS:</span>
+              <span className="truncate">{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+              <span className="text-amber-200 font-sans font-medium text-[10px] sm:text-xs truncate">Toca para fijar</span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Controles de mapa, satélite y zoom */}
+      {/* 3. Controles de mapa, satélite y zoom (Inferior Derecha) */}
       <div className="absolute bottom-3 right-3 z-[1000] flex items-center gap-2 pointer-events-auto">
         <div className="flex items-center bg-white/95 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200">
           <button
@@ -362,23 +464,6 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
           >
             <Minus className="w-4 h-4" />
           </button>
-        </div>
-      </div>
-
-      {/* Chip inferior con coordenadas activas o estado */}
-      <div className="absolute bottom-3 left-3 z-[1000] pointer-events-auto">
-        <div className="bg-slate-900/90 backdrop-blur-md text-white px-2.5 py-1.5 rounded-xl border border-slate-700/80 shadow-md flex items-center gap-2 text-[11px] font-mono">
-          {hasMarker && hasCoords ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span>{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
-            </>
-          ) : (
-            <>
-              <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-              <span className="text-amber-200">Sin pin colocado &mdash; Toca el mapa</span>
-            </>
-          )}
         </div>
       </div>
     </div>
