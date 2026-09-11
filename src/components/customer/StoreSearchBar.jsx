@@ -5,7 +5,8 @@ import {
   QrCode, 
   Star, 
   CheckCircle2,
-  Store
+  Store,
+  MapPin
 } from 'lucide-react';
 import './StoreSearchBar.css';
 
@@ -24,6 +25,13 @@ export const StoreSearchBar = ({
       pulse: true,
       activeClass: 'filter-pill-active-emerald',
       baseClass: 'filter-pill-emerald'
+    },
+    {
+      id: 'within5km',
+      label: 'Radio 3-5 km',
+      icon: <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />,
+      activeClass: 'filter-pill-active-emerald',
+      baseClass: 'filter-pill-glass'
     },
     {
       id: 'registeredOnly',

@@ -171,111 +171,198 @@ export const StoreCard = ({
 
   // Variante Compacta (Secundaria: Otros Minimarkets del Vecindario)
   return (
-    <article className="store-card-compact bg-white rounded-2xl shadow-xs hover:shadow-md border border-slate-200/80 p-3.5 sm:p-4 flex flex-col justify-between transition-all duration-200 group w-full min-w-0 overflow-hidden">
-      <div className="min-w-0">
-        {/* Cabecera con foto de portada y distancia */}
-        <div className="relative h-28 sm:h-32 w-full rounded-xl overflow-hidden mb-2.5 shrink-0">
+    <article className="store-card-compact bg-white rounded-2xl shadow-xs hover:shadow-md border border-slate-200/80 transition-all duration-200 group w-full min-w-0 overflow-hidden hover:border-emerald-300">
+      {/* 1. VISTA MÓVIL (< 640px): Fila Horizontal Compacta y Ligera (~85px) */}
+      <div 
+        className="flex sm:hidden items-center gap-3 p-2.5 w-full min-w-0 cursor-pointer active:bg-slate-50 transition-colors"
+        onClick={() => onSelect(store.slug)}
+      >
+        {/* Miniatura cuadrada con estado y distancia */}
+        <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden shadow-xs bg-slate-100">
           <img 
             src={store.imageUrl} 
             alt={store.name} 
-            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
           
-          {/* Estado de apertura */}
-          <div className="absolute top-2 left-2 px-2 py-0.5 bg-slate-900/85 backdrop-blur-sm rounded-full text-white text-[9px] sm:text-[10px] font-bold uppercase">
-            {store.statusBadge || 'Abierto'}
-          </div>
+          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-slate-950/85 backdrop-blur-xs rounded text-white text-[8px] font-extrabold uppercase">
+            {store.statusBadge || (store.isOpen !== false ? 'Abierto' : 'Cerrado')}
+          </span>
 
-          {/* Badge superior opcional */}
-          {(badgeLabel || store.badgeLabel) && (
-            <div className="absolute top-2 right-2 px-2 py-0.5 bg-blue-600/90 backdrop-blur-sm rounded-full text-white text-[9px] font-bold uppercase shadow-xs">
-              {badgeLabel || store.badgeLabel}
-            </div>
-          )}
-
-          {/* Distancia exacta con botón interactivo */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               if (onViewOnMap) onViewOnMap(store.slug);
             }}
-            className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-slate-950/85 hover:bg-emerald-950/95 backdrop-blur-sm rounded-lg text-white text-[11px] font-bold drop-shadow cursor-pointer border border-white/15 transition-colors"
-            title="Centrar y ver en el mapa interactivo"
+            className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-slate-950/90 backdrop-blur-xs rounded text-emerald-300 text-[9px] font-bold flex items-center gap-0.5 border border-white/10"
+            title="Centrar en mapa"
           >
-            <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+            <MapPin className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
             <span>{store.distance}</span>
           </button>
         </div>
 
-        {/* Info, Calificación por Estrellas y Volumen de Pedidos */}
-        <div className="flex items-start justify-between gap-2 min-w-0">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
-                {store.name}
-              </h3>
-              {store.isRegisteredStore ? (
-                <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
-                  <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700 shrink-0" />
-                  <span>Registrada</span>
-                </span>
-              ) : store.isVerified ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Verificada" />
-              ) : null}
-            </div>
-            
-            <div className="flex items-center gap-2 mt-1 text-xs min-w-0">
-              <span className="flex items-center text-amber-600 font-bold shrink-0">
-                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-0.5 shrink-0" />
-                <span>{store.rating || 4.7}</span>
-              </span>
-              <span className="text-slate-400 truncate text-[11px]">
-                ({store.reviewsCount || store.ordersCount || 50} pedidos)
-              </span>
-            </div>
+        {/* Info Central */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h4 className="text-sm font-bold text-slate-900 truncate leading-snug">
+              {store.name}
+            </h4>
+            {store.isRegisteredStore ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Registrada" />
+            ) : store.isVerified ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Verificada" />
+            ) : null}
           </div>
 
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
-            <ShoppingBag className="w-4 h-4" />
+          <div className="flex items-center gap-2 mt-0.5 text-[11px] min-w-0">
+            <span className="flex items-center text-amber-600 font-extrabold shrink-0">
+              <Star className="w-3 h-3 fill-amber-500 text-amber-500 mr-0.5" />
+              <span>{store.rating || 4.7}</span>
+            </span>
+            <span className="text-slate-400 truncate text-[10px]">
+              ({store.reviewsCount || store.ordersCount || 50} pedidos)
+            </span>
+          </div>
+
+          {/* Métodos de Pago y Entrega (Micro Pills en Móvil) */}
+          <div className="flex items-center gap-1 mt-1 text-[9px] font-bold flex-wrap min-w-0">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/70">
+              📱 QR
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/70">
+              🛍️ Retiro
+            </span>
+            {store.hasFastDelivery ? (
+              <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200/70">
+                🛵 Delivery
+              </span>
+            ) : (
+              <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/70">
+                📍 En local
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Métodos de Pago y Modalidades Aceptadas (QR Simple, Retiro en caja, Delivery propio) */}
-        <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 min-w-0 text-[10px] font-bold">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80">
-            <span>📱</span>
-            <span>QR Simple</span>
-          </span>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200/80">
-            <span>🛍️</span>
-            <span>Retiro en caja</span>
-          </span>
-          {store.hasFastDelivery ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/80">
-              <span>🛵</span>
-              <span>Delivery propio</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
-              <span>📍</span>
-              <span>Solo Retiro</span>
-            </span>
-          )}
+        {/* Flecha táctil de acceso directo */}
+        <div className="shrink-0 pl-1">
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 group-hover:bg-emerald-600 text-emerald-700 group-hover:text-white flex items-center justify-center transition-all shadow-2xs">
+            <ArrowRight className="w-4 h-4 shrink-0" />
+          </div>
         </div>
       </div>
 
-      {/* Botón Ver Catálogo */}
-      <button
-        type="button"
-        onClick={() => onSelect(store.slug)}
-        className="mt-3.5 w-full h-9 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98 min-w-0"
-      >
-        <span>Ver Catálogo</span>
-        <ArrowRight className="w-3.5 h-3.5 shrink-0" />
-      </button>
+      {/* 2. VISTA TABLET & ESCRITORIO (>= 640px): Tarjeta Estructurada Completa */}
+      <div className="hidden sm:flex flex-col justify-between p-3.5 sm:p-4 h-full min-w-0">
+        <div className="min-w-0">
+          {/* Cabecera con foto de portada y distancia */}
+          <div className="relative h-28 sm:h-32 w-full rounded-xl overflow-hidden mb-2.5 shrink-0">
+            <img 
+              src={store.imageUrl} 
+              alt={store.name} 
+              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-transparent to-transparent" />
+            
+            {/* Estado de apertura */}
+            <div className="absolute top-2 left-2 px-2 py-0.5 bg-slate-900/85 backdrop-blur-sm rounded-full text-white text-[9px] sm:text-[10px] font-bold uppercase">
+              {store.statusBadge || 'Abierto'}
+            </div>
+
+            {/* Badge superior opcional */}
+            {(badgeLabel || store.badgeLabel) && (
+              <div className="absolute top-2 right-2 px-2 py-0.5 bg-blue-600/90 backdrop-blur-sm rounded-full text-white text-[9px] font-bold uppercase shadow-xs">
+                {badgeLabel || store.badgeLabel}
+              </div>
+            )}
+
+            {/* Distancia exacta con botón interactivo */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onViewOnMap) onViewOnMap(store.slug);
+              }}
+              className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-slate-950/85 hover:bg-emerald-950/95 backdrop-blur-sm rounded-lg text-white text-[11px] font-bold drop-shadow cursor-pointer border border-white/15 transition-colors"
+              title="Centrar y ver en el mapa interactivo"
+            >
+              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>{store.distance}</span>
+            </button>
+          </div>
+
+          {/* Info, Calificación por Estrellas y Volumen de Pedidos */}
+          <div className="flex items-start justify-between gap-2 min-w-0">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug truncate">
+                  {store.name}
+                </h3>
+                {store.isRegisteredStore ? (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
+                    <CheckCircle2 className="w-2.5 h-2.5 text-emerald-700 shrink-0" />
+                    <span>Registrada</span>
+                  </span>
+                ) : store.isVerified ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Verificada" />
+                ) : null}
+              </div>
+              
+              <div className="flex items-center gap-2 mt-1 text-xs min-w-0">
+                <span className="flex items-center text-amber-600 font-bold shrink-0">
+                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-0.5 shrink-0" />
+                  <span>{store.rating || 4.7}</span>
+                </span>
+                <span className="text-slate-400 truncate text-[11px]">
+                  ({store.reviewsCount || store.ordersCount || 50} pedidos)
+                </span>
+              </div>
+            </div>
+
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+          </div>
+
+          {/* Métodos de Pago y Modalidades Aceptadas (QR Simple, Retiro en caja, Delivery propio) */}
+          <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 min-w-0 text-[10px] font-bold">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+              <span>📱</span>
+              <span>QR Simple</span>
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200/80">
+              <span>🛍️</span>
+              <span>Retiro en caja</span>
+            </span>
+            {store.hasFastDelivery ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/80">
+                <span>🛵</span>
+                <span>Delivery propio</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
+                <span>📍</span>
+                <span>Solo Retiro</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Botón Ver Catálogo */}
+        <button
+          type="button"
+          onClick={() => onSelect(store.slug)}
+          className="mt-3.5 w-full h-9 bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98 min-w-0"
+        >
+          <span>Ver Catálogo</span>
+          <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+        </button>
+      </div>
     </article>
   );
 };

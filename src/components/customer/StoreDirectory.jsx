@@ -50,12 +50,14 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState({
     openNow: false,
+    within5km: false,
     registeredOnly: false,
     acceptsQr: false,
     topRated: false
   });
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
+  const [visibleStoresCount, setVisibleStoresCount] = useState(5);
 
   // Solicitar ubicación GPS real del usuario
   const requestUserLocation = useCallback(() => {
@@ -204,6 +206,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
       // 2. Filtros Rápidos (Pills)
       if (activeFilters.openNow && !store.isOpen) return false;
+      if (activeFilters.within5km && (store.distanceMeters > 5000)) return false;
       if (activeFilters.registeredOnly && !store.isRegisteredStore) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
       if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
@@ -237,12 +240,17 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   }, [sortedStores, storesWithDistance, selectedStoreSlug]);
 
   // Tarjetas Secundarias con Mayor Cobertura (a la derecha):
-  // Si hay más tiendas, ordenadas por cobertura/servicio de delivery y volumen (excluyendo a la destacada)
+  // Priorizar tiendas dentro del radio de 3 a 5 km (<= 5000m), con delivery activo y mayor actividad
   const coverageStores = useMemo(() => {
     if (sortedStores.length <= 1) return [];
     const others = sortedStores.filter((s) => s.slug !== featuredStore?.slug);
     return others.sort((a, b) => {
-      // Priorizar tiendas abiertas, con delivery y mayor número de pedidos
+      // 1. Prioridad: tiendas dentro del radio de 3-5 km (5000 m)
+      const inRadiusA = (a.distanceMeters ?? 999999) <= 5000 ? 1 : 0;
+      const inRadiusB = (b.distanceMeters ?? 999999) <= 5000 ? 1 : 0;
+      if (inRadiusA !== inRadiusB) return inRadiusB - inRadiusA;
+
+      // 2. Priorizar tiendas abiertas, con delivery y mayor número de pedidos
       const scoreA = (a.isOpen ? 100 : 0) + (a.hasFastDelivery ? 50 : 0) + (a.ordersCount || 0);
       const scoreB = (b.isOpen ? 100 : 0) + (b.hasFastDelivery ? 50 : 0) + (b.ordersCount || 0);
       return scoreB - scoreA;
@@ -426,6 +434,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                 setSearchQuery('');
                 setActiveFilters({
                   openNow: false,
+                  within5km: false,
                   registeredOnly: false,
                   acceptsQr: false,
                   topRated: false
@@ -513,13 +522,18 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span>Otros Minimarkets Cercanos</span>
                 </span>
-                <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold shrink-0">
-                  {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold">
+                    📍 Radio 3-5 km
+                  </span>
+                  <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold">
+                    {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
+                  </span>
+                </div>
               </div>
 
-              <div className="secondary-stores-scroller flex flex-col gap-3.5 max-h-[850px] overflow-y-auto pr-1 scroll-smooth min-w-0">
-                {coverageStores.map((store) => (
+              <div className="secondary-stores-scroller flex flex-col gap-2.5 sm:gap-3.5 max-h-[850px] overflow-y-auto pr-1 scroll-smooth min-w-0">
+                {coverageStores.slice(0, visibleStoresCount).map((store) => (
                   <StoreCard
                     key={store.id}
                     store={store}
@@ -529,6 +543,29 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                     onViewOnMap={handleViewStoreOnMap}
                   />
                 ))}
+
+                {/* Botón de Carga Progresiva / Paginación Inteligente */}
+                {coverageStores.length > visibleStoresCount && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleStoresCount(prev => prev + 5)}
+                    className="mt-1 w-full py-2.5 sm:py-3 px-4 rounded-xl bg-white hover:bg-emerald-50/80 border border-slate-200/90 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-98"
+                  >
+                    <span>Mostrar más tiendas ({coverageStores.length - visibleStoresCount} disponibles)</span>
+                    <ChevronDown className="w-4 h-4 text-emerald-600" />
+                  </button>
+                )}
+
+                {/* Opción de colapsar */}
+                {visibleStoresCount > 5 && (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleStoresCount(5)}
+                    className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold py-1 text-center cursor-pointer transition-colors"
+                  >
+                    ↑ Ver menos tiendas
+                  </button>
+                )}
               </div>
             </div>
           </div>
