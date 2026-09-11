@@ -288,7 +288,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   }, [storesWithDistance, selectedStoreSlug]);
 
   return (
-    <main className="store-directory-wrapper w-full bg-slate-50 min-h-screen text-slate-800 antialiased">
+    <main className="store-directory-wrapper w-full bg-slate-50 min-h-screen text-slate-800 antialiased overflow-x-hidden">
       {/* 1. SECCIÓN SUPERIOR: TÍTULO Y SUBTÍTULO */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <div className="flex flex-col gap-1.5">
@@ -341,7 +341,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       </section>
 
       {/* 3. SECCIÓN DIRECTO: CUADRÍCULA MULTICOLUMNA BENTO */}
-      <section id="stores-grid-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section id="stores-grid-section" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 overflow-x-hidden">
         {/* Cabecera de Conteo, Estado de GPS y Ordenación */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200">
           <div className="flex items-start sm:items-center gap-3">
@@ -408,7 +408,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           </div>
         </div>
 
-        {/* Cuadrícula Bento */}
+        {/* Cuadrícula de Tiendas */}
         {sortedStores.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center my-6">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4">
@@ -436,24 +436,50 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               Restablecer Filtros
             </button>
           </div>
+        ) : coverageStores.length === 0 ? (
+          /* CASO 1: TIENDA ÚNICA EN EL VECINDARIO (Ancho completo, espaciosa y sin recortes ni scroll) */
+          <div className="mt-6 w-full min-w-0">
+            {featuredStore && (
+              <div id="featured-store-target" className="w-full flex flex-col scroll-mt-6 min-w-0">
+                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
+                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Tienda Oficial en Tu Vecindario</span>
+                  </span>
+                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shrink-0">
+                    {featuredStore.distance} de ti
+                  </span>
+                </div>
+
+                <StoreCard
+                  store={featuredStore}
+                  variant="featured"
+                  isNearest={true}
+                  onSelect={handleStoreNavigation}
+                  onViewOnMap={handleViewStoreOnMap}
+                />
+              </div>
+            )}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
+          /* CASO 2: MULTI-TIENDA (Bento Grid con Tarjeta Destacada y Tarjetas Secundarias Compactas) */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-start w-full min-w-0">
             {/* TARJETA DESTACADA PRINCIPAL (8 Columnas en Desktop) */}
             {featuredStore && (
-              <div id="featured-store-target" className="lg:col-span-7 xl:col-span-8 flex flex-col scroll-mt-6">
-                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold">
-                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+              <div id="featured-store-target" className="lg:col-span-7 xl:col-span-8 flex flex-col scroll-mt-6 min-w-0">
+                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
+                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     {selectedStoreSlug && featuredStore.slug === selectedStoreSlug ? (
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5 truncate">
                         <span>Tienda Seleccionada:</span>
-                        <span className="text-emerald-700 font-black">{featuredStore.name}</span>
+                        <span className="text-emerald-700 font-black truncate">{featuredStore.name}</span>
                       </span>
                     ) : (
                       'Tienda Más Cercana a Tu Ubicación'
                     )}
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     {selectedStoreSlug && featuredStore.slug === selectedStoreSlug && (
                       <button
                         type="button"
@@ -480,133 +506,30 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               </div>
             )}
 
-            {/* COLUMNA SECUNDARIA: TARJETAS COMPACTAS (MAYOR COBERTURA / INFORMACIÓN) (5/4 Columnas en Desktop) */}
-            <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
-              <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold">
-                <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                  {coverageStores.length > 0 || featuredStore?.hasFastDelivery ? (
-                    <>
-                      <Truck className="w-3.5 h-3.5 text-blue-600" />
-                      Mayor Cobertura en este Sector
-                    </>
-                  ) : (
-                    <>
-                      <Store className="w-3.5 h-3.5 text-emerald-600" />
-                      Información de la Tienda
-                    </>
-                  )}
+            {/* COLUMNA SECUNDARIA: TARJETAS COMPACTAS (5/4 Columnas en Desktop) */}
+            <div className="lg:col-span-5 xl:col-span-4 flex flex-col min-w-0">
+              <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
+                <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
+                  <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span>Otros Minimarkets Cercanos</span>
                 </span>
-                {coverageStores.length > 0 && (
-                  <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold">
-                    {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
-                  </span>
-                )}
+                <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold shrink-0">
+                  {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
+                </span>
               </div>
 
-              {coverageStores.length > 0 ? (
-                <div className="secondary-stores-scroller flex flex-col gap-4 max-h-[850px] overflow-y-auto pr-1.5 scroll-smooth">
-                  {coverageStores.map((store) => (
-                    <StoreCard
-                      key={store.id}
-                      store={store}
-                      variant="compact"
-                      badgeLabel={store.hasFastDelivery ? "🛵 Mayor Cobertura" : "🛍️ Retiro en Tienda"}
-                      onSelect={handleStoreNavigation}
-                      onViewOnMap={handleViewStoreOnMap}
-                    />
-                  ))}
-                </div>
-              ) : featuredStore ? (
-                /* Ficha de Información de la Tienda */
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 flex flex-col justify-between h-full transition-all hover:shadow-md">
-                  <div>
-                    {/* Cabecera de la ficha */}
-                    <div className="flex items-start justify-between gap-2 pb-3.5 border-b border-slate-100">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
-                          <Store className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-extrabold tracking-wider uppercase text-emerald-700 block">
-                            {featuredStore.hasFastDelivery ? 'Cobertura Activa en tu Sector' : 'Información del Local'}
-                          </span>
-                          <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-tight">
-                            {featuredStore.name}
-                          </h4>
-                        </div>
-                      </div>
-                      {featuredStore.isOpen !== false ? (
-                        <span className="flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                          Abierto
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          Cerrado
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Ficha de Detalles */}
-                    <div className="mt-4 space-y-2.5 text-xs text-slate-600">
-                      <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                        <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                        <div>
-                          <span className="font-bold text-slate-800 block">Ubicacion:</span>
-                          <span className="text-slate-600">
-                            {featuredStore.address || 'En tu sector'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                        <Clock className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                        <div>
-                          <span className="font-bold text-slate-800 block">
-                            {featuredStore.hasFastDelivery ? 'Tiempo de entrega promedio:' : 'Modalidad de atención:'}
-                          </span>
-                          <span className="text-slate-600">
-                            {featuredStore.hasFastDelivery 
-                              ? `${featuredStore.deliveryTime || '10 a 20 min'} directo a tu puerta`
-                              : 'Retiro en Tienda (Delivery desactivado)'
-                            }
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                        <CreditCard className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                        <div>
-                          <span className="font-bold text-slate-800 block">Modalidades de Pago:</span>
-                          <span className="text-slate-600">
-                            Pago Qr simple o efectivo
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Botón de acción */}
-                  <div className="mt-5 pt-3 border-t border-slate-100">
-                    <button
-                      type="button"
-                      onClick={() => handleStoreNavigation(featuredStore.slug)}
-                      className="w-full h-11 bg-slate-900 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98"
-                    >
-                      <span>Ver Catálogo de Productos</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 flex flex-col items-center justify-center text-center h-full min-h-[200px]">
-                  <Building2 className="w-8 h-8 text-slate-300 mb-2" />
-                  <p className="text-xs font-semibold text-slate-500">
-                    No hay tiendas en este sector en este momento.
-                  </p>
-                </div>
-              )}
+              <div className="secondary-stores-scroller flex flex-col gap-3.5 max-h-[850px] overflow-y-auto pr-1 scroll-smooth min-w-0">
+                {coverageStores.map((store) => (
+                  <StoreCard
+                    key={store.id}
+                    store={store}
+                    variant="compact"
+                    badgeLabel={store.hasFastDelivery ? "🛵 Mayor Cobertura" : "🛍️ Retiro en Tienda"}
+                    onSelect={handleStoreNavigation}
+                    onViewOnMap={handleViewStoreOnMap}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}

@@ -3,6 +3,13 @@
 .store-card-compact {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.store-card-featured *,
+.store-card-compact * {
+  box-sizing: border-box;
 }
 
 .store-card-featured h3,
