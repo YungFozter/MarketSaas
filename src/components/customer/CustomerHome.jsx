@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
-import { Sparkles, Flame, Heart, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -55,6 +55,9 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [itemsPerPage, setItemsPerPage] = useState(16);
+  const [currentPage, setCurrentPage] = useState(1);
+  const catalogGridRef = useRef(null);
 
   // Filtrado
   const filteredProducts = products.filter((prod) => {
@@ -74,7 +77,22 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     return matchesCategory && matchesSearch;
   });
 
-  const popularProducts = products.filter(p => p.isPopular).slice(0, 8);
+  // Resetear a la página 1 cuando cambia categoría, búsqueda o cantidad por página
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, searchQuery, itemsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    if (catalogGridRef.current) {
+      catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Pedido activo real y en curso
   const activeOrder = orders?.find(
@@ -212,45 +230,44 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         onSelectCategory={setSelectedCategory}
       />
 
-      {/* Sección de "Más Populares / Favoritos del Barrio" cuando no hay búsqueda activa y está en 'all' */}
-      {selectedCategory === 'all' && searchQuery.trim() === '' && (
-        <section className="mb-8 sm:mb-10">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                <Flame className="w-4 h-4" />
-              </div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-                Favoritos de los Vecinos
-              </h2>
-            </div>
-            <span className="text-[11px] sm:text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              Lo más pedido esta semana
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-            {popularProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                onOpenDetail={(p) => setSelectedProduct(p)}
-                onRequestProduct={onOpenRequests}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Catálogo de Productos Principal */}
-      <section id="products-catalog-section">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-            {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
-          </h2>
-          <span className="text-xs text-slate-500 font-medium">
-            {filteredProducts.length} productos
-          </span>
+      <section id="products-catalog-section" className="scroll-mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              {filteredProducts.length === 1 
+                ? '1 producto encontrado' 
+                : `${filteredProducts.length} productos encontrados`}
+            </p>
+          </div>
+
+          {/* Selector de cantidad por página (16, 32, 50) */}
+          {filteredProducts.length > 0 && (
+            <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-2 pr-1">
+                Por pág:
+              </span>
+              <div className="flex items-center gap-1">
+                {[16, 32, 50].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setItemsPerPage(num)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                      itemsPerPage === num
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -281,16 +298,61 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
-            {filteredProducts.map((prod) => (
-              <ProductCard
-                key={prod.id}
-                product={prod}
-                onOpenDetail={(p) => setSelectedProduct(p)}
-                onRequestProduct={onOpenRequests}
-              />
-            ))}
-          </div>
+          <>
+            {/* Contenedor scrolleable del catálogo para no alargar la pantalla */}
+            <div 
+              ref={catalogGridRef}
+              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto pr-1 sm:pr-2 pb-2 scroll-smooth rounded-2xl focus:outline-none catalog-scroll-container"
+              tabIndex={0}
+              aria-label="Lista de productos del catálogo"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 pt-1">
+                {paginatedProducts.map((prod) => (
+                  <ProductCard
+                    key={prod.id}
+                    product={prod}
+                    onOpenDetail={(p) => setSelectedProduct(p)}
+                    onRequestProduct={onOpenRequests}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Barra de Paginación */}
+            <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+              <div className="text-xs text-slate-500 font-medium order-2 sm:order-1">
+                Mostrando <span className="font-bold text-slate-800">{startIndex + 1}</span> - <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> de <span className="font-bold text-slate-800">{filteredProducts.length}</span> productos
+              </div>
+
+              <div className="flex items-center gap-2 order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Página Anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Anterior</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-xs font-extrabold text-slate-700 bg-slate-100 rounded-xl border border-slate-200/60">
+                  Página {currentPage} de {totalPages}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Página Siguiente"
+                >
+                  <span>Siguiente</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </section>
 
