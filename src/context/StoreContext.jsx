@@ -237,6 +237,27 @@ export const filterOutLegacyDemoProducts = (productList, slug) => {
   });
 };
 
+export const deduplicateStoreList = (storeList) => {
+  const seenIds = new Set();
+  const seenSlugs = new Set();
+  const seenNames = new Set();
+  return (storeList || []).filter(s => {
+    if (!s) return false;
+    const id = (s.id || '').toString().toLowerCase().trim();
+    const slug = (s.slug || '').toString().toLowerCase().trim();
+    const name = (s.name || '').toString().toLowerCase().trim();
+
+    if (id && seenIds.has(id)) return false;
+    if (slug && seenSlugs.has(slug)) return false;
+    if (name && seenNames.has(name)) return false;
+
+    if (id) seenIds.add(id);
+    if (slug) seenSlugs.add(slug);
+    if (name) seenNames.add(name);
+    return true;
+  });
+};
+
 export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
@@ -475,23 +496,22 @@ export const StoreProvider = ({ children }) => {
 
     if (validCoords) {
       setStores(prev => {
-        const found = prev.some(s => s.slug === effectiveTenant || s.id === effectiveTenant || s.isCurrentOwnerStore);
-        if (found) {
-          return prev.map(s => {
-            if (s.slug === effectiveTenant || s.id === effectiveTenant || s.isCurrentOwnerStore) {
-              return {
-                ...s,
-                name: safeConfig.name || s.name,
-                address: safeConfig.address || s.address,
-                tagline: safeConfig.tagline || s.tagline,
-                googleMapsCoordinates: validCoords,
-                isCurrentOwnerStore: true
-              };
-            }
-            return s;
-          });
-        }
-        return prev;
+        const targetId = (effectiveTenant && effectiveTenant !== 'default') ? effectiveTenant : merchantStore?.id;
+        if (!targetId) return prev;
+        const next = prev.map(s => {
+          if (s.slug === targetId || s.id === targetId) {
+            return {
+              ...s,
+              name: safeConfig.name || s.name,
+              address: safeConfig.address || s.address,
+              tagline: safeConfig.tagline || s.tagline,
+              googleMapsCoordinates: validCoords,
+              isCurrentOwnerStore: true
+            };
+          }
+          return s;
+        });
+        return deduplicateStoreList(next);
       });
     }
 
@@ -1033,24 +1053,24 @@ export const StoreProvider = ({ children }) => {
               );
 
               // Si es la tienda del dueño actual conectada, storeConfig es la fuente de verdad prioritaria
-              const effectiveName = (isCurrentOwner && storeConfig?.name) 
+              const effectiveName = (isCurrentOwner && storeConfig?.name && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
                 ? storeConfig.name 
                 : (conf.name || rs.name || 'Minimarket Registrado');
 
-              const effectiveTagline = (isCurrentOwner && storeConfig?.tagline) 
+              const effectiveTagline = (isCurrentOwner && storeConfig?.tagline && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
                 ? storeConfig.tagline 
                 : (conf.tagline || rs.slogan || 'Tienda oficial registrada');
 
               // La dirección configurada en config tiene prioridad absoluta sobre la columna de tabla antigua rs.address
-              const effectiveAddress = (isCurrentOwner && storeConfig?.address) 
+              const effectiveAddress = (isCurrentOwner && storeConfig?.address && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
                 ? storeConfig.address 
                 : (conf.address || rs.address || 'Ubicación registrada');
 
-              const isDeliveryActive = (isCurrentOwner && storeConfig) 
+              const isDeliveryActive = (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
                 ? (storeConfig.enableDelivery === true) 
                 : (conf.enableDelivery === true || rs.enable_delivery === true);
 
-              const coords = (isCurrentOwner && storeConfig?.googleMapsCoordinates)
+              const coords = (isCurrentOwner && storeConfig?.googleMapsCoordinates && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                 ? storeConfig.googleMapsCoordinates
                 : (conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
                     lat: parseFloat(conf.latitude),
@@ -1084,13 +1104,13 @@ export const StoreProvider = ({ children }) => {
                 rating: 4.9,
                 reviewsCount: 24 + idx * 8,
                 ordersCount: 24 + idx * 8,
-                isOpen: (isCurrentOwner && storeConfig?.isOpen !== undefined)
+                isOpen: (isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig.isOpen
                   : (rs.is_open !== false && conf.isOpen !== false),
-                statusBadge: ((isCurrentOwner && storeConfig?.isOpen !== undefined)
+                statusBadge: ((isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig.isOpen
                   : (rs.is_open !== false && conf.isOpen !== false)) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
-                imageUrl: (isCurrentOwner && (storeConfig?.bannerUrl || storeConfig?.logoUrl))
+                imageUrl: (isCurrentOwner && (storeConfig?.bannerUrl || storeConfig?.logoUrl) && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? (storeConfig.bannerUrl || storeConfig.logoUrl)
                   : (conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'),
                 deliveryTime: isDeliveryActive 
@@ -1132,28 +1152,7 @@ export const StoreProvider = ({ children }) => {
               setTenantSlug(remoteMapped[0].slug);
             }
 
-            // Preservar y fusionar la tienda del dueño actual si ya existía en memoria y está autenticado
-            const currentOwnerStore = currentUser
-              ? prev.find(s => s.isCurrentOwnerStore && (s.slug === tenantSlug || s.id === tenantSlug))
-              : null;
-            const remoteSlugs = new Set(remoteMapped.map(s => s.slug));
-            let finalStores = remoteMapped.map(s => {
-              if (currentOwnerStore && (s.slug === currentOwnerStore.slug || s.id === currentOwnerStore.id)) {
-                return {
-                  ...s,
-                  ...currentOwnerStore,
-                  distance: s.distance,
-                  distanceMeters: s.distanceMeters,
-                  googleMapsCoordinates: currentOwnerStore.googleMapsCoordinates || s.googleMapsCoordinates
-                };
-              }
-              return s;
-            });
-            if (currentOwnerStore && !remoteSlugs.has(currentOwnerStore.slug)) {
-              finalStores.unshift(currentOwnerStore);
-              remoteSlugs.add(currentOwnerStore.slug);
-            }
-            return finalStores;
+            return deduplicateStoreList(remoteMapped);
           });
         }
       } catch (err) {
@@ -1191,68 +1190,45 @@ export const StoreProvider = ({ children }) => {
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio SOLO si el dueño está autenticado
   useEffect(() => {
-    if (!currentUser || !merchantStore || !tenantSlug || !storeConfig?.name) return;
+    if (!currentUser || !merchantStore?.id || !storeConfig?.name) return;
+    const ownerStoreId = merchantStore.id;
+
     setStores(prev => {
-      const idx = prev.findIndex(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
+      const exists = prev.some(s => s.slug === ownerStoreId || s.id === ownerStoreId);
+      if (!exists) return prev;
+
       const isDeliveryActive = storeConfig.enableDelivery === true;
       const coords = storeConfig.googleMapsCoordinates || {
         lat: parseFloat(storeConfig.latitude) || -17.78335,
         lng: parseFloat(storeConfig.longitude) || -63.18214
       };
-      const updatedCurrent = {
-        id: tenantSlug,
-        slug: tenantSlug,
-        name: storeConfig.name,
-        tagline: storeConfig.tagline || 'Tu tienda de confianza a pasos de tu puerta',
-        address: storeConfig.address || 'En tu sector',
-        condominium: storeConfig.zone || storeConfig.condominium || 'Santa Cruz',
-        reference: storeConfig.reference || '',
-        distance: 'En tu zona',
-        distanceMeters: 100,
-        rating: 5.0,
-        reviewsCount: 30,
-        ordersCount: 30,
-        isOpen: storeConfig.isOpen !== false,
-        statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
-        imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
-        deliveryTime: isDeliveryActive ? (storeConfig.deliveryTime || '10-15 min') : 'Retiro en Tienda',
-        freeDeliveryThreshold: storeConfig.freeDeliveryThreshold || null,
-        hasFreeDelivery: isDeliveryActive && !!storeConfig.freeDeliveryThreshold,
-        acceptsQr: true,
-        hasPickup: true,
-        hasFastDelivery: isDeliveryActive,
-        category: 'Minimarket Registrado',
-        isFeatured: true,
-        isRegisteredStore: true,
-        isVerified: true,
-        isCurrentOwnerStore: true,
-        owner_id: currentUser?.id || merchantStore?.owner_id || null,
-        totalStockItems: 100,
-        perks: [
-          { id: 'p1', text: '✅ Registrada en el sistema' },
-          isDeliveryActive ? { id: 'p2', text: '🛵 Delivery disponible' } : { id: 'p2', text: '🛍️ Retiro en Tienda' },
-          { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
-        ],
-        featuredProducts: [],
-        googleMapsCoordinates: coords,
-        googleMapsQuery: `${storeConfig.name}, ${storeConfig.address || ''}, Santa Cruz de la Sierra`,
-        mapPosition: {
-          leftPercent: 50,
-          bottomPixels: 55,
-          label: storeConfig.name,
-          badge: 'Tu Tienda'
-        }
-      };
 
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], ...updatedCurrent };
-        return copy;
-      } else {
-        return [updatedCurrent, ...prev];
-      }
+      const next = prev.map(s => {
+        if (s.slug === ownerStoreId || s.id === ownerStoreId) {
+          return {
+            ...s,
+            name: storeConfig.name,
+            tagline: storeConfig.tagline || s.tagline,
+            address: storeConfig.address || s.address,
+            condominium: storeConfig.zone || storeConfig.condominium || s.condominium,
+            reference: storeConfig.reference !== undefined ? storeConfig.reference : s.reference,
+            isOpen: storeConfig.isOpen !== false,
+            statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+            imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || s.imageUrl,
+            deliveryTime: isDeliveryActive ? (storeConfig.deliveryTime || '10-15 min') : 'Retiro en Tienda',
+            freeDeliveryThreshold: storeConfig.freeDeliveryThreshold || null,
+            hasFreeDelivery: isDeliveryActive && !!storeConfig.freeDeliveryThreshold,
+            hasFastDelivery: isDeliveryActive,
+            googleMapsCoordinates: coords,
+            isCurrentOwnerStore: true
+          };
+        }
+        return s;
+      });
+
+      return deduplicateStoreList(next);
     });
-  }, [storeConfig, tenantSlug, currentUser]);
+  }, [storeConfig, currentUser, merchantStore]);
 
   // Guardar en localStorage por tenantSlug y vaciar carrito/peticiones al cambiar de sección
   useEffect(() => {

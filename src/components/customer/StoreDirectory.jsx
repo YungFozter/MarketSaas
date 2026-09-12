@@ -161,9 +161,31 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }
   };
 
+  // Deduplicar tiendas por id, slug y nombre para garantizar que no existan duplicados
+  const uniqueStores = useMemo(() => {
+    const seenIds = new Set();
+    const seenSlugs = new Set();
+    const seenNames = new Set();
+    return (stores || []).filter((store) => {
+      if (!store) return false;
+      const id = (store.id || '').toString().toLowerCase().trim();
+      const slug = (store.slug || '').toString().toLowerCase().trim();
+      const name = (store.name || '').toString().toLowerCase().trim();
+
+      if (id && seenIds.has(id)) return false;
+      if (slug && seenSlugs.has(slug)) return false;
+      if (name && seenNames.has(name)) return false;
+
+      if (id) seenIds.add(id);
+      if (slug) seenSlugs.add(slug);
+      if (name) seenNames.add(name);
+      return true;
+    });
+  }, [stores]);
+
   // Enriquecer tiendas con cálculo de distancia real en base a userCoords
   const storesWithDistance = useMemo(() => {
-    return stores.map((store) => {
+    return uniqueStores.map((store) => {
       const coords = store.googleMapsCoordinates || DEFAULT_REFERENCE_COORDS;
       const meters = calculateDistanceMeters(
         userCoords.lat,
@@ -177,7 +199,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         distance: formatDistance(meters)
       };
     });
-  }, [stores, userCoords]);
+  }, [uniqueStores, userCoords]);
 
   // Filtrado reactivo de tiendas con normalización de acentos y búsqueda multi-palabra
   const filteredStores = useMemo(() => {
@@ -243,7 +265,11 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   // Priorizar tiendas dentro del radio de 3 a 5 km (<= 5000m), con delivery activo y mayor actividad
   const coverageStores = useMemo(() => {
     if (sortedStores.length <= 1) return [];
-    const others = sortedStores.filter((s) => s.slug !== featuredStore?.slug);
+    const others = sortedStores.filter((s) => 
+      s.slug !== featuredStore?.slug &&
+      s.id !== featuredStore?.id &&
+      s.name?.toLowerCase().trim() !== featuredStore?.name?.toLowerCase().trim()
+    );
     return others.sort((a, b) => {
       // 1. Prioridad: tiendas dentro del radio de 3-5 km (5000 m)
       const inRadiusA = (a.distanceMeters ?? 999999) <= 5000 ? 1 : 0;
