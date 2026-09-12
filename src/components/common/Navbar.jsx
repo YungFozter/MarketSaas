@@ -485,8 +485,8 @@ export const Navbar = ({
               </>
             )}
 
-            {/* Opciones de Comerciante en móvil */}
-            {currentUser ? (
+            {/* Opciones de Comerciante en móvil (solo si el dueño tiene sesión activa) */}
+            {currentUser && (
               <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <span className="text-[10px] text-slate-500 block uppercase font-bold">Sesión activa:</span>
@@ -503,18 +503,6 @@ export const Navbar = ({
                   <span>Salir</span>
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => {
-                  if (onOpenAuthModal) onOpenAuthModal();
-                  else if (onRequestAdminAccess) onRequestAdminAccess();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm cursor-pointer transition-colors"
-              >
-                <LogIn className="w-4 h-4 text-emerald-400" />
-                <span>Acceso Comerciantes (Login / Registro)</span>
-              </button>
             )}
           </div>
         )}
