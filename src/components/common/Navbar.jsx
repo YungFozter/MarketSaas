@@ -259,24 +259,38 @@ export const Navbar = ({
 
 
 
-          {/* Selector de Ubicación (Vista Cliente - Solo si delivery está habilitado por el dueño) */}
-          {viewMode === 'customer' && storeConfig.enableDelivery !== false && (
+          {/* Selector de Ubicación (Vista Cliente) */}
+          {viewMode === 'customer' && (
             <div className="hidden lg:flex items-center">
               <button
                 onClick={onOpenLocationModal}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/80 transition-all text-left group"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 border border-slate-200/80 transition-all text-left group cursor-pointer"
               >
                 <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 group-hover:scale-105 transition-transform">
                   <MapPin className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block leading-none">
-                    Entrega en:
-                  </span>
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                    {selectedLocation.condominium} - {selectedLocation.tower}
-                    <ChevronDown className="w-3 h-3 text-slate-400" />
-                  </span>
+                  {storeConfig.enableDelivery !== false && storeConfig.condominiums?.length > 0 ? (
+                    <>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block leading-none">
+                        Entrega en:
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                        {selectedLocation.condominium} - {selectedLocation.tower}
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 block leading-none">
+                        Atención:
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                        🛍️ Retiro en Tienda
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      </span>
+                    </>
+                  )}
                 </div>
               </button>
             </div>
@@ -420,13 +434,25 @@ export const Navbar = ({
                   onOpenLocationModal();
                   setMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 text-left text-xs font-bold text-slate-800 hover:bg-slate-200 transition-colors"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 text-left text-xs font-bold text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
               >
-                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-slate-500 block uppercase font-semibold">Ubicación de entrega:</span>
-                  <span className="truncate block font-bold text-slate-900">{selectedLocation.condominium} - {selectedLocation.tower}</span>
-                </div>
+                {storeConfig.enableDelivery !== false && storeConfig.condominiums?.length > 0 ? (
+                  <>
+                    <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-500 block uppercase font-semibold">Ubicación de entrega:</span>
+                      <span className="truncate block font-bold text-slate-900">{selectedLocation.condominium} - {selectedLocation.tower}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Store className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-emerald-700 block uppercase font-semibold">Modalidad de atención:</span>
+                      <span className="truncate block font-bold text-slate-900">🛍️ Retiro en Local {storeConfig.address ? `(${storeConfig.address})` : ''}</span>
+                    </div>
+                  </>
+                )}
               </button>
             )}
 
