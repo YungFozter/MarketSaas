@@ -154,7 +154,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    if (!forgotEmail || !forgotEmail.includes('@')) {
+    const cleanEmail = (forgotEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
       setErrorMsg('Por favor ingresa un correo electrónico válido.');
       return;
     }
@@ -166,14 +167,34 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
     setLoading(true);
     try {
+      // 1. Verificación previa en base de datos si la función RPC check_user_exists está disponible
+      try {
+        const { data: exists, error: checkError } = await supabase.rpc('check_user_exists', {
+          lookup_email: cleanEmail
+        });
+        if (!checkError && exists === false) {
+          setLoading(false);
+          setErrorMsg('No existe ninguna cuenta registrada con este correo electrónico.');
+          return;
+        }
+      } catch (checkEx) {
+        // Si la función RPC no existe en la base de datos, continúa al flujo nativo de Supabase
+      }
+
+      // 2. Solicitar enlace de restablecimiento a Supabase
       const redirectUrl = `${window.location.origin}${window.location.pathname}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: redirectUrl
       });
       setLoading(false);
 
       if (error) {
-        setErrorMsg(error.message || 'Error al solicitar el enlace de restablecimiento.');
+        const msgLower = (error.message || '').toLowerCase();
+        if (msgLower.includes('user not found') || msgLower.includes('not found') || error.code === 'user_not_found') {
+          setErrorMsg('No existe ninguna cuenta registrada con este correo electrónico.');
+        } else {
+          setErrorMsg(error.message || 'Error al solicitar el enlace de restablecimiento.');
+        }
       } else {
         setForgotSuccess(true);
       }
