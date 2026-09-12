@@ -26,7 +26,8 @@ import {
   Sparkles,
   X,
   Check,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -452,36 +453,50 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
   );
 };
 
-// Helper de compresión de imágenes con Canvas para prevenir desbordamientos de localStorage y Supabase
-const compressImage = (file, maxWidth = 800, maxHeight = 800, quality = 0.75) => {
-  return new Promise((resolve) => {
+// Helper de compresión de imágenes con Canvas optimizado y blindado contra errores
+const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      reject(new Error('El archivo seleccionado no es una imagen válida.'));
+      return;
+    }
     const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Error de lectura del archivo de imagen.'));
     reader.readAsDataURL(file);
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => reject(new Error('Error al decodificar la imagen.'));
       img.src = event.target.result;
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
 
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
           }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
+
+          canvas.width = Math.max(width, 1);
+          canvas.height = Math.max(height, 1);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo inicializar el contexto de imagen.'));
+            return;
           }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } catch (err) {
+          reject(err);
         }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
       };
     };
   });
@@ -625,40 +640,64 @@ export const StoreSettings = () => {
     { id: 'purple', name: 'Púrpura Real', bg: 'bg-purple-600', ring: 'ring-purple-500' }
   ];
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    const { adminPassword, admin_pin, ...safeConfig } = form;
-    const hasValidCoords = form.latitude !== '' && form.latitude !== null && form.latitude !== undefined &&
-      form.longitude !== '' && form.longitude !== null && form.longitude !== undefined &&
-      !isNaN(parseFloat(form.latitude)) && !isNaN(parseFloat(form.longitude));
+  const [savingConfig, setSavingConfig] = useState(false);
 
-    const lat = hasValidCoords ? parseFloat(form.latitude) : null;
-    const lng = hasValidCoords ? parseFloat(form.longitude) : null;
-    const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
-    const configToSave = {
-      ...safeConfig,
-      coupons: cleanCoupons,
-      address: form.address || '',
-      zone: form.zone || '',
-      reference: form.reference || '',
-      googleMapsCoordinates: hasValidCoords ? { lat, lng } : null,
-      latitude: lat,
-      longitude: lng,
-      isRegisteredStore: true
-    };
-    setStoreConfig(configToSave);
-    showToast('¡Configuración y ubicación de tu tienda guardadas exitosamente!', 'success');
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (savingConfig) return;
+    setSavingConfig(true);
+
+    try {
+      const { adminPassword, admin_pin, ...safeConfig } = form;
+      const hasValidCoords = form.latitude !== '' && form.latitude !== null && form.latitude !== undefined &&
+        form.longitude !== '' && form.longitude !== null && form.longitude !== undefined &&
+        !isNaN(parseFloat(form.latitude)) && !isNaN(parseFloat(form.longitude));
+
+      const lat = hasValidCoords ? parseFloat(form.latitude) : null;
+      const lng = hasValidCoords ? parseFloat(form.longitude) : null;
+      const cleanCoupons = (form.coupons || []).filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
+      const configToSave = {
+        ...safeConfig,
+        coupons: cleanCoupons,
+        address: form.address || '',
+        zone: form.zone || '',
+        reference: form.reference || '',
+        googleMapsCoordinates: hasValidCoords ? { lat, lng } : null,
+        latitude: lat,
+        longitude: lng,
+        isRegisteredStore: true
+      };
+
+      const result = await setStoreConfig(configToSave);
+      if (result?.error) {
+        if (result.error.code === '42501' || result.error.message?.includes('row-level security')) {
+          showToast('Guardado en este dispositivo. Para sincronizar en la nube, asegúrate de haber iniciado sesión como dueño.', 'warning');
+        } else {
+          showToast(`Guardado localmente (Aviso en nube: ${result.error.message || 'Sin conexión'})`, 'warning');
+        }
+      } else {
+        showToast('¡Configuración, logo y ubicación guardados exitosamente!', 'success');
+      }
+    } catch (err) {
+      console.error('Error en handleSave:', err);
+      showToast('Error al procesar el guardado de configuración.', 'error');
+    } finally {
+      setSavingConfig(false);
+    }
   };
 
   const handleFileUpload = async (e, field) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (file) {
       try {
-        const compressedBase64 = await compressImage(file);
+        const maxWidth = field === 'bannerUrl' ? 1200 : 400;
+        const maxHeight = field === 'bannerUrl' ? 600 : 400;
+        const compressedBase64 = await compressImage(file, maxWidth, maxHeight, 0.8);
         setForm(prev => ({ ...prev, [field]: compressedBase64 }));
-        showToast('Imagen cargada y optimizada.');
+        showToast('Imagen cargada y optimizada con éxito.', 'success');
       } catch (err) {
-        showToast('Error al procesar la imagen.', 'error');
+        console.error('Error al procesar la imagen:', err);
+        showToast('Error al procesar la imagen: ' + (err.message || 'Formato no soportado'), 'error');
       }
     }
   };
@@ -785,11 +824,21 @@ export const StoreSettings = () => {
         <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-50 animate-fadeIn">
           <button
             type="submit"
-            className="px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow-2xl shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer border border-emerald-400/40 ring-4 ring-emerald-500/20"
+            disabled={savingConfig}
+            className="px-5 py-3 sm:px-6 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 disabled:opacity-80 text-white font-black text-xs sm:text-sm shadow-2xl shadow-emerald-950/40 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer border border-emerald-400/40 ring-4 ring-emerald-500/20"
             title="Guardar Cambios de Configuración"
           >
-            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Guardar Cambios</span>
+            {savingConfig ? (
+              <>
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                <span>Guardando...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span>Guardar Cambios</span>
+              </>
+            )}
           </button>
         </div>
       )}
@@ -811,10 +860,20 @@ export const StoreSettings = () => {
 
         <button
           type="submit"
-          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer shrink-0"
+          disabled={savingConfig}
+          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 disabled:opacity-80 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer shrink-0"
         >
-          <Save className="w-4 h-4" />
-          <span>Guardar Cambios</span>
+          {savingConfig ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Guardando...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>Guardar Cambios</span>
+            </>
+          )}
         </button>
       </div>
 

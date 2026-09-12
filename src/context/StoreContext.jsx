@@ -440,17 +440,25 @@ export const StoreProvider = ({ children }) => {
     return initialStoreConfig;
   });
 
-  const setStoreConfig = (newConfigData) => {
+  const setStoreConfig = async (newConfigData) => {
     const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
     const { adminPassword, admin_pin, ...safeConfig } = rawUpdated;
     if (Array.isArray(safeConfig.coupons)) {
       safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     }
     setStoreConfigState(safeConfig);
+
+    const effectiveTenant = tenantSlug || merchantStore?.id || safeConfig?.id || localStorage.getItem('marketsaas_active_tenant') || 'default';
+
     try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(safeConfig));
-      localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(safeConfig));
-    } catch (err) {}
+      localStorage.setItem(`marketsaas_${effectiveTenant}_store_config`, JSON.stringify(safeConfig));
+      localStorage.setItem(`marketsaas_${effectiveTenant}_config`, JSON.stringify(safeConfig));
+      if (effectiveTenant !== 'default') {
+        localStorage.setItem('marketsaas_active_tenant', effectiveTenant);
+      }
+    } catch (err) {
+      console.warn('Aviso guardando store_config en localStorage:', err);
+    }
 
     // Sincronizar INMEDIATAMENTE las coordenadas en la lista de tiendas stores para que el mapa de Vista Vecino se actualice en tiempo real sin desfase
     const effectiveLat = safeConfig.latitude !== '' && safeConfig.latitude != null ? parseFloat(safeConfig.latitude) : safeConfig.googleMapsCoordinates?.lat;
@@ -461,10 +469,10 @@ export const StoreProvider = ({ children }) => {
 
     if (validCoords) {
       setStores(prev => {
-        const found = prev.some(s => s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore);
+        const found = prev.some(s => s.slug === effectiveTenant || s.id === effectiveTenant || s.isCurrentOwnerStore);
         if (found) {
           return prev.map(s => {
-            if (s.slug === tenantSlug || s.id === tenantSlug || s.isCurrentOwnerStore) {
+            if (s.slug === effectiveTenant || s.id === effectiveTenant || s.isCurrentOwnerStore) {
               return {
                 ...s,
                 name: safeConfig.name || s.name,
@@ -481,29 +489,47 @@ export const StoreProvider = ({ children }) => {
       });
     }
 
-    if (supabase) {
-      const payload = {
-        id: tenantSlug,
-        tenant_id: tenantSlug,
-        name: safeConfig.name || 'Tienda',
-        address: safeConfig.address || null,
-        slogan: safeConfig.tagline || null,
-        phone: safeConfig.phone || null,
-        whatsapp: safeConfig.whatsapp || null,
-        is_open: safeConfig.isOpen !== false,
-        enable_delivery: safeConfig.enableDelivery === true,
-        categories: safeConfig.categories || [],
-        config: safeConfig,
-        coupons: safeConfig.coupons || [],
-        owner_id: currentUser?.id || merchantStore?.owner_id || null,
-        latitude: validCoords ? validCoords.lat : null,
-        longitude: validCoords ? validCoords.lng : null,
-        updated_at: new Date().toISOString()
-      };
-      supabase.from('store_config').upsert([payload]).then(({ error }) => {
-        if (error) console.error('Error sincronizando storeConfig en Supabase:', error);
-      });
+    if (supabase && effectiveTenant && effectiveTenant !== 'default') {
+      try {
+        const sessionUser = (await supabase.auth.getUser())?.data?.user || currentUser;
+        const ownerId = sessionUser?.id || merchantStore?.owner_id || safeConfig.owner_id || null;
+
+        const payload = {
+          id: effectiveTenant,
+          tenant_id: effectiveTenant,
+          name: safeConfig.name || 'Tienda',
+          address: safeConfig.address || null,
+          slogan: safeConfig.tagline || null,
+          phone: safeConfig.phone || null,
+          whatsapp: safeConfig.whatsapp || null,
+          is_open: safeConfig.isOpen !== false,
+          enable_delivery: safeConfig.enableDelivery === true,
+          categories: safeConfig.categories || [],
+          config: safeConfig,
+          coupons: safeConfig.coupons || [],
+          owner_id: ownerId,
+          latitude: validCoords ? validCoords.lat : null,
+          longitude: validCoords ? validCoords.lng : null,
+          qr_image_url: safeConfig.qrImageUrl || null,
+          updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await supabase
+          .from('store_config')
+          .upsert([payload], { onConflict: 'id' })
+          .select();
+
+        if (error) {
+          console.error('Error sincronizando storeConfig en Supabase:', error);
+          return { success: false, error, savedLocally: true };
+        }
+        return { success: true, data, savedLocally: true };
+      } catch (err) {
+        console.error('Error de red sincronizando storeConfig en Supabase:', err);
+        return { success: false, error: err, savedLocally: true };
+      }
     }
+    return { success: true, savedLocally: true };
   };
 
   // 4. Carrito de Compras (En Modo Demostración inicia siempre vacío en cada recarga)
@@ -669,9 +695,30 @@ export const StoreProvider = ({ children }) => {
         const rawAddr = storeRecord.address ?? configData.address ?? '';
         const cleanStoreAddress = isBadAddress(rawAddr) ? '' : rawAddr;
 
+        // Recuperar imágenes de respaldo de localStorage en caso de que en la nube aún no se hayan sincronizado
+        const savedLocalRaw = localStorage.getItem(`marketsaas_${storeRecord.id}_config`);
+        let savedLocalLogo = '';
+        let savedLocalBanner = '';
+        let savedLocalQr = '';
+        if (savedLocalRaw) {
+          try {
+            const parsed = JSON.parse(savedLocalRaw);
+            savedLocalLogo = parsed.logoUrl || '';
+            savedLocalBanner = parsed.bannerUrl || '';
+            savedLocalQr = parsed.qrImageUrl || '';
+          } catch (e) {}
+        }
+
+        const effectiveLogo = configData.logoUrl || storeRecord.logo_url || savedLocalLogo || '';
+        const effectiveBanner = configData.bannerUrl || storeRecord.banner_url || savedLocalBanner || presetBanners[0].url;
+        const effectiveQr = configData.qrImageUrl || storeRecord.qr_image_url || savedLocalQr || '';
+
         const resolvedConfig = {
           ...initialStoreConfig,
           ...configData,
+          logoUrl: effectiveLogo,
+          bannerUrl: effectiveBanner,
+          qrImageUrl: effectiveQr,
           address: cleanStoreAddress,
           zone: storeRecord.zone || configData.zone || '',
           reference: storeRecord.reference || configData.reference || '',
@@ -718,7 +765,10 @@ export const StoreProvider = ({ children }) => {
       } else {
         setCurrentUser(null);
         setMerchantStore(null);
-        setStoreConfigState(initialStoreConfig);
+        const activeTenant = localStorage.getItem('marketsaas_active_tenant');
+        if (!activeTenant || activeTenant === 'default') {
+          setStoreConfigState(initialStoreConfig);
+        }
       }
     });
 
@@ -789,13 +839,21 @@ export const StoreProvider = ({ children }) => {
         const loadedCategories = (Array.isArray(configData.categories) && configData.categories.length > 0)
           ? configData.categories
           : (Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : undefined);
-        setStoreConfigState(prev => ({
-          ...prev,
-          ...configData,
-          ...(loadedCategories ? { categories: loadedCategories } : {}),
-          coupons: loadedCoupons,
-          name: data.name || configData.name
-        }));
+        setStoreConfigState(prev => {
+          const effectiveLogo = configData.logoUrl || data.logo_url || (prev?.logoUrl || '');
+          const effectiveBanner = configData.bannerUrl || data.banner_url || (prev?.bannerUrl || presetBanners[0].url);
+          const effectiveQr = configData.qrImageUrl || data.qr_image_url || (prev?.qrImageUrl || '');
+          return {
+            ...prev,
+            ...configData,
+            logoUrl: effectiveLogo,
+            bannerUrl: effectiveBanner,
+            qrImageUrl: effectiveQr,
+            ...(loadedCategories ? { categories: loadedCategories } : {}),
+            coupons: loadedCoupons,
+            name: data.name || configData.name
+          };
+        });
       }
     });
 
