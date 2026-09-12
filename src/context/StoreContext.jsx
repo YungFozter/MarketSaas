@@ -508,8 +508,6 @@ export const StoreProvider = ({ children }) => {
           config: safeConfig,
           coupons: safeConfig.coupons || [],
           owner_id: ownerId,
-          latitude: validCoords ? validCoords.lat : null,
-          longitude: validCoords ? validCoords.lng : null,
           qr_image_url: safeConfig.qrImageUrl || null,
           updated_at: new Date().toISOString()
         };
