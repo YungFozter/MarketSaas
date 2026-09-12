@@ -244,7 +244,7 @@ export const presetBanners = [
   { id: 'b2', name: 'Supermercado & Granel', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200&auto=format&fit=crop&q=80' },
   { id: 'b3', name: 'Panadería & Desayunos Tradicionales', url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80' },
   { id: 'b4', name: 'Frutas & Verduras del Día', url: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=1200&auto=format&fit=crop&q=80' },
-  { id: 'b5', name: 'Bebidas, Licores & Snacks', url: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200&auto=format&fit=crop&q=80' }
+  { id: 'b5', name: 'Bebidas, Licores & Snacks', url: 'https://images.unsplash.com/photo-1597290282695-edc43d0e7129?w=1200&auto=format&fit=crop&q=80' }
 ];
 
 export const initialStoreConfig = {
