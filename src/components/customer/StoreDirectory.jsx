@@ -52,10 +52,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     openNow: false,
     within5km: false,
     registeredOnly: false,
-    acceptsQr: false,
-    topRated: false
+    acceptsQr: false
   });
-  const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'rating' | 'fastest'
+  const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
   const [visibleStoresCount, setVisibleStoresCount] = useState(5);
 
@@ -231,7 +230,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       if (activeFilters.within5km && (store.distanceMeters > 5000)) return false;
       if (activeFilters.registeredOnly && !store.isRegisteredStore) return false;
       if (activeFilters.acceptsQr && !store.acceptsQr) return false;
-      if (activeFilters.topRated && (store.rating || 0) < 4.8) return false;
 
       return true;
     });
@@ -242,8 +240,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     const list = [...filteredStores];
     if (sortBy === 'nearest') {
       list.sort((a, b) => (a.distanceMeters ?? 999999) - (b.distanceMeters ?? 999999));
-    } else if (sortBy === 'rating') {
-      list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'fastest') {
       list.sort((a, b) => (parseInt(a.deliveryTime) || 99) - (parseInt(b.deliveryTime) || 99));
     }
@@ -436,7 +432,6 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               className="bg-transparent text-xs text-slate-800 font-semibold focus:outline-none cursor-pointer"
             >
               <option value="nearest">Más Cercanos</option>
-              <option value="rating">Mejor Valorados</option>
               <option value="fastest">Delivery Más Rápido</option>
             </select>
           </div>
@@ -462,8 +457,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                   openNow: false,
                   within5km: false,
                   registeredOnly: false,
-                  acceptsQr: false,
-                  topRated: false
+                  acceptsQr: false
                 });
               }}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"

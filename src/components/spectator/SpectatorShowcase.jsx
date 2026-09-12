@@ -835,8 +835,8 @@ export const SpectatorShowcase = ({
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs">
-                  <div className="text-lg sm:text-2xl font-black text-amber-600">4.9/5 ⭐</div>
-                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Satisfacción Vecinal</div>
+                  <div className="text-lg sm:text-2xl font-black text-amber-600">99%</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Entregas Efectivas</div>
                 </div>
               </div>
 

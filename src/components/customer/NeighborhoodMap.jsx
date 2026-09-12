@@ -4,7 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import { 
   Store, 
   MapPin, 
-  Star, 
   Plus, 
   Minus, 
   Navigation, 
@@ -102,10 +101,6 @@ export const NeighborhoodMap = ({
       }
       // 3. Filtro "Aceptan QR"
       if (activeFilters?.acceptsQr && !store.acceptsQr) {
-        return false;
-      }
-      // 4. Filtro "Mejor Calificadas"
-      if (activeFilters?.topRated && (store.rating || 0) < 4.8) {
         return false;
       }
       return true;
@@ -596,11 +591,9 @@ export const NeighborhoodMap = ({
                   <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
                     {activeStore.name}
                   </h4>
-                  <div className="flex items-center gap-1 text-[11px] text-amber-600 font-bold mt-0.5">
-                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                    <span>{activeStore.rating || 4.8}</span>
-                    <span className="text-slate-400 font-normal">
-                      • {activeStore.isOpen !== false ? (activeStore.deliveryTime || '10-15 min') : 'Cerrado temporalmente'}
+                  <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
+                    <span>
+                      {activeStore.isOpen !== false ? (activeStore.deliveryTime || '10-15 min') : 'Cerrado temporalmente'}
                     </span>
                   </div>
                 </div>

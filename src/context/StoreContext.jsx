@@ -1101,7 +1101,6 @@ export const StoreProvider = ({ children }) => {
                   : (conf.reference || ''),
                 distance: `A ${(idx + 1) * 180}m`,
                 distanceMeters: (idx + 1) * 180,
-                rating: 4.9,
                 reviewsCount: 24 + idx * 8,
                 ordersCount: 24 + idx * 8,
                 isOpen: (isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))

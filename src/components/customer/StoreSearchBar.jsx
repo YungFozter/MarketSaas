@@ -3,7 +3,6 @@ import {
   Search, 
   ArrowRight, 
   QrCode, 
-  Star, 
   CheckCircle2,
   Store,
   MapPin
@@ -44,13 +43,6 @@ export const StoreSearchBar = ({
       id: 'acceptsQr',
       label: 'Aceptan QR / Simple',
       icon: <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />,
-      activeClass: 'filter-pill-active',
-      baseClass: 'filter-pill-glass'
-    },
-    {
-      id: 'topRated',
-      label: 'Mejor Calificadas',
-      icon: <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 fill-amber-500" />,
       activeClass: 'filter-pill-active',
       baseClass: 'filter-pill-glass'
     }

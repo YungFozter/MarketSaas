@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   Store, 
-  Star, 
   MapPin, 
   ArrowRight, 
   Zap, 
@@ -66,7 +65,7 @@ export const StoreCard = ({
           {/* Detalles comerciales y mini catálogo a la derecha */}
           <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
             <div>
-              {/* Encabezado con Nombre y Calificación */}
+              {/* Encabezado con Nombre e Información */}
               <div className="flex items-start justify-between gap-2.5 min-w-0">
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
@@ -102,11 +101,6 @@ export const StoreCard = ({
                     </p>
                   </div>
                 </div>
-
-                <span className="flex items-center gap-1 bg-amber-50 text-amber-900 border border-amber-200 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 shadow-xs">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" />
-                  <span>{store.rating || 4.9}</span>
-                </span>
               </div>
 
               {/* Badges de Beneficios */}
@@ -219,12 +213,8 @@ export const StoreCard = ({
           </div>
 
           <div className="flex items-center gap-2 mt-0.5 text-[11px] min-w-0">
-            <span className="flex items-center text-amber-600 font-extrabold shrink-0">
-              <Star className="w-3 h-3 fill-amber-500 text-amber-500 mr-0.5" />
-              <span>{store.rating || 4.7}</span>
-            </span>
             <span className="text-slate-400 truncate text-[10px]">
-              ({store.reviewsCount || store.ordersCount || 50} pedidos)
+              {store.reviewsCount || store.ordersCount || 50} pedidos
             </span>
           </div>
 
@@ -296,7 +286,7 @@ export const StoreCard = ({
             </button>
           </div>
 
-          {/* Info, Calificación por Estrellas y Volumen de Pedidos */}
+          {/* Info y Volumen de Pedidos */}
           <div className="flex items-start justify-between gap-2 min-w-0">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -314,12 +304,8 @@ export const StoreCard = ({
               </div>
               
               <div className="flex items-center gap-2 mt-1 text-xs min-w-0">
-                <span className="flex items-center text-amber-600 font-bold shrink-0">
-                  <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 mr-0.5 shrink-0" />
-                  <span>{store.rating || 4.7}</span>
-                </span>
                 <span className="text-slate-400 truncate text-[11px]">
-                  ({store.reviewsCount || store.ordersCount || 50} pedidos)
+                  {store.reviewsCount || store.ordersCount || 50} pedidos
                 </span>
               </div>
             </div>
