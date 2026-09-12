@@ -249,6 +249,12 @@ export const StoreProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [merchantStore, setMerchantStore] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      return window.location.hash.includes('type=recovery');
+    }
+    return false;
+  });
 
   // 1. Vista actual: Persistencia en localStorage y URL
   // Si el usuario recarga la página, se mantiene exactamente en la sección donde estaba (ej. 'customer' / Vista Vecino).
@@ -755,6 +761,9 @@ export const StoreProvider = ({ children }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+      }
       if (session?.user) {
         setCurrentUser(session.user);
         if (event === 'SIGNED_IN') {
@@ -2573,7 +2582,9 @@ export const StoreProvider = ({ children }) => {
         toast,
         showToast,
         triggerConfetti,
-        exportSalesCSV
+        exportSalesCSV,
+        isRecoveryMode,
+        setIsRecoveryMode
       }}
     >
       {children}

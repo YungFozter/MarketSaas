@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { Navbar } from './components/common/Navbar';
 import { Toast } from './components/common/Toast';
@@ -30,7 +30,9 @@ const AppContent = () => {
     cartTotal,
     storeConfig,
     currentUser,
-    merchantStore
+    merchantStore,
+    isRecoveryMode,
+    setIsRecoveryMode
   } = useStore();
 
   // Estados de Modales
@@ -43,6 +45,14 @@ const AppContent = () => {
   const [authModalMode, setAuthModalMode] = useState('login');
   const [spectatorShowcaseTab, setSpectatorShowcaseTab] = useState('residents');
 
+  // Si llega en modo recuperación de contraseña (por enlace de correo de Supabase)
+  useEffect(() => {
+    if (isRecoveryMode) {
+      setAuthModalMode('update-password');
+      setIsAuthModalOpen(true);
+    }
+  }, [isRecoveryMode]);
+
   const handleOpenAuthModal = (mode = 'login') => {
     setAuthModalMode(typeof mode === 'string' ? mode : 'login');
     setIsAuthModalOpen(true);
@@ -50,6 +60,9 @@ const AppContent = () => {
 
   const handleCloseAuthModal = () => {
     setIsAuthModalOpen(false);
+    if (isRecoveryMode) {
+      setIsRecoveryMode(false);
+    }
     // Si el usuario intentó acceder a admin pero no tiene sesión ni tienda, volver a vista vecino para no dejarlo atrapado
     if (viewMode === 'admin' && (!currentUser || !merchantStore)) {
       setViewMode('customer');

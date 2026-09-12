@@ -44,6 +44,12 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
+  // Campos para Establecer Nueva Contraseña (Recovery final)
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Campos de Registro (Paso 1)
   const [ownerName, setOwnerName] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -77,16 +83,20 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   // Reset al abrir: únicamente cuando el modal pasa de cerrado (false) a abierto (true)
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      setErrorMsg('');
-      setLoading(false);
-      setMode(initialMode || 'login');
-      if (currentUser) {
-        setRegisteredUser(currentUser);
-        setRegisterStep(2);
-      } else {
-        setRegisteredUser(null);
-        setRegisterStep(1);
+    if (isOpen) {
+      if (!prevIsOpenRef.current || initialMode === 'update-password') {
+        setErrorMsg('');
+        setLoading(false);
+        setMode(initialMode || 'login');
+        if (initialMode !== 'update-password') {
+          if (currentUser) {
+            setRegisteredUser(currentUser);
+            setRegisterStep(2);
+          } else {
+            setRegisteredUser(null);
+            setRegisterStep(1);
+          }
+        }
       }
     }
     prevIsOpenRef.current = isOpen;
@@ -156,8 +166,9 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
     setLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail.trim(), {
-        redirectTo: window.location.origin
+        redirectTo: redirectUrl
       });
       setLoading(false);
 
@@ -169,6 +180,55 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     } catch (err) {
       setLoading(false);
       setErrorMsg('Error de red al procesar la solicitud.');
+    }
+  };
+
+  // Manejador para Guardar la Nueva Contraseña (flujo final de recuperación)
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!newPassword || newPassword.length < 6) {
+      setErrorMsg('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Las contraseñas no coinciden. Verifica que ambas sean iguales.');
+      return;
+    }
+
+    if (!supabase) {
+      setErrorMsg('El servicio de autenticación no está disponible.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      setLoading(false);
+
+      if (error) {
+        setErrorMsg(error.message || 'Error al actualizar la contraseña.');
+        return;
+      }
+
+      showToast('¡Contraseña actualizada con éxito! Ya puedes iniciar sesión.', 'success');
+
+      // Limpiar hash de recuperación de la URL
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+
+      setNewPassword('');
+      setConfirmPassword('');
+      if (data?.user?.email) {
+        setLoginEmail(data.user.email);
+      }
+      setMode('login');
+    } catch (err) {
+      setLoading(false);
+      setErrorMsg('Error de conexión al actualizar la contraseña.');
     }
   };
 
@@ -281,31 +341,38 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             Gestiona tu minimarket, inventario en vivo y pedidos de vecinos.
           </p>
 
-          {/* Selector de Pestañas (Tabs) */}
-          <div className="flex bg-black/20 p-1 rounded-2xl mt-4 border border-white/10 max-w-xs mx-auto">
-            <button
-              type="button"
-              onClick={() => { setMode('login'); setErrorMsg(''); }}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'login'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Iniciar Sesión
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('register'); setErrorMsg(''); }}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mode === 'register'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              Crear Tienda
-            </button>
-          </div>
+          {/* Selector de Pestañas (Tabs) o Badge de Restablecimiento */}
+          {mode !== 'update-password' ? (
+            <div className="flex bg-black/20 p-1 rounded-2xl mt-4 border border-white/10 max-w-xs mx-auto">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setErrorMsg(''); }}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  mode === 'login'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('register'); setErrorMsg(''); }}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  mode === 'register'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Crear Tienda
+              </button>
+            </div>
+          ) : (
+            <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/20 backdrop-blur-md text-white text-xs font-bold border border-white/20">
+              <KeyRound className="w-4 h-4" />
+              <span>Restablecer Contraseña</span>
+            </div>
+          )}
         </div>
 
         {/* Contenedor del Formulario con scroll independiente */}
@@ -482,6 +549,103 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   </div>
                 </form>
               )}
+            </div>
+          )}
+
+          {/* ========================================================
+              MODO 4: ACTUALIZAR CONTRASEÑA (RECOVERY)
+             ======================================================== */}
+          {mode === 'update-password' && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <h3 className="text-sm font-extrabold text-slate-900">Ingresa tu Nueva Contraseña</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Escribe una nueva clave segura para recuperar el acceso a tu cuenta.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Nueva Contraseña
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      placeholder="Mínimo 6 caracteres"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all bg-slate-50/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Confirmar Nueva Contraseña
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      placeholder="Repite tu nueva contraseña"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all bg-slate-50/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3.5 top-3.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Actualizando contraseña...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Guardar Nueva Contraseña</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="text-center pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setErrorMsg(''); }}
+                    className="text-xs font-semibold text-slate-600 hover:text-emerald-700 cursor-pointer"
+                  >
+                    ← Volver a Iniciar Sesión
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
