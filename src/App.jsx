@@ -32,7 +32,8 @@ const AppContent = () => {
     currentUser,
     merchantStore,
     isRecoveryMode,
-    setIsRecoveryMode
+    setIsRecoveryMode,
+    showToast
   } = useStore();
 
   // Estados de Modales
@@ -52,6 +53,24 @@ const AppContent = () => {
       setIsAuthModalOpen(true);
     }
   }, [isRecoveryMode]);
+
+  // Si llega con error de enlace expirado o inválido (otp_expired)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const errorCode = params.get('error_code');
+
+      if (errorCode === 'otp_expired' || params.get('error') === 'access_denied') {
+        showToast('El enlace de recuperación ha expirado o ya fue utilizado. Por favor solicita uno nuevo.', 'error');
+        setAuthModalMode('forgot');
+        setIsAuthModalOpen(true);
+        if (window.history?.replaceState) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+    }
+  }, [showToast]);
 
   const handleOpenAuthModal = (mode = 'login') => {
     setAuthModalMode(typeof mode === 'string' ? mode : 'login');
