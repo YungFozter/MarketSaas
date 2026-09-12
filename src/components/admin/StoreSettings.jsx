@@ -373,48 +373,27 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
     <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
-      {/* 1. Controles Superiores Flotantes (Mi Ubicación & Coordenadas) */}
-      <div className="absolute top-2.5 sm:top-3 inset-x-2.5 sm:inset-x-3 z-[1000] pointer-events-none flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
-        {/* 1.1 Botón "Mi Ubicación" (Superior Izquierda) */}
-        <div className="pointer-events-auto self-start">
-          <button
-            type="button"
-            onClick={handleGetDeviceLocation}
-            disabled={isLocating}
-            className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
-              isLocating
-                ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/50 shadow-blue-600/25'
-                : hasMarker && hasCoords
-                  ? 'bg-white/95 hover:bg-white text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30 active:scale-95'
-                  : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg active:scale-95'
-            }`}
-            title="Detectar mi ubicación GPS actual y colocar el marcador de la tienda"
-          >
-            <Navigation className={`w-3.5 h-3.5 shrink-0 ${isLocating ? 'animate-spin text-white' : hasMarker && hasCoords ? 'text-blue-600' : 'text-slate-600'}`} />
-            <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicación'}</span>
-            {hasMarker && hasCoords && !isLocating && (
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-            )}
-          </button>
-        </div>
-
-        {/* 1.2 Card de Coordenadas del Mapa (Superior Derecha) */}
-        <div className="pointer-events-auto self-end sm:self-auto">
-          <div className="bg-slate-900/95 backdrop-blur-md text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-slate-700/80 shadow-md flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-mono">
-            {hasMarker && hasCoords ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                <span className="font-bold text-emerald-400 font-sans hidden sm:inline">GPS:</span>
-                <span className="tabular-nums tracking-tight">{latitude.toFixed(6)}, {longitude.toFixed(6)}</span>
-              </>
-            ) : (
-              <>
-                <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                <span className="text-amber-200 font-sans font-medium text-[10px] sm:text-xs">Toca para fijar</span>
-              </>
-            )}
-          </div>
-        </div>
+      {/* 1. Botón "Mi Ubicación" (Superior Izquierda, idéntico al mapa de Vista Vecino) */}
+      <div className="absolute top-3 left-3 z-[1000] pointer-events-auto">
+        <button
+          type="button"
+          onClick={handleGetDeviceLocation}
+          disabled={isLocating}
+          className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+            isLocating
+              ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/50 shadow-blue-600/25'
+              : hasMarker && hasCoords
+                ? 'bg-white/95 hover:bg-white text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30 active:scale-95'
+                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg active:scale-95'
+          }`}
+          title="Detectar mi ubicación GPS actual y colocar el marcador de la tienda"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin text-white' : hasMarker && hasCoords ? 'text-blue-600' : 'text-slate-600'}`} />
+          <span>{isLocating ? 'Obteniendo GPS...' : 'Mi Ubicación'}</span>
+          {hasMarker && hasCoords && !isLocating && (
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          )}
+        </button>
       </div>
 
       {/* 3. Controles de mapa, satélite y zoom (Inferior Derecha) */}
