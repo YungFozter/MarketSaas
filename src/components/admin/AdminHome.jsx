@@ -149,12 +149,23 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     .filter(o => o.deliveryType === 'delivery')
     .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
 
+  // Helper para clasificar si un pedido corresponde a Mostrador (presencial POS o retiro en tienda) vs Domicilio
+  const isPickupOrPosOrder = (order) => {
+    if (!order) return false;
+    if (order.id?.startsWith('POS-')) return true;
+    if (order.deliveryType === 'pickup') return true;
+    if (order.customer?.name?.includes('Presencial') || order.customer?.name?.includes('Mostrador')) return true;
+    if (order.customer?.condominium === 'Retiro en Tienda' || order.customer?.apartment === 'Mostrador') return true;
+    if (order.deliveryType === 'delivery') return false;
+    return false;
+  };
+
   // Transacciones recientes para el Feed de Actividad en Vivo
   const recentTransactions = validOrders
     .filter(o => {
-      const isPos = o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial');
-      if (feedFilter === 'pos') return isPos;
-      if (feedFilter === 'delivery') return !isPos;
+      const isPickup = isPickupOrPosOrder(o);
+      if (feedFilter === 'pos') return isPickup;
+      if (feedFilter === 'delivery') return !isPickup;
       return true;
     })
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
@@ -1452,7 +1463,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🏪 Mostrador ({validOrders.filter(o => o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial')).length})
+                      🏪 Mostrador ({validOrders.filter(isPickupOrPosOrder).length})
                     </button>
                     <button
                       type="button"
@@ -1463,7 +1474,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🛵 Domicilio ({validOrders.filter(o => !(o.id?.startsWith('POS-') || o.customer?.name?.includes('Presencial'))).length})
+                      🛵 Domicilio ({validOrders.filter(o => !isPickupOrPosOrder(o)).length})
                     </button>
                   </div>
                 </div>
@@ -1483,6 +1494,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   ) : (
                     recentTransactions.map((tx) => {
                       const isPos = tx.id?.startsWith('POS-') || tx.customer?.name?.includes('Presencial');
+                      const isPickup = tx.deliveryType === 'pickup' || tx.customer?.condominium === 'Retiro en Tienda' || tx.customer?.apartment === 'Mostrador';
                       const payMethod = tx.paymentMethod || 'cash';
                       return (
                         <div 
@@ -1505,12 +1517,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                  {isPos ? 'Venta de Mostrador (Presencial)' : `🏢 ${tx.customer?.tower || 'Torre'} • ${tx.customer?.apartment || 'Depto'}`}
-                                </span>
-                                {!isPos && tx.customer?.condominium && (
-                                  <span className="text-[11px] font-semibold text-slate-500">
-                                    • {tx.customer.condominium}
+                                {isPos ? (
+                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                    🏪 Venta de Mostrador (Presencial)
+                                  </span>
+                                ) : isPickup ? (
+                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                    🛍️ {tx.customer?.name || 'Vecino'} • Retiro en Tienda
+                                  </span>
+                                ) : (
+                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                    🛵 {tx.customer?.name ? `${tx.customer.name} • ` : ''}{tx.customer?.condominium || 'Domicilio'}
+                                    {(tx.customer?.tower || tx.customer?.apartment) && (
+                                      <span className="font-semibold text-slate-600 ml-1">
+                                        ({[tx.customer?.tower, tx.customer?.apartment].filter(Boolean).join(' - ')})
+                                      </span>
+                                    )}
                                   </span>
                                 )}
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
