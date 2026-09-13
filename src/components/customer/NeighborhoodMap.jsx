@@ -214,17 +214,10 @@ export const NeighborhoodMap = ({
     return null;
   }, [selectedStore]);
 
-  // Estado de coordenadas activas: arranca en la tienda activa si existe o en el centro de Santa Cruz
-  const [currentCoords, setCurrentCoords] = useState(() => {
-    if (activeStore?.googleMapsCoordinates) {
-      return activeStore.googleMapsCoordinates;
-    }
-    return DEFAULT_CITY_CENTER_COORDS;
-  });
+  // Estado de coordenadas activas: arranca siempre en la Plaza 24 de Septiembre como punto de vista inicial
+  const [currentCoords, setCurrentCoords] = useState(DEFAULT_CITY_CENTER_COORDS);
 
-  const [activeLocationType, setActiveLocationType] = useState(() => {
-    return activeStore ? 'store' : 'plaza';
-  });
+  const [activeLocationType, setActiveLocationType] = useState('plaza');
 
   // Limpiar cualquier residuo previo de accesos rápidos en localStorage del navegador
   useEffect(() => {
@@ -239,13 +232,13 @@ export const NeighborhoodMap = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    const firstStoreCoords = storesToPlot[0]?.googleMapsCoordinates || masterStores[0]?.googleMapsCoordinates;
-    const initialLat = activeStore?.googleMapsCoordinates?.lat || firstStoreCoords?.lat || DEFAULT_CITY_CENTER_COORDS.lat;
-    const initialLng = activeStore?.googleMapsCoordinates?.lng || firstStoreCoords?.lng || DEFAULT_CITY_CENTER_COORDS.lng;
+    // En PANTALLA VECINO el mapa SIEMPRE debe iniciar centrado en la Plaza 24 de Septiembre (sin marcador)
+    const initialLat = DEFAULT_CITY_CENTER_COORDS.lat;
+    const initialLng = DEFAULT_CITY_CENTER_COORDS.lng;
 
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
-      zoom: 14,
+      zoom: 15,
       zoomControl: false,
       attributionControl: true
     });
@@ -328,20 +321,6 @@ export const NeighborhoodMap = ({
       marker.addTo(markersLayer);
       validLatLngs.push([coords.lat, coords.lng]);
     });
-
-    // Auto-ajustar la vista a los marcadores si no hay una tienda seleccionada específicamente
-    if (!selectedStore && validLatLngs.length > 0) {
-      if (validLatLngs.length === 1) {
-        map.setView(validLatLngs[0], 15);
-      } else {
-        try {
-          const bounds = L.latLngBounds(validLatLngs);
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-        } catch (e) {
-          map.setView(validLatLngs[0], 15);
-        }
-      }
-    }
   }, [storesToPlot, selectedStore]);
 
   // Movimiento seguro que evita el bug de división por cero / NaN de flyTo en distancias cortas
@@ -391,7 +370,7 @@ export const NeighborhoodMap = ({
     safeFlyOrPanTo(map, lat, lng, 16);
   }, [selectedStore]);
 
-  // 4.1 SINCRONIZAR MARCADOR GPS DEL USUARIO
+  // 4.1 SINCRONIZAR MARCADOR GPS DEL USUARIO Y VOLAR A SU UBICACIÓN
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !userCoordinates || !hasUserGps) return;
@@ -405,6 +384,7 @@ export const NeighborhoodMap = ({
       iconAnchor: [11, 11]
     });
     userMarkerRef.current = L.marker([userCoordinates.lat, userCoordinates.lng], { icon: userIcon }).addTo(map);
+    safeFlyOrPanTo(map, userCoordinates.lat, userCoordinates.lng, 15);
   }, [userCoordinates, hasUserGps]);
 
   // Controles de Zoom

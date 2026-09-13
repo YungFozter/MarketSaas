@@ -120,10 +120,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     );
   }, [showToast]);
 
-  // Solicitar automáticamente la ubicación al montar la pantalla vecino
-  useEffect(() => {
-    requestUserLocation();
-  }, [requestUserLocation]);
+  // La ubicación GPS se solicita únicamente cuando el usuario presiona "Mi Ubicación" o "Usar mi ubicación GPS"
 
   // Notificación de nueva ubicación GPS detectada desde el mapa
   const handleUserLocationChange = (coords) => {
