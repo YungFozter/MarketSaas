@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
+import { exportSalesToCSV, exportSalesToStyledExcel, exportSalesToPDF } from '../utils/salesExportUtils';
 
 const StoreContext = createContext();
 
@@ -1556,28 +1557,7 @@ export const StoreProvider = ({ children }) => {
       showToast('No hay pedidos registrados para exportar.', 'warning');
       return;
     }
-    const headers = ["ID Pedido", "Fecha", "Cliente", "Telefono", "Condominio", "Torre/Depto", "Tipo", "Metodo Pago", "Total", "Estado"];
-    const rows = orders.map(o => [
-      o.id,
-      new Date(o.createdAt).toLocaleDateString() + " " + new Date(o.createdAt).toLocaleTimeString(),
-      `"${o.customer.name}"`,
-      `"${o.customer.phone}"`,
-      `"${o.customer.condominium}"`,
-      `"${o.customer.tower} - ${o.customer.apartment}"`,
-      o.deliveryType === 'delivery' ? 'Delivery' : 'Retiro',
-      o.paymentMethod,
-      o.total.toFixed(2),
-      o.status
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `reporte_ventas_${storeConfig.name.replace(/[^a-z0-9]/gi, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportSalesToCSV(orders, storeConfig, formatBoliviaDateTime);
     showToast('Reporte de ventas exportado en formato CSV.', 'success');
   };
 

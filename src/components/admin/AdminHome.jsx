@@ -54,6 +54,7 @@ import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { SubscriptionManager } from './SubscriptionManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
+import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { useStore } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
@@ -131,6 +132,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   });
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -790,12 +792,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
 
             <button
-              onClick={exportSalesCSV}
+              onClick={() => setIsExportModalOpen(true)}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Descargar reporte contable en CSV"
+              title="Descargar o imprimir reporte contable de ventas (PDF, Excel, CSV)"
             >
               <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Exportar (.CSV)</span>
+              <span className="hidden sm:inline">Exportar Reporte</span>
             </button>
           </div>
         </header>
@@ -1651,6 +1653,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           setIsBlockedModalOpen(false);
           setActiveTab('subscription');
         }}
+      />
+
+      {/* Modal de Exportación de Reporte de Ventas (PDF, Excel, CSV) */}
+      <ExportSalesReportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
       />
     </div>
   );
