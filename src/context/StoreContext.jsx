@@ -659,12 +659,12 @@ export const StoreProvider = ({ children }) => {
   });
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
-  // Auto-limpieza de pedido activo si el pedido ya fue entregado, cancelado o no existe en orders
+  // Auto-limpieza de pedido activo si el pedido ya fue entregado o cancelado
   useEffect(() => {
     if (!activeTrackingOrderId) return;
     const existing = orders.find(o => o.id === activeTrackingOrderId);
-    // Si el pedido no existe o ya no está en curso activo:
-    if (!existing || ['delivered', 'cancelled'].includes(existing.status)) {
+    // Si el pedido existe y ya concluyó su ciclo activo:
+    if (existing && ['delivered', 'cancelled'].includes(existing.status)) {
       setActiveTrackingOrderId(null);
       try {
         localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
@@ -885,35 +885,60 @@ export const StoreProvider = ({ children }) => {
     });
 
     // 3. Cargar pedidos por tienda con filtro server-side seguro y normalización canónica
-    supabase.from('orders')
-      .select('*')
-      .eq('tenant_id', tenantSlug)
-      .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (error) {
-          console.warn('Aviso cargando pedidos en Supabase:', error.message);
-        } else if (Array.isArray(data)) {
-          const normalized = data
-            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
-            .map(normalizeOrder);
-          setOrders(normalized);
-          try {
-            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
-          } catch (e) {}
-
-          // Auto-limpieza si el pedido activo en cliente ya no existe en la base de datos
-          setActiveTrackingOrderId(prev => {
-            if (prev && !normalized.some(o => o.id === prev)) {
-              try {
-                localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
-                localStorage.removeItem('marketsaas_default_active_order');
-              } catch (err) {}
-              return null;
-            }
-            return prev;
-          });
+    if (currentUser) {
+      supabase.from('orders')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn('Aviso cargando pedidos en Supabase:', error.message);
+          } else if (Array.isArray(data)) {
+            const normalized = data
+              .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
+              .map(normalizeOrder);
+            setOrders(normalized);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
+            } catch (e) {}
+          }
+        });
+    } else if (activeTrackingOrderId) {
+      // Para clientes vecinos anónimos: consultar únicamente el pedido activo en curso para sincronizar su estado
+      const syncTrackingOrder = async () => {
+        try {
+          // 1. Intentar vía función RPC segura get_order_tracking
+          const { data: rpcData, error: rpcError } = await supabase
+            .rpc('get_order_tracking', { p_order_id: activeTrackingOrderId });
+          if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+            const normalized = normalizeOrder(rpcData[0]);
+            setOrders(prev => {
+              const remaining = prev.filter(o => o.id !== normalized.id);
+              return [normalized, ...remaining];
+            });
+            return;
+          }
+        } catch (e) {
+          // Silenciosamente continuar si el RPC aún no fue desplegado en la BD
         }
-      });
+
+        // 2. Consulta directa por ID
+        supabase.from('orders')
+          .select('*')
+          .eq('id', activeTrackingOrderId)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (!error && data) {
+              const normalized = normalizeOrder(data);
+              setOrders(prev => {
+                const remaining = prev.filter(o => o.id !== normalized.id);
+                return [normalized, ...remaining];
+              });
+            }
+          });
+      };
+      syncTrackingOrder();
+    }
 
     // 4. Cargar solicitudes de productos por tienda
     if (tenantSlug && tenantSlug !== 'default') {
@@ -1412,10 +1437,12 @@ export const StoreProvider = ({ children }) => {
   }, 0);
 
   // Tarifa de delivery calculada según el condominio seleccionado
-  const isDeliveryEnabled = storeConfig.enableDelivery === true;
-  const currentCondo = storeConfig.condominiums?.find(c => c.name === selectedLocation.condominium);
-  const deliveryFeeBase = isDeliveryEnabled ? (currentCondo ? (currentCondo.deliveryFee ?? storeConfig.defaultDeliveryFee ?? 0) : (storeConfig.defaultDeliveryFee ?? 0)) : 0;
-  const isFreeDelivery = !isDeliveryEnabled || (storeConfig.freeDeliveryThreshold > 0 && cartSubtotal >= storeConfig.freeDeliveryThreshold);
+  const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
+  const currentCondo = Array.isArray(storeConfig?.condominiums)
+    ? storeConfig.condominiums.find(c => c.name === selectedLocation?.condominium)
+    : null;
+  const deliveryFeeBase = isDeliveryEnabled ? (currentCondo ? (currentCondo.deliveryFee ?? storeConfig?.deliveryFee ?? storeConfig?.defaultDeliveryFee ?? 0) : (storeConfig?.deliveryFee ?? storeConfig?.defaultDeliveryFee ?? 0)) : 0;
+  const isFreeDelivery = !isDeliveryEnabled || (storeConfig?.freeDeliveryThreshold > 0 && cartSubtotal >= storeConfig.freeDeliveryThreshold);
   const actualDeliveryFee = (!isDeliveryEnabled || isFreeDelivery) ? 0 : deliveryFeeBase;
 
   // Total final
@@ -2378,6 +2405,15 @@ export const StoreProvider = ({ children }) => {
       }
 
       const { adminPassword, admin_pin, ...baseConfig } = initialStoreConfig;
+      const defaultCondos = [
+        {
+          id: `c-${cleanSlug}-1`,
+          name: 'Condominio Central',
+          towers: ['Torre A', 'Torre B'],
+          deliveryFee: 0,
+          estTime: '10-15 min'
+        }
+      ];
       const newConfig = {
         ...baseConfig,
         name: storeName,
@@ -2389,7 +2425,7 @@ export const StoreProvider = ({ children }) => {
         address: '',
         zone: '',
         reference: '',
-        condominiums: []
+        condominiums: defaultCondos
       };
 
       const storeRecord = {
@@ -2401,7 +2437,7 @@ export const StoreProvider = ({ children }) => {
         currency_symbol: 'Bs.',
         is_open: true,
         address: '',
-        condominiums: [],
+        condominiums: defaultCondos,
         coupons: [],
         categories: initialStoreConfig.categories,
         payment_methods: initialStoreConfig.paymentMethods,

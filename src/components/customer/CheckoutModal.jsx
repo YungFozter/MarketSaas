@@ -518,8 +518,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                         value={condoName}
                         onChange={(e) => {
                           setCondoName(e.target.value);
-                          const condo = storeConfig.condominiums.find(c => c.name === e.target.value);
-                          if (condo && condo.towers.length > 0) {
+                          const condo = condominiums.find(c => c.name === e.target.value);
+                          if (condo && Array.isArray(condo.towers) && condo.towers.length > 0) {
                             setTower(condo.towers[0]);
                           }
                         }}

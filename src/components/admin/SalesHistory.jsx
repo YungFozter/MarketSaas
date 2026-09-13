@@ -91,6 +91,9 @@ export const SalesHistory = () => {
   const filteredSales = useMemo(() => {
     return orders
       .filter((order) => {
+        // Excluir pedidos cancelados para no distorsionar ingresos ni estadísticas
+        if (order.status === 'cancelled') return false;
+
         // Filtro por Período
         const dateMatch = matchesPeriod(order.createdAt || order.created_at, selectedPeriod);
         if (!dateMatch) return false;

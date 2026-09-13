@@ -8,7 +8,8 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
 
   const cartItem = cart.find(item => item.id === product.id);
   const quantityInCart = cartItem ? cartItem.quantity : 0;
-  const isOutOfStock = product.stock <= 0;
+  const hasNumericStock = typeof product.stock === 'number' && !isNaN(product.stock);
+  const isOutOfStock = hasNumericStock && product.stock <= 0;
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   const savings = hasDiscount ? (product.originalPrice - product.price).toFixed(2) : null;
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -51,7 +52,7 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
         </div>
 
         {/* Badge de Stock Bajo */}
-        {product.stock > 0 && product.stock <= 5 && (
+        {hasNumericStock && product.stock > 0 && product.stock <= 5 && (
           <span className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 bg-rose-50 text-rose-700 border border-rose-200 text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shadow-xs">
             ¡Solo {product.stock}!
           </span>
@@ -72,7 +73,9 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
           {/* Categoría y Código SKU */}
           <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-semibold mb-1 gap-1">
             <span className="truncate">{product.category}</span>
-            <span className="font-mono text-[9px] sm:text-[10px] text-slate-400 shrink-0">#{product.code.slice(-4)}</span>
+            {product.code ? (
+              <span className="font-mono text-[9px] sm:text-[10px] text-slate-400 shrink-0">#{String(product.code).slice(-4)}</span>
+            ) : null}
           </div>
 
           {/* Nombre y Unidad */}
@@ -136,7 +139,7 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
                     e.stopPropagation();
                     updateCartQuantity(product.id, quantityInCart + 1);
                   }}
-                  disabled={quantityInCart >= product.stock}
+                  disabled={hasNumericStock && quantityInCart >= product.stock}
                   className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg sm:rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-2xs transition-colors disabled:opacity-50"
                 >
                   <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />

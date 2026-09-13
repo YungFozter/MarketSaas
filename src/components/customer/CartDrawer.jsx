@@ -152,7 +152,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
                       </span>
                       <button
                         onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
-                        disabled={item.quantity >= item.stock}
+                        disabled={typeof item.stock === 'number' && !isNaN(item.stock) && item.quantity >= item.stock}
                         className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs disabled:opacity-50"
                       >
                         <Plus className="w-3 h-3" />

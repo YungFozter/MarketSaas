@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
+import { escapeHtml } from '../../utils/formatters';
 import './StoreSettings.css';
 
 // Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
@@ -70,7 +71,7 @@ const getExactLatLng = (mapInstance, containerEl, e) => {
 };
 
 const createStoreMarkerIcon = (storeName) => {
-  const label = storeName ? storeName : 'Tu Tienda';
+  const label = storeName ? escapeHtml(storeName) : 'Tu Tienda';
   return L.divIcon({
     className: 'custom-location-picker-pin',
     html: `

@@ -7,20 +7,28 @@ export const LocationModal = ({ isOpen, onClose }) => {
   const { storeConfig, selectedLocation, setSelectedLocation, showToast } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
-  const [condo, setCondo] = useState(selectedLocation.condominium);
-  const [tower, setTower] = useState(selectedLocation.tower);
-  const [apartment, setApartment] = useState(selectedLocation.apartment || 'Depto 302');
+  const condoList = Array.isArray(storeConfig?.condominiums) && storeConfig.condominiums.length > 0
+    ? storeConfig.condominiums
+    : [{ id: 'c1', name: storeConfig?.zone || storeConfig?.condominium || 'Zona Principal', towers: ['Sector 1', 'Sector 2'], deliveryFee: Number(storeConfig?.deliveryFee) || 0, estTime: storeConfig?.deliveryTime || '15-20 min' }];
+
+  const [condo, setCondo] = useState(selectedLocation?.condominium || condoList[0]?.name || 'Zona Principal');
+  const currentCondoObj = condoList.find(c => c.name === condo) || condoList[0];
+  const availableTowers = Array.isArray(currentCondoObj?.towers) && currentCondoObj.towers.length > 0
+    ? currentCondoObj.towers
+    : ['Sector 1'];
+
+  const [tower, setTower] = useState(selectedLocation?.tower || availableTowers[0] || 'Sector 1');
+  const [apartment, setApartment] = useState(selectedLocation?.apartment || 'Depto 302');
+  const [notes, setNotes] = useState(selectedLocation?.notes || '');
 
   if (!isOpen) return null;
-
-  const currentCondoObj = storeConfig.condominiums.find(c => c.name === condo) || storeConfig.condominiums[0];
 
   const handleSave = () => {
     setSelectedLocation({
       condominium: condo,
       tower,
       apartment,
-      notes: selectedLocation.notes || ''
+      notes
     });
     showToast(`Ubicación fijada: ${condo} - ${tower}, ${apartment}`);
     onClose();
@@ -88,14 +96,15 @@ export const LocationModal = ({ isOpen, onClose }) => {
                   Condominio / Conjunto Habitacional
                 </label>
                 <div className="space-y-2">
-                  {storeConfig.condominiums.map((c) => {
+                  {condoList.map((c) => {
                     const isSelected = condo === c.name;
                     return (
                       <button
-                        key={c.id}
+                        key={c.id || c.name}
                         onClick={() => {
                           setCondo(c.name);
-                          if (c.towers.length > 0) setTower(c.towers[0]);
+                          const nextTowers = Array.isArray(c.towers) && c.towers.length > 0 ? c.towers : ['Sector 1'];
+                          setTower(nextTowers[0]);
                         }}
                         className={`w-full p-3.5 rounded-2xl border text-left flex items-center justify-between transition-all ${
                           isSelected
@@ -107,7 +116,7 @@ export const LocationModal = ({ isOpen, onClose }) => {
                           <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
                           <div>
                             <p className="text-xs sm:text-sm font-bold">{c.name}</p>
-                            <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime} • Delivery {currency} {c.deliveryFee.toFixed(2)}</p>
+                            <p className="text-[11px] text-slate-500 font-normal">Entrega aprox. en {c.estTime || '15 min'} • Delivery {currency} {(Number(c.deliveryFee) || 0).toFixed(2)}</p>
                           </div>
                         </div>
                         {isSelected && <Check className="w-4 h-4 text-emerald-600" />}
@@ -125,7 +134,7 @@ export const LocationModal = ({ isOpen, onClose }) => {
                     onChange={(e) => setTower(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold bg-white"
                   >
-                    {currentCondoObj.towers.map((t, idx) => (
+                    {availableTowers.map((t, idx) => (
                       <option key={idx} value={t}>{t}</option>
                     ))}
                   </select>
@@ -143,9 +152,20 @@ export const LocationModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
+              <div className="pt-2">
+                <label className="text-xs font-bold text-slate-700 block mb-1">Indicaciones para el delivery (opcional)</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ej. Dejar en recepción de conserjería o llamar al timbre"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
+                />
+              </div>
+
               <button
                 onClick={handleSave}
-                className="w-full mt-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                className="w-full mt-4 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Guardar Ubicación</span>
                 <ArrowRight className="w-4 h-4" />

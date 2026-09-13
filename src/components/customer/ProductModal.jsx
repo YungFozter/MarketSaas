@@ -12,7 +12,8 @@ export const ProductModal = ({ product, onClose, onRequestProduct }) => {
 
   const cartItem = cart.find(item => item.id === product.id);
   const currentInCart = cartItem ? cartItem.quantity : 0;
-  const isOutOfStock = product.stock <= 0;
+  const hasNumericStock = typeof product.stock === 'number' && !isNaN(product.stock);
+  const isOutOfStock = hasNumericStock && product.stock <= 0;
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
 
   const handleAdd = () => {
@@ -131,8 +132,9 @@ export const ProductModal = ({ product, onClose, onRequestProduct }) => {
                     </button>
                     <span className="font-extrabold text-xs sm:text-sm px-2 min-w-6 text-center">{qty}</span>
                     <button
-                      onClick={() => setQty(Math.min(product.stock, qty + 1))}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center font-bold shadow-2xs text-xs sm:text-sm"
+                      onClick={() => setQty(hasNumericStock ? Math.min(product.stock, qty + 1) : qty + 1)}
+                      disabled={hasNumericStock && qty >= product.stock}
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white text-slate-700 hover:bg-slate-200 flex items-center justify-center font-bold shadow-2xs text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
