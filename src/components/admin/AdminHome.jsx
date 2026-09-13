@@ -55,6 +55,7 @@ import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { SubscriptionManager } from './SubscriptionManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
+import { ShareStoreModal } from './ShareStoreModal';
 import { useStore } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
@@ -133,6 +134,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -643,6 +645,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
         {/* Bottom Store Info & User Profile */}
         <div className="p-3 border-t border-slate-100 space-y-2">
+          {/* Botón Compartir Tienda */}
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs transition-all cursor-pointer shadow-2xs group"
+            title="Compartir enlace y ubicación de tu tienda por diferentes aplicaciones"
+          >
+            <Share2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+            <span>Compartir Tienda</span>
+          </button>
+
           {/* Vista Vecino Shortcut */}
           <button
             onClick={() => {
@@ -1659,6 +1671,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       <ExportSalesReportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+      />
+
+      {/* Modal para Compartir Tienda (Multicanal / Apps) */}
+      <ShareStoreModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
       />
     </div>
   );
