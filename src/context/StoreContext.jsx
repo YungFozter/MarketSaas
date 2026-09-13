@@ -351,6 +351,25 @@ export const filterOutLegacyDemoProducts = (productList, slug) => {
   });
 };
 
+// Filtra pedidos reales descartando pruebas, vacíos o residuos de diagnóstico
+export const filterOutGhostOrders = (orderList) => {
+  if (!Array.isArray(orderList)) return [];
+  return orderList.filter(o => {
+    if (!o || typeof o !== 'object') return false;
+    const id = String(o.id || '');
+    if (!id || id === '{}' || id.startsWith('CHECK-') || id.startsWith('TEST-') || id === 'ORD-1319') {
+      return false;
+    }
+    // Descartar órdenes fantasma sin artículos o con total 0 (residuos de pruebas o carritos vacíos)
+    const items = Array.isArray(o.items) ? o.items : [];
+    const total = Number(o.total || 0);
+    if (items.length === 0 || total <= 0) {
+      return false;
+    }
+    return true;
+  });
+};
+
 export const deduplicateStoreList = (storeList) => {
   const seenIds = new Set();
   const seenSlugs = new Set();
@@ -720,15 +739,17 @@ export const StoreProvider = ({ children }) => {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed
-            .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
-            .map(normalizeOrder);
+          const cleaned = filterOutGhostOrders(parsed.map(normalizeOrder));
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(cleaned));
+          }
+          return cleaned;
         }
       }
-      return tenantSlug === 'default' ? initialOrders.map(normalizeOrder) : [];
+      return tenantSlug === 'default' ? filterOutGhostOrders(initialOrders.map(normalizeOrder)) : [];
     } catch (e) {
       console.warn('Error reading stored orders:', e);
-      return tenantSlug === 'default' ? initialOrders.map(normalizeOrder) : [];
+      return tenantSlug === 'default' ? filterOutGhostOrders(initialOrders.map(normalizeOrder)) : [];
     }
   });
 
@@ -1077,7 +1098,7 @@ export const StoreProvider = ({ children }) => {
       }
     });
 
-    // 3. Cargar pedidos por tienda con filtro server-side seguro y normalización canónica
+    // 3. Cargar pedidos por tienda con filtro server-side seguro y purga de órdenes fantasma
     if (currentUser) {
       supabase.from('orders')
         .select('*')
@@ -1087,9 +1108,17 @@ export const StoreProvider = ({ children }) => {
           if (error) {
             console.warn('Aviso cargando pedidos en Supabase:', error.message);
           } else if (Array.isArray(data)) {
-            const normalized = data
-              .filter(o => !String(o.id).startsWith('CHECK-') && !String(o.id).startsWith('TEST-') && o.id !== '{}' && o.id !== 'ORD-1319')
-              .map(normalizeOrder);
+            // Purgar de Supabase cualquier orden fantasma vacía o de prueba generada por error
+            const ghostOrders = data.filter(o => !filterOutGhostOrders([o]).length);
+            if (ghostOrders.length > 0) {
+              ghostOrders.forEach(go => {
+                supabase.from('orders').delete().eq('id', go.id).then(() => {
+                  console.log('Orden fantasma de prueba eliminada de Supabase:', go.id);
+                });
+              });
+            }
+
+            const normalized = filterOutGhostOrders(data.map(normalizeOrder));
             setOrders(normalized);
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
@@ -2023,6 +2052,12 @@ export const StoreProvider = ({ children }) => {
 
   // Crear Pedido desde la vista de Cliente
   const createCustomerOrder = (orderData) => {
+    if (!cart || cart.length === 0) {
+      console.warn('Intento de crear pedido con carrito vacío descartado.');
+      showToast('Tu canasta está vacía. Agrega productos para realizar un pedido.', 'warning');
+      return null;
+    }
+
     const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Guardar identidad del cliente para futuras visitas y fidelización

@@ -284,56 +284,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     );
   };
 
-  // Simular nuevo pedido entrante
-  const handleSimulateNewOrder = () => {
-    const newId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const sampleResidents = [
-      { name: 'Camila Rojas', phone: '+591 71234567', condo: 'Condominio Las Palmas', tower: 'Torre A', apt: 'Depto 904' },
-      { name: 'Carlos Mendoza', phone: '+591 78901234', condo: 'Condominio Las Palmas', tower: 'Torre C', apt: 'Depto 201' },
-      { name: 'Sebastián Pavez', phone: '+591 76543210', condo: 'Condominio Las Palmas', tower: 'Torre B', apt: 'Depto 402' },
-      { name: 'Lucía Valenzuela', phone: '+591 70123456', condo: 'Condominio Las Palmas', tower: 'Torre A', apt: 'Depto 105' }
-    ];
-    const resident = sampleResidents[Math.floor(Math.random() * sampleResidents.length)];
-    
-    // Seleccionar 2-3 productos
-    const prods = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
-    const items = prods.map(p => ({
-      id: p.id,
-      name: p.name,
-      quantity: Math.floor(Math.random() * 2) + 1,
-      price: p.price
-    }));
-    const subtotal = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
-    const deliveryFee = storeConfig?.enableDelivery ? 5.00 : 0.00;
-    const total = subtotal + deliveryFee;
-
-    const newOrder = {
-      id: newId,
-      customer: {
-        name: resident.name,
-        phone: resident.phone,
-        condominium: resident.condo,
-        tower: resident.tower,
-        apartment: resident.apt,
-        notes: 'Entregar en mano o en recepción.'
-      },
-      items,
-      subtotal,
-      deliveryFee,
-      discount: 0,
-      total,
-      deliveryType: storeConfig?.enableDelivery ? 'delivery' : 'pickup',
-      paymentMethod: Math.random() > 0.5 ? 'qr' : 'cash',
-      cashChangeFor: total > 50 ? 100 : 50,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    createCustomerOrder(newOrder);
-    playNotificationSound();
-    showToast(`¡Nuevo pedido entrante #${newId} de ${resident.name}!`, 'success');
-  };
-
   // Imprimir comanda térmica
   const handlePrintOrder = (order) => {
     const printWindow = window.open('', '', 'width=420,height=600');
@@ -846,15 +796,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             >
               <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
               <span className="hidden sm:inline">Exportar (.CSV)</span>
-            </button>
-
-            <button
-              onClick={handleSimulateNewOrder}
-              className="h-8 sm:h-9 px-2 sm:px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-dashed border-amber-300 font-semibold text-[11px] transition-all flex items-center gap-1 cursor-pointer shadow-2xs active:scale-95"
-              title="Herramienta de prueba: simular un pedido entrante"
-            >
-              <Bell className="w-3 h-3 text-amber-600" />
-              <span className="hidden md:inline">Probar Pedido Demo</span>
             </button>
           </div>
         </header>
