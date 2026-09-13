@@ -2154,6 +2154,7 @@ export const StoreProvider = ({ children }) => {
     triggerConfetti();
     const currency = storeConfig.currencySymbol || 'Bs.';
     showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
+    return posOrder;
   };
 
   // Solicitar producto ("Pídelo si no está")

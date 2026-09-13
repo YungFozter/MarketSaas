@@ -124,7 +124,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   });
   const [isCashCloseModalOpen, setIsCashCloseModalOpen] = useState(false);
-  const [quickSalePaymentType, setQuickSalePaymentType] = useState(null);
+  const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -846,14 +846,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
           {/* Quick Action CTA Buttons */}
           <div className="flex items-center gap-2">
-            {/* Botón de Venta Rápida */}
+            {/* Botón de Venta Rápida Directa */}
+            <button
+              onClick={() => setIsPosModalOpen(true)}
+              className="h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shadow-emerald-600/20 active:scale-95"
+              title="Abrir terminal de Venta Rápida en mostrador"
+            >
+              <Receipt className="w-3.5 h-3.5 text-white" />
+              <span>Venta Rápida</span>
+            </button>
+
+            {/* Botón de Cierre de Caja */}
             <button
               onClick={() => setIsCashCloseModalOpen(true)}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Abrir panel de Venta Rápida y arqueo de caja"
+              title="Arqueo y Cierre de Caja del Día"
             >
-              <Receipt className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Venta Rápida</span>
+              <Wallet className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Cierre de Caja</span>
             </button>
 
             <button
@@ -1675,10 +1685,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   type="button"
                   onClick={() => {
                     setIsCashCloseModalOpen(false);
-                    setQuickSalePaymentType('cash');
+                    setIsPosModalOpen(true);
                   }}
                   className="p-3.5 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100/90 border-2 border-emerald-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir panel de Venta en Efectivo"
+                  title="Abrir terminal de Venta Rápida"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -1701,10 +1711,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   type="button"
                   onClick={() => {
                     setIsCashCloseModalOpen(false);
-                    setQuickSalePaymentType('qr');
+                    setIsPosModalOpen(true);
                   }}
                   className="p-3.5 rounded-2xl bg-cyan-50/80 hover:bg-cyan-100/90 border-2 border-cyan-200 hover:border-cyan-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir panel de Venta por QR"
+                  title="Abrir terminal de Venta Rápida"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -1727,10 +1737,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   type="button"
                   onClick={() => {
                     setIsCashCloseModalOpen(false);
-                    setQuickSalePaymentType('card');
+                    setIsPosModalOpen(true);
                   }}
                   className="p-3.5 rounded-2xl bg-amber-50/80 hover:bg-amber-100/90 border-2 border-amber-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir panel de Venta con Tarjeta"
+                  title="Abrir terminal de Venta Rápida"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -1787,33 +1797,33 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       )}
 
       {/* ========================================================================= */}
-      {/* PANEL DE VENTA RÁPIDA (Lanzado al presionar opción en Ventas)             */}
+      {/* MODAL DE VENTA RÁPIDA (POS Terminal Directo)                              */}
       {/* ========================================================================= */}
-      {quickSalePaymentType && (
+      {isPosModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-6xl max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+          <div className="relative w-full max-w-6xl h-[94vh] max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
             {/* Header del Panel de Venta Rápida */}
-            <div className="p-4 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
+            <div className="p-3.5 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
                   <Store className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                    <span>Panel de Venta</span>
+                    <span>Punto de Venta (POS)</span>
                     <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                      {quickSalePaymentType === 'cash' ? 'Venta en Efectivo' : quickSalePaymentType === 'qr' ? 'Qr Digital' : 'Tarjeta POS Móvil'}
+                      Venta Rápida de Mostrador
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Selecciona productos del catálogo, agrégalos al ticket y procesa la venta
+                    Selecciona productos del catálogo, revisa el ticket y procesa el cobro
                   </p>
                 </div>
               </div>
               <button
-                onClick={() => setQuickSalePaymentType(null)}
+                onClick={() => setIsPosModalOpen(false)}
                 className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Cerrar panel de venta"
+                title="Cerrar punto de venta"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1822,7 +1832,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             {/* Contenido interactivo: Punto de Venta */}
             <div className="p-3 sm:p-5 overflow-y-auto flex-1">
               <PosTerminal 
-                initialPaymentType={quickSalePaymentType} 
+                onClose={() => setIsPosModalOpen(false)} 
               />
             </div>
           </div>
