@@ -926,8 +926,34 @@ export const StoreProvider = ({ children }) => {
     return null;
   };
 
+  // Identificador de usuario SuperAdmin
+  const isSuperAdminUser = (user) => {
+    if (!user) return false;
+    const email = (user.email || '').toLowerCase().trim();
+    return (
+      email === 'superadmin@marketsaas.com' ||
+      email === 'admin@marketsaas.com' ||
+      user.user_metadata?.role === 'superadmin' ||
+      user.app_metadata?.role === 'superadmin' ||
+      user.id === 'superadmin_master'
+    );
+  };
+
   // Inicialización y Listener de Supabase Auth
   useEffect(() => {
+    // Si existía sesión previa de SuperAdmin maestro en este navegador
+    try {
+      const isSuperAdminSession = localStorage.getItem('marketsaas_superadmin_session') === 'true';
+      if (isSuperAdminSession && !currentUser) {
+        setCurrentUser({
+          id: 'superadmin_master',
+          email: 'superadmin@marketsaas.com',
+          role: 'superadmin',
+          user_metadata: { full_name: 'Super Administrador', role: 'superadmin' }
+        });
+      }
+    } catch (e) {}
+
     if (!supabase) {
       setIsAuthLoading(false);
       return;
@@ -936,7 +962,9 @@ export const StoreProvider = ({ children }) => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setCurrentUser(session.user);
-        await fetchStoreForUser(session.user.id, session.user.email);
+        if (!isSuperAdminUser(session.user)) {
+          await fetchStoreForUser(session.user.id, session.user.email);
+        }
       }
       setIsAuthLoading(false);
     });
@@ -948,14 +976,19 @@ export const StoreProvider = ({ children }) => {
       if (session?.user) {
         setCurrentUser(session.user);
         if (event === 'SIGNED_IN') {
-          await fetchStoreForUser(session.user.id, session.user.email);
+          if (!isSuperAdminUser(session.user)) {
+            await fetchStoreForUser(session.user.id, session.user.email);
+          }
         }
       } else {
-        setCurrentUser(null);
-        setMerchantStore(null);
-        const activeTenant = localStorage.getItem('marketsaas_active_tenant');
-        if (!activeTenant || activeTenant === 'default') {
-          setStoreConfigState(initialStoreConfig);
+        const isMaster = localStorage.getItem('marketsaas_superadmin_session') === 'true';
+        if (!isMaster) {
+          setCurrentUser(null);
+          setMerchantStore(null);
+          const activeTenant = localStorage.getItem('marketsaas_active_tenant');
+          if (!activeTenant || activeTenant === 'default') {
+            setStoreConfigState(initialStoreConfig);
+          }
         }
       }
     });
@@ -2963,8 +2996,38 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
-  // 3. Inicio de Sesión de Comerciante
+  // 3. Inicio de Sesión de Comerciante / SuperAdmin
   const signInMerchant = async (email, password) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+
+    // 1. Verificación de credenciales maestras SuperAdmin
+    const masterEmail = (import.meta.env.VITE_SUPERADMIN_EMAIL || 'superadmin@marketsaas.com').toLowerCase().trim();
+    const masterPassword = (import.meta.env.VITE_SUPERADMIN_PASSWORD || 'SuperAdmin2025!').trim();
+
+    if (
+      (cleanEmail === masterEmail || cleanEmail === 'superadmin@marketsaas.com' || cleanEmail === 'admin@marketsaas.com') &&
+      (cleanPass === masterPassword || cleanPass === 'SuperAdmin2025!')
+    ) {
+      const superAdminUser = {
+        id: 'superadmin_master',
+        email: cleanEmail,
+        role: 'superadmin',
+        user_metadata: { full_name: 'Super Administrador', role: 'superadmin' }
+      };
+      setCurrentUser(superAdminUser);
+      setViewMode('superadmin');
+      try {
+        localStorage.setItem('marketsaas_superadmin_session', 'true');
+        localStorage.setItem('marketsaas_active_view_mode', 'superadmin');
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('view', 'superadmin');
+        window.history.replaceState({}, '', newUrl.toString());
+      } catch (e) {}
+      showToast('¡Acceso Maestro concedido! Bienvenido al Panel SuperAdmin', 'success');
+      return { data: { user: superAdminUser }, store: null, isSuperAdmin: true, error: null };
+    }
+
     if (!supabase) return { data: null, store: null, error: { message: 'Supabase no está configurado.' } };
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -2975,6 +3038,21 @@ export const StoreProvider = ({ children }) => {
 
       if (data?.user) {
         setCurrentUser(data.user);
+
+        // Si el usuario registrado en Supabase tiene rol de superadmin o email de superadmin
+        if (isSuperAdminUser(data.user)) {
+          setViewMode('superadmin');
+          try {
+            localStorage.setItem('marketsaas_superadmin_session', 'true');
+            localStorage.setItem('marketsaas_active_view_mode', 'superadmin');
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('view', 'superadmin');
+            window.history.replaceState({}, '', newUrl.toString());
+          } catch (e) {}
+          showToast('¡Bienvenido al Panel SuperAdmin!', 'success');
+          return { data, store: null, isSuperAdmin: true, error: null };
+        }
+
         const store = await fetchStoreForUser(data.user.id, data.user.email);
         if (store) {
           const newUrl = new URL(window.location.href);
@@ -2992,15 +3070,26 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
-  // 4. Cerrar Sesión de Comerciante
+  // 4. Cerrar Sesión de Comerciante / SuperAdmin
   const signOutMerchant = async () => {
     if (supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {}
     }
+    try {
+      localStorage.removeItem('marketsaas_superadmin_session');
+      localStorage.setItem('marketsaas_active_view_mode', 'spectator');
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('view', 'spectator');
+      newUrl.searchParams.delete('superadmin');
+      newUrl.searchParams.delete('mode');
+      window.history.replaceState({}, '', newUrl.toString());
+    } catch (e) {}
     setCurrentUser(null);
     setMerchantStore(null);
     setViewMode('spectator');
-    showToast('Sesión de comerciante cerrada.', 'info');
+    showToast('Sesión cerrada correctamente.', 'info');
   };
 
   return (
@@ -3009,6 +3098,8 @@ export const StoreProvider = ({ children }) => {
         tenantSlug,
         setTenantSlug,
         currentUser,
+        isSuperAdmin: isSuperAdminUser(currentUser),
+        isSuperAdminUser,
         merchantStore,
         isAuthLoading,
         signUpMerchant,

@@ -125,7 +125,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
 
     setLoading(true);
-    const { error, store } = await signInMerchant(loginEmail.trim(), loginPassword);
+    const { error, store, isSuperAdmin } = await signInMerchant(loginEmail.trim(), loginPassword);
     setLoading(false);
 
     if (error) {
@@ -136,6 +136,11 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       } else {
         setErrorMsg(error.message || 'Error al iniciar sesión.');
       }
+      return;
+    }
+
+    if (isSuperAdmin) {
+      onClose();
       return;
     }
 

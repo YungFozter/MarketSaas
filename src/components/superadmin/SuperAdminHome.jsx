@@ -20,7 +20,8 @@ import {
   FileSpreadsheet, 
   Sparkles,
   Zap,
-  Filter
+  Filter,
+  LogOut
 } from 'lucide-react';
 
 export const SuperAdminHome = () => {
@@ -32,6 +33,7 @@ export const SuperAdminHome = () => {
     stores, 
     formatBoliviaDateTime, 
     setViewMode, 
+    signOutMerchant,
     showToast,
     TRIAL_DURATION_MINUTES 
   } = useStore();
@@ -226,6 +228,14 @@ export const SuperAdminHome = () => {
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md shadow-emerald-600/20"
             >
               Ver Directorio Vecinos
+            </button>
+            <button
+              onClick={signOutMerchant}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-rose-200 text-xs font-bold transition-all cursor-pointer"
+              title="Cerrar sesión de SuperAdmin"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         </div>

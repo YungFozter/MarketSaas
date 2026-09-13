@@ -44,7 +44,6 @@ import {
   CheckSquare,
   Square,
   Receipt,
-  KeyRound,
   Lock
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
@@ -704,15 +703,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             <span>Vista Vecino</span>
           </button>
 
-          {/* Panel SuperAdmin Shortcut */}
-          <button
-            onClick={() => setViewMode('superadmin')}
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-xs"
-            title="Abrir Panel Maestro SuperAdmin"
-          >
-            <KeyRound className="w-4 h-4 text-amber-400" />
-            <span>Panel SuperAdmin</span>
-          </button>
 
           {/* Profile Card */}
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
