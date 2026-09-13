@@ -74,18 +74,14 @@ export const ExportSalesReportModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Resumen KPI */}
-        <div className="grid grid-cols-3 gap-2.5 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl mb-6">
+        <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl mb-6">
           <div className="text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Órdenes</span>
             <span className="text-base sm:text-lg font-black text-slate-900">{summary.totalCount}</span>
           </div>
-          <div className="text-center border-x border-slate-200 px-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Recaudación</span>
+          <div className="text-center border-l border-slate-200 pl-3">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Recaudación Total</span>
             <span className="text-base sm:text-lg font-black text-emerald-600">{currency} {summary.totalAmountFormatted}</span>
-          </div>
-          <div className="text-center">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Ticket Promedio</span>
-            <span className="text-base sm:text-lg font-black text-slate-800">{currency} {summary.avgTicket}</span>
           </div>
         </div>
 
