@@ -458,9 +458,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                           <span className="text-emerald-700 font-black truncate">{store.name}</span>
                         </span>
                       ) : isFirst ? (
-                        hasUserGps ? 'Tienda Más Cercana a Tu Ubicación' : 'Minimarket Más Cercano (Referencia Centro)'
+                        'Minimarket Más Cercano'
                       ) : (
-                        `Minimarket en Tu Red (#${index + 1})`
+                        'Otros por tu Zona'
                       )}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
