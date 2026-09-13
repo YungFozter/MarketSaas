@@ -59,12 +59,11 @@ export const Navbar = ({
         window.requestAnimationFrame(() => {
           const scrollY = window.scrollY;
 
-          // Histéresis: se activa al scrollear hacia abajo (> 60px)
-          // y se desactiva al regresar arriba (< 15px).
-          // La zona muerta de 15px-60px previene oscilaciones y parpadeos.
+          // Histéresis calibrada: se activa justo al pasar la barra de anuncios (> 35px)
+          // y se desactiva suavemente al retornar cerca del inicio (< 20px).
           setIsScrolled((prev) => {
-            if (!prev && scrollY > 60) return true;
-            if (prev && scrollY < 15) return false;
+            if (!prev && scrollY > 35) return true;
+            if (prev && scrollY < 20) return false;
             return prev;
           });
 
@@ -173,17 +172,17 @@ export const Navbar = ({
       </div>
 
       {/* Header Sticky Principal: se ancla suavemente en top-0 sin saltos de altura */}
-      <header className="sticky top-0 z-50 w-full transition-all duration-300">
+      <header className="sticky top-0 z-50 w-full transition-all duration-300 pointer-events-none">
         {/* Cápsula Flotante Despegada / Dynamic Island */}
         <div 
           className={`transition-all duration-300 ease-out ${
             isScrolled 
-              ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-2 sm:pt-2.5' 
+              ? 'max-w-6xl mx-auto px-3 sm:px-6 pt-3.5 sm:pt-4' 
               : 'w-full px-0 pt-0'
           }`}
         >
           <div 
-            className={`relative transition-all duration-300 ${
+            className={`relative pointer-events-auto transition-all duration-300 ${
               isScrolled
                 ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
                 : 'bg-white border-b border-slate-100 shadow-none px-3 sm:px-6 lg:px-8'
