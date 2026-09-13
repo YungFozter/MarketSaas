@@ -173,7 +173,7 @@ export const Navbar = ({
       </div>
 
       {/* Header Sticky Principal: se ancla suavemente en top-0 sin saltos de altura */}
-      <header className="sticky top-0 z-40 w-full transition-all duration-300">
+      <header className="sticky top-0 z-50 w-full transition-all duration-300">
         {/* Cápsula Flotante Despegada / Dynamic Island */}
         <div 
           className={`transition-all duration-300 ease-out ${

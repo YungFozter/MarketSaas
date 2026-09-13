@@ -323,7 +323,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         </div>
 
         {/* Canvas de Google Maps */}
-        <div id="map-directory-container" className="relative rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
+        <div id="map-directory-container" className="relative z-0 isolate rounded-3xl overflow-hidden shadow-xl border border-slate-200/80 bg-white">
           <NeighborhoodMap
             allStores={storesWithDistance}
             stores={storesWithDistance}

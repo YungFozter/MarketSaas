@@ -372,7 +372,7 @@ const StoreLocationPickerMap = ({ latitude, longitude, storeName, onChange }) =>
   };
 
   return (
-    <div className="relative w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
+    <div className="relative z-0 isolate w-full h-80 sm:h-96 md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 select-none">
       <div ref={containerRef} className="w-full h-full cursor-crosshair" />
 
       {/* 1. Botón "Mi Ubicación" (Superior Izquierda, idéntico al mapa de Vista Vecino) */}

@@ -3,6 +3,8 @@
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   user-select: none;
   -webkit-user-select: none;
+  isolation: isolate;
+  z-index: 0;
 }
 
 /* Reset de contenedor Leaflet */
@@ -11,6 +13,7 @@
   height: 100%;
   background-color: #f1f5f9;
   font-family: inherit;
+  isolation: isolate;
 }
 
 .custom-leaflet-pin-wrapper {

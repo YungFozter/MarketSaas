@@ -528,7 +528,7 @@ export const NeighborhoodMap = ({
   }, [activeStore]);
 
   return (
-    <div className="google-map-component-container relative w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
+    <div className="google-map-component-container relative z-0 isolate w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
       
       {/* 1. MOTOR INTERACTIVO MULTI-MARCADOR LEAFLET */}
       <div 
