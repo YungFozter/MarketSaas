@@ -263,7 +263,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
       const deliveryDetails = effectiveDeliveryType === 'delivery'
         ? `📍 *Modalidad:* Delivery a domicilio\n   *Condominio:* ${condoName}\n   *Sector/Torre:* ${tower}\n   *Nº/Depto:* ${apartment}${notes ? `\n   *Indicaciones:* ${notes}` : ''}`
-        : `🛍️ *Modalidad:* Retiro en Tienda`;
+        : `🛍 *Modalidad:* Retiro en Tienda`;
 
       let waText = '';
 
@@ -285,7 +285,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           `📱 *Mi Teléfono:* ${customerPhone}\n` +
           `${deliveryDetails}\n` +
           `${paymentLines.join('\n')}\n` +
-          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          (newOrder && newOrder.discount > 0 ? `🎟 *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
           `\n` +
           `📋 *DETALLE DE LA LISTA DE COMPRA:*\n${itemsList}\n\n` +
           `💰 *TOTAL A PAGAR:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
@@ -299,7 +299,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           `📱 *Mi Teléfono:* ${customerPhone}\n` +
           `${deliveryDetails}\n` +
           `💳 *Forma de Pago:* Tarjeta en Tienda (POS)\n` +
-          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          (newOrder && newOrder.discount > 0 ? `🎟 *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
           `\n` +
           `📋 *DETALLE DE LA LISTA DE COMPRA:*\n${itemsList}\n\n` +
           `💰 *TOTAL A PAGAR:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
@@ -312,16 +312,22 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
           `📱 *Mi Teléfono:* ${customerPhone}\n` +
           `${deliveryDetails}\n` +
           `💳 *Forma de Pago:* Transferencia / QR Digital\n` +
-          (newOrder && newOrder.discount > 0 ? `🎟️ *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
+          (newOrder && newOrder.discount > 0 ? `🎟 *Cupón Canjeado:* -${currency} ${newOrder.discount.toFixed(2)}\n` : '') +
           `\n` +
           `📋 *DETALLE DEL PEDIDO:*\n${itemsList}\n\n` +
           `💰 *TOTAL PAGADO:* ${currency} ${(newOrder?.total || finalTotal).toFixed(2)}\n\n` +
-          `📎 _(Adjunto imagen/captura de mi comprobante a continuación)_ 👇`;
+          `📎 _(Adjunto imagen/captura de mi comprobante a continuación)_`;
       }
 
-      const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
+      // Enlace directo oficial a API de WhatsApp (evita rebotes de redirección de wa.me)
+      const waUrl = `https://api.whatsapp.com/send?phone=${cleanWa}&text=${encodeURIComponent(waText)}`;
 
-      showToast('¡Pedido registrado con éxito! Abriendo chat de WhatsApp...', 'success');
+      // Copiar automáticamente el mensaje completo al portapapeles como respaldo
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(waText).catch(() => {});
+      }
+
+      showToast('¡Pedido registrado con éxito! Abriendo chat de WhatsApp (mensaje copiado al portapapeles)...', 'success');
       window.open(waUrl, '_blank');
     } else {
       showToast('¡Pedido registrado en el sistema! (Aviso: La tienda aún no ha configurado su número de WhatsApp).', 'warning');
