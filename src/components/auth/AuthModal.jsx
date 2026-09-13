@@ -232,13 +232,13 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     }
   };
 
-  // 2. Verificar código OTP de 6 dígitos ingresado por el usuario
+  // 2. Verificar código OTP de 6 dígitos o enlace de recuperación
   const handleVerifyOtp = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
-    const cleanToken = (otpCode || '').trim();
-    if (!cleanToken || cleanToken.length < 6) {
-      setErrorMsg('Por favor ingresa el código de 6 dígitos recibido en tu correo.');
+    const rawInput = (otpCode || '').trim();
+    if (!rawInput) {
+      setErrorMsg('Por favor ingresa el código o pega el enlace recibido en tu correo.');
       return;
     }
 
@@ -250,9 +250,42 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     setLoading(true);
     try {
       const cleanEmail = (forgotEmail || verifiedEmail || '').trim().toLowerCase();
+
+      // Caso A: Si el usuario pegó el enlace completo o los parámetros de Supabase
+      if (rawInput.includes('access_token=') || rawInput.includes('refresh_token=')) {
+        let searchStr = rawInput;
+        if (searchStr.includes('#')) searchStr = searchStr.split('#')[1];
+        else if (searchStr.includes('?')) searchStr = searchStr.split('?')[1];
+        const params = new URLSearchParams(searchStr);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          setLoading(false);
+          if (error) {
+            setErrorMsg('El enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.');
+            return;
+          }
+          if (data?.user?.email) {
+            setVerifiedEmail(data.user.email);
+          }
+          showToast('¡Identidad verificada con éxito! Ahora crea tu nueva contraseña.', 'success');
+          setForgotStep('new-password');
+          return;
+        }
+      }
+
+      // Caso B: Código de 6 dígitos (OTP)
+      const cleanDigits = rawInput.replace(/[^0-9]/g, '');
+      const tokenToUse = cleanDigits.length === 6 ? cleanDigits : rawInput;
+
       const { data, error } = await supabase.auth.verifyOtp({
         email: cleanEmail,
-        token: cleanToken,
+        token: tokenToUse,
         type: 'recovery'
       });
       setLoading(false);
@@ -261,7 +294,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         if (error.message?.includes('Token has expired') || error.code === 'otp_expired') {
           setErrorMsg('El código ha expirado o es incorrecto. Solicita un nuevo código.');
         } else {
-          setErrorMsg('Código incorrecto. Verifica los 6 dígitos que llegaron a tu correo.');
+          setErrorMsg('Código incorrecto. Verifica los 6 dígitos o pega el enlace que recibiste.');
         }
         return;
       }
@@ -659,42 +692,47 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5 text-center">
-                        Código de 6 dígitos
+                        Código de 6 dígitos o Enlace recibido
                       </label>
                       <input
                         type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={6}
                         required
                         autoFocus
-                        placeholder="123456"
+                        placeholder="123456 o pega el enlace"
                         value={otpCode}
                         onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          const val = e.target.value;
                           setOtpCode(val);
                         }}
-                        className="w-full py-3 px-4 text-center text-2xl sm:text-3xl font-mono font-black tracking-[0.35em] sm:tracking-[0.45em] rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all bg-slate-50 text-slate-900"
+                        className={`w-full py-3 px-3 text-center rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all bg-slate-50 text-slate-900 ${
+                          otpCode.length > 10 
+                            ? 'text-xs font-mono break-all' 
+                            : 'text-2xl sm:text-3xl font-mono font-black tracking-[0.35em] sm:tracking-[0.45em]'
+                        }`}
                       />
                       <p className="text-[11px] text-slate-400 text-center mt-1.5">
-                        Revisa tu bandeja de entrada o la carpeta de spam / promociones.
+                        Puedes escribir el código de 6 dígitos o pegar directamente el enlace del correo.
                       </p>
                     </div>
 
                     <button
                       type="submit"
-                      disabled={loading || otpCode.length < 6}
+                      disabled={loading || !otpCode.trim()}
                       className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Verificando código...</span>
+                          <span>Verificando...</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>Verificar Código</span>
+                          <span>
+                            {otpCode.includes('http') || otpCode.includes('access_token') 
+                              ? 'Validar Enlace y Continuar' 
+                              : 'Verificar Código'}
+                          </span>
                         </>
                       )}
                     </button>
