@@ -794,7 +794,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             <button
               onClick={() => setIsExportModalOpen(true)}
               className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Descargar o imprimir reporte contable de ventas (PDF, Excel, CSV)"
+              title="Descargar o imprimir reporte contable de ventas (PDF, Excel)"
             >
               <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
               <span className="hidden sm:inline">Exportar Reporte</span>
