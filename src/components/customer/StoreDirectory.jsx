@@ -463,8 +463,8 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                         'Otros por tu Zona'
                       )}
                     </span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {isSelected && (
+                    {isSelected && (
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => setSelectedStoreSlug(null)}
@@ -473,11 +473,8 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                         >
                           (Ver más cercana)
                         </button>
-                      )}
-                      <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shrink-0">
-                        {store.distance}
-                      </span>
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   <StoreCard
