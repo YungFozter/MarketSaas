@@ -1374,7 +1374,7 @@ export const InventoryManager = () => {
               {/* Previsualización de productos leídos */}
               {importPreview?.validProducts?.length > 0 && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                       Vista Previa ({importPreview.validProducts.length} productos listos):
                     </h4>
@@ -1383,21 +1383,21 @@ export const InventoryManager = () => {
                     </span>
                   </div>
 
-                  <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-64 overflow-y-auto shadow-2xs">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100 text-slate-600 font-bold sticky top-0">
+                  <div className="border border-slate-200 rounded-2xl overflow-x-auto overflow-y-auto max-h-72 shadow-2xs bg-white">
+                    <table className="w-full min-w-[700px] text-left text-xs">
+                      <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 z-10 whitespace-nowrap shadow-2xs">
                         <tr>
-                          <th className="py-2.5 px-3">Producto</th>
-                          <th className="py-2.5 px-3">Categoría</th>
-                          <th className="py-2.5 px-3">Código / SKU</th>
-                          <th className="py-2.5 px-3">Costo</th>
-                          <th className="py-2.5 px-3">Precio Venta</th>
-                          <th className="py-2.5 px-3">Stock</th>
+                          <th className="py-2.5 px-3 min-w-[190px]">Producto</th>
+                          <th className="py-2.5 px-3 min-w-[120px]">Categoría</th>
+                          <th className="py-2.5 px-3 min-w-[120px]">Código / SKU</th>
+                          <th className="py-2.5 px-3 min-w-[90px]">Costo</th>
+                          <th className="py-2.5 px-3 min-w-[100px]">Precio Venta</th>
+                          <th className="py-2.5 px-3 min-w-[80px]">Stock</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {importPreview.validProducts.map((p, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
                             <td className="py-2 px-3">
                               <div className="flex items-center gap-2">
                                 <img 
@@ -1405,10 +1405,10 @@ export const InventoryManager = () => {
                                   alt={p.name} 
                                   className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5" 
                                 />
-                                <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                                <span className="font-bold text-slate-800 truncate max-w-[200px]" title={p.name}>{p.name}</span>
                               </div>
                             </td>
-                            <td className="py-2 px-3">
+                            <td className="py-2 px-3 whitespace-nowrap">
                               <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                                 p.category === 'Sin definir' 
                                   ? 'bg-amber-50 text-amber-800 border border-amber-200 italic' 
@@ -1417,14 +1417,14 @@ export const InventoryManager = () => {
                                 {p.category}
                               </span>
                             </td>
-                            <td className="py-2 px-3 font-mono text-[10px] text-slate-500">{p.code}</td>
-                            <td className="py-2 px-3 font-semibold text-slate-600">
+                            <td className="py-2 px-3 font-mono text-[10px] text-slate-500 whitespace-nowrap">{p.code}</td>
+                            <td className="py-2 px-3 font-semibold text-slate-600 whitespace-nowrap">
                               {typeof p.costPrice === 'number' ? `${currency} ${p.costPrice.toFixed(2)}` : <span className="text-slate-400 italic">Sin definir</span>}
                             </td>
-                            <td className="py-2 px-3 font-bold text-emerald-700">
+                            <td className="py-2 px-3 font-bold text-emerald-700 whitespace-nowrap">
                               {currency} {Number(p.price).toFixed(2)}
                             </td>
-                            <td className="py-2 px-3">
+                            <td className="py-2 px-3 whitespace-nowrap">
                               <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                                 p.stock === 'Sin definir' 
                                   ? 'bg-slate-100 text-slate-500 italic' 
@@ -1443,44 +1443,36 @@ export const InventoryManager = () => {
             </div>
 
             {/* Footer de confirmación */}
-            <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
-              <span className="text-xs text-slate-500">
-                {importPreview?.validProducts?.length > 0 
-                  ? `${importPreview.validProducts.length} productos listos para incorporar` 
-                  : 'Sube un archivo para previsualizar'}
-              </span>
+            <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportPreview(null);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsImportModalOpen(false);
-                    setImportPreview(null);
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!importPreview || importPreview.validProducts.length === 0 || isProcessingFile || isImporting}
-                  onClick={handleConfirmImport}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer"
-                >
-                  {isImporting ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Importando productos...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Confirmar e Importar al Inventario</span>
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={!importPreview || importPreview.validProducts.length === 0 || isProcessingFile || isImporting}
+                onClick={handleConfirmImport}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
+              >
+                {isImporting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Importando productos...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Confirmar e Importar al Inventario</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
