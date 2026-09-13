@@ -45,17 +45,19 @@ export const calculateDistanceMeters = (lat1, lon1, lat2, lon2) => {
 /**
  * Formatea una distancia en metros a texto legible y amigable
  * @param {number} meters 
- * @returns {string} ej. "A 180 m de ti", "A 1.4 km de ti"
+ * @param {string} suffix ej. "de ti", "del centro"
+ * @returns {string} ej. "A 180 m de ti", "A 8.7 km del centro"
  */
-export const formatDistance = (meters) => {
+export const formatDistance = (meters, suffix = 'de ti') => {
   if (meters === undefined || meters === null || isNaN(meters)) {
-    return 'Cerca de ti';
+    return suffix ? `Cerca ${suffix}` : 'Cerca';
   }
 
+  const s = suffix ? ` ${suffix}` : '';
   if (meters < 1000) {
-    return `A ${meters} m de ti`;
+    return `A ${meters} m${s}`;
   }
 
   const km = (meters / 1000).toFixed(1);
-  return `A ${km} km de ti`;
+  return `A ${km} km${s}`;
 };

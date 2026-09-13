@@ -192,10 +192,10 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       return {
         ...store,
         distanceMeters: meters,
-        distance: formatDistance(meters)
+        distance: formatDistance(meters, hasUserGps ? 'de ti' : 'del centro')
       };
     });
-  }, [uniqueStores, userCoords]);
+  }, [uniqueStores, userCoords, hasUserGps]);
 
   // Filtrado reactivo de tiendas con normalización de acentos y búsqueda multi-palabra
   const filteredStores = useMemo(() => {
@@ -240,41 +240,16 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     } else if (sortBy === 'fastest') {
       list.sort((a, b) => (parseInt(a.deliveryTime) || 99) - (parseInt(b.deliveryTime) || 99));
     }
-    return list;
-  }, [filteredStores, sortBy]);
-
-  // Separación para la cuadrícula Bento:
-  // Tarjeta Destacada Principal (a la izquierda): la tienda seleccionada en el mapa o la más cercana por defecto
-  const featuredStore = useMemo(() => {
+    // Si el usuario seleccionó una tienda específica en el mapa, posicionarla al inicio de la lista
     if (selectedStoreSlug) {
-      const selected = sortedStores.find((s) => s.slug === selectedStoreSlug) ||
-                       storesWithDistance.find((s) => s.slug === selectedStoreSlug);
-      if (selected) return selected;
+      const idx = list.findIndex(s => s.slug === selectedStoreSlug);
+      if (idx > 0) {
+        const [selected] = list.splice(idx, 1);
+        list.unshift(selected);
+      }
     }
-    return sortedStores[0] || null;
-  }, [sortedStores, storesWithDistance, selectedStoreSlug]);
-
-  // Tarjetas Secundarias con Mayor Cobertura (a la derecha):
-  // Priorizar tiendas dentro del radio de 3 a 5 km (<= 5000m), con delivery activo y mayor actividad
-  const coverageStores = useMemo(() => {
-    if (sortedStores.length <= 1) return [];
-    const others = sortedStores.filter((s) => 
-      s.slug !== featuredStore?.slug &&
-      s.id !== featuredStore?.id &&
-      s.name?.toLowerCase().trim() !== featuredStore?.name?.toLowerCase().trim()
-    );
-    return others.sort((a, b) => {
-      // 1. Prioridad: tiendas dentro del radio de 3-5 km (5000 m)
-      const inRadiusA = (a.distanceMeters ?? 999999) <= 5000 ? 1 : 0;
-      const inRadiusB = (b.distanceMeters ?? 999999) <= 5000 ? 1 : 0;
-      if (inRadiusA !== inRadiusB) return inRadiusB - inRadiusA;
-
-      // 2. Priorizar tiendas abiertas, con delivery y mayor número de pedidos
-      const scoreA = (a.isOpen ? 100 : 0) + (a.hasFastDelivery ? 50 : 0) + (a.ordersCount || 0);
-      const scoreB = (b.isOpen ? 100 : 0) + (b.hasFastDelivery ? 50 : 0) + (b.ordersCount || 0);
-      return scoreB - scoreA;
-    });
-  }, [sortedStores, featuredStore]);
+    return list;
+  }, [filteredStores, sortBy, selectedStoreSlug]);
 
   const handleStoreNavigation = (slug) => {
     if (onSelectStore) {
@@ -462,129 +437,59 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               Restablecer Filtros
             </button>
           </div>
-        ) : coverageStores.length === 0 ? (
-          /* CASO 1: TIENDA ÚNICA EN EL VECINDARIO (Ancho completo, espaciosa y sin recortes ni scroll) */
-          <div className="mt-6 w-full min-w-0">
-            {featuredStore && (
-              <div id="featured-store-target" className="w-full flex flex-col scroll-mt-6 min-w-0">
-                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
-                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Tienda Oficial en Tu Vecindario</span>
-                  </span>
-                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shrink-0">
-                    {featuredStore.distance} de ti
-                  </span>
-                </div>
-
-                <StoreCard
-                  store={featuredStore}
-                  variant="featured"
-                  isNearest={true}
-                  onSelect={handleStoreNavigation}
-                  onViewOnMap={handleViewStoreOnMap}
-                />
-              </div>
-            )}
-          </div>
         ) : (
-          /* CASO 2: MULTI-TIENDA (Bento Grid con Tarjeta Destacada y Tarjetas Secundarias Compactas) */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-start w-full min-w-0">
-            {/* TARJETA DESTACADA PRINCIPAL (8 Columnas en Desktop) */}
-            {featuredStore && (
-              <div id="featured-store-target" className="lg:col-span-7 xl:col-span-8 flex flex-col scroll-mt-6 min-w-0">
-                <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
-                  <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    {selectedStoreSlug && featuredStore.slug === selectedStoreSlug ? (
-                      <span className="flex items-center gap-1.5 truncate">
-                        <span>Tienda Seleccionada:</span>
-                        <span className="text-emerald-700 font-black truncate">{featuredStore.name}</span>
-                      </span>
-                    ) : (
-                      'Tienda Más Cercana a Tu Ubicación'
-                    )}
-                  </span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {selectedStoreSlug && featuredStore.slug === selectedStoreSlug && (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStoreSlug(null)}
-                        className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 underline cursor-pointer"
-                        title="Ver la tienda más cercana nuevamente"
-                      >
-                        (Ver más cercana)
-                      </button>
-                    )}
-                    <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
-                      {featuredStore.distance} de ti
+          /* LISTA COMPLETA DE MINIMARKETS A ANCHO COMPLETO */
+          <div className="flex flex-col gap-6 mt-6 w-full min-w-0">
+            {sortedStores.map((store, index) => {
+              const isFirst = index === 0;
+              const isSelected = selectedStoreSlug && store.slug === selectedStoreSlug;
+              return (
+                <div 
+                  key={store.id} 
+                  id={isFirst ? "featured-store-target" : undefined}
+                  className="w-full flex flex-col scroll-mt-6 min-w-0"
+                >
+                  <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
+                    <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      {isSelected ? (
+                        <span className="flex items-center gap-1.5 truncate">
+                          <span>Tienda Seleccionada en Mapa:</span>
+                          <span className="text-emerald-700 font-black truncate">{store.name}</span>
+                        </span>
+                      ) : isFirst ? (
+                        hasUserGps ? 'Tienda Más Cercana a Tu Ubicación' : 'Minimarket Más Cercano (Referencia Centro)'
+                      ) : (
+                        `Minimarket en Tu Red (#${index + 1})`
+                      )}
                     </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isSelected && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStoreSlug(null)}
+                          className="text-[11px] font-bold text-slate-500 hover:text-emerald-700 underline cursor-pointer"
+                          title="Restablecer orden por cercanía"
+                        >
+                          (Ver más cercana)
+                        </button>
+                      )}
+                      <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shrink-0">
+                        {store.distance}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <StoreCard
-                  store={featuredStore}
-                  variant="featured"
-                  isNearest={featuredStore.slug === sortedStores[0]?.slug}
-                  onSelect={handleStoreNavigation}
-                  onViewOnMap={handleViewStoreOnMap}
-                />
-              </div>
-            )}
-
-            {/* COLUMNA SECUNDARIA: TARJETAS COMPACTAS (5/4 Columnas en Desktop) */}
-            <div className="lg:col-span-5 xl:col-span-4 flex flex-col min-w-0">
-              <div className="flex items-center justify-between pb-2 mb-2 px-1 text-xs text-slate-500 font-semibold min-w-0">
-                <span className="font-extrabold text-slate-800 flex items-center gap-1.5 truncate">
-                  <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span>Otros Minimarkets Cercanos</span>
-                </span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold">
-                    📍 Radio 3-5 km
-                  </span>
-                  <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-bold">
-                    {coverageStores.length} {coverageStores.length === 1 ? 'tienda' : 'tiendas'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="secondary-stores-scroller flex flex-col gap-2.5 sm:gap-3.5 max-h-[850px] overflow-y-auto pr-1 scroll-smooth min-w-0">
-                {coverageStores.slice(0, visibleStoresCount).map((store) => (
                   <StoreCard
-                    key={store.id}
                     store={store}
-                    variant="compact"
-                    badgeLabel={store.hasFastDelivery ? "🛵 Mayor Cobertura" : "🛍️ Retiro en Tienda"}
+                    variant="featured"
+                    isNearest={isFirst}
                     onSelect={handleStoreNavigation}
                     onViewOnMap={handleViewStoreOnMap}
                   />
-                ))}
-
-                {/* Botón de Carga Progresiva / Paginación Inteligente */}
-                {coverageStores.length > visibleStoresCount && (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleStoresCount(prev => prev + 5)}
-                    className="mt-1 w-full py-2.5 sm:py-3 px-4 rounded-xl bg-white hover:bg-emerald-50/80 border border-slate-200/90 hover:border-emerald-300 text-slate-700 hover:text-emerald-800 font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer active:scale-98"
-                  >
-                    <span>Mostrar más tiendas ({coverageStores.length - visibleStoresCount} disponibles)</span>
-                    <ChevronDown className="w-4 h-4 text-emerald-600" />
-                  </button>
-                )}
-
-                {/* Opción de colapsar */}
-                {visibleStoresCount > 5 && (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleStoresCount(5)}
-                    className="text-[11px] text-slate-500 hover:text-slate-800 font-semibold py-1 text-center cursor-pointer transition-colors"
-                  >
-                    ↑ Ver menos tiendas
-                  </button>
-                )}
-              </div>
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
