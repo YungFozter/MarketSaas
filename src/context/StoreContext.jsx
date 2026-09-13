@@ -392,22 +392,20 @@ export const StoreProvider = ({ children }) => {
   });
 
   // 1. Vista actual: Persistencia en localStorage y URL
-  // Si el usuario recarga la página, se mantiene exactamente en la sección donde estaba (ej. 'customer' / Vista Vecino).
+  // Si el usuario recarga la página, se mantiene en la sección correspondiente (ej. 'customer' / Vista Vecino).
+  // NOTA DE SEGURIDAD: 'superadmin' NUNCA se inicializa desde URL pública sin sesión validada.
   const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('superadmin') === '1' || params.get('mode') === 'superadmin' || params.get('view') === 'superadmin') {
-        return 'superadmin';
-      }
       const urlView = params.get('view');
-      if (urlView && ['spectator', 'customer', 'admin', 'superadmin'].includes(urlView)) {
+      if (urlView && ['spectator', 'customer', 'admin'].includes(urlView)) {
         return urlView;
       }
       if (params.get('store') || params.get('tenant')) {
         return 'customer';
       }
       const savedView = localStorage.getItem('marketsaas_active_view_mode');
-      if (savedView && ['spectator', 'customer', 'admin', 'superadmin'].includes(savedView)) {
+      if (savedView && ['spectator', 'customer', 'admin'].includes(savedView)) {
         return savedView;
       }
     }
@@ -415,6 +413,11 @@ export const StoreProvider = ({ children }) => {
   });
 
   const setViewMode = (newMode) => {
+    if (newMode === 'superadmin' && !isSuperAdminUser(currentUser)) {
+      console.warn('Acceso denegado a SuperAdmin: Requiere sesión autenticada con rol SuperAdmin');
+      showToast('Acceso denegado. Se requieren credenciales de SuperAdmin.', 'error');
+      return;
+    }
     setViewModeState(newMode);
     if (typeof window !== 'undefined') {
       try {
@@ -926,34 +929,20 @@ export const StoreProvider = ({ children }) => {
     return null;
   };
 
-  // Identificador de usuario SuperAdmin
+  // Identificador de usuario SuperAdmin validado por Supabase
   const isSuperAdminUser = (user) => {
     if (!user) return false;
     const email = (user.email || '').toLowerCase().trim();
     return (
-      email === 'superadmin@marketsaas.com' ||
-      email === 'admin@marketsaas.com' ||
-      user.user_metadata?.role === 'superadmin' ||
       user.app_metadata?.role === 'superadmin' ||
-      user.id === 'superadmin_master'
+      user.user_metadata?.role === 'superadmin' ||
+      email === 'superadmin@marketsaas.com' ||
+      email === 'admin@marketsaas.com'
     );
   };
 
   // Inicialización y Listener de Supabase Auth
   useEffect(() => {
-    // Si existía sesión previa de SuperAdmin maestro en este navegador
-    try {
-      const isSuperAdminSession = localStorage.getItem('marketsaas_superadmin_session') === 'true';
-      if (isSuperAdminSession && !currentUser) {
-        setCurrentUser({
-          id: 'superadmin_master',
-          email: 'superadmin@marketsaas.com',
-          role: 'superadmin',
-          user_metadata: { full_name: 'Super Administrador', role: 'superadmin' }
-        });
-      }
-    } catch (e) {}
-
     if (!supabase) {
       setIsAuthLoading(false);
       return;
@@ -962,9 +951,17 @@ export const StoreProvider = ({ children }) => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setCurrentUser(session.user);
-        if (!isSuperAdminUser(session.user)) {
+        if (isSuperAdminUser(session.user)) {
+          const params = new URLSearchParams(window.location.search);
+          const savedView = localStorage.getItem('marketsaas_active_view_mode');
+          if (params.get('view') === 'superadmin' || savedView === 'superadmin') {
+            setViewModeState('superadmin');
+          }
+        } else {
           await fetchStoreForUser(session.user.id, session.user.email);
         }
+      } else {
+        setViewModeState(prev => prev === 'superadmin' ? 'spectator' : prev);
       }
       setIsAuthLoading(false);
     });
@@ -976,19 +973,19 @@ export const StoreProvider = ({ children }) => {
       if (session?.user) {
         setCurrentUser(session.user);
         if (event === 'SIGNED_IN') {
-          if (!isSuperAdminUser(session.user)) {
+          if (isSuperAdminUser(session.user)) {
+            setViewModeState('superadmin');
+          } else {
             await fetchStoreForUser(session.user.id, session.user.email);
           }
         }
       } else {
-        const isMaster = localStorage.getItem('marketsaas_superadmin_session') === 'true';
-        if (!isMaster) {
-          setCurrentUser(null);
-          setMerchantStore(null);
-          const activeTenant = localStorage.getItem('marketsaas_active_tenant');
-          if (!activeTenant || activeTenant === 'default') {
-            setStoreConfigState(initialStoreConfig);
-          }
+        setCurrentUser(null);
+        setMerchantStore(null);
+        setViewModeState(prev => prev === 'superadmin' ? 'spectator' : prev);
+        const activeTenant = localStorage.getItem('marketsaas_active_tenant');
+        if (!activeTenant || activeTenant === 'default') {
+          setStoreConfigState(initialStoreConfig);
         }
       }
     });
@@ -2840,9 +2837,13 @@ export const StoreProvider = ({ children }) => {
   // 1. Registro de Comerciante (Supabase Auth)
   const signUpMerchant = async (email, password, fullName) => {
     if (!supabase) return { data: null, error: { message: 'Supabase no está configurado.' } };
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (cleanEmail === 'superadmin@marketsaas.com' || cleanEmail === 'admin@marketsaas.com') {
+      return { data: null, error: { message: 'Este correo electrónico está reservado para la administración del sistema.' } };
+    }
     try {
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           data: { full_name: fullName }
@@ -2997,53 +2998,27 @@ export const StoreProvider = ({ children }) => {
   };
 
   // 3. Inicio de Sesión de Comerciante / SuperAdmin
+  // 100% Cifrado y validado en backend por Supabase Auth (sin contraseñas en código de cliente)
   const signInMerchant = async (email, password) => {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
-
-    // 1. Verificación de credenciales maestras SuperAdmin
-    const masterEmail = (import.meta.env.VITE_SUPERADMIN_EMAIL || 'superadmin@marketsaas.com').toLowerCase().trim();
-    const masterPassword = (import.meta.env.VITE_SUPERADMIN_PASSWORD || 'SuperAdmin2025!').trim();
-
-    if (
-      (cleanEmail === masterEmail || cleanEmail === 'superadmin@marketsaas.com' || cleanEmail === 'admin@marketsaas.com') &&
-      (cleanPass === masterPassword || cleanPass === 'SuperAdmin2025!')
-    ) {
-      const superAdminUser = {
-        id: 'superadmin_master',
-        email: cleanEmail,
-        role: 'superadmin',
-        user_metadata: { full_name: 'Super Administrador', role: 'superadmin' }
-      };
-      setCurrentUser(superAdminUser);
-      setViewMode('superadmin');
-      try {
-        localStorage.setItem('marketsaas_superadmin_session', 'true');
-        localStorage.setItem('marketsaas_active_view_mode', 'superadmin');
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('view', 'superadmin');
-        window.history.replaceState({}, '', newUrl.toString());
-      } catch (e) {}
-      showToast('¡Acceso Maestro concedido! Bienvenido al Panel SuperAdmin', 'success');
-      return { data: { user: superAdminUser }, store: null, isSuperAdmin: true, error: null };
-    }
-
     if (!supabase) return { data: null, store: null, error: { message: 'Supabase no está configurado.' } };
     try {
+      const cleanEmail = (email || '').trim().toLowerCase();
+      const cleanPass = (password || '').trim();
+
+      // Validación criptográfica en Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        email: cleanEmail,
+        password: cleanPass
       });
       if (error) throw error;
 
       if (data?.user) {
         setCurrentUser(data.user);
 
-        // Si el usuario registrado en Supabase tiene rol de superadmin o email de superadmin
+        // Si el usuario autenticado tiene rol de SuperAdmin
         if (isSuperAdminUser(data.user)) {
-          setViewMode('superadmin');
+          setViewModeState('superadmin');
           try {
-            localStorage.setItem('marketsaas_superadmin_session', 'true');
             localStorage.setItem('marketsaas_active_view_mode', 'superadmin');
             const newUrl = new URL(window.location.href);
             newUrl.searchParams.set('view', 'superadmin');
@@ -3078,7 +3053,6 @@ export const StoreProvider = ({ children }) => {
       } catch (e) {}
     }
     try {
-      localStorage.removeItem('marketsaas_superadmin_session');
       localStorage.setItem('marketsaas_active_view_mode', 'spectator');
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('view', 'spectator');

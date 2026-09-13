@@ -35,6 +35,8 @@ export const SuperAdminHome = () => {
     setViewMode, 
     signOutMerchant,
     showToast,
+    isSuperAdmin,
+    isAuthLoading,
     TRIAL_DURATION_MINUTES 
   } = useStore();
 
@@ -185,6 +187,34 @@ export const SuperAdminHome = () => {
     document.body.removeChild(link);
     showToast('Auditoría exportada exitosamente a CSV.', 'success');
   };
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4 shadow-xl">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-black text-white mb-2">Acceso Restringido</h2>
+        <p className="text-sm text-slate-400 max-w-md mb-6">
+          Esta sección es de acceso exclusivo para el Super Administrador del sistema. Inicia sesión con tus credenciales autorizadas para ingresar.
+        </p>
+        <button
+          onClick={() => setViewMode('spectator')}
+          className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition-all cursor-pointer"
+        >
+          Volver al Inicio
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-6 lg:p-8">
