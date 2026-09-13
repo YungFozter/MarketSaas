@@ -438,7 +438,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       <div className={`p-2 rounded-xl ${effectiveDeliveryType === 'pickup' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                         <Store className="w-5 h-5" />
                       </div>
-                      <span className="text-xs font-black text-emerald-700">{currency} 0.00</span>
+                      <span className="text-xs font-black text-emerald-700">GRATIS</span>
                     </div>
                     <div>
                       <p className="font-extrabold text-slate-900 text-sm">Retiro en Tienda</p>
