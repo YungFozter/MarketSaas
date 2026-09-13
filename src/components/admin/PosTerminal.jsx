@@ -19,7 +19,8 @@ import {
   Check,
   RotateCcw,
   Receipt,
-  Download
+  Download,
+  Maximize2
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
@@ -41,6 +42,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'qr' | 'card'
   const [cashReceived, setCashReceived] = useState('');
   const [lastCompletedSale, setLastCompletedSale] = useState(null);
+  const [isQrZoomOpen, setIsQrZoomOpen] = useState(false);
 
   const filteredProducts = products.filter((p) => {
     const matchCat = 
@@ -484,20 +486,52 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
           )}
 
           {paymentType === 'qr' && (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center space-y-3">
-              <p className="text-xs font-bold text-slate-700">
-                Muestra este código QR al cliente para que lo escanee desde su celular:
-              </p>
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 text-center space-y-3.5 shadow-xs">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm font-extrabold text-slate-800">
+                  Muestra este código QR al cliente para que lo escanee desde su celular:
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  Puedes hacer clic sobre el código para abrirlo a tamaño completo
+                </p>
+              </div>
+
               {qrImage ? (
                 <div className="flex flex-col items-center">
-                  <img
-                    src={qrImage}
-                    alt="Código QR de la tienda"
-                    className="w-44 h-44 object-contain rounded-2xl border-2 border-cyan-300 p-1 bg-white shadow-xs"
-                  />
-                  <p className="text-[11px] text-cyan-800 font-bold mt-2">
-                    QR Oficial de {storeConfig?.name || 'la tienda'}
-                  </p>
+                  <div
+                    onClick={() => setIsQrZoomOpen(true)}
+                    className="relative group cursor-pointer rounded-2xl overflow-hidden border-2 border-cyan-400 p-2 bg-white shadow-md hover:shadow-xl transition-all hover:scale-[1.01]"
+                    title="Haz clic para abrir el QR en tamaño grande"
+                  >
+                    <img
+                      src={qrImage}
+                      alt="Código QR de la tienda"
+                      className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl bg-white transition-transform"
+                    />
+                    <div className="absolute inset-0 bg-cyan-950/25 group-hover:bg-cyan-950/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-white font-black text-xs rounded-xl backdrop-blur-2xs">
+                      <div className="p-2.5 rounded-full bg-white/30 backdrop-blur-md shadow-lg">
+                        <Maximize2 className="w-6 h-6 text-white" />
+                      </div>
+                      <span className="bg-slate-900/80 px-3 py-1 rounded-full text-[11px] font-bold shadow-md">
+                        Toca para Ampliar
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsQrZoomOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 text-xs font-bold border border-cyan-200 shadow-2xs transition-colors cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>Ver QR en Grande</span>
+                    </button>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs text-slate-600 font-bold">
+                      {storeConfig?.name || 'QR Oficial'}
+                    </span>
+                  </div>
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
@@ -534,6 +568,70 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <span>Confirmar y Finalizar Venta ({currency} {subtotal.toFixed(2)})</span>
           </button>
         </div>
+
+        {/* MODAL LIGHTBOX: QR AMPLIADO A TAMAÑO COMPLETO */}
+        {isQrZoomOpen && qrImage && (
+          <div 
+            className="fixed inset-0 z-60 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+            onClick={() => setIsQrZoomOpen(false)}
+          >
+            <div 
+              className="relative max-w-lg sm:max-w-xl w-full bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 text-center space-y-4 animate-fadeIn overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header con botón cerrar */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="text-left">
+                  <h4 className="font-black text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                    <span>Escanear Código QR</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800">
+                      QR Simple
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    {storeConfig?.name || 'Tienda Oficial'} • Pago en Mostrador
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQrZoomOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Cerrar ampliación"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Monto destacado para que el cliente lo vea claramente */}
+              <div className="bg-cyan-50 border border-cyan-200/80 p-3 rounded-2xl flex items-center justify-between px-4">
+                <span className="text-xs sm:text-sm font-bold text-cyan-900">Total a pagar:</span>
+                <span className="text-xl sm:text-2xl font-black text-cyan-950">{currency} {subtotal.toFixed(2)}</span>
+              </div>
+
+              {/* Imagen QR Ampliada */}
+              <div className="flex items-center justify-center p-2 sm:p-3 bg-slate-50 rounded-2xl border-2 border-cyan-300 overflow-hidden">
+                <img
+                  src={qrImage}
+                  alt="Código QR Ampliado de la tienda"
+                  className="max-w-full max-h-[58vh] sm:max-h-[64vh] w-auto h-auto object-contain rounded-xl shadow-xs"
+                />
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <p className="text-xs text-slate-500 font-medium">
+                  El cliente puede enfocar la cámara desde cualquier app bancaria o billetera digital para transferir.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsQrZoomOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs sm:text-sm transition-all shadow-md cursor-pointer"
+                >
+                  ✓ Listo / Cerrar Ampliación
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

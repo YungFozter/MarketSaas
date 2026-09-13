@@ -43,8 +43,7 @@ import {
   Bell,
   CheckSquare,
   Square,
-  Receipt,
-  Wallet
+  Receipt
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
@@ -123,7 +122,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       return {};
     }
   });
-  const [isCashCloseModalOpen, setIsCashCloseModalOpen] = useState(false);
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
@@ -437,78 +435,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       } catch (e) {}
       return updated;
     });
-  };
-
-  // Imprimir Cierre y Arqueo de Caja del Día en formato térmico
-  const handlePrintDailyCashClose = () => {
-    const printWindow = window.open('', '', 'width=420,height=650');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Cierre de Caja - ${storeConfig.name}</title>
-            <style>
-              body { font-family: 'Courier New', monospace; font-size: 13px; padding: 14px; width: 280px; color: #000; }
-              .center { text-align: center; }
-              .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
-              .row { display: flex; justify-content: space-between; margin: 4px 0; }
-              .bold { font-weight: bold; }
-            </style>
-          </head>
-          <body>
-            <div class="center">
-              <h3 style="margin:0;">${escapeHtml(storeConfig.name)}</h3>
-              <p style="margin:2px 0;">ARQUEO & CIERRE DE CAJA DIARIO</p>
-              <div class="divider"></div>
-              <p style="margin:2px 0;">Fecha: ${new Date().toLocaleDateString()} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-              <p style="margin:2px 0;">Responsable: ${escapeHtml(currentUser?.user_metadata?.full_name || currentUser?.email || 'Administrador')}</p>
-              <div class="divider"></div>
-            </div>
-            
-            <p class="bold" style="margin:6px 0 2px 0;">RESUMEN DE OPERACIONES:</p>
-            <div class="row"><span>Pedidos Cobrados:</span><span class="bold">${validOrders.length}</span></div>
-            <div class="row"><span>Ticket Promedio:</span><span>Bs. ${averageTicket.toFixed(2)}</span></div>
-            <div class="divider"></div>
-
-            <p class="bold" style="margin:6px 0 2px 0;">DESGLOSE POR FORMA DE COBRO:</p>
-            <div class="row">
-              <span>💵 Efectivo (${cashOrders.length}):</span>
-              <span class="bold">Bs. ${totalCashSales.toFixed(2)}</span>
-            </div>
-            <div class="row">
-              <span>📲 QR Simple (${qrOrders.length}):</span>
-              <span class="bold">Bs. ${totalQrSales.toFixed(2)}</span>
-            </div>
-            <div class="row">
-              <span>💳 Tarjeta POS (${cardOrders.length}):</span>
-              <span class="bold">Bs. ${totalCardSales.toFixed(2)}</span>
-            </div>
-            <div class="row">
-              <span>🛵 Delivery / Envíos:</span>
-              <span>Bs. ${totalDeliveryCollected.toFixed(2)}</span>
-            </div>
-            <div class="divider"></div>
-
-            <div class="row bold" style="font-size:15px; margin:8px 0;">
-              <span>TOTAL VENTAS:</span>
-              <span>Bs. ${totalSales.toFixed(2)}</span>
-            </div>
-            <div class="divider"></div>
-
-            <div style="margin-top: 36px; text-align: center;">
-              <div style="border-top: 1px solid #000; width: 180px; margin: 0 auto 4px auto;"></div>
-              <p style="font-size:11px; margin:0;">Firma Responsable de Caja</p>
-            </div>
-            <p class="center" style="font-size:10px; margin-top:20px; color:#555;">MarketSaaS • Sistema Hiperlocal</p>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-      showToast('Comanda de Cierre de Caja enviada a impresión.', 'success');
-    }
   };
 
   const navItems = [
@@ -856,15 +782,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <span>Venta Rápida</span>
             </button>
 
-            {/* Botón de Cierre de Caja */}
-            <button
-              onClick={() => setIsCashCloseModalOpen(true)}
-              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Arqueo y Cierre de Caja del Día"
-            >
-              <Wallet className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Cierre de Caja</span>
-            </button>
 
             <button
               onClick={exportSalesCSV}
@@ -914,9 +831,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       </p>
                     </div>
                     <button
-                      onClick={() => setIsCashCloseModalOpen(true)}
+                      onClick={() => setActiveTab('sales')}
                       className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold cursor-pointer transition-colors"
-                      title="Abrir Ventas"
+                      title="Ver Historial de Ventas"
                     >
                       <Receipt className="w-5 h-5" />
                     </button>
@@ -1645,156 +1562,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         </div>
       </main>
 
-      {/* ========================================================================= */}
-      {/* MODAL DE VENTAS DEL DÍA & ACCESO A VENTAS RÁPIDAS                          */}
-      {/* ========================================================================= */}
-      {isCashCloseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-            {/* Header del Modal */}
-            <div className="p-6 pb-4 bg-slate-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">Ventas</h3>
-                  <p className="text-xs text-slate-300">
-                    {storeConfig.name} • {new Date().toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsCashCloseModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Contenido de Ventas */}
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-500 font-medium">
-                Selecciona una opción para abrir el panel y registrar una nueva venta:
-              </p>
-
-              {/* Cuadrícula de Métodos de Pago Interactivos */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* Venta en Efectivo */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCashCloseModalOpen(false);
-                    setIsPosModalOpen(true);
-                  }}
-                  className="p-3.5 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100/90 border-2 border-emerald-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir terminal de Venta Rápida"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-extrabold text-emerald-900 uppercase tracking-tight">Venta en Efectivo</span>
-                      <Banknote className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <p className="text-xl font-black text-emerald-950">{currency} {totalCashSales.toFixed(2)}</p>
-                    <p className="text-[10px] text-emerald-700 mt-0.5 font-semibold">
-                      {cashOrders.length} {cashOrders.length === 1 ? 'venta' : 'ventas'}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-emerald-200/80 flex items-center justify-between text-[11px] font-extrabold text-emerald-700 group-hover:text-emerald-950">
-                    <span>+ Iniciar Venta</span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                  </div>
-                </button>
-
-                {/* Qr Digital */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCashCloseModalOpen(false);
-                    setIsPosModalOpen(true);
-                  }}
-                  className="p-3.5 rounded-2xl bg-cyan-50/80 hover:bg-cyan-100/90 border-2 border-cyan-200 hover:border-cyan-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir terminal de Venta Rápida"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-extrabold text-cyan-900 uppercase tracking-tight">Qr Digital</span>
-                      <QrCode className="w-4 h-4 text-cyan-600 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <p className="text-xl font-black text-cyan-950">{currency} {totalQrSales.toFixed(2)}</p>
-                    <p className="text-[10px] text-cyan-700 mt-0.5 font-semibold">
-                      {qrOrders.length} {qrOrders.length === 1 ? 'venta' : 'ventas'}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-cyan-200/80 flex items-center justify-between text-[11px] font-extrabold text-cyan-700 group-hover:text-cyan-950">
-                    <span>+ Iniciar Venta</span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                  </div>
-                </button>
-
-                {/* Tarjeta POS Móvil */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCashCloseModalOpen(false);
-                    setIsPosModalOpen(true);
-                  }}
-                  className="p-3.5 rounded-2xl bg-amber-50/80 hover:bg-amber-100/90 border-2 border-amber-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs hover:shadow-md text-left group flex flex-col justify-between"
-                  title="Abrir terminal de Venta Rápida"
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-extrabold text-amber-900 uppercase tracking-tight">Tarjeta POS Móvil</span>
-                      <CreditCard className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
-                    </div>
-                    <p className="text-xl font-black text-amber-950">{currency} {totalCardSales.toFixed(2)}</p>
-                    <p className="text-[10px] text-amber-700 mt-0.5 font-semibold">
-                      {cardOrders.length} {cardOrders.length === 1 ? 'venta' : 'ventas'}
-                    </p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-amber-200/80 flex items-center justify-between text-[11px] font-extrabold text-amber-700 group-hover:text-amber-950">
-                    <span>+ Iniciar Venta</span>
-                    <span className="group-hover:translate-x-0.5 transition-transform">→</span>
-                  </div>
-                </button>
-              </div>
-
-              {/* Total General Destacado */}
-              <div className="p-4 rounded-2xl bg-slate-900 text-white flex items-center justify-between shadow-md">
-                <div>
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Ventas del día</span>
-                  <p className="text-2xl font-black text-emerald-400 tracking-tight">{currency} {totalDaySales.toFixed(2)}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm text-slate-200 font-black block">
-                    {totalSalesCount} {totalSalesCount === 1 ? 'venta' : 'ventas'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Acciones del Modal */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={handlePrintDailyCashClose}
-                  className="w-full sm:flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimir Comanda de Cierre</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsCashCloseModalOpen(false)}
-                  className="w-full sm:w-auto py-3 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* MODAL DE VENTA RÁPIDA (POS Terminal Directo)                              */}
