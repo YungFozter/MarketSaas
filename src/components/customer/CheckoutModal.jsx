@@ -148,17 +148,18 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
 
-  const bankDetails = storeConfig?.bankDetails || selectedStore?.bankDetails || {
-    bank: 'Banco Unión / Billetera Simple QR',
-    accountNumber: '1000-2495-8120',
-    holder: 'Minimarket Saas S.R.L.',
-    aliasQR: 'MINIMARKET-SAAS.PAGO'
-  };
-
-  const qrImage = storeConfig?.qrImageUrl || selectedStore?.qrImageUrl;
+  const rawBank = storeConfig?.bankDetails || selectedStore?.bankDetails;
+  const hasValidBankDetails = Boolean(
+    rawBank &&
+    rawBank.accountNumber &&
+    rawBank.accountNumber !== '1000-2495-8120' &&
+    rawBank.holder !== 'Minimarket Saas S.R.L.'
+  );
+  const bankDetails = hasValidBankDetails ? rawBank : null;
 
   const handleCopyBankInfo = () => {
-    const text = `Banco: ${bankDetails.bank || 'Banco Unión'}\nCuenta: ${bankDetails.accountNumber || ''}\nTitular: ${bankDetails.holder || ''}\nAlias QR: ${bankDetails.aliasQR || ''}`;
+    if (!bankDetails) return;
+    const text = `Banco: ${bankDetails.bank || 'Banco'}\nCuenta: ${bankDetails.accountNumber || ''}\nTitular: ${bankDetails.holder || ''}\nAlias QR: ${bankDetails.aliasQR || ''}`;
     navigator.clipboard?.writeText(text);
     setCopiedBank(true);
     showToast('Datos bancarios copiados al portapapeles');
@@ -665,7 +666,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     {paymentMethod === 'qr' && (
                       <div className="mt-3 pt-3 border-t border-emerald-200/60 text-xs space-y-2.5 bg-white p-3.5 rounded-2xl border border-slate-200">
                         {qrImage ? (
-                          <div className="flex flex-col items-center text-center pb-2.5 border-b border-slate-100">
+                          <div className={`flex flex-col items-center text-center ${hasValidBankDetails ? 'pb-2.5 border-b border-slate-100' : ''}`}>
                             <p className="text-[11px] font-bold text-slate-700 mb-1.5">Escanea este Código QR para Pagar:</p>
                             <img
                               src={qrImage}
@@ -687,11 +688,15 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                           </div>
                         ) : (
                           <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
-                            <p className="text-[11px] font-bold text-amber-900">Escanea el código QR de cobro de la tienda o transfiere a la cuenta:</p>
+                            <p className="text-[11px] font-bold text-amber-900">
+                              {hasValidBankDetails 
+                                ? 'Transfiere a los siguientes datos de cuenta o coordina el pago con la tienda:'
+                                : 'Escanea el código QR de cobro de la tienda o transfiere al confirmar tu pedido.'}
+                            </p>
                           </div>
                         )}
-                        {(bankDetails.bank || bankDetails.accountNumber) && (
-                          <>
+                        {hasValidBankDetails && bankDetails && (
+                          <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
                             <div className="flex justify-between items-center">
                               <span className="font-bold text-slate-800">{bankDetails.bank}</span>
                               <button
@@ -705,7 +710,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                             </div>
                             {bankDetails.accountNumber && <p className="text-slate-600 text-[11px]">Cuenta: <strong>{bankDetails.accountNumber}</strong></p>}
                             {bankDetails.holder && <p className="text-slate-600 text-[11px]">Titular: {bankDetails.holder}</p>}
-                          </>
+                          </div>
                         )}
                       </div>
                     )}

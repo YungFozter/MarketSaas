@@ -285,12 +285,7 @@ export const initialStoreConfig = {
     { id: 'qr', name: 'Transferencia / QR Digital', desc: 'Pago rápido directo al código QR de la tienda', icon: 'QrCode', enabled: true },
     { id: 'card', name: 'Tarjeta (POS Móvil)', desc: 'Llevamos el lector de tarjeta a tu puerta', icon: 'CreditCard', enabled: true }
   ],
-  bankDetails: {
-    bank: 'Banco Unión / Billetera Simple QR',
-    accountNumber: '1000-2495-8120',
-    holder: 'Minimarket Saas S.R.L.',
-    aliasQR: 'MINIMARKET-SAAS.PAGO'
-  }
+  bankDetails: null
 };
 
 export const initialOrders = [

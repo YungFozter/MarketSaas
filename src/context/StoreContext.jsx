@@ -1117,7 +1117,7 @@ export const StoreProvider = ({ children }) => {
                 phone: conf.phone || conf.whatsapp || rs.phone || '',
                 whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
                 qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
-                bankDetails: conf.bankDetails || rs.bank_details || null,
+                bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
                 condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
                   ? (storeConfig.zone || storeConfig.condominium)
                   : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
