@@ -239,8 +239,9 @@ export const NeighborhoodMap = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    const initialLat = activeStore?.googleMapsCoordinates?.lat || DEFAULT_CITY_CENTER_COORDS.lat;
-    const initialLng = activeStore?.googleMapsCoordinates?.lng || DEFAULT_CITY_CENTER_COORDS.lng;
+    const firstStoreCoords = storesToPlot[0]?.googleMapsCoordinates || masterStores[0]?.googleMapsCoordinates;
+    const initialLat = activeStore?.googleMapsCoordinates?.lat || firstStoreCoords?.lat || DEFAULT_CITY_CENTER_COORDS.lat;
+    const initialLng = activeStore?.googleMapsCoordinates?.lng || firstStoreCoords?.lng || DEFAULT_CITY_CENTER_COORDS.lng;
 
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
@@ -327,6 +328,20 @@ export const NeighborhoodMap = ({
       marker.addTo(markersLayer);
       validLatLngs.push([coords.lat, coords.lng]);
     });
+
+    // Auto-ajustar la vista a los marcadores si no hay una tienda seleccionada específicamente
+    if (!selectedStore && validLatLngs.length > 0) {
+      if (validLatLngs.length === 1) {
+        map.setView(validLatLngs[0], 15);
+      } else {
+        try {
+          const bounds = L.latLngBounds(validLatLngs);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        } catch (e) {
+          map.setView(validLatLngs[0], 15);
+        }
+      }
+    }
   }, [storesToPlot, selectedStore]);
 
   // Movimiento seguro que evita el bug de división por cero / NaN de flyTo en distancias cortas

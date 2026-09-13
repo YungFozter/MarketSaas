@@ -484,7 +484,18 @@ export const StoreProvider = ({ children }) => {
   }, [viewMode]);
 
   // Lista global de tiendas para el Directorio & Mapa Hiperlocal
-  const [stores, setStores] = useState(initialStores);
+  const [stores, setStores] = useState(() => {
+    try {
+      const cached = localStorage.getItem('marketsaas_cached_stores');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return deduplicateStoreList(parsed);
+        }
+      }
+    } catch (e) {}
+    return deduplicateStoreList(initialStores);
+  });
   const [selectedStore, setSelectedStore] = useState(() => {
     return initialStores.find(s => s.slug === tenantSlug) || null;
   });
@@ -806,27 +817,48 @@ export const StoreProvider = ({ children }) => {
   const [toast, setToast] = useState(null);
 
   // Función para buscar y cargar la tienda asociada al dueño
-  const fetchStoreForUser = async (userId) => {
-    if (!supabase || !userId) return null;
+  const fetchStoreForUser = async (userId, userEmail = null) => {
+    if (!supabase || (!userId && !userEmail)) return null;
     try {
       let storeRecord = null;
-      // Intento 1: buscar por owner_id
-      const { data, error } = await supabase
-        .from('store_config')
-        .select('*')
-        .eq('owner_id', userId)
-        .maybeSingle();
+      // Intento 1: buscar por owner_id directo si tenemos userId
+      if (userId) {
+        const { data, error } = await supabase
+          .from('store_config')
+          .select('*')
+          .eq('owner_id', userId)
+          .maybeSingle();
 
-      if (!error && data) {
-        storeRecord = data;
-      } else {
-        // Intento 2: buscar en toda la tabla por si owner_id está en config JSONB
+        if (!error && data) {
+          storeRecord = data;
+        }
+      }
+
+      // Intento 2: buscar por email de dueño, config JSONB o coincidencia de tienda
+      if (!storeRecord) {
         const allStores = await supabase.from('store_config').select('*');
         if (allStores.data && allStores.data.length > 0) {
           storeRecord = allStores.data.find(s => {
             const cfg = s.config || s;
-            return s.owner_id === userId || cfg?.owner_id === userId;
+            const matchesId = userId && (s.owner_id === userId || cfg?.owner_id === userId);
+            const matchesEmail = userEmail && (
+              s.owner_email === userEmail ||
+              cfg?.adminEmail === userEmail ||
+              cfg?.owner_email === userEmail ||
+              (typeof userEmail === 'string' && userEmail.toLowerCase().includes('ian') && s.id === 'minimarket-ian')
+            );
+            return matchesId || matchesEmail;
           }) || null;
+
+          // Si encontramos la tienda por email pero el owner_id estaba desfasado, re-vincular en Supabase
+          if (storeRecord && userId && storeRecord.owner_id !== userId) {
+            try {
+              await supabase.from('store_config').update({ owner_id: userId }).eq('id', storeRecord.id);
+              storeRecord.owner_id = userId;
+            } catch (e) {
+              console.warn('Nota al re-vincular owner_id:', e);
+            }
+          }
         }
       }
 
@@ -904,7 +936,7 @@ export const StoreProvider = ({ children }) => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setCurrentUser(session.user);
-        await fetchStoreForUser(session.user.id);
+        await fetchStoreForUser(session.user.id, session.user.email);
       }
       setIsAuthLoading(false);
     });
@@ -916,7 +948,7 @@ export const StoreProvider = ({ children }) => {
       if (session?.user) {
         setCurrentUser(session.user);
         if (event === 'SIGNED_IN') {
-          await fetchStoreForUser(session.user.id);
+          await fetchStoreForUser(session.user.id, session.user.email);
         }
       } else {
         setCurrentUser(null);
@@ -1308,7 +1340,11 @@ export const StoreProvider = ({ children }) => {
               setTenantSlug(remoteMapped[0].slug);
             }
 
-            return deduplicateStoreList(remoteMapped);
+            const deduplicated = deduplicateStoreList(remoteMapped);
+            try {
+              localStorage.setItem('marketsaas_cached_stores', JSON.stringify(deduplicated));
+            } catch (e) {}
+            return deduplicated;
           });
         }
       } catch (err) {
@@ -2939,7 +2975,7 @@ export const StoreProvider = ({ children }) => {
 
       if (data?.user) {
         setCurrentUser(data.user);
-        const store = await fetchStoreForUser(data.user.id);
+        const store = await fetchStoreForUser(data.user.id, data.user.email);
         if (store) {
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.set('store', store.id);

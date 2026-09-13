@@ -383,4 +383,104 @@ export const initialProductRequests = [
 ];
 
 // Directorio de Minimarkets registrados en la plataforma
-export const initialStores = [];
+export const initialStores = [
+  {
+    id: 'matias-tiendatodo',
+    slug: 'matias-tiendatodo',
+    name: 'Matías TiendaTodo',
+    tagline: 'Tu tienda de confianza a pasos de tu puerta',
+    address: 'Av. Las Palmas, Radial 17 y medio',
+    condominium: 'Condominio Las Palmas',
+    reference: '',
+    phone: '71000001',
+    whatsapp: '71000001',
+    qrImageUrl: '',
+    bankDetails: null,
+    distance: 'A 180m',
+    distanceMeters: 180,
+    reviewsCount: 32,
+    ordersCount: 45,
+    isOpen: true,
+    statusBadge: 'Abierto Ahora',
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+    deliveryTime: '15-25 min',
+    freeDeliveryThreshold: 80,
+    hasFreeDelivery: true,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: true,
+    category: 'Minimarket Registrado',
+    isFeatured: true,
+    isRegisteredStore: true,
+    isVerified: true,
+    isCurrentOwnerStore: false,
+    owner_id: 'c3fcd1c8-12b2-4485-b22d-80cbefbaffa8',
+    totalStockItems: 120,
+    perks: [
+      { id: 'p1', text: '✅ Registrada en el sistema' },
+      { id: 'p2', text: '🛵 Delivery disponible' },
+      { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
+    ],
+    googleMapsCoordinates: {
+      lat: -17.758782,
+      lng: -63.104158
+    },
+    googleMapsQuery: 'Matías TiendaTodo, Av. Las Palmas, Santa Cruz de la Sierra',
+    mapPosition: {
+      leftPercent: 45,
+      bottomPixels: 50,
+      label: 'Matías TiendaTodo',
+      badge: 'Registrada'
+    }
+  },
+  {
+    id: 'minimarket-ian',
+    slug: 'minimarket-ian',
+    name: 'Minimarket Ian',
+    tagline: 'Tu tienda de confianza a pasos de tu puerta',
+    address: 'Condominio Icaraí, Calle 3 - Casa 43',
+    condominium: 'Condominio Icaraí',
+    reference: '',
+    phone: '72125280',
+    whatsapp: '72125280',
+    qrImageUrl: '',
+    bankDetails: null,
+    distance: 'A 250m',
+    distanceMeters: 250,
+    reviewsCount: 28,
+    ordersCount: 34,
+    isOpen: true,
+    statusBadge: 'Abierto Ahora',
+    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80',
+    deliveryTime: 'Retiro en Tienda',
+    freeDeliveryThreshold: null,
+    hasFreeDelivery: false,
+    acceptsQr: true,
+    hasPickup: true,
+    hasFastDelivery: false,
+    category: 'Minimarket Registrado',
+    isFeatured: true,
+    isRegisteredStore: true,
+    isVerified: true,
+    isCurrentOwnerStore: false,
+    owner_id: '5b4047cf-0870-4f7a-a244-10a39ed64496',
+    totalStockItems: 120,
+    perks: [
+      { id: 'p1', text: '✅ Registrada en el sistema' },
+      { id: 'p2', text: '🛍️ Retiro en Tienda' },
+      { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
+    ],
+    googleMapsCoordinates: {
+      lat: -17.758405,
+      lng: -63.103469
+    },
+    googleMapsQuery: 'Minimarket Ian, Condominio Icaraí, Santa Cruz de la Sierra',
+    mapPosition: {
+      leftPercent: 55,
+      bottomPixels: 60,
+      label: 'Minimarket Ian',
+      badge: 'Registrada'
+    }
+  }
+];
+
