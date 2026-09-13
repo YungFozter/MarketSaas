@@ -43,13 +43,17 @@ import {
   Bell,
   CheckSquare,
   Square,
-  Receipt
+  Receipt,
+  KeyRound,
+  Lock
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
 import { SalesHistory } from './SalesHistory';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
+import { SubscriptionManager } from './SubscriptionManager';
+import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import { useStore } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
@@ -75,19 +79,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     setViewMode,
     goToDirectory,
     showToast,
-    exportSalesCSV
+    exportSalesCSV,
+    isSubscriptionActive,
+    subscriptionTimeRemaining,
+    formatBoliviaDateTime
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
-      if (urlTab && ['kanban', 'pos', 'inventory', 'analytics', 'requests', 'settings'].includes(urlTab)) {
+      if (urlTab && ['kanban', 'pos', 'sales', 'inventory', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
         return urlTab;
       }
       try {
         const saved = localStorage.getItem(`marketsaas_${tenantSlug}_admin_tab`);
-        if (saved && ['kanban', 'pos', 'inventory', 'analytics', 'requests', 'settings'].includes(saved)) {
+        if (saved && ['kanban', 'pos', 'sales', 'inventory', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
           return saved;
         }
       } catch (e) {
@@ -123,6 +130,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   });
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -439,10 +447,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
   const navItems = [
     { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
-    { id: 'pos', label: 'Punto de Venta', icon: Store },
+    { id: 'pos', label: 'Punto de Venta', icon: Store, badge: !isSubscriptionActive ? '🔒' : null },
     { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
+    { id: 'subscription', label: 'Mi Suscripción', icon: KeyRound, badge: !isSubscriptionActive ? 'Vencido' : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];
 
@@ -695,6 +704,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             <span>Vista Vecino</span>
           </button>
 
+          {/* Panel SuperAdmin Shortcut */}
+          <button
+            onClick={() => setViewMode('superadmin')}
+            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 font-bold text-xs transition-all cursor-pointer shadow-xs"
+            title="Abrir Panel Maestro SuperAdmin"
+          >
+            <KeyRound className="w-4 h-4 text-amber-400" />
+            <span>Panel SuperAdmin</span>
+          </button>
+
           {/* Profile Card */}
           <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -768,18 +787,64 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 {storeConfig.name}
               </span>
             </div>
+
+            {/* Chip Dinámico de Suscripción / Cuenta Regresiva UTC-4 */}
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                !isSubscriptionActive
+                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 animate-pulse'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+              }`}
+              title="Haz clic para gestionar tu suscripción"
+            >
+              {!isSubscriptionActive ? (
+                <>
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Suscripción Vencida</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-mono">
+                    {subscriptionTimeRemaining.days > 0 
+                      ? `${subscriptionTimeRemaining.days}d ${subscriptionTimeRemaining.hours}h` 
+                      : `${String(subscriptionTimeRemaining.minutes).padStart(2, '0')}:${String(subscriptionTimeRemaining.seconds).padStart(2, '0')}`}
+                  </span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Quick Action CTA Buttons */}
           <div className="flex items-center gap-2">
-            {/* Botón de Venta Rápida Directa */}
+            {/* Botón de Venta Rápida Directa (Con bloqueo por suscripción) */}
             <button
-              onClick={() => setIsPosModalOpen(true)}
-              className="h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shadow-emerald-600/20 active:scale-95"
-              title="Abrir terminal de Venta Rápida en mostrador"
+              onClick={() => {
+                if (!isSubscriptionActive) {
+                  setIsBlockedModalOpen(true);
+                } else {
+                  setIsPosModalOpen(true);
+                }
+              }}
+              className={`h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
+                !isSubscriptionActive
+                  ? 'bg-slate-800 hover:bg-slate-900 text-slate-200 shadow-slate-800/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+              }`}
+              title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Abrir terminal de Venta Rápida en mostrador"}
             >
-              <Receipt className="w-3.5 h-3.5 text-white" />
+              {!isSubscriptionActive ? (
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+              ) : (
+                <Receipt className="w-3.5 h-3.5 text-white" />
+              )}
               <span>Venta Rápida</span>
+              {!isSubscriptionActive && (
+                <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-md font-black ml-0.5">
+                  Bloqueado
+                </span>
+              )}
             </button>
 
 
@@ -1527,7 +1592,39 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           {/* TAB 2: PUNTO DE VENTA */}
           {activeTab === 'pos' && (
             <div className="animate-fadeIn">
-              <PosTerminal />
+              {isSubscriptionActive ? (
+                <PosTerminal />
+              ) : (
+                <div className="max-w-2xl mx-auto my-8 p-8 sm:p-12 bg-white rounded-3xl border border-slate-200/90 shadow-xl text-center">
+                  <div className="w-20 h-20 rounded-3xl bg-rose-50 border border-rose-200 text-rose-500 flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <Lock className="w-10 h-10 animate-pulse" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-700 mb-3">
+                    Módulo Bloqueado
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3">
+                    Punto de Venta (POS) Bloqueado
+                  </h2>
+                  <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed mb-8">
+                    El período de prueba de tu tienda ha expirado. Para continuar realizando ventas presenciales en mostrador, canjea un código de activación en la sección «Mi Suscripción».
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                      onClick={() => setActiveTab('subscription')}
+                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Ir a Mi Suscripción y Canjear</span>
+                    </button>
+                    <button
+                      onClick={() => setIsBlockedModalOpen(true)}
+                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Canjear Código Aquí</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1545,14 +1642,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
-          {/* TAB 4: BUZÓN DE VECINOS */}
+          {/* TAB 5: BUZÓN DE VECINOS */}
           {activeTab === 'requests' && (
             <div className="animate-fadeIn">
               <ProductRequestsAdmin />
             </div>
           )}
 
-          {/* TAB 5: CONFIGURACIÓN */}
+          {/* TAB 6: MI SUSCRIPCIÓN */}
+          {activeTab === 'subscription' && (
+            <div className="animate-fadeIn">
+              <SubscriptionManager />
+            </div>
+          )}
+
+          {/* TAB 7: CONFIGURACIÓN */}
           {activeTab === 'settings' && (
             <div className="animate-fadeIn">
               <StoreSettings />
@@ -1606,6 +1710,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           </div>
         </div>
       )}
+
+      {/* Modal de Bloqueo de Suscripción */}
+      <SubscriptionBlockedModal
+        isOpen={isBlockedModalOpen}
+        onClose={() => setIsBlockedModalOpen(false)}
+        onNavigateToSubscription={() => {
+          setIsBlockedModalOpen(false);
+          setActiveTab('subscription');
+        }}
+      />
     </div>
   );
 };

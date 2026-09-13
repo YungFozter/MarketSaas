@@ -7,6 +7,120 @@ const StoreContext = createContext();
 
 export const useStore = () => useContext(StoreContext);
 
+// ==============================================================================
+// SISTEMA DE SUSCRIPCIONES, CONTROL DE TIEMPO Y ZONA HORARIA BOLIVIA (UTC-04:00)
+// ==============================================================================
+
+// Duración del período de prueba gratuito (en minutos)
+// NOTA PARA PRUEBAS: Configurado a 5 minutos para testear expiración y bloqueo inmediato.
+// Para pasar a producción cambiar a 43200 (30 días).
+export const TRIAL_DURATION_MINUTES = 5;
+
+// Offset oficial para La Paz - Bolivia (UTC -04:00)
+export const BOLIVIA_TIMEZONE_OFFSET_HOURS = -4;
+
+// Formateador canónico en zona horaria de Bolivia (America/La_Paz, UTC-4)
+export const formatBoliviaDateTime = (isoString) => {
+  if (!isoString) return '--';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return '--';
+    return new Intl.DateTimeFormat('es-BO', {
+      timeZone: 'America/La_Paz',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(d);
+  } catch {
+    return String(isoString);
+  }
+};
+
+// Cálculo de tiempo restante en vivo (días, horas, minutos, segundos)
+export const calculateSubscriptionTimeRemaining = (expiresAtIso, currentTimestamp = Date.now()) => {
+  if (!expiresAtIso) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0, isExpired: true, formatted: 'Expirado' };
+  }
+  const now = currentTimestamp;
+  const target = new Date(expiresAtIso).getTime();
+  const diffMs = target - now;
+
+  if (diffMs <= 0 || isNaN(diffMs)) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalSeconds: 0, isExpired: true, formatted: 'Expirado' };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  let formatted = '';
+  if (days > 0) {
+    formatted = `${days}d ${hours}h ${minutes}m`;
+  } else if (hours > 0) {
+    formatted = `${hours}h ${minutes}m ${seconds}s`;
+  } else {
+    formatted = `${minutes}m ${seconds}s`;
+  }
+
+  return { days, hours, minutes, seconds, totalSeconds, isExpired: false, formatted };
+};
+
+// Generador de códigos de activación limpios MS-XXXX-XXXX sin caracteres ambiguos (excluyendo 0, O, 1, I, L)
+export const generateCleanCode = () => {
+  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  let p1 = '';
+  let p2 = '';
+  for (let i = 0; i < 4; i++) {
+    p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+    p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `MS-${p1}-${p2}`;
+};
+
+// Creador de objeto inicial de suscripción
+export const createDefaultSubscription = (durationMinutes = TRIAL_DURATION_MINUTES) => {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
+  return {
+    status: 'trial', // 'trial' | 'active' | 'expired'
+    trialStartedAt: now.toISOString(),
+    trialEndsAt: expiresAt.toISOString(),
+    subscriptionExpiresAt: expiresAt.toISOString(),
+    plan: 'trial_free',
+    history: []
+  };
+};
+
+// Normalizador seguro de suscripción
+export const normalizeSubscription = (sub) => {
+  if (!sub || typeof sub !== 'object') {
+    return createDefaultSubscription();
+  }
+  const now = Date.now();
+  const expiresAt = sub.subscriptionExpiresAt || sub.trialEndsAt || sub.trialEnds || new Date().toISOString();
+  const isExpired = new Date(expiresAt).getTime() <= now;
+
+  let resolvedStatus = sub.status || (isExpired ? 'expired' : 'trial');
+  if (isExpired) {
+    resolvedStatus = 'expired';
+  }
+
+  return {
+    status: resolvedStatus,
+    trialStartedAt: sub.trialStartedAt || sub.trialStarted || new Date().toISOString(),
+    trialEndsAt: sub.trialEndsAt || sub.trialEnds || expiresAt,
+    subscriptionExpiresAt: expiresAt,
+    plan: sub.plan || 'trial_free',
+    history: Array.isArray(sub.history) ? sub.history : []
+  };
+};
+
 // Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
 export const normalizeProduct = (p) => {
   if (!p || typeof p !== 'object') return p;
@@ -282,15 +396,18 @@ export const StoreProvider = ({ children }) => {
   const [viewMode, setViewModeState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
+      if (params.get('superadmin') === '1' || params.get('mode') === 'superadmin' || params.get('view') === 'superadmin') {
+        return 'superadmin';
+      }
       const urlView = params.get('view');
-      if (urlView && ['spectator', 'customer', 'admin'].includes(urlView)) {
+      if (urlView && ['spectator', 'customer', 'admin', 'superadmin'].includes(urlView)) {
         return urlView;
       }
       if (params.get('store') || params.get('tenant')) {
         return 'customer';
       }
       const savedView = localStorage.getItem('marketsaas_active_view_mode');
-      if (savedView && ['spectator', 'customer', 'admin'].includes(savedView)) {
+      if (savedView && ['spectator', 'customer', 'admin', 'superadmin'].includes(savedView)) {
         return savedView;
       }
     }
@@ -455,16 +572,27 @@ export const StoreProvider = ({ children }) => {
         } else {
           parsed.coupons = [];
         }
-        const cleaned = { ...initialStoreConfig, ...parsed, coupons: parsed.coupons };
+        const cleaned = { 
+          ...initialStoreConfig, 
+          ...parsed, 
+          coupons: parsed.coupons,
+          subscription: normalizeSubscription(parsed.subscription)
+        };
         try {
           localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(cleaned));
         } catch (err) {}
         return cleaned;
       } catch (e) {
-        return initialStoreConfig;
+        return {
+          ...initialStoreConfig,
+          subscription: createDefaultSubscription()
+        };
       }
     }
-    return initialStoreConfig;
+    return {
+      ...initialStoreConfig,
+      subscription: createDefaultSubscription()
+    };
   });
 
   const setStoreConfig = async (newConfigData) => {
@@ -473,6 +601,7 @@ export const StoreProvider = ({ children }) => {
     if (Array.isArray(safeConfig.coupons)) {
       safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     }
+    safeConfig.subscription = safeConfig.subscription ? normalizeSubscription(safeConfig.subscription) : (storeConfig?.subscription || createDefaultSubscription());
     setStoreConfigState(safeConfig);
 
     const effectiveTenant = tenantSlug || merchantStore?.id || safeConfig?.id || localStorage.getItem('marketsaas_active_tenant') || 'default';
@@ -870,9 +999,11 @@ export const StoreProvider = ({ children }) => {
           const effectiveLogo = configData.logoUrl || data.logo_url || (prev?.logoUrl || '');
           const effectiveBanner = configData.bannerUrl || data.banner_url || (prev?.bannerUrl || presetBanners[0].url);
           const effectiveQr = configData.qrImageUrl || data.qr_image_url || (prev?.qrImageUrl || '');
+          const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || prev?.subscription);
           return {
             ...prev,
             ...configData,
+            subscription: effectiveSubscription,
             logoUrl: effectiveLogo,
             bannerUrl: effectiveBanner,
             qrImageUrl: effectiveQr,
@@ -1152,6 +1283,7 @@ export const StoreProvider = ({ children }) => {
                 isRegisteredStore: true,
                 isVerified: true,
                 isCurrentOwnerStore: Boolean(isCurrentOwner),
+                subscription: (isCurrentOwner && storeConfig?.subscription) ? storeConfig.subscription : normalizeSubscription(conf.subscription || rs.subscription),
                 owner_id: rs.owner_id || conf.owner_id || null,
                 totalStockItems: 120,
                 perks: [
@@ -1373,6 +1505,313 @@ export const StoreProvider = ({ children }) => {
     } catch (e) {
       console.log('Confetti effect triggered');
     }
+  };
+
+  // ==============================================================================
+  // GESTIÓN REACTIVA DE SUSCRIPCIONES, CÓDIGOS Y BLOQUEO DE POS
+  // ==============================================================================
+
+  // Tick reactivo de 1 segundo para actualizar contadores y estados en vivo
+  const [currentTick, setCurrentTick] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTick(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Lista de códigos de activación (Supabase + respaldo en localStorage)
+  const [subscriptionCodes, setSubscriptionCodes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_subscription_codes');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const fetchSubscriptionCodes = async () => {
+    if (!supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('subscription_codes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) {
+        setSubscriptionCodes(data);
+        try {
+          localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(data));
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Aviso cargando subscription_codes de Supabase:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSubscriptionCodes();
+    if (supabase) {
+      const channel = supabase
+        .channel('realtime_subscription_codes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'subscription_codes' }, () => {
+          fetchSubscriptionCodes();
+        })
+        .subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, []);
+
+  // Validación reactiva de si la suscripción de la tienda actual está activa
+  const isSubscriptionActive = useMemo(() => {
+    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt;
+    if (!expiresAt) return false;
+    return new Date(expiresAt).getTime() > currentTick;
+  }, [storeConfig?.subscription?.subscriptionExpiresAt, currentTick]);
+
+  // Tiempo restante de la suscripción (días, horas, minutos, segundos)
+  const subscriptionTimeRemaining = useMemo(() => {
+    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt;
+    return calculateSubscriptionTimeRemaining(expiresAt, currentTick);
+  }, [storeConfig?.subscription?.subscriptionExpiresAt, currentTick]);
+
+  // Generar códigos de suscripción (uno o por lotes)
+  const generateSubscriptionCodes = async ({ count = 1, durationDays = 0, durationMinutes = 0, planName = 'Premium', notes = '' }) => {
+    const newCodes = [];
+    const nowIso = new Date().toISOString();
+    for (let i = 0; i < count; i++) {
+      newCodes.push({
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `code-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
+        code: generateCleanCode(),
+        duration_days: Number(durationDays) || 0,
+        duration_minutes: Number(durationMinutes) || 0,
+        plan_name: planName || 'Premium',
+        status: 'available',
+        created_at: nowIso,
+        redeemed_at: null,
+        redeemed_by_email: null,
+        redeemed_by_store_id: null,
+        redeemed_by_store_name: null,
+        notes: notes || ''
+      });
+    }
+
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('subscription_codes').insert(newCodes);
+        if (error) {
+          console.warn('Error guardando códigos en Supabase (usando fallback local):', error.message);
+        }
+      } catch (err) {
+        console.warn('Excepción guardando códigos en Supabase:', err);
+      }
+    }
+
+    setSubscriptionCodes(prev => {
+      const updated = [...newCodes, ...prev];
+      try {
+        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    showToast(`¡Se ${count === 1 ? 'generó 1 código' : `generaron ${count} códigos`} con éxito!`, 'success');
+    return newCodes;
+  };
+
+  // Eliminar código no canjeado (por error o accidente)
+  const deleteSubscriptionCode = async (codeId) => {
+    if (!codeId) return;
+    if (supabase) {
+      try {
+        await supabase.from('subscription_codes').delete().eq('id', codeId);
+      } catch (err) {
+        console.warn('Error eliminando código en Supabase:', err);
+      }
+    }
+    setSubscriptionCodes(prev => {
+      const updated = prev.filter(c => c.id !== codeId);
+      try {
+        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    showToast('Código eliminado correctamente.', 'info');
+  };
+
+  // Canjear código de suscripción para la tienda actual
+  const redeemSubscriptionCode = async (codeString) => {
+    if (!codeString || typeof codeString !== 'string') {
+      return { success: false, message: 'Ingresa un código válido.' };
+    }
+    const clean = codeString.trim().toUpperCase();
+    if (!clean) {
+      return { success: false, message: 'Ingresa un código válido.' };
+    }
+
+    // 1. Buscar el código en Supabase o en memoria local
+    let targetCode = null;
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('subscription_codes')
+          .select('*')
+          .eq('code', clean)
+          .maybeSingle();
+        if (!error && data) {
+          targetCode = data;
+        }
+      } catch (e) {}
+    }
+
+    if (!targetCode) {
+      targetCode = subscriptionCodes.find(c => c.code?.toUpperCase() === clean);
+    }
+
+    if (!targetCode) {
+      return { success: false, message: 'El código ingresado no existe o no es válido.' };
+    }
+
+    if (targetCode.status === 'redeemed') {
+      return { 
+        success: false, 
+        message: `Este código ya fue canjeado el ${formatBoliviaDateTime(targetCode.redeemed_at)} por la tienda "${targetCode.redeemed_by_store_name || targetCode.redeemed_by_store_id}".` 
+      };
+    }
+
+    if (targetCode.status === 'revoked') {
+      return { success: false, message: 'Este código ha sido revocado o deshabilitado.' };
+    }
+
+    // 2. Calcular minutos a sumar
+    const days = Number(targetCode.duration_days) || 0;
+    const mins = Number(targetCode.duration_minutes) || 0;
+    let totalMinutesToAdd = (days * 1440) + mins;
+    if (totalMinutesToAdd <= 0) {
+      totalMinutesToAdd = 43200; // Por defecto 30 días
+    }
+
+    // 3. Extender fecha de expiración
+    const now = new Date();
+    const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+    let baseTime = now.getTime();
+    if (currentExp) {
+      const currentExpTime = new Date(currentExp).getTime();
+      if (currentExpTime > baseTime) {
+        baseTime = currentExpTime; // Suma acumulativa
+      }
+    }
+
+    const newExpiresAt = new Date(baseTime + totalMinutesToAdd * 60 * 1000);
+    const nowIso = now.toISOString();
+
+    const newHistoryItem = {
+      code: targetCode.code,
+      planName: targetCode.plan_name || 'Premium',
+      durationMinutes: totalMinutesToAdd,
+      durationDays: days,
+      redeemedAt: nowIso
+    };
+
+    const updatedSubscription = {
+      status: 'active',
+      trialStartedAt: storeConfig?.subscription?.trialStartedAt || nowIso,
+      trialEndsAt: storeConfig?.subscription?.trialEndsAt || nowIso,
+      subscriptionExpiresAt: newExpiresAt.toISOString(),
+      plan: targetCode.plan_name || 'premium',
+      history: [newHistoryItem, ...(storeConfig?.subscription?.history || [])]
+    };
+
+    // 4. Actualizar storeConfig
+    const updatedStoreConfig = {
+      ...storeConfig,
+      subscription: updatedSubscription
+    };
+    await setStoreConfig(updatedStoreConfig);
+
+    // 5. Marcar código como canjeado en base de datos
+    const redeemedPayload = {
+      status: 'redeemed',
+      redeemed_at: nowIso,
+      redeemed_by_email: currentUser?.email || 'dueño@marketsaas.com',
+      redeemed_by_store_id: tenantSlug || 'default',
+      redeemed_by_store_name: storeConfig?.name || tenantSlug || 'Mi Tienda'
+    };
+
+    if (supabase) {
+      try {
+        await supabase
+          .from('subscription_codes')
+          .update(redeemedPayload)
+          .eq('id', targetCode.id);
+      } catch (e) {
+        console.warn('Error actualizando subscription_codes en Supabase:', e);
+      }
+    }
+
+    setSubscriptionCodes(prev => {
+      const updated = prev.map(c => c.id === targetCode.id ? { ...c, ...redeemedPayload } : c);
+      try {
+        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+
+    triggerConfetti();
+    const durationText = days > 0 ? `${days} día(s)` : `${mins} minuto(s)`;
+    showToast(`¡Código canjeado con éxito! Se sumaron ${durationText} a tu suscripción.`, 'success');
+
+    return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText };
+  };
+
+  // Inyección / extensión directa de tiempo a cualquier tienda (SuperAdmin)
+  const addStoreSubscriptionTime = async (storeId, minutesToAdd) => {
+    if (!storeId || !minutesToAdd) return;
+    const now = new Date();
+
+    if (storeId === tenantSlug) {
+      const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+      let baseTime = now.getTime();
+      if (currentExp) {
+        const expTime = new Date(currentExp).getTime();
+        if (expTime > baseTime) baseTime = expTime;
+      }
+      const newExpiresAt = new Date(baseTime + minutesToAdd * 60 * 1000);
+      const updatedSub = {
+        ...(storeConfig.subscription || createDefaultSubscription()),
+        status: 'active',
+        subscriptionExpiresAt: newExpiresAt.toISOString()
+      };
+      await setStoreConfig({ ...storeConfig, subscription: updatedSub });
+      showToast(`¡Se sumaron ${minutesToAdd >= 1440 ? `${Math.round(minutesToAdd / 1440)} día(s)` : `${minutesToAdd} minuto(s)`} a la tienda!`, 'success');
+      return;
+    }
+
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('store_config').select('*').eq('id', storeId).maybeSingle();
+        if (data) {
+          const cfg = data.config || data;
+          let baseTime = now.getTime();
+          const currentExp = cfg?.subscription?.subscriptionExpiresAt;
+          if (currentExp && new Date(currentExp).getTime() > baseTime) {
+            baseTime = new Date(currentExp).getTime();
+          }
+          const newExpiresAt = new Date(baseTime + minutesToAdd * 60 * 1000);
+          const updatedSub = {
+            ...(cfg.subscription || createDefaultSubscription()),
+            status: 'active',
+            subscriptionExpiresAt: newExpiresAt.toISOString()
+          };
+          const updatedCfg = { ...cfg, subscription: updatedSub };
+          await supabase.from('store_config').update({ config: updatedCfg, updated_at: now.toISOString() }).eq('id', storeId);
+        }
+      } catch (e) {
+        console.warn('Error añadiendo tiempo a tienda en Supabase:', e);
+      }
+    }
+    showToast(`Tiempo añadido exitosamente a la tienda "${storeId}".`, 'success');
   };
 
   // Métodos del Carrito
@@ -2415,6 +2854,7 @@ export const StoreProvider = ({ children }) => {
           estTime: '10-15 min'
         }
       ];
+      const defaultSubscription = createDefaultSubscription(TRIAL_DURATION_MINUTES);
       const newConfig = {
         ...baseConfig,
         name: storeName,
@@ -2426,7 +2866,8 @@ export const StoreProvider = ({ children }) => {
         address: '',
         zone: '',
         reference: '',
-        condominiums: defaultCondos
+        condominiums: defaultCondos,
+        subscription: defaultSubscription
       };
 
       const storeRecord = {
@@ -2443,6 +2884,7 @@ export const StoreProvider = ({ children }) => {
         categories: initialStoreConfig.categories,
         payment_methods: initialStoreConfig.paymentMethods,
         config: newConfig,
+        subscription: defaultSubscription,
         owner_id: userId,
         updated_at: new Date().toISOString()
       };
@@ -2596,7 +3038,17 @@ export const StoreProvider = ({ children }) => {
         triggerConfetti,
         exportSalesCSV,
         isRecoveryMode,
-        setIsRecoveryMode
+        setIsRecoveryMode,
+        subscriptionCodes,
+        isSubscriptionActive,
+        subscriptionTimeRemaining,
+        generateSubscriptionCodes,
+        deleteSubscriptionCode,
+        redeemSubscriptionCode,
+        addStoreSubscriptionTime,
+        formatBoliviaDateTime,
+        TRIAL_DURATION_MINUTES,
+        BOLIVIA_TIMEZONE_OFFSET_HOURS
       }}
     >
       {children}

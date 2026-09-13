@@ -6,6 +6,7 @@ import { SpectatorHome } from './components/spectator/SpectatorHome';
 import { StoreDirectory } from './components/customer/StoreDirectory';
 import { CustomerHome } from './components/customer/CustomerHome';
 import { AdminHome } from './components/admin/AdminHome';
+import { SuperAdminHome } from './components/superadmin/SuperAdminHome';
 import { CartDrawer } from './components/customer/CartDrawer';
 import { CheckoutModal } from './components/customer/CheckoutModal';
 import { OrderTrackingModal } from './components/customer/OrderTrackingModal';
@@ -102,7 +103,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* Barra de Navegación Principal para Vista Espectador y Vecino */}
-      {viewMode !== 'admin' && (
+      {viewMode !== 'admin' && viewMode !== 'superadmin' && (
         <Navbar
           onOpenCart={() => setIsCartOpen(true)}
           onOpenRequests={() => handleOpenRequests('')}
@@ -116,7 +117,9 @@ const AppContent = () => {
 
       {/* Contenido Principal según el Modo Activo */}
       <div className="flex-1">
-        {viewMode === 'spectator' ? (
+        {viewMode === 'superadmin' ? (
+          <SuperAdminHome />
+        ) : viewMode === 'spectator' ? (
           <SpectatorHome
             onExploreStore={() => setViewMode('customer')}
             onOpenAuthModal={handleOpenAuthModal}
