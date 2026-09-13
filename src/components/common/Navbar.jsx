@@ -110,29 +110,8 @@ export const Navbar = ({
             <span className="text-white font-extrabold text-[11px] tracking-tight">Red Disponible 24 horas</span>
           </div>
 
-          {/* Lado Derecho: Switch de Modos y Badge de Usuario */}
+          {/* Lado Derecho: Switch de Modos */}
           <div className="flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto">
-            {currentUser && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span 
-                  className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-100 bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-800 truncate max-w-[170px]"
-                  title={`Conectado como: ${currentUser.email}${merchantStore?.name ? ` (${merchantStore.name})` : ''}`}
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="truncate">{merchantStore?.name || currentUser.email}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => signOutMerchant()}
-                  className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-rose-300 px-1.5 py-0.5 rounded hover:bg-slate-800 transition-colors cursor-pointer"
-                  title="Cerrar sesión"
-                >
-                  <LogOut className="w-3 h-3" />
-                  <span className="hidden lg:inline">Salir</span>
-                </button>
-              </div>
-            )}
-
             <div className="flex items-center bg-slate-900 p-0.5 rounded-xl border border-slate-700/80 shadow-xs">
               <button
                 onClick={() => setViewMode('spectator')}
