@@ -148,6 +148,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
 
+  const qrImage = storeConfig?.qrImageUrl || selectedStore?.qrImageUrl || '';
   const rawBank = storeConfig?.bankDetails || selectedStore?.bankDetails;
   const hasValidBankDetails = Boolean(
     rawBank &&
