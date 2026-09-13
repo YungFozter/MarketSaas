@@ -44,7 +44,8 @@ import {
   CheckSquare,
   Square,
   Receipt,
-  Lock
+  Lock,
+  KeyRound
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
