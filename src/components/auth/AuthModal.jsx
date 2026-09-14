@@ -22,6 +22,87 @@ import { useStore } from '../../context/StoreContext';
 import { supabase } from '../../services/supabaseClient';
 import './AuthModal.css';
 
+/**
+ * Parsea el valor ingresado por el usuario en el campo de recuperación.
+ * Soporta:
+ * 1. Código OTP de 6 dígitos (ej. "123456" o "123-456")
+ * 2. URL de Supabase Verify con token (ej. "https://...supabase.co/auth/v1/verify?token=...")
+ * 3. URL de redirección con tokens de sesión (ej. "http://localhost:5173/#access_token=...&refresh_token=...")
+ * 4. Token hash hexadecimal crudo (32 a 128 caracteres hex)
+ */
+const parseRecoveryCredential = (rawInput, userEmail = '') => {
+  if (!rawInput) return null;
+  const text = rawInput.trim();
+
+  // Caso 1: Código numérico de 6 dígitos (OTP)
+  const cleanDigits = text.replace(/[^0-9]/g, '');
+  if (cleanDigits.length === 6 && text.length <= 10) {
+    return {
+      type: 'otp',
+      token: cleanDigits,
+      email: userEmail
+    };
+  }
+
+  // Caso 2: URL o hash que contiene access_token y refresh_token
+  if (text.includes('access_token=') || text.includes('refresh_token=')) {
+    let searchStr = text;
+    if (searchStr.includes('#')) searchStr = searchStr.split('#')[1];
+    else if (searchStr.includes('?')) searchStr = searchStr.split('?')[1];
+    const params = new URLSearchParams(searchStr);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (accessToken) {
+      return {
+        type: 'session',
+        accessToken,
+        refreshToken: refreshToken || ''
+      };
+    }
+  }
+
+  // Caso 3: URL de verificación directa de Supabase (ej. https://...supabase.co/auth/v1/verify?token=...&type=recovery)
+  if (text.includes('token=') || text.includes('token_hash=')) {
+    try {
+      let searchStr = text;
+      if (searchStr.includes('?')) searchStr = searchStr.split('?')[1];
+      if (searchStr.includes('#')) searchStr = searchStr.split('#')[0];
+      const params = new URLSearchParams(searchStr);
+      const token = params.get('token') || params.get('token_hash');
+      if (token) {
+        return {
+          type: 'token_hash',
+          token_hash: token
+        };
+      }
+    } catch (e) {
+      // Ignorar error de parsing
+    }
+  }
+
+  // Caso 4: Token Hash hexadecimal largo pegado directamente (generalmente 64 caracteres)
+  if (/^[a-fA-F0-9]{32,128}$/.test(text)) {
+    return {
+      type: 'token_hash',
+      token_hash: text
+    };
+  }
+
+  // Fallback si contiene exactamente 6 dígitos
+  if (cleanDigits.length === 6) {
+    return {
+      type: 'otp',
+      token: cleanDigits,
+      email: userEmail
+    };
+  }
+
+  return {
+    type: 'unknown',
+    raw: text
+  };
+};
+
 export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const { 
     signInMerchant, 
@@ -29,7 +110,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     createMerchantStore, 
     currentUser,
     setViewMode,
-    showToast 
+    showToast,
+    setIsRecoveryMode
   } = useStore();
 
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot'
@@ -247,63 +329,85 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       return;
     }
 
+    const cleanEmail = (forgotEmail || verifiedEmail || '').trim().toLowerCase();
+    const parsed = parseRecoveryCredential(rawInput, cleanEmail);
+
     setLoading(true);
     try {
-      const cleanEmail = (forgotEmail || verifiedEmail || '').trim().toLowerCase();
-
-      // Caso A: Si el usuario pegó el enlace completo o los parámetros de Supabase
-      if (rawInput.includes('access_token=') || rawInput.includes('refresh_token=')) {
-        let searchStr = rawInput;
-        if (searchStr.includes('#')) searchStr = searchStr.split('#')[1];
-        else if (searchStr.includes('?')) searchStr = searchStr.split('?')[1];
-        const params = new URLSearchParams(searchStr);
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
-
-        if (accessToken && refreshToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-          setLoading(false);
-          if (error) {
-            setErrorMsg('El enlace de recuperación ha expirado o es inválido. Solicita uno nuevo.');
-            return;
-          }
-          if (data?.user?.email) {
-            setVerifiedEmail(data.user.email);
-          }
-          showToast('¡Identidad verificada con éxito! Ahora crea tu nueva contraseña.', 'success');
-          setForgotStep('new-password');
+      // Caso 1: Sesión por tokens extraídos de la URL redireccionada (access_token + refresh_token)
+      if (parsed?.type === 'session') {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: parsed.accessToken,
+          refresh_token: parsed.refreshToken
+        });
+        setLoading(false);
+        if (error) {
+          setErrorMsg('El enlace de recuperación ha expirado o ya fue utilizado. Por favor solicita uno nuevo.');
           return;
         }
-      }
-
-      // Caso B: Código de 6 dígitos (OTP)
-      const cleanDigits = rawInput.replace(/[^0-9]/g, '');
-      const tokenToUse = cleanDigits.length === 6 ? cleanDigits : rawInput;
-
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: tokenToUse,
-        type: 'recovery'
-      });
-      setLoading(false);
-
-      if (error) {
-        if (error.message?.includes('Token has expired') || error.code === 'otp_expired') {
-          setErrorMsg('El código ha expirado o es incorrecto. Solicita un nuevo código.');
-        } else {
-          setErrorMsg('Código incorrecto. Verifica los 6 dígitos o pega el enlace que recibiste.');
+        if (data?.user?.email) {
+          setVerifiedEmail(data.user.email);
         }
+        if (setIsRecoveryMode) setIsRecoveryMode(true);
+        showToast('¡Identidad verificada con éxito! Ahora crea tu nueva contraseña.', 'success');
+        setForgotStep('new-password');
         return;
       }
 
-      if (data?.user?.email) {
-        setVerifiedEmail(data.user.email);
+      // Caso 2: Token Hash extraído del enlace directo de Supabase (token=... o hash hex directo)
+      if (parsed?.type === 'token_hash') {
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: parsed.token_hash,
+          type: 'recovery'
+        });
+        setLoading(false);
+        if (error) {
+          const msgLower = (error.message || '').toLowerCase();
+          if (msgLower.includes('expired') || error.code === 'otp_expired') {
+            setErrorMsg('Este enlace ya fue utilizado o ha expirado. Por favor solicita un nuevo código.');
+          } else {
+            setErrorMsg('El enlace de recuperación no es válido o ya caducó. Por favor solicita un nuevo código.');
+          }
+          return;
+        }
+        if (data?.user?.email) {
+          setVerifiedEmail(data.user.email);
+        }
+        if (setIsRecoveryMode) setIsRecoveryMode(true);
+        showToast('¡Enlace validado con éxito! Ahora crea tu nueva contraseña.', 'success');
+        setForgotStep('new-password');
+        return;
       }
-      showToast('¡Código verificado con éxito! Ahora crea tu nueva contraseña.', 'success');
-      setForgotStep('new-password');
+
+      // Caso 3: Código OTP numérico de 6 dígitos
+      if (parsed?.type === 'otp') {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: parsed.token,
+          type: 'recovery'
+        });
+        setLoading(false);
+        if (error) {
+          const msgLower = (error.message || '').toLowerCase();
+          if (msgLower.includes('expired') || error.code === 'otp_expired') {
+            setErrorMsg('El código ha expirado. Haz clic en "Reenviar código" para recibir uno nuevo.');
+          } else {
+            setErrorMsg('Código incorrecto. Verifica los 6 dígitos que llegaron a tu correo.');
+          }
+          return;
+        }
+        if (data?.user?.email) {
+          setVerifiedEmail(data.user.email);
+        }
+        if (setIsRecoveryMode) setIsRecoveryMode(true);
+        showToast('¡Código verificado con éxito! Ahora crea tu nueva contraseña.', 'success');
+        setForgotStep('new-password');
+        return;
+      }
+
+      // Caso 4: Formato no reconocido
+      setLoading(false);
+      setErrorMsg('No pudimos reconocer el formato del código o enlace. Ingresa los 6 dígitos o pega el enlace completo.');
     } catch (err) {
       setLoading(false);
       setErrorMsg('Error de conexión al verificar el código.');
@@ -352,6 +456,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       setConfirmPassword('');
       setOtpCode('');
       setForgotStep('email');
+      if (setIsRecoveryMode) setIsRecoveryMode(false);
       if (emailToPreload) {
         setLoginEmail(emailToPreload);
       }
