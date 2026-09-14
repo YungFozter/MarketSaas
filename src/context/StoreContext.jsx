@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
+import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
 import { exportSalesToCSV, exportSalesToStyledExcel, exportSalesToPDF } from '../utils/salesExportUtils';
@@ -537,6 +538,23 @@ export const StoreProvider = ({ children }) => {
         tagline: foundStore.tagline || prev.tagline,
         address: foundStore.address || prev.address
       }));
+
+      // Pre-cargar de forma inmediata el catálogo variado de la tienda seleccionada
+      try {
+        const localProds = localStorage.getItem(`marketsaas_${foundStore.slug}_products`);
+        if (localProds) {
+          const parsed = JSON.parse(localProds);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), foundStore.slug));
+          } else {
+            setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
+          }
+        } else {
+          setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
+        }
+      } catch {
+        setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
+      }
     }
     setCustomerSubView('storefront');
     setViewMode('customer');
@@ -563,16 +581,19 @@ export const StoreProvider = ({ children }) => {
 
   // 2. Productos
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug);
+    if (tenantSlug && tenantSlug !== 'default') {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug);
+          }
+        } catch (e) {
+          // fallback
         }
-      } catch (e) {
-        // fallback
       }
+      return getStoreCatalog(tenantSlug).map(normalizeProduct);
     }
     return tenantSlug === 'default' ? initialProducts.map(normalizeProduct) : [];
   });
@@ -1026,9 +1047,13 @@ export const StoreProvider = ({ children }) => {
         const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
         if (localProds) {
           const parsed = JSON.parse(localProds);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setProducts(filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug));
+          } else {
+            setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
           }
+        } else {
+          setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
         }
         const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
         if (localOrders) {
