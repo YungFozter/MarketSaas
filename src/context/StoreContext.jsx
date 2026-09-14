@@ -514,7 +514,11 @@ export const StoreProvider = ({ children }) => {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return deduplicateStoreList(parsed);
+          const updatedCached = parsed.map(s => {
+            const canonical = initialStores.find(init => init.slug === s.slug || init.id === s.id);
+            return canonical ? { ...s, ...canonical } : s;
+          });
+          return deduplicateStoreList(updatedCached);
         }
       }
     } catch (e) {}

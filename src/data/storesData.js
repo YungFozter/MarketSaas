@@ -108,7 +108,7 @@ const rawStores = [
   {
     id: 'minimarket-el-casco-viejo',
     slug: 'minimarket-el-casco-viejo',
-    name: 'Minimarket El Casco Viejo',
+    name: 'Tienda El Sol',
     tagline: 'Bebidas frías, confites y abarrotes en el corazón de Santa Cruz',
     address: 'Calle Ballivián #215 entre René Moreno y Chuquisaca (1er Anillo)',
     condominium: 'Edificio Ballivián Centro',
@@ -136,7 +136,7 @@ const rawStores = [
   {
     id: 'bodega-la-pascana',
     slug: 'bodega-la-pascana',
-    name: 'Bodega La Pascana Central',
+    name: 'Bodega La Pascana',
     tagline: 'Gaseosas al paso, empanadas y despensa rápida frente a la plaza',
     address: 'Calle 24 de Septiembre #130 esq. Bolívar (Plaza Principal / 1er Anillo)',
     condominium: 'Casco Viejo',
@@ -163,7 +163,7 @@ const rawStores = [
   {
     id: 'almacen-sucre-central',
     slug: 'almacen-sucre-central',
-    name: 'Almacén Sucre Central',
+    name: 'Almacén Sucre',
     tagline: 'Lácteos frescos Pil, café, té y pan caliente para oficinas y hogares',
     address: 'Calle Sucre #340 esq. Potosí (1er Anillo)',
     condominium: 'Condominio El Portal Centro',
@@ -191,7 +191,7 @@ const rawStores = [
   {
     id: 'minimarket-monsenor-rivero',
     slug: 'minimarket-monsenor-rivero',
-    name: 'Monseñor Rivero Market 24/7',
+    name: 'Minimarket 24 Horas',
     tagline: 'Bebidas premium, hielo, snacks y confitería en el Boulevard',
     address: 'Av. Monseñor Rivero #280 (El Altar / 1er Anillo)',
     condominium: 'Edificio Monseñor',
@@ -277,7 +277,7 @@ const rawStores = [
   {
     id: 'minimarket-el-trompillo',
     slug: 'minimarket-el-trompillo',
-    name: 'Minimarket El Trompillo 2do Anillo',
+    name: 'Ventita Carlos',
     tagline: 'Tu despensa surtida al sur de la ciudad',
     address: 'Av. El Trompillo esq. 2do Anillo #450',
     condominium: 'Torres del Trompillo',
@@ -305,7 +305,7 @@ const rawStores = [
   {
     id: 'market-parque-urbano',
     slug: 'market-parque-urbano',
-    name: 'Parque Urbano Mini Market',
+    name: 'Minimarket Belén',
     tagline: 'Refrescos, helados y botanas frente a las aguas danzantes',
     address: 'Av. Argentina esq. 2do Anillo #120',
     condominium: 'Torres del Parque Urbano',
@@ -333,7 +333,7 @@ const rawStores = [
   {
     id: 'bodega-las-americas',
     slug: 'bodega-las-americas',
-    name: 'Bodega Las Américas 2do Anillo',
+    name: 'Tienda Fátima',
     tagline: 'Atención rápida, pan especial y embutidos Sofía',
     address: 'Av. Las Américas #620 (2do Anillo Sudeste)',
     condominium: 'Condominio Las Américas',
@@ -360,7 +360,7 @@ const rawStores = [
   {
     id: 'minimarket-busch-express',
     slug: 'minimarket-busch-express',
-    name: 'Busch Express Minimarket',
+    name: 'Todo Tuyo',
     tagline: 'Tu parada rápida para snacks, energizantes y bebidas universitarias',
     address: 'Av. Busch y 2do Anillo #310',
     condominium: 'Edificio Busch Plaza',
@@ -388,7 +388,7 @@ const rawStores = [
   {
     id: 'almacen-canal-isuto',
     slug: 'almacen-canal-isuto',
-    name: 'Almacén Canal Isuto 2do Anillo',
+    name: 'Almacén La Esperanza',
     tagline: 'Despensa fresca y pedidos express a los condominios del canal',
     address: 'Canal Isuto y 2do Anillo #145',
     condominium: 'Condominio Isuto 2',
@@ -416,7 +416,7 @@ const rawStores = [
   {
     id: 'bodega-avenida-brasil',
     slug: 'bodega-avenida-brasil',
-    name: 'Bodega Avenida Brasil 2do Anillo',
+    name: 'Bodega San Antonio',
     tagline: 'Venta de abarrotes, harinas y lácteos a precios convenientes',
     address: 'Av. Brasil y 2do Anillo #520',
     condominium: 'Barrio San Antonio',
@@ -443,7 +443,7 @@ const rawStores = [
   {
     id: 'minimarket-grigota-2do',
     slug: 'minimarket-grigota-2do',
-    name: 'Minimarket Grigotá 2do Anillo',
+    name: 'Minimarket Don Pepe',
     tagline: 'Gran surtido en refrescos, fiambres y panadería',
     address: 'Av. Grigotá y 2do Anillo #240',
     condominium: 'Torres del Sur',
@@ -471,7 +471,7 @@ const rawStores = [
   {
     id: 'almacen-canoto-central',
     slug: 'almacen-canoto-central',
-    name: 'Almacén Cañoto & Centenario',
+    name: 'Abarrotes Mary',
     tagline: 'Artículos de primera necesidad para vecinos y departamentos',
     address: 'Av. Cañoto esq. Centenario #88',
     condominium: 'Edificio Cañoto Centro',
@@ -502,7 +502,7 @@ const rawStores = [
   {
     id: 'sirari-market-deli',
     slug: 'sirari-market-deli',
-    name: 'Sirari Market & Deli',
+    name: 'Sirari Deli & Market',
     tagline: 'Quesos finos, embutidos de calidad, vinos y abarrotes seleccionados',
     address: 'Calle Los Jazmines #88 (Barrio Sirari / 3er Anillo)',
     condominium: 'Barrio Sirari Residencial',
@@ -530,7 +530,7 @@ const rawStores = [
   {
     id: 'bodega-guembe-equipetrol',
     slug: 'bodega-guembe-equipetrol',
-    name: 'Bodega Güembé Equipetrol',
+    name: 'Bodega El Güembé',
     tagline: 'Precios justos de barrio en pleno Equipetrol',
     address: 'Calle Güembé #45 (Equipetrol / 3er Anillo Interno)',
     condominium: 'Condominio Los Ceibos Equipetrol',
@@ -557,7 +557,7 @@ const rawStores = [
   {
     id: 'minimarket-los-tajibos',
     slug: 'minimarket-los-tajibos',
-    name: 'Minimarket Los Tajibos 3er Anillo',
+    name: 'Minimarket Los Tajibos',
     tagline: 'Atención rápida a departamentos y torres residenciales',
     address: 'Av. San Martín #720 entre 3er Anillo Interno y Externo',
     condominium: 'Torres San Martín',
@@ -585,7 +585,7 @@ const rawStores = [
   {
     id: 'almacen-urbari-central',
     slug: 'almacen-urbari-central',
-    name: 'Almacén Urbari Central',
+    name: 'Almacén Los Pinos',
     tagline: 'Pan marraqueta caliente a las 6:30 AM y abarrotes del día',
     address: 'Calle Los Pinos #124 (Barrio Urbari / 3er Anillo)',
     condominium: 'Barrio Urbari',
@@ -612,7 +612,7 @@ const rawStores = [
   {
     id: 'minimarket-hamacas-3ro',
     slug: 'minimarket-hamacas-3ro',
-    name: 'Minimarket Hamacas 3er Anillo',
+    name: 'Tienda Doña Rosa',
     tagline: 'Verduras frescas, huevos y despensa completa para familias',
     address: 'Av. Alemania y 3er Anillo Externo #450',
     condominium: 'Barrio Hamacas',
@@ -640,7 +640,7 @@ const rawStores = [
   {
     id: 'bodega-alto-san-pedro',
     slug: 'bodega-alto-san-pedro',
-    name: 'Bodega Alto San Pedro',
+    name: 'Bodega San Pedro',
     tagline: 'Bebidas frías, hielo y abarrotes populares',
     address: 'Barrio Alto San Pedro 3er Anillo #180',
     condominium: 'Barrio Alto San Pedro',
@@ -667,7 +667,7 @@ const rawStores = [
   {
     id: 'market-mutualista-express',
     slug: 'market-mutualista-express',
-    name: 'Market Mutualista Express',
+    name: 'Minimarket El Buen Vecino',
     tagline: 'Compras rápidas sin entrar al mercado grande',
     address: 'Av. Mutualista y 3er Anillo Interno #320',
     condominium: 'Condominio Mutualista',
@@ -695,7 +695,7 @@ const rawStores = [
   {
     id: 'almacen-santos-dumont-3ro',
     slug: 'almacen-santos-dumont-3ro',
-    name: 'Almacén Santos Dumont 3er Anillo',
+    name: 'Almacén Dumont',
     tagline: 'Panadería, gaseosas en oferta y artículos de limpieza',
     address: 'Av. Santos Dumont y 3er Anillo Externo #510',
     condominium: 'Condominio Dumont Plaza',
@@ -723,7 +723,7 @@ const rawStores = [
   {
     id: 'minimarket-virgen-de-cotoca',
     slug: 'minimarket-virgen-de-cotoca',
-    name: 'Minimarket Virgen de Cotoca 3er Anillo',
+    name: 'Minimarket La Bendición',
     tagline: 'Todo en carnes frías, pan y bebidas para el este de la ciudad',
     address: 'Av. Virgen de Cotoca y 3er Anillo #410',
     condominium: 'Condominio Los Pinos Este',
@@ -750,7 +750,7 @@ const rawStores = [
   {
     id: 'market-paragua-express',
     slug: 'market-paragua-express',
-    name: 'Paraguá Express Market',
+    name: 'Comercial El Amigo',
     tagline: 'Despacho a departamentos en 15 minutos con cobro QR',
     address: 'Av. Paraguá y 3er Anillo Externo #290',
     condominium: 'Torres Paraguá',
@@ -782,7 +782,7 @@ const rawStores = [
   {
     id: 'equipetrol-norte-market',
     slug: 'equipetrol-norte-market',
-    name: 'Equipetrol Norte Market 4to Anillo',
+    name: 'Equipetrol Market',
     tagline: 'Snacks importados, helados gourmet y cervezas artesanales',
     address: 'Calle 7 Este #55 (Equipetrol Norte / 4to Anillo)',
     condominium: 'Torres Equipetrol Norte',
@@ -838,7 +838,7 @@ const rawStores = [
   {
     id: 'minimarket-las-brisas-4to',
     slug: 'minimarket-las-brisas-4to',
-    name: 'Las Brisas Market 4to Anillo',
+    name: 'Minimarket Las Brisas',
     tagline: 'Rápido, limpio y surtido para los condominios del 4to Anillo norte',
     address: '4to Anillo esq. Av. Cristo Redentor (Frente al Mall)',
     condominium: 'Torres Las Brisas',
@@ -866,7 +866,7 @@ const rawStores = [
   {
     id: 'almacen-petrolero-4to',
     slug: 'almacen-petrolero-4to',
-    name: 'Almacén Barrio Petrolero',
+    name: 'Almacén La Palmera',
     tagline: 'Tradición familiar con abarrotes, harinas y carnes frías',
     address: 'Barrio Petrolero 4to Anillo Calle 3 #45',
     condominium: 'Condominio Petrolero',
@@ -893,7 +893,7 @@ const rawStores = [
   {
     id: 'bodega-don-memo-dumont',
     slug: 'bodega-don-memo-dumont',
-    name: 'Bodega Don Memo 4to Anillo',
+    name: 'Bodega Don Memo',
     tagline: 'Atención cariñosa y pedidos directos al WhatsApp',
     address: '4to Anillo Santos Dumont esq. Calle 2 #110',
     condominium: 'Torres del Sur 4to Anillo',
@@ -921,7 +921,7 @@ const rawStores = [
   {
     id: 'minimarket-villa-1ro-de-mayo',
     slug: 'minimarket-villa-1ro-de-mayo',
-    name: 'Minimarket La Amistad Villa 1ro de Mayo',
+    name: 'Minimarket La Amistad',
     tagline: 'Venta de abarrotes, panadería y bebidas por mayor y menor',
     address: 'Plaza Principal Villa 1ro de Mayo #88 (4to Anillo este)',
     condominium: 'Villa 1ro de Mayo',
@@ -949,7 +949,7 @@ const rawStores = [
   {
     id: 'market-guapay-4to-anillo',
     slug: 'market-guapay-4to-anillo',
-    name: 'Market Guapay 4to Anillo',
+    name: 'Tienda La Estrella',
     tagline: 'Despensa completa con delivery veloz a condominios del noreste',
     address: 'Canal Guapay y 4to Anillo #130',
     condominium: 'Condominio Guapay',
@@ -976,7 +976,7 @@ const rawStores = [
   {
     id: 'almacen-las-palmas-radial',
     slug: 'almacen-las-palmas-radial',
-    name: 'Las Palmas Market Express 4to Anillo',
+    name: 'Tienda Cotoca',
     tagline: 'Bebidas frías, hielo y abarrotes a pasos del condominio',
     address: 'Av. Las Palmas entre 4to y 5to Anillo #180',
     condominium: 'Las Palmas Residencial',
@@ -1008,7 +1008,7 @@ const rawStores = [
   {
     id: 'almacen-radial-17-medio',
     slug: 'almacen-radial-17-medio',
-    name: 'Almacén Radial 17 y medio 5to Anillo',
+    name: 'Ventita Doña Blanca',
     tagline: 'Todo para el almuerzo, verduras y carnes frías',
     address: 'Radial 17 1/2 y 5to Anillo #340',
     condominium: 'Condominio Piraí 5',
@@ -1036,7 +1036,7 @@ const rawStores = [
   {
     id: 'minimarket-los-sauces-5to',
     slug: 'minimarket-los-sauces-5to',
-    name: 'Minimarket Los Sauces 5to Anillo',
+    name: 'Minimarket Los Sauces',
     tagline: 'Atención personalizada para condominios de la zona norte',
     address: 'Av. Banzer entre 4to y 5to Anillo (Condominio Los Sauces)',
     condominium: 'Condominio Los Sauces Banzer',
@@ -1064,7 +1064,7 @@ const rawStores = [
   {
     id: 'bodega-san-jose-5to',
     slug: 'bodega-san-jose-5to',
-    name: 'Bodega San José 5to Anillo',
+    name: 'Bodega San José',
     tagline: 'Panadería fresca, gaseosas frías y abarrotes del hogar',
     address: 'Av. Tres Pasos al Frente y 5to Anillo #210',
     condominium: 'Barrio San José Este',
@@ -1091,7 +1091,7 @@ const rawStores = [
   {
     id: 'market-montecristo-5to',
     slug: 'market-montecristo-5to',
-    name: 'Montecristo Market 5to Anillo',
+    name: 'Montecristo Market',
     tagline: 'Minimarket moderno dentro del condominio con pago QR',
     address: 'Av. Beni entre 4to y 5to Anillo #88',
     condominium: 'Condominio Montecristo',
@@ -1119,7 +1119,7 @@ const rawStores = [
   {
     id: 'almacen-la-morita-5to',
     slug: 'almacen-la-morita-5to',
-    name: 'Almacén El Trébol 5to Anillo Dumont',
+    name: 'Almacén El Trébol',
     tagline: 'Todo para el hogar sin salir de la zona sur',
     address: 'Av. Santos Dumont y 5to Anillo #440',
     condominium: 'Barrio La Morita Sur',
@@ -1146,7 +1146,7 @@ const rawStores = [
   {
     id: 'minimarket-cumavi-5to',
     slug: 'minimarket-cumavi-5to',
-    name: 'Minimarket Cumavi 5to Anillo',
+    name: 'Tienda Emanuel',
     tagline: 'Productos básicos y delivery express a condominios vecinos',
     address: 'Av. Cumavi y 5to Anillo #230',
     condominium: 'Barrio Los Troncos Este',
@@ -1177,7 +1177,7 @@ const rawStores = [
   {
     id: 'almacen-norte-real-6to',
     slug: 'almacen-norte-real-6to',
-    name: 'Almacén Norte Real 6to Anillo',
+    name: 'Almacén Norte Real',
     tagline: 'Verduras frescas, huevos por maple y lácteos Pil al límite norte',
     address: 'Av. Banzer y 6to Anillo #620',
     condominium: 'Condominio Norte Real 6',
@@ -1204,7 +1204,7 @@ const rawStores = [
   {
     id: 'market-radial-26-6to',
     slug: 'market-radial-26-6to',
-    name: 'Market Radial 26 y 6to Anillo',
+    name: 'Ventita Don Lucho',
     tagline: 'Abastecimiento completo para condominios cerrados',
     address: 'Radial 26 y 6to Anillo #310',
     condominium: 'Condominio San Silvestre',
@@ -1232,7 +1232,7 @@ const rawStores = [
   {
     id: 'minimarket-sevilla-6to',
     slug: 'minimarket-sevilla-6to',
-    name: 'Sevilla Market 6to Anillo Banzer',
+    name: 'Minimarket Sevilla',
     tagline: 'Despensa familiar completa con atención por WhatsApp',
     address: 'Av. Banzer 6to Anillo (Entrada Condominio Sevilla)',
     condominium: 'Condominio Sevilla Norte',
