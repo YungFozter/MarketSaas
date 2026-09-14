@@ -180,10 +180,25 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="text-xs text-slate-700 space-y-2 font-sans bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <div className="flex items-start gap-2">
-                <Store className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-extrabold text-slate-900 text-sm block">{storeName}</span>
+              <div className="flex items-center gap-3">
+                {storeConfig?.logoUrl ? (
+                  <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs shrink-0 flex items-center justify-center p-0.5">
+                    <img 
+                      src={storeConfig.logoUrl} 
+                      alt={storeName} 
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <Store className="w-5 h-5" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <span className="font-extrabold text-slate-900 text-sm block truncate">{storeName}</span>
+                  {storeConfig?.tagline && (
+                    <span className="text-[11px] text-slate-500 block truncate">{storeConfig.tagline}</span>
+                  )}
                 </div>
               </div>
 

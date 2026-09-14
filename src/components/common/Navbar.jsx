@@ -228,9 +228,19 @@ export const Navbar = ({
               </div>
             ) : (
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0 group-hover:scale-105 transition-transform">
-                  <Store className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
+                {storeConfig?.logoUrl ? (
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-slate-200/90 bg-white shadow-xs shrink-0 group-hover:scale-105 transition-transform flex items-center justify-center p-0.5">
+                    <img 
+                      src={storeConfig.logoUrl} 
+                      alt={storeConfig.name || 'Logo de la tienda'} 
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 shrink-0 group-hover:scale-105 transition-transform">
+                    <Store className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight truncate max-w-[120px] xs:max-w-[160px] sm:max-w-none">

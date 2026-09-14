@@ -570,18 +570,28 @@ export const NeighborhoodMap = ({
             {/* Cabecera de la Tienda */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 shadow-xs ${
-                  activeStore.isOpen !== false ? 'bg-emerald-600' : 'bg-slate-700 border border-rose-400/60'
-                }`}>
-                  {activeStore.isOpen !== false ? (
-                    <Store className="w-5 h-5" />
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
-                  )}
-                </div>
+                {activeStore.logoUrl ? (
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0 shadow-xs p-0.5">
+                    <img 
+                      src={activeStore.logoUrl} 
+                      alt={activeStore.name} 
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 shadow-xs ${
+                    activeStore.isOpen !== false ? 'bg-emerald-600' : 'bg-slate-700 border border-rose-400/60'
+                  }`}>
+                    {activeStore.isOpen !== false ? (
+                      <Store className="w-5 h-5" />
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                    )}
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
                     {activeStore.name}

@@ -73,6 +73,20 @@ const AppContent = () => {
     }
   }, [showToast]);
 
+  // Título dinámico de la pestaña del navegador según la tienda o vista activa
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (viewMode === 'customer' && customerSubView === 'storefront' && storeConfig?.name) {
+      document.title = `${storeConfig.name} | Catálogo Virtual`;
+    } else if (viewMode === 'admin') {
+      document.title = `${storeConfig?.name || 'Panel'} - Administración`;
+    } else if (viewMode === 'superadmin') {
+      document.title = 'SuperAdmin | MarketSaaS';
+    } else {
+      document.title = 'MarketSaaS - Red de Minimarkets de Proximidad';
+    }
+  }, [viewMode, customerSubView, storeConfig?.name]);
+
   const handleOpenAuthModal = (mode = 'login') => {
     setAuthModalMode(typeof mode === 'string' ? mode : 'login');
     setIsAuthModalOpen(true);

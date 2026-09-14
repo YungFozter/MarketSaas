@@ -74,9 +74,19 @@ export const StoreCard = ({
               {/* Encabezado con Nombre e Información */}
               <div className="flex items-start justify-between gap-2.5 min-w-0">
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
-                    <Store className="w-5 h-5" />
-                  </div>
+                  {store.logoUrl ? (
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0 shadow-xs p-0.5">
+                      <img 
+                        src={store.logoUrl} 
+                        alt={store.name} 
+                        className="w-full h-full object-contain rounded-lg"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center shrink-0 shadow-xs">
+                      <Store className="w-5 h-5" />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight truncate">
@@ -208,6 +218,13 @@ export const StoreCard = ({
         {/* Info Central */}
         <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5">
           <div className="flex items-center gap-1.5 min-w-0">
+            {store.logoUrl && (
+              <img 
+                src={store.logoUrl} 
+                alt={store.name} 
+                className="w-4 h-4 rounded-md object-contain bg-white shrink-0 border border-slate-200"
+              />
+            )}
             <h4 className="text-sm font-bold text-slate-900 truncate leading-snug">
               {store.name}
             </h4>
@@ -316,9 +333,15 @@ export const StoreCard = ({
               </div>
             </div>
 
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-4 h-4" />
-            </div>
+            {store.logoUrl ? (
+              <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 bg-white flex items-center justify-center shrink-0 p-0.5 shadow-2xs">
+                <img src={store.logoUrl} alt={store.name} className="w-full h-full object-contain rounded-md" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+            )}
           </div>
 
           {/* Métodos de Pago y Modalidades Aceptadas (QR Simple, Retiro en caja, Delivery propio) */}

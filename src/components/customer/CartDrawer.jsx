@@ -56,13 +56,19 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
           <div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50/70">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
-                  <ShoppingBag className="w-5 h-5" />
-                </div>
+                {storeConfig?.logoUrl ? (
+                  <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center font-bold shrink-0 p-0.5 shadow-2xs">
+                    <img src={storeConfig.logoUrl} alt={storeConfig.name || 'Logo'} className="w-full h-full object-contain rounded-lg" />
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shrink-0">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                )}
                 <div>
                   <h2 className="text-lg font-extrabold text-slate-900">Tu Canasta Vecina</h2>
                   <p className="text-xs text-slate-500 font-medium">
-                    {cart.reduce((acc, i) => acc + i.quantity, 0)} productos seleccionados
+                    {cart.reduce((acc, i) => acc + i.quantity, 0)} productos en {storeConfig?.name || 'tu tienda'}
                   </p>
                 </div>
               </div>

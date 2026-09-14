@@ -158,8 +158,16 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
           <span className="hidden sm:inline">Comprando en:</span>
           <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            {storeConfig.name}
+            {storeConfig?.logoUrl ? (
+              <img 
+                src={storeConfig.logoUrl} 
+                alt={storeConfig.name} 
+                className="w-4 h-4 rounded-md object-contain bg-white shrink-0 border border-slate-200"
+              />
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            )}
+            <span className="truncate max-w-[140px] sm:max-w-[200px]">{storeConfig.name}</span>
           </span>
           {(storeConfig.whatsapp || storeConfig.phone) && (
             <a

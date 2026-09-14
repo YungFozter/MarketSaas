@@ -8,18 +8,45 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900 text-white shadow-xl mb-6 sm:mb-8 p-5 sm:p-8 lg:p-10">
+    <div 
+      className={`relative overflow-hidden rounded-3xl text-white shadow-xl mb-6 sm:mb-8 p-5 sm:p-8 lg:p-10 ${
+        !storeConfig?.bannerUrl ? 'bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900' : 'bg-slate-900'
+      }`}
+      style={storeConfig?.bannerUrl ? {
+        backgroundImage: `linear-gradient(to bottom right, rgba(6, 78, 59, 0.88), rgba(15, 118, 110, 0.84), rgba(6, 78, 59, 0.94)), url("${storeConfig.bannerUrl}")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      } : undefined}
+    >
       {/* Decorative background blobs */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 left-1/3 -mb-20 w-72 h-72 rounded-full bg-amber-400/15 blur-3xl pointer-events-none"></div>
 
       <div className="relative z-10 max-w-3xl">
-        {/* Pill Promocional */}
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 mb-3.5 shadow-xs max-w-full">
-          <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
-          <span className="truncate">
-            🛍️ Catálogo de Barrio • Retiro en Local y Envíos según cada Tienda
-          </span>
+        {/* Identidad de Marca: Logotipo y Pill Promocional */}
+        <div className="flex items-center gap-3.5 mb-4">
+          {storeConfig?.logoUrl ? (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/95 backdrop-blur-md p-1.5 shadow-lg border border-white/40 shrink-0 flex items-center justify-center">
+              <img 
+                src={storeConfig.logoUrl} 
+                alt={storeConfig.name || 'Logotipo oficial'} 
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+          ) : null}
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 shadow-xs max-w-full">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
+              <span className="truncate">
+                🛍️ Catálogo Oficial • {storeConfig?.name || 'Tienda de Barrio'}
+              </span>
+            </div>
+            {storeConfig?.tagline && (
+              <p className="text-xs text-emerald-100/90 font-medium mt-1 truncate">
+                {storeConfig.tagline}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Título Principal */}

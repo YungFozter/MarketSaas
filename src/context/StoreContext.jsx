@@ -692,6 +692,9 @@ export const StoreProvider = ({ children }) => {
               address: safeConfig.address || s.address,
               tagline: safeConfig.tagline || s.tagline,
               googleMapsCoordinates: validCoords,
+              logoUrl: safeConfig.logoUrl || s.logoUrl || null,
+              bannerUrl: safeConfig.bannerUrl || s.bannerUrl || null,
+              imageUrl: safeConfig.bannerUrl || safeConfig.logoUrl || s.imageUrl,
               isCurrentOwnerStore: true
             };
           }
@@ -1388,9 +1391,15 @@ export const StoreProvider = ({ children }) => {
                 statusBadge: ((isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig.isOpen
                   : (rs.is_open !== false && conf.isOpen !== false)) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+                logoUrl: (isCurrentOwner && storeConfig?.logoUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
+                  ? storeConfig.logoUrl
+                  : (conf.logoUrl || rs.logo_url || null),
+                bannerUrl: (isCurrentOwner && storeConfig?.bannerUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
+                  ? storeConfig.bannerUrl
+                  : (conf.bannerUrl || rs.banner_url || null),
                 imageUrl: (isCurrentOwner && (storeConfig?.bannerUrl || storeConfig?.logoUrl) && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? (storeConfig.bannerUrl || storeConfig.logoUrl)
-                  : (conf.bannerUrl || conf.logoUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'),
+                  : (conf.bannerUrl || rs.banner_url || conf.logoUrl || rs.logo_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'),
                 deliveryTime: isDeliveryActive 
                   ? ((isCurrentOwner && storeConfig?.deliveryTime) ? storeConfig.deliveryTime : (conf.deliveryTime || '10-20 min'))
                   : 'Retiro en Tienda',
@@ -1497,6 +1506,8 @@ export const StoreProvider = ({ children }) => {
             reference: storeConfig.reference !== undefined ? storeConfig.reference : s.reference,
             isOpen: storeConfig.isOpen !== false,
             statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+            logoUrl: storeConfig.logoUrl || s.logoUrl || null,
+            bannerUrl: storeConfig.bannerUrl || s.bannerUrl || null,
             imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || s.imageUrl,
             deliveryTime: isDeliveryActive ? (storeConfig.deliveryTime || '10-15 min') : 'Retiro en Tienda',
             freeDeliveryThreshold: storeConfig.freeDeliveryThreshold || null,
