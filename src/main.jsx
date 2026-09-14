@@ -8,3 +8,16 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Registro de Service Worker para Notificaciones Push en dispositivos
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        // SW registrado exitosamente
+      })
+      .catch((err) => {
+        console.warn('Registro de Service Worker no completado:', err);
+      });
+  });
+}

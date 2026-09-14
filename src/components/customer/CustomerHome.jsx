@@ -3,6 +3,7 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
+import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
 import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
@@ -271,32 +272,16 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center max-w-md mx-auto my-6">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8" />
-            </div>
-            <h3 className="font-extrabold text-slate-800 text-sm sm:text-base mb-1">No encontramos productos con ese filtro</h3>
-            <p className="text-xs text-slate-500 mb-5">
-              ¿Buscabas algo específico? Pídelo al dueño y lo agregaremos pronto al stock.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <button
-                onClick={() => {
-                  setSelectedCategory('all');
-                  setSearchQuery('');
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-              >
-                Ver todos los productos
-              </button>
-              <button
-                onClick={() => onOpenRequests('')}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20"
-              >
-                Pídelo a la tienda
-              </button>
-            </div>
-          </div>
+          <SearchEmptyState
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
+            storeConfig={storeConfig}
+            onClearFilter={() => {
+              setSelectedCategory('all');
+              setSearchQuery('');
+            }}
+            onRequestProduct={(term) => onOpenRequests(term || searchQuery || '')}
+          />
         ) : (
           <>
             {/* Contenedor scrolleable del catálogo para no alargar la pantalla */}

@@ -1,0 +1,30 @@
+/* SearchEmptyState.css */
+.search-empty-state-card {
+  animation: scaleUpIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUpIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.search-whatsapp-btn {
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  transition: all 0.25s ease;
+}
+
+.search-whatsapp-btn:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 10px 25px -5px rgba(37, 211, 102, 0.4);
+  transform: translateY(-1px);
+}
+
+.search-whatsapp-btn:active {
+  transform: scale(0.98);
+}

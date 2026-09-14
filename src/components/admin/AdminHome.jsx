@@ -56,6 +56,8 @@ import { SubscriptionManager } from './SubscriptionManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { ShareStoreModal } from './ShareStoreModal';
+import { OrderNotificationBanner } from './OrderNotificationBanner/OrderNotificationBanner';
+import { playOrderNotificationSound, sendOrderNotification } from '../../services/orderNotificationService';
 import { useStore } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
@@ -224,33 +226,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   // Reproductor de sonido de alertas acústicas
   const playNotificationSound = () => {
     if (!soundAlertsActive) return;
-    try {
-      const audio = new Audio('/mp3/Notificacion de orden de compra.mp3');
-      audio.play().catch(() => {
-        // Fallback Web Audio API sintetizador de campanas armónicas
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          const playTone = (freq, delay, dur) => {
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-            gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(ctx.currentTime + delay);
-            osc.stop(ctx.currentTime + delay + dur);
-          };
-          playTone(587.33, 0.0, 0.4); // D5
-          playTone(880.00, 0.15, 0.5); // A5
-          playTone(1174.66, 0.35, 0.8); // D6
-        }
-      });
-    } catch (e) {
-      console.warn('Audio play error:', e);
-    }
+    playOrderNotificationSound();
   };
 
   const notifiedOrderIds = useRef(new Set());
@@ -263,7 +239,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       if (notifiedOrderIds.current.has(order.id)) return;
       notifiedOrderIds.current.add(order.id);
 
-      playNotificationSound();
+      if (soundAlertsActive) {
+        playOrderNotificationSound();
+      }
+
+      // Enviar notificación Push nativa al dispositivo (celular / escritorio)
+      sendOrderNotification(order, storeConfig);
+
       showToast?.(
         `¡Nuevo pedido entrante #${order.id} de ${order.customer?.name || 'Vecino'}!`,
         'success'
@@ -274,7 +256,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return () => {
       window.removeEventListener('marketsaas:new_order', handleIncomingOrder);
     };
-  }, [soundAlertsActive, showToast]);
+  }, [soundAlertsActive, showToast, storeConfig]);
 
   // Toggle de apertura / cierre en vivo
   const handleToggleStoreOpen = (targetState) => {
@@ -917,6 +899,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-rose-500"></div>
                 </div>
               </div>
+
+              {/* ========================================================================= */}
+              {/* ALERTA Y CONFIGURACIÓN DE NOTIFICACIONES PUSH EN DISPOSITIVO              */}
+              {/* ========================================================================= */}
+              <OrderNotificationBanner 
+                storeConfig={storeConfig} 
+                soundAlertsActive={soundAlertsActive} 
+                onToggleSound={() => setSoundAlertsActive(prev => !prev)} 
+                showToast={showToast} 
+              />
 
               {/* ========================================================================= */}
               {/* TABLERO KANBAN DE PEDIDOS                                                 */}

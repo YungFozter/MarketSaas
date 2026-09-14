@@ -42,6 +42,12 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const el = document.getElementById('products-catalog-section') || document.querySelector('section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               placeholder="Busca leche, pan, bebidas, snacks, SKU..."
               className="w-full pl-10 sm:pl-12 pr-20 sm:pr-28 py-3 sm:py-4 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-medium text-xs sm:text-base shadow-lg border-2 border-transparent focus:border-amber-400 focus:outline-hidden transition-all"
             />
