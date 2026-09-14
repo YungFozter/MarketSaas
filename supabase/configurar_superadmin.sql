@@ -13,31 +13,39 @@ WHERE email = 'superadmin@marketsaas.com';
 -- Asegura que solo usuarios autenticados con rol SuperAdmin puedan insertar o eliminar licencias
 ALTER TABLE public.subscription_codes ENABLE ROW LEVEL SECURITY;
 
--- Lectura: los comerciantes pueden consultar códigos para validarlos al momento de canjear
+-- Lectura: Estrictamente restringida a usuarios con rol 'superadmin' en app_metadata
 DROP POLICY IF EXISTS "subscription_codes_select" ON public.subscription_codes;
 CREATE POLICY "subscription_codes_select"
 ON public.subscription_codes
 FOR SELECT
-USING (true);
+USING (
+  (auth.jwt() -> 'app_metadata' ->> 'role') = 'superadmin' OR
+  (auth.jwt() ->> 'email') IN ('superadmin@marketsaas.com', 'admin@marketsaas.com')
+);
 
--- Inserción: Estrictamente restringida a usuarios con rol 'superadmin' en el token JWT
+-- Inserción: Estrictamente restringida a usuarios con rol 'superadmin' en app_metadata
 DROP POLICY IF EXISTS "subscription_codes_insert" ON public.subscription_codes;
 CREATE POLICY "subscription_codes_insert"
 ON public.subscription_codes
 FOR INSERT
 WITH CHECK (
   (auth.jwt() -> 'app_metadata' ->> 'role') = 'superadmin' OR
-  (auth.jwt() -> 'user_metadata' ->> 'role') = 'superadmin' OR
   (auth.jwt() ->> 'email') IN ('superadmin@marketsaas.com', 'admin@marketsaas.com')
 );
 
--- Actualización: Permitida al canjear un código de activación
+-- Actualización: Estrictamente restringida a usuarios con rol 'superadmin'
 DROP POLICY IF EXISTS "subscription_codes_update" ON public.subscription_codes;
 CREATE POLICY "subscription_codes_update"
 ON public.subscription_codes
 FOR UPDATE
-USING (true)
-WITH CHECK (true);
+USING (
+  (auth.jwt() -> 'app_metadata' ->> 'role') = 'superadmin' OR
+  (auth.jwt() ->> 'email') IN ('superadmin@marketsaas.com', 'admin@marketsaas.com')
+)
+WITH CHECK (
+  (auth.jwt() -> 'app_metadata' ->> 'role') = 'superadmin' OR
+  (auth.jwt() ->> 'email') IN ('superadmin@marketsaas.com', 'admin@marketsaas.com')
+);
 
 -- Eliminación: Estrictamente restringida a usuarios con rol 'superadmin'
 DROP POLICY IF EXISTS "subscription_codes_delete" ON public.subscription_codes;
@@ -46,7 +54,6 @@ ON public.subscription_codes
 FOR DELETE
 USING (
   (auth.jwt() -> 'app_metadata' ->> 'role') = 'superadmin' OR
-  (auth.jwt() -> 'user_metadata' ->> 'role') = 'superadmin' OR
   (auth.jwt() ->> 'email') IN ('superadmin@marketsaas.com', 'admin@marketsaas.com')
 );
 

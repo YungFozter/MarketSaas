@@ -894,8 +894,7 @@ export const StoreProvider = ({ children }) => {
             const matchesEmail = userEmail && (
               s.owner_email === userEmail ||
               cfg?.adminEmail === userEmail ||
-              cfg?.owner_email === userEmail ||
-              (typeof userEmail === 'string' && userEmail.toLowerCase().includes('ian') && s.id === 'minimarket-ian')
+              cfg?.owner_email === userEmail
             );
             return matchesId || matchesEmail;
           }) || null;
@@ -976,13 +975,12 @@ export const StoreProvider = ({ children }) => {
     return null;
   };
 
-  // Identificador de usuario SuperAdmin validado por Supabase
+  // Identificador de usuario SuperAdmin validado por Supabase (estrictamente app_metadata)
   const isSuperAdminUser = (user) => {
     if (!user) return false;
     const email = (user.email || '').toLowerCase().trim();
     return (
       user.app_metadata?.role === 'superadmin' ||
-      user.user_metadata?.role === 'superadmin' ||
       email === 'superadmin@marketsaas.com' ||
       email === 'admin@marketsaas.com'
     );
@@ -1195,7 +1193,7 @@ export const StoreProvider = ({ children }) => {
     // 4. Cargar solicitudes de productos por tienda
     if (tenantSlug && tenantSlug !== 'default') {
       supabase.from('product_requests')
-        .select('*')
+        .select('id, tenant_id, product_name, customer_name, customer_location, notes, votes, status, created_at')
         .eq('tenant_id', tenantSlug)
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
@@ -1624,18 +1622,11 @@ export const StoreProvider = ({ children }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Lista de códigos de activación (Supabase + respaldo en localStorage)
-  const [subscriptionCodes, setSubscriptionCodes] = useState(() => {
-    try {
-      const saved = localStorage.getItem('marketsaas_subscription_codes');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Lista de códigos de activación (Solo accesible en memoria para el SuperAdmin autenticado)
+  const [subscriptionCodes, setSubscriptionCodes] = useState([]);
 
   const fetchSubscriptionCodes = async () => {
-    if (!supabase) return;
+    if (!supabase || !isSuperAdminUser(currentUser)) return;
     try {
       const { data, error } = await supabase
         .from('subscription_codes')
@@ -1643,9 +1634,6 @@ export const StoreProvider = ({ children }) => {
         .order('created_at', { ascending: false });
       if (!error && Array.isArray(data)) {
         setSubscriptionCodes(data);
-        try {
-          localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(data));
-        } catch {}
       }
     } catch (e) {
       console.warn('Aviso cargando subscription_codes de Supabase:', e);
@@ -1653,19 +1641,26 @@ export const StoreProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchSubscriptionCodes();
-    if (supabase) {
-      const channel = supabase
-        .channel('realtime_subscription_codes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'subscription_codes' }, () => {
-          fetchSubscriptionCodes();
-        })
-        .subscribe();
-      return () => {
-        supabase.removeChannel(channel);
-      };
+    if (isSuperAdminUser(currentUser)) {
+      fetchSubscriptionCodes();
+      if (supabase) {
+        const channel = supabase
+          .channel('realtime_subscription_codes')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'subscription_codes' }, () => {
+            fetchSubscriptionCodes();
+          })
+          .subscribe();
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    } else {
+      setSubscriptionCodes([]);
+      try {
+        localStorage.removeItem('marketsaas_subscription_codes');
+      } catch {}
     }
-  }, []);
+  }, [currentUser]);
 
   // Validación reactiva de si la suscripción de la tienda actual está activa
   const isSubscriptionActive = useMemo(() => {
@@ -1712,13 +1707,7 @@ export const StoreProvider = ({ children }) => {
       }
     }
 
-    setSubscriptionCodes(prev => {
-      const updated = [...newCodes, ...prev];
-      try {
-        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setSubscriptionCodes(prev => [...newCodes, ...prev]);
 
     showToast(`¡Se ${count === 1 ? 'generó 1 código' : `generaron ${count} códigos`} con éxito!`, 'success');
     return newCodes;
@@ -1734,13 +1723,7 @@ export const StoreProvider = ({ children }) => {
         console.warn('Error eliminando código en Supabase:', err);
       }
     }
-    setSubscriptionCodes(prev => {
-      const updated = prev.filter(c => c.id !== codeId);
-      try {
-        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setSubscriptionCodes(prev => prev.filter(c => c.id !== codeId));
     showToast('Código eliminado correctamente.', 'info');
   };
 
@@ -1754,7 +1737,61 @@ export const StoreProvider = ({ children }) => {
       return { success: false, message: 'Ingresa un código válido.' };
     }
 
-    // 1. Buscar el código en Supabase o en memoria local
+    // 1. Intento atómico mediante función RPC segura en Supabase (sin exponer tabla de licencias)
+    if (supabase) {
+      try {
+        const { data: rpcRes, error: rpcErr } = await supabase.rpc('redeem_subscription_license', {
+          p_code: clean,
+          p_store_id: tenantSlug || 'default',
+          p_store_name: storeConfig?.name || 'Mi Tienda',
+          p_email: currentUser?.email || ''
+        });
+
+        if (!rpcErr && rpcRes) {
+          if (!rpcRes.success) {
+            return { success: false, message: rpcRes.message || 'Código de activación no válido.' };
+          }
+          const totalMinutesToAdd = Number(rpcRes.duration_minutes) || 43200;
+          const days = Number(rpcRes.duration_days) || 0;
+          const now = new Date();
+          const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+          let baseTime = now.getTime();
+          if (currentExp) {
+            const currentExpTime = new Date(currentExp).getTime();
+            if (currentExpTime > baseTime) baseTime = currentExpTime;
+          }
+          const newExpiresAt = new Date(baseTime + totalMinutesToAdd * 60 * 1000);
+          const nowIso = now.toISOString();
+
+          const newHistoryItem = {
+            code: clean,
+            planName: rpcRes.plan_name || 'Premium',
+            durationMinutes: totalMinutesToAdd,
+            durationDays: days,
+            redeemedAt: nowIso
+          };
+
+          const updatedSubscription = {
+            status: 'active',
+            trialStartedAt: storeConfig?.subscription?.trialStartedAt || nowIso,
+            trialEndsAt: storeConfig?.subscription?.trialEndsAt || nowIso,
+            subscriptionExpiresAt: newExpiresAt.toISOString(),
+            plan: rpcRes.plan_name || 'premium',
+            history: [newHistoryItem, ...(storeConfig?.subscription?.history || [])]
+          };
+
+          await setStoreConfig({ ...storeConfig, subscription: updatedSubscription });
+          triggerConfetti();
+          const durationText = days > 0 ? `${days} día(s)` : `${totalMinutesToAdd} minuto(s)`;
+          showToast(`¡Código canjeado con éxito! Se sumaron ${durationText} a tu suscripción.`, 'success');
+          return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText };
+        }
+      } catch (rpcEx) {
+        // Fallback a consulta directa si la función RPC aún no fue creada en Supabase
+      }
+    }
+
+    // 2. Fallback de compatibilidad: Buscar el código en Supabase o en memoria local
     let targetCode = null;
     if (supabase) {
       try {
@@ -1854,13 +1891,7 @@ export const StoreProvider = ({ children }) => {
       }
     }
 
-    setSubscriptionCodes(prev => {
-      const updated = prev.map(c => c.id === targetCode.id ? { ...c, ...redeemedPayload } : c);
-      try {
-        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
-      } catch {}
-      return updated;
-    });
+    setSubscriptionCodes(prev => prev.map(c => c.id === targetCode.id ? { ...c, ...redeemedPayload } : c));
 
     triggerConfetti();
     const durationText = days > 0 ? `${days} día(s)` : `${mins} minuto(s)`;
@@ -2067,7 +2098,9 @@ export const StoreProvider = ({ children }) => {
       return null;
     }
 
-    const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const orderEntropy = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const orderId = `ORD-${orderNum}-${orderEntropy}`;
 
     // Guardar identidad del cliente para futuras visitas y fidelización
     if (orderData.phone) {
@@ -2628,7 +2661,9 @@ export const StoreProvider = ({ children }) => {
   // Venta en POS de Mostrador (Dueño)
   const completePosSale = (posItems, paymentType = 'cash') => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const saleId = `${tenantSlug}-POS-${Math.floor(1000 + Math.random() * 9000)}`;
+    const saleNum = Math.floor(1000 + Math.random() * 9000);
+    const saleEntropy = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const saleId = `${tenantSlug}-POS-${saleNum}-${saleEntropy}`;
 
     // 1. Descontar inventario de forma segura
     let nextProducts = [];
