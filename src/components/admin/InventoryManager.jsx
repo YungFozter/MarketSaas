@@ -27,6 +27,7 @@ import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
 import { normalizeSearchText } from '../../utils/formatters';
 import { compressImage } from '../../utils/imageUtils';
+import { SeedCatalogModal } from './SeedCatalogModal/SeedCatalogModal';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -38,7 +39,8 @@ export const InventoryManager = () => {
     importProductsBatch,
     showToast, 
     storeConfig, 
-    setStoreConfig 
+    setStoreConfig,
+    triggerConfetti 
   } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
@@ -307,6 +309,7 @@ export const InventoryManager = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [productToDelete, isDeletingSingle]);
 
+  const [isSeedModalOpen, setIsSeedModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importPreview, setImportPreview] = useState(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -381,6 +384,17 @@ export const InventoryManager = () => {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Importar Excel</span>
+          </button>
+
+          {/* Botón Pack Inicial de Barrio (50 Productos con 1 Clic) */}
+          <button
+            type="button"
+            onClick={() => setIsSeedModalOpen(true)}
+            className="px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            title="Cargar pack inicial de los 50 productos más vendidos de barrio en 1 clic"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+            <span>Pack Inicial (50 Productos)</span>
           </button>
 
           <button
@@ -1635,6 +1649,15 @@ export const InventoryManager = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Catálogo Semilla Inicial (50 Productos) */}
+      <SeedCatalogModal
+        isOpen={isSeedModalOpen}
+        onClose={() => setIsSeedModalOpen(false)}
+        onImportBatch={importProductsBatch}
+        currency={currency}
+        triggerConfetti={triggerConfetti}
+      />
     </div>
   );
 };

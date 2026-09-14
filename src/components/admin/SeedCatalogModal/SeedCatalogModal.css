@@ -1,0 +1,24 @@
+/* SeedCatalogModal.css */
+.seed-modal-overlay {
+  animation: seedFadeIn 0.25s ease-out;
+}
+
+@keyframes seedFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.seed-modal-content {
+  animation: seedSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes seedSlideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

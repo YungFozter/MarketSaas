@@ -1400,7 +1400,7 @@ export const StoreProvider = ({ children }) => {
               setTenantSlug(remoteMapped[0].slug);
             }
 
-            const deduplicated = deduplicateStoreList(remoteMapped);
+            const deduplicated = deduplicateStoreList([...remoteMapped, ...initialStores]);
             try {
               localStorage.setItem('marketsaas_cached_stores', JSON.stringify(deduplicated));
             } catch (e) {}
