@@ -13,10 +13,8 @@ export const useStore = () => useContext(StoreContext);
 // SISTEMA DE SUSCRIPCIONES, CONTROL DE TIEMPO Y ZONA HORARIA BOLIVIA (UTC-04:00)
 // ==============================================================================
 
-// Duración del período de prueba gratuito (en minutos)
-// NOTA PARA PRUEBAS: Configurado a 5 minutos para testear expiración y bloqueo inmediato.
-// Para pasar a producción cambiar a 43200 (30 días).
-export const TRIAL_DURATION_MINUTES = 5;
+// Duración del período de prueba gratuito: 30 días = 43,200 minutos (1 mes completo)
+export const TRIAL_DURATION_MINUTES = 43200; // 30 días (1 mes)
 
 // Offset oficial para La Paz - Bolivia (UTC -04:00)
 export const BOLIVIA_TIMEZONE_OFFSET_HOURS = -4;

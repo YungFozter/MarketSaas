@@ -42,7 +42,7 @@ export const SuperAdminHome = () => {
 
   // Estados de generación
   const [generateCount, setGenerateCount] = useState(1);
-  const [durationPreset, setDurationPreset] = useState('5min'); // '5min' | '30days' | '90days' | '180days' | '365days'
+  const [durationPreset, setDurationPreset] = useState('30days'); // '30days' | '5min' | '90days' | '180days' | '365days'
   const [notes, setNotes] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [latestGenerated, setLatestGenerated] = useState([]);
