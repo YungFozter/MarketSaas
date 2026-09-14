@@ -636,9 +636,13 @@ export const NeighborhoodMap = ({
                 <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
                 {activeStore.address}
               </span>
-              <span className="font-bold text-slate-900 shrink-0 ml-1">
-                {activeStore.distanceMeters ? `a ${activeStore.distanceMeters}m` : 'Cerca'}
-              </span>
+              {hasUserGps && activeStore.distanceMeters ? (
+                <span className="font-bold text-slate-900 shrink-0 ml-1">
+                  {activeStore.distanceMeters < 1000
+                    ? `a ${activeStore.distanceMeters}m`
+                    : `a ${(activeStore.distanceMeters / 1000).toFixed(1)}km`}
+                </span>
+              ) : null}
             </div>
 
             {/* Botones de Acción */}

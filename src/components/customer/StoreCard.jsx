@@ -57,8 +57,14 @@ export const StoreCard = ({
               title="Centrar y ver ubicación en el mapa interactivo"
             >
               <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>{store.distance}</span>
-              <span className="text-[10px] text-emerald-300 font-semibold underline ml-0.5">Ver mapa</span>
+              {store.distance ? (
+                <>
+                  <span>{store.distance}</span>
+                  <span className="text-[10px] text-emerald-300 font-semibold underline ml-0.5">Ver mapa</span>
+                </>
+              ) : (
+                <span className="text-xs text-white font-bold">Ver en mapa</span>
+              )}
             </button>
           </div>
 
@@ -195,7 +201,7 @@ export const StoreCard = ({
             title="Centrar en mapa"
           >
             <MapPin className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-            <span>{store.distance}</span>
+            <span>{store.distance || 'Ver mapa'}</span>
           </button>
         </div>
 
@@ -282,7 +288,7 @@ export const StoreCard = ({
               title="Centrar y ver en el mapa interactivo"
             >
               <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span>{store.distance}</span>
+              <span>{store.distance || 'Ver en mapa'}</span>
             </button>
           </div>
 

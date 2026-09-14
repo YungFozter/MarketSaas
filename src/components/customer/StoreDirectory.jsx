@@ -192,7 +192,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       return {
         ...store,
         distanceMeters: meters,
-        distance: formatDistance(meters, hasUserGps ? 'de ti' : 'del centro')
+        distance: hasUserGps ? formatDistance(meters, 'de ti') : null
       };
     });
   }, [uniqueStores, userCoords, hasUserGps]);
@@ -380,7 +380,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span>
-                      📍 Distancias calculadas desde Centro de Santa Cruz
+                      📍 Activa tu GPS para calcular distancias exactas a tu ubicación
                     </span>
                     <button
                       type="button"
