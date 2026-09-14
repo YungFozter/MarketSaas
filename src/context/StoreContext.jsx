@@ -722,7 +722,13 @@ export const StoreProvider = ({ children }) => {
           config: safeConfig,
           coupons: safeConfig.coupons || [],
           owner_id: ownerId,
+          logo_url: safeConfig.logoUrl || null,
+          banner_url: safeConfig.bannerUrl || null,
           qr_image_url: safeConfig.qrImageUrl || null,
+          zone: safeConfig.zone || safeConfig.condominium || null,
+          reference: safeConfig.reference || null,
+          latitude: validCoords ? validCoords.lat : null,
+          longitude: validCoords ? validCoords.lng : null,
           updated_at: new Date().toISOString()
         };
 
