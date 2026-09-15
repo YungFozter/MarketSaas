@@ -41,6 +41,10 @@ export const ProductModal = ({ product, onClose, onRequestProduct }) => {
             src={product.image}
             alt={product.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = '/products/producto-sin-imagen.png';
+            }}
           />
           {product.badge && (
             <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">

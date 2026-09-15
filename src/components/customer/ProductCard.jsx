@@ -24,6 +24,10 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
           alt={product.name}
           className="w-full h-full object-cover object-center group-hover:scale-108 transition-transform duration-500"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = '/products/producto-sin-imagen.png';
+          }}
         />
 
         {/* Overlay sutil para ver detalle */}

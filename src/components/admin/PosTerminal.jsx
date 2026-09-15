@@ -758,7 +758,11 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                       <img 
                         src={p.image} 
                         alt={p.name} 
-                        className="w-full h-full object-contain group-hover:scale-105 transition-transform" 
+                        className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/products/producto-sin-imagen.png';
+                        }}
                       />
                       {inCart && (
                         <span className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center shadow-xs">

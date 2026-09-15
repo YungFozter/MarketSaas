@@ -12,7 +12,7 @@ const MASTER_PRODUCTS = {
     basePrice: 13.50,
     costPrice: 10.80,
     unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80',
+    image: '/products/coca-cola-2l.png',
     description: 'Gaseosa Coca-Cola sabor original descartable de 2 Litros bien fría.',
     badge: 'Más Vendido',
     emoji: '🥤'
@@ -23,7 +23,7 @@ const MASTER_PRODUCTS = {
     basePrice: 6.50,
     costPrice: 5.50,
     unit: 'Bolsa 1L',
-    image: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=600&auto=format&fit=crop&q=80',
+    image: '/products/leche-pil.png',
     description: 'Leche fluida pasteurizada entera Pil Andina, ideal para toda la familia.',
     badge: 'Básico del Día',
     emoji: '🥛'
@@ -56,7 +56,7 @@ const MASTER_PRODUCTS = {
     basePrice: 7.00,
     costPrice: 5.20,
     unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=600&auto=format&fit=crop&q=80',
+    image: '/products/agua-vital.jpg',
     description: 'Agua purificada sin gas Vital en botella de 2 Litros.',
     badge: 'Saludable',
     emoji: '💧'
@@ -67,7 +67,7 @@ const MASTER_PRODUCTS = {
     basePrice: 13.50,
     costPrice: 11.20,
     unit: 'Botella 900ml',
-    image: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=600&auto=format&fit=crop&q=80',
+    image: '/products/aceite-fino-1800ml.png',
     description: 'Aceite comestible 100% puro de soya Fino, ideal para cocinar y freír.',
     badge: 'Esencial Cocina',
     emoji: '🍳'
@@ -168,7 +168,7 @@ const MASTER_PRODUCTS = {
     basePrice: 24.00,
     costPrice: 18.50,
     unit: 'Blíster 100g',
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=600&auto=format&fit=crop&q=80',
     description: 'Finas lonchas de jamón curado nacional Sofía listo para servir.',
     badge: 'Gourmet',
     emoji: '🥩'
@@ -225,7 +225,7 @@ const MASTER_PRODUCTS = {
     basePrice: 16.00,
     costPrice: 12.80,
     unit: 'Frasco 50g',
-    image: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=600&auto=format&fit=crop&q=80',
+    image: '/products/cafe-nescafe-160g.png',
     description: 'Café instantáneo 100% puro sabor intenso y aroma inconfundible Nescafé.',
     badge: 'Desayuno Clásico',
     emoji: '☕'
@@ -247,7 +247,7 @@ const MASTER_PRODUCTS = {
     basePrice: 12.00,
     costPrice: 8.50,
     unit: 'Porción x2',
-    image: 'https://images.unsplash.com/photo-1604382355076-af4b0eb60143?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=600&auto=format&fit=crop&q=80',
     description: 'Empanadas cruceñas horneadas con relleno jugoso de pollo y verduras.',
     badge: 'Horneado al Minuto',
     emoji: '🥟'
@@ -258,7 +258,7 @@ const MASTER_PRODUCTS = {
     basePrice: 10.00,
     costPrice: 6.80,
     unit: 'Bolsa x5u',
-    image: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&auto=format&fit=crop&q=80',
     description: 'Típico cuñapé almidón y abundante queso chaqueño derretido.',
     badge: 'Típico Camba',
     emoji: '🧀'
@@ -324,7 +324,7 @@ const MASTER_PRODUCTS = {
     basePrice: 12.50,
     costPrice: 9.80,
     unit: 'Lata 170g',
-    image: 'https://images.unsplash.com/photo-1534483509719-3feaee7c30da?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=600&auto=format&fit=crop&q=80',
     description: 'Lomitos selectos de atún en aceite vegetal Van Camp’s abrefácil.',
     badge: 'Proteína Fácil',
     emoji: '🐟'
@@ -337,7 +337,7 @@ const MASTER_PRODUCTS = {
     basePrice: 20.00,
     costPrice: 14.00,
     unit: 'Bolsa 3kg',
-    image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600&auto=format&fit=crop&q=80',
     description: 'Carbón vegetal de encendido rápido y brasa duradera para churrasco cruceño.',
     badge: 'Fin de Semana',
     emoji: '🔥'
@@ -425,7 +425,7 @@ const MASTER_PRODUCTS = {
     basePrice: 6.50,
     costPrice: 4.80,
     unit: 'Doypack 200g',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1585238342024-78d387f4a707?w=600&auto=format&fit=crop&q=80',
     description: 'Mayonesa nacional Kris textura suave y toque de limón.',
     badge: 'Aderezo',
     emoji: '🍟'
@@ -447,7 +447,7 @@ const MASTER_PRODUCTS = {
     basePrice: 14.00,
     costPrice: 10.80,
     unit: 'Bolsa 800g',
-    image: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=600&auto=format&fit=crop&q=80',
+    image: '/products/omo-limon-1.8k.png',
     description: 'Detergente concentrado remueve manchas difíciles en ropa blanca y de color.',
     badge: 'Limpieza Total',
     emoji: '🧺'
@@ -460,7 +460,7 @@ const MASTER_PRODUCTS = {
     basePrice: 8.00,
     costPrice: 6.20,
     unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1627485937980-221c88ac04f9?w=600&auto=format&fit=crop&q=80',
     description: 'Harina de trigo leudante o 000 Blancaflor para queques y masas.',
     badge: 'Repostería',
     emoji: '🌾'
@@ -471,7 +471,7 @@ const MASTER_PRODUCTS = {
     basePrice: 5.50,
     costPrice: 4.10,
     unit: 'Paquete 400g',
-    image: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=600&auto=format&fit=crop&q=80',
     description: 'Pasta de sémola de trigo duro Famosa industria boliviana.',
     badge: 'Almuerzo Rápido',
     emoji: '🍝'
@@ -548,7 +548,7 @@ const MASTER_PRODUCTS = {
     basePrice: 5.00,
     costPrice: 3.80,
     unit: 'Barra 200g',
-    image: 'https://images.unsplash.com/photo-1607006310458-85888a7c6e00?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80',
     description: 'Jabón neutro blanco para lavado de ropa a mano y prendas delicadas.',
     badge: 'Lavado Tradicional',
     emoji: '🧼'
@@ -559,7 +559,7 @@ const MASTER_PRODUCTS = {
     basePrice: 9.00,
     costPrice: 6.80,
     unit: 'Botella 500ml',
-    image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=600&auto=format&fit=crop&q=80',
     description: 'Detergente lavavajillas antigrasa concentrado con fresco aroma a limón.',
     badge: 'Antigrasa',
     emoji: '🍽️'
@@ -570,7 +570,7 @@ const MASTER_PRODUCTS = {
     basePrice: 6.50,
     costPrice: 4.80,
     unit: 'Botella 1L',
-    image: 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=600&auto=format&fit=crop&q=80',
     description: 'Cloro líquido desinfectante de pisos, baños y blanqueador de telas.',
     badge: 'Desinfección',
     emoji: '🧴'
@@ -581,7 +581,7 @@ const MASTER_PRODUCTS = {
     basePrice: 9.00,
     costPrice: 6.80,
     unit: 'Tubo 75ml',
-    image: 'https://images.unsplash.com/photo-1559591937-e105e4635836?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1570784332176-fdd73da66f03?w=600&auto=format&fit=crop&q=80',
     description: 'Protección anticaries, dientes blancos y aliento fresco con flúor.',
     badge: 'Higiene Diaria',
     emoji: '🪥'
@@ -592,7 +592,7 @@ const MASTER_PRODUCTS = {
     basePrice: 5.00,
     costPrice: 3.70,
     unit: 'Pastilla 90g',
-    image: 'https://images.unsplash.com/photo-1607006310458-85888a7c6e00?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&auto=format&fit=crop&q=80',
     description: 'Jabón corporal refrescante con protección antibacterial prolongada.',
     badge: 'Cuidado Diario',
     emoji: '🧼'

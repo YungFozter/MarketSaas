@@ -676,6 +676,10 @@ export const InventoryManager = () => {
                           src={prod.image || '/products/producto-sin-imagen.png'}
                           alt={prod.name}
                           className="w-10 h-10 rounded-xl object-contain bg-slate-50 border border-slate-100 shrink-0 p-0.5"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '/products/producto-sin-imagen.png';
+                          }}
                         />
                         <div>
                           <p className="font-extrabold text-slate-900 leading-snug">{prod.name}</p>
@@ -1417,7 +1421,11 @@ export const InventoryManager = () => {
                                 <img 
                                   src={p.image} 
                                   alt={p.name} 
-                                  className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5" 
+                                  className="w-8 h-8 rounded-lg object-contain bg-white border border-slate-200 shrink-0 p-0.5"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = '/products/producto-sin-imagen.png';
+                                  }}
                                 />
                                 <span className="font-bold text-slate-800 truncate max-w-[200px]" title={p.name}>{p.name}</span>
                               </div>

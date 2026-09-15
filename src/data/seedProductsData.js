@@ -169,7 +169,7 @@ export const seedProductsCatalog = [
     stock: 30,
     minStock: 8,
     unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=600&auto=format&fit=crop&q=80',
+    image: '/products/agua-vital.jpg',
     description: 'Agua purificada de manantial Vital sin gas botella 2 Litros.',
     badge: 'Hidratación',
     isPopular: true
@@ -182,7 +182,7 @@ export const seedProductsCatalog = [
     stock: 16,
     minStock: 4,
     unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1559839914-ba2a0f8eb89f?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1560023907-5f339617ea30?w=600&auto=format&fit=crop&q=80',
     description: 'Agua purificada carbonatada Vital con gas 2 Litros.',
     badge: '',
     isPopular: false
@@ -314,7 +314,7 @@ export const seedProductsCatalog = [
     stock: 18,
     minStock: 4,
     unit: 'Bolsa 400g',
-    image: 'https://images.unsplash.com/photo-1614961908595-885746ee4c42?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=600&auto=format&fit=crop&q=80',
     description: 'Avena precocida en hojuelas finas Princesa bolsa 400g.',
     badge: '',
     isPopular: false
@@ -368,7 +368,7 @@ export const seedProductsCatalog = [
     stock: 40,
     minStock: 10,
     unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1622484216805-4309e3a6a9be?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=600&auto=format&fit=crop&q=80',
     description: 'Azúcar blanca pura de caña Guabirá Santa Cruz bolsa de 1kg.',
     badge: 'Básico',
     isPopular: true
@@ -394,7 +394,7 @@ export const seedProductsCatalog = [
     stock: 30,
     minStock: 8,
     unit: 'Paquete 400g',
-    image: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281691?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=600&auto=format&fit=crop&q=80',
     description: 'Fideo espagueti tradicional largo Famosa paquete de 400g.',
     badge: '',
     isPopular: true
@@ -580,7 +580,7 @@ export const seedProductsCatalog = [
     stock: 18,
     minStock: 4,
     unit: 'Botella 500ml',
-    image: 'https://images.unsplash.com/photo-1585670270608-b4b4f1da0d01?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=600&auto=format&fit=crop&q=80',
     description: 'Detergente líquido antigrasa para vajilla aroma limón Ola 500ml.',
     badge: '',
     isPopular: true
@@ -619,7 +619,7 @@ export const seedProductsCatalog = [
     stock: 25,
     minStock: 6,
     unit: 'Pastilla 90g',
-    image: 'https://images.unsplash.com/photo-1607006314188-75c1bbd0c9f1?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&auto=format&fit=crop&q=80',
     description: 'Jabón de tocador antibacterial protección fresca Rexona 90g.',
     badge: '',
     isPopular: false
@@ -645,7 +645,7 @@ export const seedProductsCatalog = [
     stock: 22,
     minStock: 5,
     unit: 'Tubo 75ml',
-    image: 'https://images.unsplash.com/photo-1559591937-e10b146ec7b6?w=600&auto=format&fit=crop&q=80',
+    image: 'https://images.unsplash.com/photo-1570784332176-fdd73da66f03?w=600&auto=format&fit=crop&q=80',
     description: 'Protección anticaries, blancura y aliento fresco Colgate 75ml.',
     badge: 'Higiene',
     isPopular: true

@@ -132,6 +132,10 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
                     src={item.image}
                     alt={item.name}
                     className="w-16 h-16 rounded-xl object-cover bg-slate-100 shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/products/producto-sin-imagen.png';
+                    }}
                   />
 
                   <div className="flex-1 min-w-0">
