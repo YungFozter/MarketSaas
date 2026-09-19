@@ -3342,6 +3342,21 @@ export const StoreProvider = ({ children }) => {
       setMerchantStore(storeRecord);
       localStorage.setItem('marketsaas_active_tenant', cleanSlug);
 
+      // Sincronizar teléfono en metadata de Supabase Auth para máxima consistencia y recuperación
+      if (userId && (phone || whatsapp)) {
+        try {
+          await supabase.auth.updateUser({
+            data: {
+              phone: phone || '',
+              whatsapp: whatsapp || phone || '',
+              store_id: cleanSlug
+            }
+          });
+        } catch (syncAuthErr) {
+          console.warn('Aviso sincronizando metadata de auth:', syncAuthErr);
+        }
+      }
+
       // Las tiendas de comerciantes inician con inventario limpio listo para cargar sus propios productos o importar Excel
       setProducts([]);
 

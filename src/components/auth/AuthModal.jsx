@@ -123,12 +123,14 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
-  // Campos de Recuperación de Contraseña con Código OTP (3 Pasos)
+  // Campos de Recuperación de Contraseña Directa (Correo + Teléfono / WhatsApp -> Nueva Contraseña)
   const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotStep, setForgotStep] = useState('email'); // 'email' | 'otp' | 'new-password'
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [forgotStep, setForgotStep] = useState('email'); // 'email' | 'phone' | 'new-password'
+  const [verifiedEmail, setVerifiedEmail] = useState('');
+  const [verifiedPhone, setVerifiedPhone] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [verifiedEmail, setVerifiedEmail] = useState('');
 
   // Campos para Establecer Nueva Contraseña (Recovery final)
   const [newPassword, setNewPassword] = useState('');
@@ -178,6 +180,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           setForgotStep('new-password');
         } else {
           setForgotStep('email');
+          setForgotPhone('');
+          setVerifiedPhone('');
           setOtpCode('');
           if (currentUser) {
             setRegisteredUser(currentUser);
@@ -256,8 +260,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
     onClose();
   };
 
-  // 1. Enviar código OTP de recuperación al correo registrado
-  const handleSendRecoveryCode = async (e) => {
+  // 1. Paso 1: Validar si el correo ingresado está registrado (sin enviar nada al correo)
+  const handleVerifyRecoveryEmail = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
     const cleanEmail = (forgotEmail || '').trim().toLowerCase();
@@ -273,54 +277,37 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
     setLoading(true);
     try {
-      // Verificación previa en base de datos si check_user_exists está disponible
-      try {
-        const { data: exists, error: checkError } = await supabase.rpc('check_user_exists', {
-          lookup_email: cleanEmail
-        });
-        if (!checkError && exists === false) {
-          setLoading(false);
-          setErrorMsg('No existe ninguna cuenta registrada con este correo electrónico.');
-          return;
-        }
-      } catch (checkEx) {
-        // Fallback al endpoint nativo
-      }
-
-      // Enviar solicitud de recuperación. Supabase genera y envía el Token/OTP de 6 dígitos.
-      const redirectUrl = `${window.location.origin}${window.location.pathname}`;
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: redirectUrl
+      // Verificación directa en base de datos
+      const { data: exists, error: checkError } = await supabase.rpc('check_user_exists', {
+        lookup_email: cleanEmail
       });
       setLoading(false);
 
-      if (error) {
-        const msgLower = (error.message || '').toLowerCase();
-        if (msgLower.includes('user not found') || msgLower.includes('not found') || error.code === 'user_not_found') {
-          setErrorMsg('No existe ninguna cuenta registrada con este correo electrónico.');
-        } else {
-          setErrorMsg(error.message || 'Error al solicitar el código de recuperación.');
-        }
-      } else {
-        setVerifiedEmail(cleanEmail);
-        setForgotStep('otp');
-        setOtpCode('');
-        setResendCooldown(60);
-        showToast(`Código de verificación enviado a ${cleanEmail}.`, 'info');
+      if (checkError) {
+        console.warn('Aviso en check_user_exists:', checkError);
       }
+
+      if (exists === false) {
+        setErrorMsg('No existe ninguna cuenta registrada con este correo electrónico.');
+        return;
+      }
+
+      setVerifiedEmail(cleanEmail);
+      setForgotStep('phone');
+      setForgotPhone('');
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Error de red al procesar la solicitud.');
+      setErrorMsg('Error de red al comprobar el correo electrónico.');
     }
   };
 
-  // 2. Verificar código OTP de 6 dígitos o enlace de recuperación
-  const handleVerifyOtp = async (e) => {
+  // 2. Paso 2: Validar el número de teléfono o WhatsApp vinculado al correo (sin enviar SMS)
+  const handleVerifyRecoveryPhone = async (e) => {
     if (e) e.preventDefault();
     setErrorMsg('');
-    const rawInput = (otpCode || '').trim();
-    if (!rawInput) {
-      setErrorMsg('Por favor ingresa el código o pega el enlace recibido en tu correo.');
+    const cleanPhone = (forgotPhone || '').trim();
+    if (!cleanPhone || cleanPhone.replace(/\D/g, '').length < 6) {
+      setErrorMsg('Por favor ingresa un número de teléfono o WhatsApp válido (mínimo 6 dígitos).');
       return;
     }
 
@@ -329,92 +316,39 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       return;
     }
 
-    const cleanEmail = (forgotEmail || verifiedEmail || '').trim().toLowerCase();
-    const parsed = parseRecoveryCredential(rawInput, cleanEmail);
-
+    const cleanEmail = (verifiedEmail || forgotEmail || '').trim().toLowerCase();
     setLoading(true);
     try {
-      // Caso 1: Sesión por tokens extraídos de la URL redireccionada (access_token + refresh_token)
-      if (parsed?.type === 'session') {
-        const { data, error } = await supabase.auth.setSession({
-          access_token: parsed.accessToken,
-          refresh_token: parsed.refreshToken
-        });
-        setLoading(false);
-        if (error) {
-          setErrorMsg('El enlace de recuperación ha expirado o ya fue utilizado. Por favor solicita uno nuevo.');
-          return;
-        }
-        if (data?.user?.email) {
-          setVerifiedEmail(data.user.email);
-        }
-        if (setIsRecoveryMode) setIsRecoveryMode(true);
-        showToast('¡Identidad verificada con éxito! Ahora crea tu nueva contraseña.', 'success');
-        setForgotStep('new-password');
-        return;
-      }
-
-      // Caso 2: Token Hash extraído del enlace directo de Supabase (token=... o hash hex directo)
-      if (parsed?.type === 'token_hash') {
-        const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: parsed.token_hash,
-          type: 'recovery'
-        });
-        setLoading(false);
-        if (error) {
-          const msgLower = (error.message || '').toLowerCase();
-          if (msgLower.includes('expired') || error.code === 'otp_expired') {
-            setErrorMsg('Este enlace ya fue utilizado o ha expirado. Por favor solicita un nuevo código.');
-          } else {
-            setErrorMsg('El enlace de recuperación no es válido o ya caducó. Por favor solicita un nuevo código.');
-          }
-          return;
-        }
-        if (data?.user?.email) {
-          setVerifiedEmail(data.user.email);
-        }
-        if (setIsRecoveryMode) setIsRecoveryMode(true);
-        showToast('¡Enlace validado con éxito! Ahora crea tu nueva contraseña.', 'success');
-        setForgotStep('new-password');
-        return;
-      }
-
-      // Caso 3: Código OTP numérico de 6 dígitos
-      if (parsed?.type === 'otp') {
-        const { data, error } = await supabase.auth.verifyOtp({
-          email: cleanEmail,
-          token: parsed.token,
-          type: 'recovery'
-        });
-        setLoading(false);
-        if (error) {
-          const msgLower = (error.message || '').toLowerCase();
-          if (msgLower.includes('expired') || error.code === 'otp_expired') {
-            setErrorMsg('El código ha expirado. Haz clic en "Reenviar código" para recibir uno nuevo.');
-          } else {
-            setErrorMsg('Código incorrecto. Verifica los 6 dígitos que llegaron a tu correo.');
-          }
-          return;
-        }
-        if (data?.user?.email) {
-          setVerifiedEmail(data.user.email);
-        }
-        if (setIsRecoveryMode) setIsRecoveryMode(true);
-        showToast('¡Código verificado con éxito! Ahora crea tu nueva contraseña.', 'success');
-        setForgotStep('new-password');
-        return;
-      }
-
-      // Caso 4: Formato no reconocido
+      const { data, error } = await supabase.rpc('verify_user_phone', {
+        lookup_email: cleanEmail,
+        lookup_phone: cleanPhone
+      });
       setLoading(false);
-      setErrorMsg('No pudimos reconocer el formato del código o enlace. Ingresa los 6 dígitos o pega el enlace completo.');
+
+      if (error) {
+        if (error.message?.includes('Could not find the function') || error.code === 'PGRST202') {
+          setErrorMsg('Para habilitar la verificación por teléfono en tu base de datos, ejecuta el script "password_reset_by_phone.sql" en el SQL Editor de tu proyecto en Supabase.');
+          return;
+        }
+        setErrorMsg(error.message || 'Error al validar el número de teléfono.');
+        return;
+      }
+
+      if (data && data.success === false) {
+        setErrorMsg(data.error || 'El número de teléfono o WhatsApp no coincide con el registrado en esta cuenta.');
+        return;
+      }
+
+      setVerifiedPhone(cleanPhone);
+      setForgotStep('new-password');
+      showToast('¡Identidad confirmada! Ahora crea tu nueva contraseña.', 'success');
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Error de conexión al verificar el código.');
+      setErrorMsg('Error de conexión al validar el número de teléfono.');
     }
   };
 
-  // 3. Guardar la Nueva Contraseña (flujo final de recuperación)
+  // 3. Paso 3: Aplicar la nueva contraseña en la base de datos tras verificar Correo + Teléfono
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     setErrorMsg('');
@@ -432,16 +366,39 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       return;
     }
 
+    const cleanEmail = (verifiedEmail || forgotEmail || '').trim().toLowerCase();
+    const cleanPhone = (verifiedPhone || forgotPhone || '').trim();
+
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      setLoading(false);
+      // 1. Si existe una sesión activa de recuperación directa (fallback de link)
+      const sessionUser = (await supabase.auth.getUser())?.data?.user;
+      if (sessionUser && !cleanPhone) {
+        const { error: updateErr } = await supabase.auth.updateUser({ password: newPassword });
+        setLoading(false);
+        if (updateErr) throw updateErr;
+      } else {
+        // 2. Flujo directo verificado por Correo + Teléfono en Supabase (RPC seguro)
+        const { data, error } = await supabase.rpc('reset_password_with_phone', {
+          lookup_email: cleanEmail,
+          lookup_phone: cleanPhone,
+          new_password: newPassword
+        });
+        setLoading(false);
 
-      if (error) {
-        setErrorMsg(error.message || 'Error al actualizar la contraseña.');
-        return;
+        if (error) {
+          if (error.message?.includes('Could not find the function') || error.code === 'PGRST202') {
+            setErrorMsg('Para habilitar esta función en tu base de datos, ejecuta el script "password_reset_by_phone.sql" en el SQL Editor de tu proyecto en Supabase.');
+            return;
+          }
+          setErrorMsg(error.message || 'Error al actualizar la contraseña en la base de datos.');
+          return;
+        }
+
+        if (data && data.success === false) {
+          setErrorMsg(data.error || 'No se pudo actualizar la contraseña.');
+          return;
+        }
       }
 
       showToast('¡Contraseña actualizada con éxito! Ya puedes iniciar sesión.', 'success');
@@ -451,10 +408,11 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
 
-      const emailToPreload = verifiedEmail || forgotEmail || data?.user?.email || '';
+      const emailToPreload = cleanEmail || currentUser?.email || '';
       setNewPassword('');
       setConfirmPassword('');
-      setOtpCode('');
+      setForgotPhone('');
+      setVerifiedPhone('');
       setForgotStep('email');
       if (setIsRecoveryMode) setIsRecoveryMode(false);
       if (emailToPreload) {
@@ -463,7 +421,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       setMode('login');
     } catch (err) {
       setLoading(false);
-      setErrorMsg('Error de conexión al actualizar la contraseña.');
+      setErrorMsg(err.message || 'Error de conexión al actualizar la contraseña.');
     }
   };
 
@@ -712,7 +670,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           )}
 
           {/* ========================================================
-              MODO 3: RECUPERAR CONTRASEÑA (FLUJO POR CÓDIGO OTP)
+              MODO 3: RECUPERAR CONTRASEÑA DIRECTA (CORREO + TELÉFONO)
              ======================================================== */}
           {mode === 'forgot' && (
             <div className="space-y-4 animate-fade-in">
@@ -725,11 +683,11 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                     </div>
                     <h3 className="text-sm font-extrabold text-slate-900">Recupera el Acceso a tu Cuenta</h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Ingresa tu correo registrado y te enviaremos un código de seguridad de 6 dígitos.
+                      Ingresa tu correo registrado para iniciar la verificación de identidad.
                     </p>
                   </div>
 
-                  <form onSubmit={handleSendRecoveryCode} className="space-y-4">
+                  <form onSubmit={handleVerifyRecoveryEmail} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">
                         Correo Electrónico Registrado
@@ -755,11 +713,11 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Enviando código...</span>
+                          <span>Verificando correo...</span>
                         </>
                       ) : (
                         <>
-                          <span>Enviar Código de Recuperación</span>
+                          <span>Continuar</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -778,93 +736,83 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                 </div>
               )}
 
-              {/* PASO 2: Ingreso del código OTP de 6 dígitos */}
-              {forgotStep === 'otp' && (
+              {/* PASO 2: Ingreso y validación del número de teléfono o WhatsApp vinculado */}
+              {forgotStep === 'phone' && (
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto mb-2">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
-                    <h3 className="text-sm font-extrabold text-slate-900">Ingresa el Código de Verificación</h3>
+                    <h3 className="text-sm font-extrabold text-slate-900">Verificación de Seguridad</h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Enviamos un código de 6 dígitos a:
-                    </p>
-                    <p className="text-xs font-bold text-slate-800 mt-0.5 bg-slate-100 py-1 px-2.5 rounded-lg inline-block">
-                      {forgotEmail}
+                      Ingresa el número de teléfono o WhatsApp vinculado a esta cuenta o tienda:
                     </p>
                   </div>
 
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  {/* Tarjeta Informativa de Correo */}
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cuenta a recuperar</span>
+                      <p className="text-xs font-bold text-slate-800 truncate">
+                        {verifiedEmail || forgotEmail}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotStep('email'); setErrorMsg(''); }}
+                      className="text-[11px] font-bold text-emerald-700 hover:underline shrink-0 cursor-pointer"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleVerifyRecoveryPhone} className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5 text-center">
-                        Código de 6 dígitos o Enlace recibido
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        Número de Teléfono / WhatsApp
                       </label>
-                      <input
-                        type="text"
-                        required
-                        autoFocus
-                        placeholder="123456 o pega el enlace"
-                        value={otpCode}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setOtpCode(val);
-                        }}
-                        className={`w-full py-3 px-3 text-center rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all bg-slate-50 text-slate-900 ${
-                          otpCode.length > 10 
-                            ? 'text-xs font-mono break-all' 
-                            : 'text-2xl sm:text-3xl font-mono font-black tracking-[0.35em] sm:tracking-[0.45em]'
-                        }`}
-                      />
-                      <p className="text-[11px] text-slate-400 text-center mt-1.5">
-                        Puedes escribir el código de 6 dígitos o pegar directamente el enlace del correo.
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+                        <input
+                          type="tel"
+                          required
+                          autoFocus
+                          placeholder="Ej. 72125280 o +591 72125280"
+                          value={forgotPhone}
+                          onChange={(e) => setForgotPhone(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-medium focus:border-emerald-500 outline-none bg-slate-50/50"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1">
+                        El número que registraste al crear tu cuenta o tu tienda.
                       </p>
                     </div>
 
                     <button
                       type="submit"
-                      disabled={loading || !otpCode.trim()}
+                      disabled={loading || !forgotPhone.trim()}
                       className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Verificando...</span>
+                          <span>Validando identidad...</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="w-4 h-4" />
-                          <span>
-                            {otpCode.includes('http') || otpCode.includes('access_token') 
-                              ? 'Validar Enlace y Continuar' 
-                              : 'Verificar Código'}
-                          </span>
+                          <span>Validar Número e Identidad</span>
                         </>
                       )}
                     </button>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (resendCooldown === 0) {
-                            handleSendRecoveryCode();
-                          }
-                        }}
-                        disabled={resendCooldown > 0 || loading}
-                        className={`font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                          resendCooldown > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-emerald-700 hover:underline'
-                        }`}
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-                        <span>{resendCooldown > 0 ? `Reenviar código en ${resendCooldown}s` : 'Reenviar código'}</span>
-                      </button>
-
+                    <div className="text-center pt-2 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => { setForgotStep('email'); setErrorMsg(''); }}
-                        className="text-slate-500 hover:text-slate-800 font-semibold cursor-pointer"
+                        className="text-xs font-semibold text-slate-600 hover:text-emerald-700 cursor-pointer"
                       >
-                        Cambiar correo
+                        ← Volver a Ingresar Correo
                       </button>
                     </div>
                   </form>
@@ -887,7 +835,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   {/* Tarjeta de Cuenta Verificada */}
                   <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Cuenta confirmada</span>
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Cuenta e Identidad Validadas</span>
                       <p className="text-xs font-bold text-slate-900 truncate">
                         {verifiedEmail || forgotEmail || currentUser?.email}
                       </p>
