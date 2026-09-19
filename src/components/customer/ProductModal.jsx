@@ -36,11 +36,11 @@ export const ProductModal = ({ product, onClose, onRequestProduct }) => {
         </button>
 
         {/* Imagen Lateral */}
-        <div className="md:w-1/2 bg-slate-100 relative h-48 sm:h-64 md:h-auto shrink-0">
+        <div className="md:w-1/2 bg-slate-50 relative h-64 sm:h-80 md:h-auto shrink-0 flex items-center justify-center p-4">
           <img
             src={product.image}
             alt={product.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full max-h-[320px] md:max-h-[440px] object-contain drop-shadow-xs"
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = '/products/producto-sin-imagen.png';

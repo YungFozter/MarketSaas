@@ -630,7 +630,7 @@ export const deduplicateStoreList = (storeList) => {
 };
 
 // Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
-export const CURRENT_SCHEMA_VER = '2026-09-19-v20-batch5-sync';
+export const CURRENT_SCHEMA_VER = '2026-09-19-v21-batch5-hires-sync';
 
 // Limpieza síncrona inmediata en el navegador del usuario si la versión de catálogo cambió
 if (typeof window !== 'undefined' && window.localStorage) {
