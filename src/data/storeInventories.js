@@ -236,7 +236,7 @@ const MASTER_PRODUCTS = {
     basePrice: 7.50,
     costPrice: 5.50,
     unit: 'Caja 20 sobres',
-    image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
+    image: '/products/te-windsor-negro-20u.png',
     description: 'Té negro boliviano tradicional Windsor aroma reconfortante.',
     badge: 'Té Caliente',
     emoji: '🍵'
@@ -258,7 +258,7 @@ const MASTER_PRODUCTS = {
     basePrice: 10.00,
     costPrice: 6.80,
     unit: 'Bolsa x5u',
-    image: 'https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=600&auto=format&fit=crop&q=80',
+    image: '/products/cunapes-tradicionales-5u.png',
     description: 'Típico cuñapé almidón y abundante queso chaqueño derretido.',
     badge: 'Típico Camba',
     emoji: '🧀'
@@ -269,7 +269,7 @@ const MASTER_PRODUCTS = {
     basePrice: 6.00,
     costPrice: 4.20,
     unit: 'Botella 500ml',
-    image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=600&auto=format&fit=crop&q=80',
+    image: '/products/coca-cola-personal-500ml.png',
     description: 'Botella personal Coca-Cola retornable o descartable helada para beber al paso.',
     badge: 'Bebida al Paso',
     emoji: '🥤'
@@ -280,19 +280,19 @@ const MASTER_PRODUCTS = {
     basePrice: 11.50,
     costPrice: 9.00,
     unit: 'Botella 1L',
-    image: 'https://images.unsplash.com/photo-1571212515416-fef01fc43637?w=600&auto=format&fit=crop&q=80',
+    image: '/products/yogurt-pil-frutilla-1l.png',
     description: 'Yogurt natural bebible sabor frutilla enriquecido con vitaminas.',
     badge: 'Fresco',
     emoji: '🍓'
   },
   galletasOreo: {
-    baseName: 'Galletas Oreo Chocolate Tubo 117g',
+    baseName: 'Galletas Oreo Tubo x 108 gr',
     category: 'Snacks & Golosinas',
     basePrice: 7.00,
     costPrice: 5.20,
-    unit: 'Tubo 117g',
-    image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=600&auto=format&fit=crop&q=80',
-    description: 'Galletas de cacao rellenas con crema de vainilla Oreo.',
+    unit: 'Tubo 108g',
+    image: '/products/galletas-oreo-tubo-108g.png',
+    description: 'Galletas de cacao rellenas con crema de vainilla Oreo tubo 108g.',
     badge: 'Favorito',
     emoji: '🍪'
   },

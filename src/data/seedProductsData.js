@@ -89,7 +89,7 @@ export const seedProductsCatalog = [
     stock: 14,
     minStock: 4,
     unit: 'Botella 1L',
-    image: 'https://images.unsplash.com/photo-1571212515416-fef01fc43637?w=600&auto=format&fit=crop&q=80',
+    image: '/products/yogurt-pil-frutilla-1l.png',
     description: 'Yogurt batido frutado sabor frutilla Pil botella de 1 Litro.',
     badge: '',
     isPopular: false
@@ -117,7 +117,7 @@ export const seedProductsCatalog = [
     stock: 40,
     minStock: 12,
     unit: 'Botella 500ml',
-    image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=600&auto=format&fit=crop&q=80',
+    image: '/products/coca-cola-personal-500ml.png',
     description: 'Coca-Cola fría en envase personal de 500ml.',
     badge: 'Bien Fría',
     isPopular: true
@@ -301,7 +301,7 @@ export const seedProductsCatalog = [
     stock: 20,
     minStock: 5,
     unit: 'Caja 20u',
-    image: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&auto=format&fit=crop&q=80',
+    image: '/products/te-windsor-negro-20u.png',
     description: 'Té negro tradicional boliviano Windsor caja con 20 sobres con hilo.',
     badge: '',
     isPopular: false
@@ -506,15 +506,15 @@ export const seedProductsCatalog = [
     isPopular: true
   },
   {
-    name: 'Galletas Oreo Original 108g',
+    name: 'Galletas Oreo Tubo x 108 gr',
     category: 'Snacks & Golosinas',
     price: 6.00,
     costPrice: 4.60,
     stock: 25,
     minStock: 6,
     unit: 'Tubo 108g',
-    image: 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=600&auto=format&fit=crop&q=80',
-    description: 'Galletas de chocolate rellenas de crema de vainilla Oreo.',
+    image: '/products/galletas-oreo-tubo-108g.png',
+    description: 'Galletas de chocolate rellenas de crema de vainilla Oreo tubo 108g.',
     badge: '',
     isPopular: true
   },
