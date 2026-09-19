@@ -413,15 +413,15 @@ export const seedProductsCatalog = [
     isPopular: false
   },
   {
-    name: 'Sal Fina Yodada Lobos 1kg',
+    name: 'Sal Lobos Yodada 500 gr',
     category: 'Abarrotes',
-    price: 3.00,
-    costPrice: 2.20,
+    price: 21.00,
+    costPrice: 16.00,
     stock: 25,
     minStock: 6,
-    unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=600&auto=format&fit=crop&q=80',
-    description: 'Sal pura yodada y fluorada para cocina bolsa de 1kg.',
+    unit: 'Envase 500g',
+    image: '/products/sal-lobos-yodada-500g.png',
+    description: 'Sal pura yodada y fluorada para cocina envase 500g.',
     badge: '',
     isPopular: false
   },

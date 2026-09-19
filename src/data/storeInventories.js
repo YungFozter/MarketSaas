@@ -130,15 +130,15 @@ const MASTER_PRODUCTS = {
     emoji: '🍷'
   },
   cervezaHuari: {
-    baseName: 'Cerveza Huari Tradicional 330ml',
+    baseName: 'Jugo Del Valle Fresh 3 L',
     category: 'Bebidas & Refrescos',
-    basePrice: 12.00,
-    costPrice: 9.20,
-    unit: 'Botella 330ml',
-    image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&auto=format&fit=crop&q=80',
-    description: 'Cerveza lager boliviana premium elaborada con agua pura de vertientes.',
-    badge: 'Fría al Paso',
-    emoji: '🍺'
+    basePrice: 18.00,
+    costPrice: 14.00,
+    unit: 'Botella 3L',
+    image: '/products/jugo-del-valle-fresh-3l.png',
+    description: 'Bebida refrescante de fruta Del Valle Fresh Citrus botella familiar 3L.',
+    badge: 'Familiar',
+    emoji: '🍊'
   },
   cervezaCorona: {
     baseName: 'Cerveza Corona Extra 355ml',
@@ -321,13 +321,13 @@ const MASTER_PRODUCTS = {
 
   // === PRODUCTOS ZONA URBARI / LAS PALMAS / HAMACAS / 3ER ANILLO (PARRILLA / FAMILIA) ===
   carbonQuebracho: {
-    baseName: 'Carbón Vegetal de Quebracho Blanco 3kg',
+    baseName: 'Carbon Curupau 4 kg',
     category: 'Limpieza & Hogar',
-    basePrice: 20.00,
-    costPrice: 14.00,
-    unit: 'Bolsa 3kg',
-    image: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?w=600&auto=format&fit=crop&q=80',
-    description: 'Carbón vegetal de encendido rápido y brasa duradera para churrasco cruceño.',
+    basePrice: 29.00,
+    costPrice: 22.00,
+    unit: 'Bolsa 4kg',
+    image: '/products/carbon-curupau-4kg.png',
+    description: 'Carbón vegetal de encendido rápido y brasa duradera Curupau bolsa 4kg.',
     badge: 'Fin de Semana',
     emoji: '🔥'
   },
@@ -521,13 +521,13 @@ const MASTER_PRODUCTS = {
     emoji: '🍅'
   },
   salLobos: {
-    baseName: 'Sal Marina Yodada y Fluorada Lobos 1kg',
+    baseName: 'Sal Lobos Yodada 500 gr',
     category: 'Despensa & Abarrotes',
-    basePrice: 3.50,
-    costPrice: 2.30,
-    unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=600&auto=format&fit=crop&q=80',
-    description: 'Sal pura fina para mesa y cocina Lobos de alta pureza.',
+    basePrice: 21.00,
+    costPrice: 16.00,
+    unit: 'Envase 500g',
+    image: '/products/sal-lobos-yodada-500g.png',
+    description: 'Sal pura fina para mesa y cocina Lobos de alta pureza 500g.',
     badge: 'Básico',
     emoji: '🧂'
   },

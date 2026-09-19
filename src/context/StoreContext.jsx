@@ -147,7 +147,10 @@ export const CANONICAL_PRODUCT_IMAGES = {
   'mantequilla-pil': '/products/mantequilla-pil-200g.png',
   'colgate-triple-accion': '/products/colgate-triple-accion-75ml.png',
   'chorizo-parrillero-sofia': '/products/chorizo-parrillero-sofia-kg.png',
-  'limpiapiso-todobrillo': '/products/limpiapiso-todobrillo-lavanda.png'
+  'limpiapiso-todobrillo': '/products/limpiapiso-todobrillo-lavanda.png',
+  'sal-lobos': '/products/sal-lobos-yodada-500g.png',
+  'jugo-del-valle-fresh': '/products/jugo-del-valle-fresh-3l.png',
+  'carbon-curupau': '/products/carbon-curupau-4kg.png'
 };
 
 export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
@@ -251,6 +254,18 @@ export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
   // 24. Limpiapiso Todobrillo Plus Lavanda / Poett
   if (normName.includes('todobrillo') || normName.includes('poett') || (normName.includes('limpiapiso') && normName.includes('lavanda'))) {
     return '/products/limpiapiso-todobrillo-lavanda.png';
+  }
+  // 25. Sal Lobos Yodada 500 gr
+  if (normName.includes('sal lobos') || (normName.includes('lobos') && normName.includes('sal'))) {
+    return '/products/sal-lobos-yodada-500g.png';
+  }
+  // 26. Jugo Del Valle Fresh 3 L
+  if (normName.includes('del valle fresh') || (normName.includes('del valle') && normName.includes('3')) || normName.includes('huari')) {
+    return '/products/jugo-del-valle-fresh-3l.png';
+  }
+  // 27. Carbon Curupau 4 kg
+  if (normName.includes('curupau') || (normName.includes('carbon') && (normName.includes('quebracho') || normName.includes('4')))) {
+    return '/products/carbon-curupau-4kg.png';
   }
 
   // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía:
@@ -361,6 +376,15 @@ export const normalizeProduct = (p) => {
   } else if (normLower.includes('todobrillo') || normLower.includes('poett') || (normLower.includes('limpiapiso') && normLower.includes('lavanda'))) {
     resolvedName = 'LIMPIAPISO TODOBRILLO PLUS LAVANDA';
     resolvedPrice = 15.90;
+  } else if (normLower.includes('sal') && normLower.includes('lobos')) {
+    resolvedName = 'Sal Lobos Yodada 500 gr';
+    resolvedPrice = 21.00;
+  } else if (normLower.includes('huari') || normLower.includes('del valle fresh') || (normLower.includes('del valle') && normLower.includes('3'))) {
+    resolvedName = 'Jugo Del Valle Fresh 3 L';
+    resolvedPrice = 18.00;
+  } else if (normLower.includes('curupau') || (normLower.includes('carbon') && (normLower.includes('quebracho') || normLower.includes('4')))) {
+    resolvedName = 'Carbon Curupau 4 kg';
+    resolvedPrice = 29.00;
   }
 
   if (resolvedPrice !== numPrice && (resolvedOriginalPrice === numPrice || resolvedOriginalPrice < resolvedPrice)) {
@@ -606,7 +630,7 @@ export const deduplicateStoreList = (storeList) => {
 };
 
 // Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
-export const CURRENT_SCHEMA_VER = '2026-09-19-v19-batch4-sync';
+export const CURRENT_SCHEMA_VER = '2026-09-19-v20-batch5-sync';
 
 // Limpieza síncrona inmediata en el navegador del usuario si la versión de catálogo cambió
 if (typeof window !== 'undefined' && window.localStorage) {
