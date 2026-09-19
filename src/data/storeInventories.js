@@ -56,7 +56,7 @@ const MASTER_PRODUCTS = {
     basePrice: 7.00,
     costPrice: 5.20,
     unit: 'Botella 2L',
-    image: '/products/agua-vital.jpg',
+    image: '/products/agua-vital.png',
     description: 'Agua purificada sin gas Vital en botella de 2 Litros.',
     badge: 'Saludable',
     emoji: '💧'
@@ -78,7 +78,7 @@ const MASTER_PRODUCTS = {
     basePrice: 6.50,
     costPrice: 5.20,
     unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=600&auto=format&fit=crop&q=80',
+    image: '/products/azucar-guabira-1kg.png',
     description: 'Azúcar blanca pura de caña industria boliviana Guabirá 1kg.',
     badge: 'Básico',
     emoji: '🍚'
@@ -100,7 +100,7 @@ const MASTER_PRODUCTS = {
     basePrice: 4.00,
     costPrice: 2.80,
     unit: 'Paquete 120g',
-    image: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=600&auto=format&fit=crop&q=80',
+    image: '/products/galletas-mabels-cremositas.png',
     description: 'Galletas dulces rellenas con crema sabor vainilla Mabel’s.',
     badge: 'Merienda',
     emoji: '🍪'

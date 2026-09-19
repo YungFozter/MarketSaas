@@ -104,7 +104,7 @@ export const seedProductsCatalog = [
     stock: 36,
     minStock: 10,
     unit: 'Botella 2L',
-    image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80',
+    image: '/products/coca-cola-2l.png',
     description: 'Refresco Coca-Cola clásico botella descartable no retornable 2 Litros.',
     badge: 'Top Ventas',
     isPopular: true
@@ -169,7 +169,7 @@ export const seedProductsCatalog = [
     stock: 30,
     minStock: 8,
     unit: 'Botella 2L',
-    image: '/products/agua-vital.jpg',
+    image: '/products/agua-vital.png',
     description: 'Agua purificada de manantial Vital sin gas botella 2 Litros.',
     badge: 'Hidratación',
     isPopular: true
@@ -368,7 +368,7 @@ export const seedProductsCatalog = [
     stock: 40,
     minStock: 10,
     unit: 'Bolsa 1kg',
-    image: 'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=600&auto=format&fit=crop&q=80',
+    image: '/products/azucar-guabira-1kg.png',
     description: 'Azúcar blanca pura de caña Guabirá Santa Cruz bolsa de 1kg.',
     badge: 'Básico',
     isPopular: true
