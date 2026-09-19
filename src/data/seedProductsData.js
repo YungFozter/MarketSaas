@@ -56,15 +56,15 @@ export const seedProductsCatalog = [
     isPopular: true
   },
   {
-    name: 'Mantequilla Regia con Sal 200g',
+    name: 'Mantequilla con Sal Pil 200 G',
     category: 'Lácteos & Huevos',
     price: 14.50,
     costPrice: 12.20,
     stock: 12,
     minStock: 3,
-    unit: 'Pote 200g',
-    image: 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=600&auto=format&fit=crop&q=80',
-    description: 'Mantequilla tradicional con sal para tostadas y repostería.',
+    unit: 'Barra 200g',
+    image: '/products/mantequilla-pil-200g.png',
+    description: 'Mantequilla pasteurizada pura de vaca con sal Pil Andina 200g.',
     badge: '',
     isPopular: false
   },
@@ -195,7 +195,7 @@ export const seedProductsCatalog = [
     stock: 30,
     minStock: 8,
     unit: 'Botella 710ml',
-    image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&auto=format&fit=crop&q=80',
+    image: '/products/cerveza-pacena-710ml.png',
     description: 'Cerveza boliviana Paceña Pilsener botella descartable 710ml bien helada.',
     badge: 'Al Polo',
     isPopular: true
@@ -227,14 +227,14 @@ export const seedProductsCatalog = [
     isPopular: false
   },
   {
-    name: 'Energizante Red Bull Lata 250ml',
+    name: 'Energizante Red Bull 250 ml',
     category: 'Bebidas & Licores',
     price: 16.00,
     costPrice: 13.00,
     stock: 16,
     minStock: 4,
     unit: 'Lata 250ml',
-    image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80',
+    image: '/products/red-bull-250ml.png',
     description: 'Bebida energizante Red Bull original lata 250ml fría.',
     badge: 'Energía',
     isPopular: true
@@ -426,16 +426,16 @@ export const seedProductsCatalog = [
     isPopular: false
   },
   {
-    name: 'Atún en Lomitos de Aceite Van Camps 170g',
+    name: 'Lomitos de atún en aceite Van Camp’s x 1730 GR',
     category: 'Abarrotes',
     price: 13.50,
     costPrice: 11.20,
     stock: 24,
     minStock: 6,
-    unit: 'Lata 170g',
-    image: 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=600&auto=format&fit=crop&q=80',
-    description: 'Lomitos de atún claro en aceite vegetal lata abrefácil 170g.',
-    badge: 'Práctico',
+    unit: 'Lata 1730g',
+    image: '/products/atun-van-camps-1730g.png',
+    description: 'Lomitos de atún claro en aceite vegetal Van Camp’s formato Food Service x 1730 GR.',
+    badge: 'Food Service',
     isPopular: true
   },
   {

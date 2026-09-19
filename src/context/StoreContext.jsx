@@ -139,7 +139,12 @@ export const CANONICAL_PRODUCT_IMAGES = {
   'omo-detergente': '/products/omo-limon-1.8k.png',
   'fideos-lazzaroni': '/products/fideos-lazzaroni.png',
   'lays-clasicas': '/products/lays-clasicas.png',
-  'papel-nacional': '/products/papel-nacional-selecto-6u.jpg'
+  'papel-nacional': '/products/papel-nacional-selecto-6u.jpg',
+  'empanadas-santa-clara': '/products/empanadas-santa-clara-2u.png',
+  'cerveza-pacena': '/products/cerveza-pacena-710ml.png',
+  'red-bull': '/products/red-bull-250ml.png',
+  'atun-van-camps': '/products/atun-van-camps-1730g.png',
+  'mantequilla-pil': '/products/mantequilla-pil-200g.png'
 };
 
 export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
@@ -211,6 +216,26 @@ export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
   // 16. Papel Higiénico Nacional
   if (normName.includes('nacional selecto') || (normName.includes('papel') && normName.includes('nacional'))) {
     return '/products/papel-nacional-selecto-6u.jpg';
+  }
+  // 17. Empanadas Santa Clara de Pollo
+  if (normName.includes('empanada') && (normName.includes('santa clara') || normName.includes('pollo'))) {
+    return '/products/empanadas-santa-clara-2u.png';
+  }
+  // 18. Cerveza Paceña 710ml
+  if ((normName.includes('pacena') || normName.includes('paceña')) && (normName.includes('710') || normName.includes('pilsener') || normName.includes('rubia'))) {
+    return '/products/cerveza-pacena-710ml.png';
+  }
+  // 19. Energizante Red Bull 250 ml
+  if (normName.includes('red bull') || normName.includes('redbull')) {
+    return '/products/red-bull-250ml.png';
+  }
+  // 20. Lomitos de atún en aceite Van Camp’s (1730g o 170g)
+  if (normName.includes('van camp') || (normName.includes('atun') && (normName.includes('lomitos') || normName.includes('aceite')))) {
+    return '/products/atun-van-camps-1730g.png';
+  }
+  // 21. Mantequilla con Sal Pil / Regia 200g
+  if (normName.includes('mantequilla') && (normName.includes('pil') || normName.includes('regia') || normName.includes('sal'))) {
+    return '/products/mantequilla-pil-200g.png';
   }
 
   // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía:
@@ -292,10 +317,23 @@ export const normalizeProduct = (p) => {
     resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
   }
 
-  const resolvedImage = resolveCanonicalProductImage(p.name, p.image || p.imageUrl || '');
+  let resolvedName = p.name || '';
+  const normLower = resolvedName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (normLower.includes('red bull') || normLower.includes('redbull')) {
+    resolvedName = 'Energizante Red Bull 250 ml';
+  } else if (normLower.includes('van camp') || (normLower.includes('atun') && (normLower.includes('lomitos') || normLower.includes('aceite')))) {
+    resolvedName = 'Lomitos de atún en aceite Van Camp’s x 1730 GR';
+  } else if (normLower.includes('mantequilla') && (normLower.includes('regia') || normLower.includes('pil'))) {
+    resolvedName = 'Mantequilla con Sal Pil 200 G';
+  } else if (normLower.includes('oreo') && normLower.includes('117')) {
+    resolvedName = 'Galletas Oreo Tubo x 108 gr';
+  }
+
+  const resolvedImage = resolveCanonicalProductImage(resolvedName, p.image || p.imageUrl || '');
 
   return {
     ...p,
+    name: resolvedName,
     price: numPrice,
     originalPrice: resolvedOriginalPrice,
     original_price: resolvedOriginalPrice,
@@ -519,7 +557,7 @@ export const deduplicateStoreList = (storeList) => {
 };
 
 // Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
-export const CURRENT_SCHEMA_VER = '2026-09-19-v17-bolivia-catalog-perfect';
+export const CURRENT_SCHEMA_VER = '2026-09-19-v18-bolivia-batch3-sync';
 
 // Limpieza síncrona inmediata en el navegador del usuario si la versión de catálogo cambió
 if (typeof window !== 'undefined' && window.localStorage) {
