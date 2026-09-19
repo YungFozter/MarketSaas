@@ -121,6 +121,131 @@ export const normalizeSubscription = (sub) => {
   };
 };
 
+// Diccionario canónico de imágenes locales para productos bolivianos
+export const CANONICAL_PRODUCT_IMAGES = {
+  'azucar-guabira': '/products/azucar-guabira-1kg.png',
+  'coca-cola-2l': '/products/coca-cola-2l.png',
+  'coca-cola-personal': '/products/coca-cola-personal-500ml.png',
+  'galletas-mabels': '/products/galletas-mabels-cremositas.png',
+  'galletas-oreo': '/products/galletas-oreo-tubo-108g.png',
+  'te-windsor': '/products/te-windsor-negro-20u.png',
+  'yogurt-pil': '/products/yogurt-pil-frutilla-1l.png',
+  'cunapes': '/products/cunapes-tradicionales-5u.png',
+  'agua-vital-2l': '/products/agua-vital.png',
+  'agua-vital-600ml': '/products/agua-vital-600ml.png',
+  'leche-pil': '/products/leche-pil.png',
+  'aceite-fino': '/products/aceite-fino-1800ml.png',
+  'cafe-nescafe': '/products/cafe-nescafe-160g.png',
+  'omo-detergente': '/products/omo-limon-1.8k.png',
+  'fideos-lazzaroni': '/products/fideos-lazzaroni.png',
+  'lays-clasicas': '/products/lays-clasicas.png',
+  'papel-nacional': '/products/papel-nacional-selecto-6u.jpg'
+};
+
+export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
+  const normName = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // 1. Azúcar Guabirá (reemplaza rosas u otras fotos genéricas)
+  if (normName.includes('guabira') || (normName.includes('azucar') && (normName.includes('blanca') || normName.includes('refinada')))) {
+    return '/products/azucar-guabira-1kg.png';
+  }
+  // 2. Coca-Cola 2L
+  if (normName.includes('coca') && (normName.includes('2l') || normName.includes('2 l') || normName.includes('2 litros') || normName.includes('2000ml') || normName.includes('familiar'))) {
+    return '/products/coca-cola-2l.png';
+  }
+  // 3. Coca-Cola Personal (500ml / fría)
+  if (normName.includes('coca') && (normName.includes('500ml') || normName.includes('500 ml') || normName.includes('personal') || normName.includes('fria'))) {
+    return '/products/coca-cola-personal-500ml.png';
+  }
+  // 4. Galletas Mabel's Cremositas
+  if (normName.includes('mabel') || normName.includes('cremosita')) {
+    return '/products/galletas-mabels-cremositas.png';
+  }
+  // 5. Galletas Oreo
+  if (normName.includes('oreo')) {
+    return '/products/galletas-oreo-tubo-108g.png';
+  }
+  // 6. Té Windsor
+  if (normName.includes('windsor') || (normName.includes('te negro') && normName.includes('20'))) {
+    return '/products/te-windsor-negro-20u.png';
+  }
+  // 7. Yogurt Pil Frutilla
+  if (normName.includes('yogurt') && (normName.includes('pil') || normName.includes('frutilla') || normName.includes('fresa'))) {
+    return '/products/yogurt-pil-frutilla-1l.png';
+  }
+  // 8. Cuñapés Tradicionales Cruceños
+  if (normName.includes('cunape') || normName.includes('cuñape')) {
+    return '/products/cunapes-tradicionales-5u.png';
+  }
+  // 9. Agua Vital
+  if (normName.includes('vital')) {
+    if (normName.includes('600')) return '/products/agua-vital-600ml.png';
+    return '/products/agua-vital.png';
+  }
+  // 10. Leche Pil Natural / Entera
+  if (normName.includes('leche') && (normName.includes('pil') || normName.includes('entera') || normName.includes('fresca') || normName.includes('seleccion'))) {
+    if (!normName.includes('deslactosada')) {
+      return '/products/leche-pil.png';
+    }
+  }
+  // 11. Aceite Fino
+  if (normName.includes('aceite') && normName.includes('fino')) {
+    return '/products/aceite-fino-1800ml.png';
+  }
+  // 12. Café Nescafé
+  if (normName.includes('nescafe') || normName.includes('nescafé') || (normName.includes('cafe') && normName.includes('frasco'))) {
+    return '/products/cafe-nescafe-160g.png';
+  }
+  // 13. Detergente Omo
+  if (normName.includes('omo') || (normName.includes('detergente') && normName.includes('polvo'))) {
+    return '/products/omo-limon-1.8k.png';
+  }
+  // 14. Fideos Lazzaroni
+  if (normName.includes('lazzaroni')) {
+    return '/products/fideos-lazzaroni.png';
+  }
+  // 15. Papas Lays
+  if (normName.includes('lays') || normName.includes('lay\'s')) {
+    return '/products/lays-clasicas.png';
+  }
+  // 16. Papel Higiénico Nacional
+  if (normName.includes('nacional selecto') || (normName.includes('papel') && normName.includes('nacional'))) {
+    return '/products/papel-nacional-selecto-6u.jpg';
+  }
+
+  // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía:
+  if (!currentImage || currentImage.includes('1581441363689')) {
+    return '/products/producto-sin-imagen.png';
+  }
+
+  return currentImage;
+};
+
+// Sincronizador de inventario de tienda con catálogo canónico oficial
+export const syncProductsWithCanonicalCatalog = (prods = [], storeSlug = 'default') => {
+  if (!Array.isArray(prods) || prods.length === 0) return [];
+  const canonicalCatalog = getStoreCatalog(storeSlug);
+  const canonMap = new Map();
+  canonicalCatalog.forEach(c => {
+    canonMap.set(c.name.toLowerCase().trim(), c);
+    canonMap.set(c.id, c);
+  });
+
+  return prods.map(p => {
+    const norm = normalizeProduct(p);
+    const key = (norm.name || '').toLowerCase().trim();
+    const canon = canonMap.get(key) || canonMap.get(norm.id);
+    if (canon) {
+      return {
+        ...norm,
+        image: canon.image,
+        category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category
+      };
+    }
+    return norm;
+  });
+};
+
 // Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
 export const normalizeProduct = (p) => {
   if (!p || typeof p !== 'object') return p;
@@ -167,6 +292,8 @@ export const normalizeProduct = (p) => {
     resolvedMinStock = isNaN(parsed) ? 'Sin definir' : parsed;
   }
 
+  const resolvedImage = resolveCanonicalProductImage(p.name, p.image || p.imageUrl || '');
+
   return {
     ...p,
     price: numPrice,
@@ -180,7 +307,7 @@ export const normalizeProduct = (p) => {
     category: p.category || 'Sin definir',
     unit: p.unit || 'Sin definir',
     description: p.description || 'Sin definir',
-    image: p.image || '/products/producto-sin-imagen.png',
+    image: resolvedImage || '/products/producto-sin-imagen.png',
     code: p.code ? String(p.code) : '',
     badge: p.badge || '',
     isPopular: Boolean(p.isPopular ?? p.is_popular),
@@ -391,6 +518,27 @@ export const deduplicateStoreList = (storeList) => {
   });
 };
 
+// Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
+export const CURRENT_SCHEMA_VER = '2026-09-19-v17-bolivia-catalog-perfect';
+
+// Limpieza síncrona inmediata en el navegador del usuario si la versión de catálogo cambió
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    const storedVer = localStorage.getItem('marketsaas_catalog_version');
+    if (storedVer !== CURRENT_SCHEMA_VER) {
+      const keysToPurge = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('marketsaas_') && k.endsWith('_products')) {
+          keysToPurge.push(k);
+        }
+      }
+      keysToPurge.forEach(k => localStorage.removeItem(k));
+      localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
+    }
+  } catch (e) {}
+}
+
 export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
@@ -547,7 +695,8 @@ export const StoreProvider = ({ children }) => {
         if (localProds) {
           const parsed = JSON.parse(localProds);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), foundStore.slug));
+            const synced = syncProductsWithCanonicalCatalog(parsed, foundStore.slug);
+            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(synced), foundStore.slug));
           } else {
             setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
           }
@@ -589,7 +738,8 @@ export const StoreProvider = ({ children }) => {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug);
+            const synced = syncProductsWithCanonicalCatalog(parsed, tenantSlug);
+            return filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug);
           }
         } catch (e) {
           // fallback
@@ -1057,7 +1207,8 @@ export const StoreProvider = ({ children }) => {
         if (localProds) {
           const parsed = JSON.parse(localProds);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(parsed.map(normalizeProduct)), tenantSlug));
+            const synced = syncProductsWithCanonicalCatalog(parsed, tenantSlug);
+            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug));
           } else {
             setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
           }
@@ -1097,7 +1248,8 @@ export const StoreProvider = ({ children }) => {
 
     productQuery.then(({ data, error }) => {
       if (!error && data && data.length > 0) {
-        const cleaned = filterOutLegacyDemoProducts(deduplicateProducts(data.map(normalizeProduct)), tenantSlug);
+        const synced = syncProductsWithCanonicalCatalog(data, tenantSlug);
+        const cleaned = filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug);
         setProducts(cleaned);
       }
     });
@@ -1542,24 +1694,31 @@ export const StoreProvider = ({ children }) => {
   }, [viewMode, tenantSlug]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
-  const CURRENT_SCHEMA_VER = '2026-09-08-v11-clean-inventory';
   useEffect(() => {
     try {
       const storedVer = localStorage.getItem('marketsaas_catalog_version');
       if (storedVer !== CURRENT_SCHEMA_VER) {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('marketsaas_') && k.endsWith('_products')) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
         localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
+
         if (tenantSlug === 'default') {
-          setProducts(initialProducts);
+          setProducts(initialProducts.map(normalizeProduct));
           setStoreConfigState(initialStoreConfig);
           setCart([]);
           setProductRequests(initialProductRequests);
-          localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts));
+          localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(initialProducts.map(normalizeProduct)));
           localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
           localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
           localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
         } else {
-          // Si es una tienda personalizada registrada, limpiar la caché local para forzar recarga limpia desde Supabase
-          localStorage.removeItem(`marketsaas_${tenantSlug}_products`);
+          setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
         }
       }
     } catch (e) {
