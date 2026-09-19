@@ -141,10 +141,13 @@ export const CANONICAL_PRODUCT_IMAGES = {
   'lays-clasicas': '/products/lays-clasicas.png',
   'papel-nacional': '/products/papel-nacional-selecto-6u.jpg',
   'empanadas-santa-clara': '/products/empanadas-santa-clara-2u.png',
-  'cerveza-pacena': '/products/cerveza-pacena-710ml.png',
+  'cerveza-pacena': '/products/cerveza-pacena-lata-440ml.png',
   'red-bull': '/products/red-bull-250ml.png',
   'atun-van-camps': '/products/atun-van-camps-1730g.png',
-  'mantequilla-pil': '/products/mantequilla-pil-200g.png'
+  'mantequilla-pil': '/products/mantequilla-pil-200g.png',
+  'colgate-triple-accion': '/products/colgate-triple-accion-75ml.png',
+  'chorizo-parrillero-sofia': '/products/chorizo-parrillero-sofia-kg.png',
+  'limpiapiso-todobrillo': '/products/limpiapiso-todobrillo-lavanda.png'
 };
 
 export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
@@ -221,9 +224,9 @@ export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
   if (normName.includes('empanada') && (normName.includes('santa clara') || normName.includes('pollo'))) {
     return '/products/empanadas-santa-clara-2u.png';
   }
-  // 18. Cerveza Paceña 710ml
-  if ((normName.includes('pacena') || normName.includes('paceña')) && (normName.includes('710') || normName.includes('pilsener') || normName.includes('rubia'))) {
-    return '/products/cerveza-pacena-710ml.png';
+  // 18. Cerveza Paceña Lata 440ml
+  if (normName.includes('pacena') || normName.includes('paceña')) {
+    return '/products/cerveza-pacena-lata-440ml.png';
   }
   // 19. Energizante Red Bull 250 ml
   if (normName.includes('red bull') || normName.includes('redbull')) {
@@ -236,6 +239,18 @@ export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
   // 21. Mantequilla con Sal Pil / Regia 200g
   if (normName.includes('mantequilla') && (normName.includes('pil') || normName.includes('regia') || normName.includes('sal'))) {
     return '/products/mantequilla-pil-200g.png';
+  }
+  // 22. Colgate Triple Acción 75ml
+  if (normName.includes('colgate') && (normName.includes('triple') || normName.includes('crema'))) {
+    return '/products/colgate-triple-accion-75ml.png';
+  }
+  // 23. Chorizo Parrillero Sofia kg
+  if (normName.includes('chorizo') && normName.includes('sofia')) {
+    return '/products/chorizo-parrillero-sofia-kg.png';
+  }
+  // 24. Limpiapiso Todobrillo Plus Lavanda / Poett
+  if (normName.includes('todobrillo') || normName.includes('poett') || (normName.includes('limpiapiso') && normName.includes('lavanda'))) {
+    return '/products/limpiapiso-todobrillo-lavanda.png';
   }
 
   // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía:
@@ -256,19 +271,27 @@ export const syncProductsWithCanonicalCatalog = (prods = [], storeSlug = 'defaul
     canonMap.set(c.id, c);
   });
 
-  return prods.map(p => {
-    const norm = normalizeProduct(p);
-    const key = (norm.name || '').toLowerCase().trim();
-    const canon = canonMap.get(key) || canonMap.get(norm.id);
-    if (canon) {
-      return {
-        ...norm,
-        image: canon.image,
-        category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category
-      };
-    }
-    return norm;
-  });
+  return prods
+    .filter(p => {
+      if (!p) return false;
+      const n = ((p.name || '') + ' ' + (p.id || '')).toLowerCase();
+      return !n.includes('gouda') && !n.includes('menorita');
+    })
+    .map(p => {
+      const norm = normalizeProduct(p);
+      const key = (norm.name || '').toLowerCase().trim();
+      const canon = canonMap.get(key) || canonMap.get(norm.id);
+      if (canon) {
+        return {
+          ...norm,
+          name: canon.name,
+          price: canon.price !== undefined ? canon.price : norm.price,
+          image: canon.image,
+          category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category
+        };
+      }
+      return norm;
+    });
 };
 
 // Normalizador canónico de productos para asegurar consistencia entre LocalStorage, Supabase y Realtime
@@ -318,6 +341,7 @@ export const normalizeProduct = (p) => {
   }
 
   let resolvedName = p.name || '';
+  let resolvedPrice = numPrice;
   const normLower = resolvedName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (normLower.includes('red bull') || normLower.includes('redbull')) {
     resolvedName = 'Energizante Red Bull 250 ml';
@@ -327,6 +351,20 @@ export const normalizeProduct = (p) => {
     resolvedName = 'Mantequilla con Sal Pil 200 G';
   } else if (normLower.includes('oreo') && normLower.includes('117')) {
     resolvedName = 'Galletas Oreo Tubo x 108 gr';
+  } else if (normLower.includes('colgate') && (normLower.includes('triple') || normLower.includes('crema'))) {
+    resolvedName = 'Colgate Triple Acción - Crema dental 75ML';
+  } else if (normLower.includes('pacena') || normLower.includes('paceña')) {
+    resolvedName = 'Cerveza Paceña Pilsener Lata X 440Ml';
+  } else if (normLower.includes('chorizo') && normLower.includes('sofia')) {
+    resolvedName = 'Chorizo Parrillero Sofia kg';
+    resolvedPrice = 49.90;
+  } else if (normLower.includes('todobrillo') || normLower.includes('poett') || (normLower.includes('limpiapiso') && normLower.includes('lavanda'))) {
+    resolvedName = 'LIMPIAPISO TODOBRILLO PLUS LAVANDA';
+    resolvedPrice = 15.90;
+  }
+
+  if (resolvedPrice !== numPrice && (resolvedOriginalPrice === numPrice || resolvedOriginalPrice < resolvedPrice)) {
+    resolvedOriginalPrice = resolvedPrice;
   }
 
   const resolvedImage = resolveCanonicalProductImage(resolvedName, p.image || p.imageUrl || '');
@@ -334,7 +372,7 @@ export const normalizeProduct = (p) => {
   return {
     ...p,
     name: resolvedName,
-    price: numPrice,
+    price: resolvedPrice,
     originalPrice: resolvedOriginalPrice,
     original_price: resolvedOriginalPrice,
     costPrice: resolvedCost,
@@ -496,20 +534,31 @@ export const deduplicateProducts = (productList) => {
 };
 
 // Filtra automáticamente los 14 productos demo sembrados si la tienda ya cuenta con productos reales/importados
+// y descarta productos descontinuados (ej. queso gouda menorita)
 export const filterOutLegacyDemoProducts = (productList, slug) => {
-  if (!Array.isArray(productList) || !slug || slug === 'default') {
-    return productList;
+  if (!Array.isArray(productList)) {
+    return [];
   }
-  const hasCustomProducts = productList.some(p => {
+  // Excluir siempre queso gouda / menorita eliminado canónicamente
+  const sanitized = productList.filter(p => {
+    if (!p) return false;
+    const n = ((p.name || '') + ' ' + (p.id || '')).toLowerCase();
+    return !n.includes('gouda') && !n.includes('menorita');
+  });
+
+  if (!slug || slug === 'default') {
+    return sanitized;
+  }
+  const hasCustomProducts = sanitized.some(p => {
     if (!p || !p.id) return false;
     return /prod-\d{10,}/.test(p.id) || !p.id.startsWith(`${slug}-prod-`);
   });
 
   if (!hasCustomProducts) {
-    return productList;
+    return sanitized;
   }
 
-  return productList.filter(p => {
+  return sanitized.filter(p => {
     if (!p || !p.id) return false;
     const isLegacyDemoId = new RegExp(`^${slug}-prod-([1-9]|1[0-4])$`).test(p.id);
     return !isLegacyDemoId;
@@ -557,7 +606,7 @@ export const deduplicateStoreList = (storeList) => {
 };
 
 // Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
-export const CURRENT_SCHEMA_VER = '2026-09-19-v18-bolivia-batch3-sync';
+export const CURRENT_SCHEMA_VER = '2026-09-19-v19-batch4-sync';
 
 // Limpieza síncrona inmediata en el navegador del usuario si la versión de catálogo cambió
 if (typeof window !== 'undefined' && window.localStorage) {

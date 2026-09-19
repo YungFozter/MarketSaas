@@ -151,17 +151,6 @@ const MASTER_PRODUCTS = {
     badge: 'Importada',
     emoji: '🍻'
   },
-  quesoGoudaMenorita: {
-    baseName: 'Queso Menorita Gouda Holandés 400g',
-    category: 'Lácteos & Huevos',
-    basePrice: 32.00,
-    costPrice: 25.50,
-    unit: 'Pieza 400g',
-    image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=600&auto=format&fit=crop&q=80',
-    description: 'Queso madurado de colonia menonita, sabor suave y cremoso ideal para picadas.',
-    badge: 'Artesanal',
-    emoji: '🧀'
-  },
   jamonSerranoSofia: {
     baseName: 'Jamón Serrano Curado Sofía 100g',
     category: 'Carnes & Embutidos',
@@ -297,14 +286,14 @@ const MASTER_PRODUCTS = {
     emoji: '🍪'
   },
   cervezaPacena710: {
-    baseName: 'Cerveza Paceña Pilsener 710ml',
+    baseName: 'Cerveza Paceña Pilsener Lata X 440Ml',
     category: 'Bebidas & Refrescos',
     basePrice: 14.00,
     costPrice: 10.80,
-    unit: 'Botella 710ml',
-    image: '/products/cerveza-pacena-710ml.png',
-    description: 'Cerveza Paceña rubia tradicional 710ml bien fría de heladera.',
-    badge: 'Tradición',
+    unit: 'Lata 440ml',
+    image: '/products/cerveza-pacena-lata-440ml.png',
+    description: 'Cerveza Paceña rubia tradicional en lata de 440ml bien fría.',
+    badge: 'Bien Fría',
     emoji: '🍺'
   },
   redBull250: {
@@ -343,12 +332,12 @@ const MASTER_PRODUCTS = {
     emoji: '🔥'
   },
   chorizoParrilleroSofia: {
-    baseName: 'Chorizo Parrillero Ahumado Sofía 500g',
+    baseName: 'Chorizo Parrillero Sofia kg',
     category: 'Carnes & Embutidos',
-    basePrice: 24.00,
-    costPrice: 18.50,
-    unit: 'Paquete 500g',
-    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85?w=600&auto=format&fit=crop&q=80',
+    basePrice: 49.90,
+    costPrice: 38.50,
+    unit: 'Por Kilo',
+    image: '/products/chorizo-parrillero-sofia-kg.png',
     description: 'Chorizos parrilleros de cerdo condimentados y ahumados listos para asar.',
     badge: 'Churrasco Sofía',
     emoji: '🌭'
@@ -431,13 +420,13 @@ const MASTER_PRODUCTS = {
     emoji: '🍟'
   },
   limpiapisosPoett: {
-    baseName: 'Limpiapisos Desinfectante Poett Lavanda 900ml',
+    baseName: 'LIMPIAPISO TODOBRILLO PLUS LAVANDA',
     category: 'Limpieza & Hogar',
-    basePrice: 11.50,
-    costPrice: 8.50,
+    basePrice: 15.90,
+    costPrice: 12.00,
     unit: 'Botella 900ml',
-    image: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=600&auto=format&fit=crop&q=80',
-    description: 'Limpiador líquido aromático desinfectante con fragancia prolongada de lavanda.',
+    image: '/products/limpiapiso-todobrillo-lavanda.png',
+    description: 'Limpiador desinfectante líquido Todobrillo Plus aroma lavanda.',
     badge: 'Aroma Fresco',
     emoji: '🧹'
   },
@@ -576,12 +565,12 @@ const MASTER_PRODUCTS = {
     emoji: '🧴'
   },
   cremaColgate: {
-    baseName: 'Crema Dental Colgate Triple Acción 75ml',
+    baseName: 'Colgate Triple Acción - Crema dental 75ML',
     category: 'Cuidado Personal',
     basePrice: 9.00,
     costPrice: 6.80,
     unit: 'Tubo 75ml',
-    image: 'https://images.unsplash.com/photo-1570784332176-fdd73da66f03?w=600&auto=format&fit=crop&q=80',
+    image: '/products/colgate-triple-accion-75ml.png',
     description: 'Protección anticaries, dientes blancos y aliento fresco con flúor.',
     badge: 'Higiene Diaria',
     emoji: '🪥'
@@ -677,7 +666,6 @@ export const getStoreCatalog = (storeSlug = 'default') => {
       'vinoCamposSolana',
       'cervezaHuari',
       'cervezaCorona',
-      'quesoGoudaMenorita',
       'jamonSerranoSofia',
       'monsterEnergy',
       'pringlesOriginal',

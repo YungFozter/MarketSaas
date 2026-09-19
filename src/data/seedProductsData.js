@@ -188,15 +188,15 @@ export const seedProductsCatalog = [
     isPopular: false
   },
   {
-    name: 'Cerveza Paceña Pilsener 710ml',
+    name: 'Cerveza Paceña Pilsener Lata X 440Ml',
     category: 'Bebidas & Licores',
     price: 14.00,
     costPrice: 11.80,
     stock: 30,
     minStock: 8,
-    unit: 'Botella 710ml',
-    image: '/products/cerveza-pacena-710ml.png',
-    description: 'Cerveza boliviana Paceña Pilsener botella descartable 710ml bien helada.',
+    unit: 'Lata 440ml',
+    image: '/products/cerveza-pacena-lata-440ml.png',
+    description: 'Cerveza boliviana Paceña Pilsener en lata de 440ml bien helada.',
     badge: 'Al Polo',
     isPopular: true
   },
@@ -638,14 +638,14 @@ export const seedProductsCatalog = [
     isPopular: false
   },
   {
-    name: 'Crema Dental Colgate Triple Acción 75ml',
+    name: 'Colgate Triple Acción - Crema dental 75ML',
     category: 'Limpieza & Hogar',
     price: 8.50,
     costPrice: 6.50,
     stock: 22,
     minStock: 5,
     unit: 'Tubo 75ml',
-    image: 'https://images.unsplash.com/photo-1570784332176-fdd73da66f03?w=600&auto=format&fit=crop&q=80',
+    image: '/products/colgate-triple-accion-75ml.png',
     description: 'Protección anticaries, blancura y aliento fresco Colgate 75ml.',
     badge: 'Higiene',
     isPopular: true
