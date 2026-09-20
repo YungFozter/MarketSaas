@@ -11,11 +11,20 @@ import {
   PackageCheck,
   AlertCircle
 } from 'lucide-react';
-import { useStore } from '../../context/StoreContext';
+import { useStore, normalizeOrder } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
-  const { orders, storeConfig, selectedStore, tenantSlug, supabase } = useStore();
+  const { 
+    orders, 
+    setOrders, 
+    storeConfig, 
+    selectedStore, 
+    tenantSlug, 
+    supabase,
+    triggerConfetti,
+    showToast
+  } = useStore();
 
   const [order, setOrder] = useState(() => {
     const memory = (orders || []).find(o => o.id === orderId);
@@ -38,20 +47,99 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
     return null;
   });
 
+  // 1. Sincronización continua de orden en memoria reactiva
   useEffect(() => {
     const memory = (orders || []).find(o => o.id === orderId);
     if (memory) {
-      setOrder(memory);
-      return;
-    }
-    if (supabase && orderId) {
-      supabase.from('orders').select('*').eq('id', orderId).maybeSingle().then(({ data, error }) => {
-        if (!error && data) {
-          setOrder(data);
+      setOrder(prev => {
+        if (!prev || prev.status !== memory.status) {
+          return memory;
         }
+        return prev;
       });
     }
-  }, [orders, orderId, supabase]);
+  }, [orders, orderId]);
+
+  // 2. Canal Realtime exclusivo + Heartbeat de Polling cada 2.5 segundos
+  useEffect(() => {
+    if (!orderId || !supabase) return;
+
+    // Escucha en tiempo real vía WebSocket de Supabase
+    const trackingChannel = supabase
+      .channel(`tracking:order:${orderId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, (payload) => {
+        if (payload.new) {
+          const fresh = normalizeOrder(payload.new);
+          setOrder(prev => {
+            if (prev && prev.status !== fresh.status) {
+              if (fresh.status === 'delivered') {
+                triggerConfetti?.();
+                showToast?.('¡Tu pedido ha sido marcado como ENTREGADO! 🎉', 'success');
+              } else if (fresh.status === 'on_the_way') {
+                showToast?.('¡Tu pedido está en camino / listo para retiro! 🛵', 'info');
+              } else if (fresh.status === 'preparing') {
+                showToast?.('¡La tienda comenzó a preparar tu pedido! 📦', 'info');
+              }
+            }
+            return fresh;
+          });
+          if (setOrders) {
+            setOrders(prev => [fresh, ...(prev || []).filter(o => o.id !== orderId)]);
+          }
+          try {
+            localStorage.setItem('marketsaas_active_order_obj', JSON.stringify(fresh));
+          } catch (e) {}
+        }
+      })
+      .subscribe();
+
+    // Heartbeat de consulta cada 2.5 segundos (garantía infalible para móviles si WebSocket entra en suspensión)
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .maybeSingle();
+
+        if (!error && data) {
+          const fresh = normalizeOrder(data);
+          setOrder(prev => {
+            if (!prev || prev.status !== fresh.status) {
+              if (prev && prev.status !== fresh.status) {
+                if (fresh.status === 'delivered') {
+                  triggerConfetti?.();
+                  showToast?.('¡Tu pedido ha sido marcado como ENTREGADO! 🎉', 'success');
+                } else if (fresh.status === 'on_the_way') {
+                  showToast?.('¡Tu pedido está en camino / listo para retiro! 🛵', 'info');
+                } else if (fresh.status === 'preparing') {
+                  showToast?.('¡La tienda comenzó a preparar tu pedido! 📦', 'info');
+                }
+              }
+              if (setOrders) {
+                setOrders(curr => [fresh, ...(curr || []).filter(o => o.id !== orderId)]);
+              }
+              try {
+                localStorage.setItem('marketsaas_active_order_obj', JSON.stringify(fresh));
+              } catch (e) {}
+              return fresh;
+            }
+            return prev;
+          });
+        }
+      } catch (e) {}
+    }, 2500);
+
+    return () => {
+      supabase.removeChannel(trackingChannel);
+      clearInterval(pollInterval);
+    };
+  }, [orderId, supabase, setOrders, triggerConfetti, showToast]);
 
   const isOfficialStore = Boolean(
     (tenantSlug && tenantSlug !== 'default') ||

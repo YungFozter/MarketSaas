@@ -1249,19 +1249,21 @@ export const StoreProvider = ({ children }) => {
   });
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
-  // Auto-limpieza de pedido activo si el pedido ya fue entregado o cancelado
+  // Auto-limpieza de pedido activo si el pedido ya fue entregado o cancelado (solo cuando el modal de tracking esté cerrado)
   useEffect(() => {
     if (!activeTrackingOrderId) return;
     const existing = orders.find(o => o.id === activeTrackingOrderId);
     // Si el pedido existe y ya concluyó su ciclo activo:
     if (existing && ['delivered', 'cancelled'].includes(existing.status)) {
-      setActiveTrackingOrderId(null);
-      try {
-        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
-        localStorage.removeItem('marketsaas_default_active_order');
-      } catch (e) {}
+      if (!isTrackingModalOpen) {
+        setActiveTrackingOrderId(null);
+        try {
+          localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+          localStorage.removeItem('marketsaas_default_active_order');
+        } catch (e) {}
+      }
     }
-  }, [orders, activeTrackingOrderId, tenantSlug]);
+  }, [orders, activeTrackingOrderId, tenantSlug, isTrackingModalOpen]);
 
   // 11. Toast notification
   const [toast, setToast] = useState(null);
@@ -3926,6 +3928,7 @@ export const StoreProvider = ({ children }) => {
         selectedLocation,
         setSelectedLocation,
         orders,
+        setOrders,
         createCustomerOrder,
         updateOrderStatus,
         cancelOrder,
