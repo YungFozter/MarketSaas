@@ -114,6 +114,25 @@ CREATE TABLE IF NOT EXISTS public.product_requests (
 
 ALTER TABLE public.product_requests ADD COLUMN IF NOT EXISTS tenant_id TEXT DEFAULT 'default';
 
+-- Tabla: suppliers (Directorio de proveedores y lista de compras para el dueño)
+CREATE TABLE IF NOT EXISTS public.suppliers (
+  id TEXT PRIMARY KEY,
+  tenant_id TEXT NOT NULL DEFAULT 'default',
+  name TEXT NOT NULL,
+  contact_name TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  category TEXT DEFAULT 'Otros',
+  visit_days JSONB DEFAULT '[]'::jsonb,
+  notes TEXT DEFAULT '',
+  order_items JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS tenant_id TEXT NOT NULL DEFAULT 'default';
+ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS order_items JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE public.suppliers ADD COLUMN IF NOT EXISTS visit_days JSONB DEFAULT '[]'::jsonb;
+
 -- ------------------------------------------------------------------------------
 -- 2. ÍNDICES DE RENDIMIENTO (Performance Tuning)
 -- ------------------------------------------------------------------------------
@@ -125,6 +144,8 @@ CREATE INDEX IF NOT EXISTS idx_orders_tenant_created ON public.orders(tenant_id,
 CREATE INDEX IF NOT EXISTS idx_orders_owner ON public.orders(owner_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(tenant_id, status);
 CREATE INDEX IF NOT EXISTS idx_requests_tenant ON public.product_requests(tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_suppliers_tenant ON public.suppliers(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_suppliers_created ON public.suppliers(created_at DESC);
 
 -- ------------------------------------------------------------------------------
 -- 3. HABILITACIÓN DE ROW LEVEL SECURITY (RLS)
@@ -133,6 +154,7 @@ ALTER TABLE public.store_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.product_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.suppliers ENABLE ROW LEVEL SECURITY;
 
 -- Purgar políticas antiguas antes de recrear las definitivas
 DO $$
@@ -143,7 +165,7 @@ BEGIN
     SELECT schemaname, tablename, policyname 
     FROM pg_policies 
     WHERE schemaname = 'public' 
-      AND tablename IN ('store_config', 'products', 'orders', 'product_requests')
+      AND tablename IN ('store_config', 'products', 'orders', 'product_requests', 'suppliers')
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I;', pol.policyname, pol.schemaname, pol.tablename);
   END LOOP;
@@ -347,7 +369,81 @@ USING (
 );
 
 -- ------------------------------------------------------------------------------
--- 8. FUNCIONES RPC SEGURAS (SECURITY DEFINER)
+-- 8. POLÍTICAS RLS: SUPPLIERS (Agenda de Proveedores y Pedidos de Abastecimiento)
+-- ------------------------------------------------------------------------------
+-- Lectura: Solo el comerciante dueño de la tienda (o demo default).
+CREATE POLICY "suppliers_select_owner" 
+ON public.suppliers FOR SELECT 
+USING (
+  suppliers.tenant_id = 'default' 
+  OR (
+    auth.role() = 'authenticated' 
+    AND auth.uid()::text IN (
+      SELECT sc.owner_id::text 
+      FROM public.store_config sc 
+      WHERE sc.id::text = suppliers.tenant_id::text OR sc.tenant_id::text = suppliers.tenant_id::text
+    )
+  )
+);
+
+-- Inserción: Solo el dueño autenticado.
+CREATE POLICY "suppliers_insert_owner" 
+ON public.suppliers FOR INSERT 
+WITH CHECK (
+  suppliers.tenant_id = 'default' 
+  OR (
+    auth.role() = 'authenticated' 
+    AND auth.uid()::text IN (
+      SELECT sc.owner_id::text 
+      FROM public.store_config sc 
+      WHERE sc.id::text = suppliers.tenant_id::text OR sc.tenant_id::text = suppliers.tenant_id::text
+    )
+  )
+);
+
+-- Modificación: Solo el dueño autenticado.
+CREATE POLICY "suppliers_update_owner" 
+ON public.suppliers FOR UPDATE 
+USING (
+  suppliers.tenant_id = 'default' 
+  OR (
+    auth.role() = 'authenticated' 
+    AND auth.uid()::text IN (
+      SELECT sc.owner_id::text 
+      FROM public.store_config sc 
+      WHERE sc.id::text = suppliers.tenant_id::text OR sc.tenant_id::text = suppliers.tenant_id::text
+    )
+  )
+)
+WITH CHECK (
+  suppliers.tenant_id = 'default' 
+  OR (
+    auth.role() = 'authenticated' 
+    AND auth.uid()::text IN (
+      SELECT sc.owner_id::text 
+      FROM public.store_config sc 
+      WHERE sc.id::text = suppliers.tenant_id::text OR sc.tenant_id::text = suppliers.tenant_id::text
+    )
+  )
+);
+
+-- Eliminación: Solo el comerciante dueño.
+CREATE POLICY "suppliers_delete_owner" 
+ON public.suppliers FOR DELETE 
+USING (
+  suppliers.tenant_id = 'default' 
+  OR (
+    auth.role() = 'authenticated' 
+    AND auth.uid()::text IN (
+      SELECT sc.owner_id::text 
+      FROM public.store_config sc 
+      WHERE sc.id::text = suppliers.tenant_id::text OR sc.tenant_id::text = suppliers.tenant_id::text
+    )
+  )
+);
+
+-- ------------------------------------------------------------------------------
+-- 9. FUNCIONES RPC SEGURAS (SECURITY DEFINER)
 -- ------------------------------------------------------------------------------
 
 -- Función: get_order_tracking
@@ -391,3 +487,17 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.check_user_email_exists(TEXT) TO anon, authenticated;
+
+-- ------------------------------------------------------------------------------
+-- 10. PUBLICACIÓN EN TIEMPO REAL (Realtime)
+-- ------------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'suppliers'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.suppliers;
+  END IF;
+END $$;
+

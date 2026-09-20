@@ -461,6 +461,39 @@ export const filterOutTestRequests = (requests) => {
   return requests.filter(r => r && r.id && !String(r.id).startsWith('TEST-') && !String(r.id).startsWith('VERIFY-'));
 };
 
+// Identificadores de proveedores demo a ignorar/purgar
+export const DEMO_SUPPLIER_IDS = ['sup-coca-cola', 'sup-pil-andina', 'sup-cbn-pacena', 'sup-sofia'];
+
+export const filterOutDemoSuppliers = (list) => {
+  if (!Array.isArray(list)) return [];
+  return list.filter(s => s && s.id && !DEMO_SUPPLIER_IDS.includes(s.id));
+};
+
+export const normalizeSupplier = (s) => {
+  if (!s || typeof s !== 'object') return null;
+  return {
+    id: String(s.id),
+    name: s.name || '',
+    contactName: s.contactName ?? s.contact_name ?? '',
+    phone: s.phone || '',
+    category: s.category || 'Otros',
+    visitDays: Array.isArray(s.visitDays) 
+      ? s.visitDays 
+      : Array.isArray(s.visit_days) 
+        ? s.visit_days 
+        : (typeof s.visit_days === 'string' ? JSON.parse(s.visit_days || '[]') : []),
+    notes: s.notes || '',
+    orderItems: Array.isArray(s.orderItems) 
+      ? s.orderItems 
+      : Array.isArray(s.order_items) 
+        ? s.order_items 
+        : (typeof s.order_items === 'string' ? JSON.parse(s.order_items || '[]') : []),
+    createdAt: s.createdAt || s.created_at || new Date().toISOString(),
+    updatedAt: s.updatedAt || s.updated_at || new Date().toISOString(),
+    tenant_id: s.tenant_id || 'default'
+  };
+};
+
 // Normalizador estándar de número de celular / WhatsApp boliviano (+591 XXXXXXXX)
 export const normalizeCustomerPhone = (phone) => {
   if (!phone) return '';
@@ -1105,10 +1138,16 @@ export const StoreProvider = ({ children }) => {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const cleaned = filterOutDemoSuppliers(parsed).map(normalizeSupplier).filter(Boolean);
+          if (cleaned.length !== parsed.length) {
+            localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(cleaned));
+          }
+          return cleaned;
+        }
       }
     } catch (e) {}
-    return initialSuppliers;
+    return [];
   });
 
   // 10. Cupones de descuento aplicados
@@ -1356,8 +1395,23 @@ export const StoreProvider = ({ children }) => {
         } else {
           setProductRequests([]);
         }
+
+        const localSuppliers = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
+        if (localSuppliers) {
+          const parsed = JSON.parse(localSuppliers);
+          if (Array.isArray(parsed)) {
+            const cleaned = filterOutDemoSuppliers(parsed).map(normalizeSupplier).filter(Boolean);
+            setSuppliers(cleaned);
+            if (cleaned.length !== parsed.length) {
+              localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(cleaned));
+            }
+          }
+        } else {
+          setSuppliers([]);
+        }
       } else {
         setProductRequests(initialProductRequests.map(normalizeProductRequest));
+        setSuppliers([]);
       }
     } catch (e) {
       console.warn('Error cargando caché local de tenant:', e);
@@ -1492,6 +1546,23 @@ export const StoreProvider = ({ children }) => {
         });
     }
 
+    // 5. Cargar proveedores por tienda
+    if (tenantSlug && tenantSlug !== 'default') {
+      supabase.from('suppliers')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data)) {
+            const normalized = filterOutDemoSuppliers(data).map(normalizeSupplier).filter(Boolean);
+            setSuppliers(normalized);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(normalized));
+            } catch (e) {}
+          }
+        });
+    }
+
     // Subscripciones en Tiempo Real (Realtime) con filtro de fila de Postgres por tenant_id
     const ordersChannel = supabase
       .channel(`public:orders:${tenantSlug}`)
@@ -1563,10 +1634,35 @@ export const StoreProvider = ({ children }) => {
       })
       .subscribe();
 
+    const suppliersChannel = supabase
+      .channel(`public:suppliers:${tenantSlug}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'suppliers',
+        filter: `tenant_id=eq.${tenantSlug}`
+      }, payload => {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const norm = normalizeSupplier(payload.new);
+          if (norm && !DEMO_SUPPLIER_IDS.includes(norm.id)) {
+            setSuppliers(prev => [norm, ...prev.filter(s => s.id !== norm.id)]);
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const norm = normalizeSupplier(payload.new);
+          if (norm && !DEMO_SUPPLIER_IDS.includes(norm.id)) {
+            setSuppliers(prev => prev.map(s => (s.id === norm.id ? norm : s)));
+          }
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(productsChannel);
       supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(suppliersChannel);
     };
   }, [tenantSlug]);
 
@@ -3183,6 +3279,22 @@ export const StoreProvider = ({ children }) => {
   // GESTIÓN DE PROVEEDORES Y PEDIDOS DE ABASTECIMIENTO
   // ==============================================================================
 
+  const syncSupplierOrderItemsToSupabase = async (supplierId, updatedItems) => {
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('suppliers')
+          .update({
+            order_items: updatedItems,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', supplierId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {
+      // Fallback silencioso si la tabla aún no fue creada en Supabase
+    }
+  };
+
   const addSupplier = async (supplierData) => {
     const newSupplier = {
       id: `sup-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -3202,8 +3314,17 @@ export const StoreProvider = ({ children }) => {
     try {
       if (supabase && tenantSlug && tenantSlug !== 'default') {
         await supabase.from('suppliers').insert([{
-          ...newSupplier,
-          tenant_id: tenantSlug
+          id: newSupplier.id,
+          tenant_id: tenantSlug,
+          name: newSupplier.name,
+          contact_name: newSupplier.contactName,
+          phone: newSupplier.phone,
+          category: newSupplier.category,
+          visit_days: newSupplier.visitDays,
+          notes: newSupplier.notes,
+          order_items: newSupplier.orderItems,
+          created_at: newSupplier.createdAt,
+          updated_at: newSupplier.updatedAt
         }]);
       }
     } catch (e) {
@@ -3228,8 +3349,18 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase && tenantSlug && tenantSlug !== 'default') {
+        const payload = {};
+        if (updatedFields.name !== undefined) payload.name = updatedFields.name;
+        if (updatedFields.contactName !== undefined) payload.contact_name = updatedFields.contactName;
+        if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
+        if (updatedFields.category !== undefined) payload.category = updatedFields.category;
+        if (updatedFields.visitDays !== undefined) payload.visit_days = updatedFields.visitDays;
+        if (updatedFields.notes !== undefined) payload.notes = updatedFields.notes;
+        if (updatedFields.orderItems !== undefined) payload.order_items = updatedFields.orderItems;
+        payload.updated_at = new Date().toISOString();
+
         await supabase.from('suppliers')
-          .update({ ...updatedFields, updatedAt: new Date().toISOString() })
+          .update(payload)
           .eq('id', supplierId)
           .eq('tenant_id', tenantSlug);
       }
@@ -3263,66 +3394,84 @@ export const StoreProvider = ({ children }) => {
       notes: item.notes?.trim() || ''
     };
 
+    let updatedList = [];
     setSuppliers(prev => prev.map(s => {
       if (s.id === supplierId) {
         const orderItems = Array.isArray(s.orderItems) ? s.orderItems : [];
+        updatedList = [...orderItems, newItem];
         return {
           ...s,
-          orderItems: [...orderItems, newItem],
+          orderItems: updatedList,
           updatedAt: new Date().toISOString()
         };
       }
       return s;
     }));
+
+    if (updatedList.length > 0) {
+      syncSupplierOrderItemsToSupabase(supplierId, updatedList);
+    }
 
     showToast(`"${newItem.productName}" agregado a la lista de pedido.`, 'success');
   };
 
   const removeSupplierOrderItem = (supplierId, itemId) => {
+    let updatedList = [];
     setSuppliers(prev => prev.map(s => {
       if (s.id === supplierId) {
+        updatedList = (s.orderItems || []).filter(item => item.id !== itemId);
         return {
           ...s,
-          orderItems: (s.orderItems || []).filter(item => item.id !== itemId),
+          orderItems: updatedList,
           updatedAt: new Date().toISOString()
         };
       }
       return s;
     }));
+
+    syncSupplierOrderItemsToSupabase(supplierId, updatedList);
   };
 
   const toggleSupplierOrderItemStatus = (supplierId, itemId) => {
+    let updatedList = [];
     setSuppliers(prev => prev.map(s => {
       if (s.id === supplierId) {
+        updatedList = (s.orderItems || []).map(item => {
+          if (item.id === itemId) {
+            const nextStatus = item.status === 'received' ? 'pending' : 'received';
+            return { ...item, status: nextStatus };
+          }
+          return item;
+        });
         return {
           ...s,
-          orderItems: (s.orderItems || []).map(item => {
-            if (item.id === itemId) {
-              const nextStatus = item.status === 'received' ? 'pending' : 'received';
-              return { ...item, status: nextStatus };
-            }
-            return item;
-          }),
+          orderItems: updatedList,
           updatedAt: new Date().toISOString()
         };
       }
       return s;
     }));
+
+    syncSupplierOrderItemsToSupabase(supplierId, updatedList);
   };
 
   const clearSupplierOrderItems = (supplierId, onlyReceived = false) => {
+    let updatedList = [];
     setSuppliers(prev => prev.map(s => {
       if (s.id === supplierId) {
+        updatedList = onlyReceived 
+          ? (s.orderItems || []).filter(item => item.status !== 'received')
+          : [];
         return {
           ...s,
-          orderItems: onlyReceived 
-            ? (s.orderItems || []).filter(item => item.status !== 'received')
-            : [],
+          orderItems: updatedList,
           updatedAt: new Date().toISOString()
         };
       }
       return s;
     }));
+
+    syncSupplierOrderItemsToSupabase(supplierId, updatedList);
     showToast(onlyReceived ? 'Ítems recibidos limpiados.' : 'Lista de compras vaciada.', 'info');
   };
 
