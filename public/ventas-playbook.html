@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Ventas & Pitch de Cierre · MarketSaaS 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #059669;
+      --accent-light: #ecfdf5;
+      --accent-dark: #064e3b;
+      --rose: #e11d48;
+      --rose-light: #fff1f2;
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-serif: 'Newsreader', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.65;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Barra Superior de Control */
+    .top-toolbar {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .toolbar-badge {
+      background: var(--accent);
+      color: #042f24;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-outline:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: #10b981;
+      color: #064e3b;
+    }
+
+    .btn-primary:hover {
+      background: #34d399;
+      transform: translateY(-1px);
+    }
+
+    /* Contenedor Tipo Libro / Documento A4 */
+    .book-container {
+      max-width: 860px;
+      margin: 40px auto 80px auto;
+      background: #ffffff;
+      padding: 60px 70px;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Portada / Header del Documento */
+    .doc-header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 30px;
+      margin-bottom: 40px;
+    }
+
+    .doc-kicker {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .doc-title {
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1.2;
+      color: var(--primary);
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .doc-subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .meta-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .meta-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+    }
+
+    .meta-pill.highlight {
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      border-color: #a7f3d0;
+    }
+
+    /* Títulos de Sección */
+    h2 {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: -0.02em;
+      margin: 45px 0 16px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      break-after: avoid;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 24px 0 10px 0;
+      break-after: avoid;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #334155;
+    }
+
+    /* Cajas Destacadas & Filosofía */
+    .callout-box {
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin: 22px 0;
+      border: 1px solid transparent;
+      break-inside: avoid;
+    }
+
+    .callout-box.dark {
+      background: #0f172a;
+      color: #f8fafc;
+      border-color: #1e293b;
+    }
+
+    .callout-box.emerald {
+      background: var(--accent-light);
+      border-color: #a7f3d0;
+      color: #064e3b;
+    }
+
+    .callout-box.rose {
+      background: var(--rose-light);
+      border-color: #fecdd3;
+      color: #881337;
+    }
+
+    .callout-box.amber {
+      background: var(--amber-light);
+      border-color: #fde68a;
+      color: #78350f;
+    }
+
+    /* Diálogos de Guión (Speech Bubbles) */
+    .script-dialog {
+      margin: 18px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      break-inside: avoid;
+    }
+
+    .speaker-card {
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 14px;
+      line-height: 1.55;
+      position: relative;
+    }
+
+    .speaker-hunter {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--accent);
+      color: #14532d;
+    }
+
+    .speaker-merchant {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #64748b;
+      color: #1e293b;
+    }
+
+    .speaker-name {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .speaker-hunter .speaker-name { color: #047857; }
+    .speaker-merchant .speaker-name { color: #475569; }
+
+    /* Tablas Elegantes */
+    .styled-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13.5px;
+      break-inside: avoid;
+    }
+
+    .styled-table th {
+      background: #f1f5f9;
+      color: #475569;
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .styled-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #334155;
+      vertical-align: top;
+    }
+
+    .styled-table tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    /* Grilla de Garantías de Confianza */
+    .guarantees-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 20px 0;
+      break-inside: avoid;
+    }
+
+    .guarantee-item {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .guarantee-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #15803d;
+      font-family: var(--font-mono);
+      font-weight: 900;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .guarantee-item h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .guarantee-item p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    /* Tarjeta de Objeción */
+    .objection-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 18px 0;
+      break-inside: avoid;
+    }
+
+    .objection-header {
+      background: #fff1f2;
+      border-bottom: 1px solid #fecdd3;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .objection-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #9f1239;
+    }
+
+    .objection-body {
+      padding: 16px;
+      background: #ffffff;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #334155;
+    }
+
+    /* Checklist */
+    .checklist {
+      list-style: none;
+      margin: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      break-inside: avoid;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .checklist-item span {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    /* Footer del Documento */
+    .doc-footer {
+      border-top: 2px solid var(--border);
+      padding-top: 24px;
+      margin-top: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       REGLA OFICIAL DE IMPRESIÓN VERTICAL (PORTRAIT A4)
+       ============================================================ */
+    @page {
+      size: portrait;
+      margin: 15mm 15mm 18mm 15mm;
+    }
+
+    @media print {
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      body {
+        background: #ffffff !important;
+        font-size: 12pt !important;
+        color: #000000 !important;
+      }
+
+      .top-toolbar {
+        display: none !important;
+      }
+
+      .book-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+
+      .doc-title {
+        font-size: 24pt !important;
+      }
+
+      h2 {
+        font-size: 15pt !important;
+        margin-top: 22pt !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      h3 {
+        font-size: 12pt !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      .callout-box, .script-dialog, .objection-card, .guarantees-grid, .styled-table {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .speaker-card {
+        padding: 10pt !important;
+        font-size: 10.5pt !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Acciones Superior -->
+  <header class="top-toolbar">
+    <div class="toolbar-title">
+      <span>🦅 MarketSaaS</span>
+      <span class="toolbar-badge">PLAYBOOK DE VENTAS · 2026</span>
+    </div>
+    <div class="toolbar-actions">
+      <a href="/presentacion-comercial.html" class="btn btn-outline">
+        ← Ir a Diapositivas (16:9)
+      </a>
+      <button class="btn btn-primary" onclick="window.print()">
+        🖨️ Guardar como PDF (Vertical A4)
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal Formato Libro / Manual -->
+  <main class="book-container">
+    
+    <!-- Encabezado del Manual -->
+    <header class="doc-header">
+      <div class="doc-kicker">DOCUMENTO CONFIDENCIAL DE FORMACIÓN INTERNA · EQUIPO COMERCIAL</div>
+      <h1 class="doc-title">Manual de Ventas & Pitch de Cierre Implacable</h1>
+      <p class="doc-subtitle">
+        Guía táctica para el Cazador de Clientes en Minimarkets, Pulperías y Tiendas de Barrio de Bolivia. Cómo cerrar suscripciones de <strong>Bs. 75 al mes</strong> con <strong>1 Mes de Prueba Gratis</strong> en menos de 5 minutos.
+      </p>
+
+      <div class="meta-pills">
+        <span class="meta-pill highlight">💰 Precio: Bs. 75 / mes</span>
+        <span class="meta-pill highlight">⚡ Costo Diario: Bs. 2.50 / día</span>
+        <span class="meta-pill highlight">🎁 Prueba: 1 Mes Completo Gratis</span>
+        <span class="meta-pill">🇧🇴 Adaptado a Bolivia</span>
+        <span class="meta-pill">📱 Cero Apps para Vecinos</span>
+      </div>
+    </header>
+
+    <!-- ==================== SECCIÓN 1 ==================== -->
+    <section>
+      <h2>🦅 1. La Filosofía del Cazador de Clientes</h2>
+      <p>
+        Un vendedor promedio entra pidiendo disculpas por interrumpir, con folletos llenos de texto y empieza a hablar de <em>"software en la nube, servidores, microservicios y bases de datos"</em>. <strong>El comerciante lo ignora al instante porque está cansado, sudando y cobrando en la caja registradora.</strong>
+      </p>
+
+      <div class="callout-box dark">
+        <strong style="color:#34d399; font-size:15px; display:block; margin-bottom:8px;">Las 5 Reglas de Oro del Cazador:</strong>
+        <ol style="margin-left:20px; font-size:14px; line-height:1.65; color:#cbd5e1;">
+          <li><strong>No habla de software:</strong> Habla de la plata que se le está cayendo del bolsillo todos los días mientras atiende en caja o duerme.</li>
+          <li><strong>No pide permiso:</strong> Detecta el dolor en los primeros 10 segundos (cuaderno de fiados manchado con aceite, calculadora sucia, el celular vibrando en el mostrador sin contestar).</li>
+          <li><strong>Mata la objeción del precio en el primer minuto:</strong> <em>"Solo cuesta Bs. 2.50 al día — un pan o un chicle diario paga el sistema entero"</em>.</li>
+          <li><strong>Le pone la "Pantalla Vecino" en su propio celular en menos de 60 segundos:</strong> Cuando el dueño ve cómo sus vecinos pueden pedirle en 2 toques con fotos nítidas sin instalar apps, la venta está 90% cerrada.</li>
+          <li><strong>Ofrece riesgo cero absoluto:</strong> 1 Mes de Prueba Gratis (30 días) y Sin contrato de permanencia ni letra chica.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 2 ==================== -->
+    <section>
+      <h2>🌟 2. La Pantalla Vecino: El Arma Secreta que Vende Sola</h2>
+      <p>
+        El dueño de minimarket vive con una frustración diaria que odia: vecinos mandando audios de 2 minutos preguntando: <em>"¿A cuánto está la leche? ¿Tiene cerveza fría? ¿Qué marcas de queso tiene?"</em>. Si contesta, descuida la fila; si no contesta, el cliente pide en otra tienda o en PedidosYa.
+      </p>
+
+      <table class="styled-table">
+        <thead>
+          <tr>
+            <th style="width:30%;">Lo que sufre hoy (Sin Sistema)</th>
+            <th style="width:70%;">Lo que vive con la Pantalla Vecino de MarketSaaS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>El vecino debe preguntar todo</strong></td>
+            <td><strong>0 fricción:</strong> El vecino abre el catálogo web en 1 segundo desde WhatsApp. No descarga apps ni crea cuentas.</td>
+          </tr>
+          <tr>
+            <td><strong>Fotos borrosas por chat</strong></td>
+            <td><strong>Fotos oficiales HD:</strong> Pil, Coca-Cola, Sofía, Mabel's, Paceña. Se ve impecable en cualquier celular.</td>
+          </tr>
+          <tr>
+            <td><strong>"¿Cuánto le debo caserito?"</strong></td>
+            <td><strong>Carrito Inteligente:</strong> Suma exacta con centavos. Cero discusiones de vuelto ni cálculos con calculadora.</td>
+          </tr>
+          <tr>
+            <td><strong>Audios y pedidos desordenados</strong></td>
+            <td><strong>Pedido Estructurado por WhatsApp:</strong> Ticket limpio con cantidades, total y si paga con QR o Efectivo.</td>
+          </tr>
+          <tr>
+            <td><strong>Comisiones abusivas de apps</strong></td>
+            <td><strong>Cobro con QR Simple (0% Comisión):</strong> El dinero entra directo a su cuenta bancaria de Bolivia (BCP, BNB, Unión).</td>
+          </tr>
+          <tr>
+            <td><strong>Solo compran lo justo</strong></td>
+            <td><strong>+25% a +35% de Ticket Promedio:</strong> La comida entra por los ojos. Quien iba por pan termina pidiendo leche, queso y gaseosa.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ==================== SECCIÓN 3 ==================== -->
+    <section>
+      <h2>🎙️ 3. El Guión de Terreno Paso a Paso</h2>
+
+      <h3>📍 Paso 1: La Entrada de Gancho (Interrupción de Patrón)</h3>
+      <p><em>Llegas al minimarket. Compras algo pequeño (un chicle o una gaseosa personal de Bs. 2.50). Miras el mostrador. Ves el cuaderno de fiados o la calculadora.</em></p>
+
+      <div class="script-dialog">
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">Tú (Cazador):</span>
+          "Don [Nombre], buenas tardes. Muchas gracias por el refresco. Le hago una consulta rápida mientras le pago: ¿cuántos mensajes de vecinos le entran al día por WhatsApp preguntándole si tiene pan, gaseosa o fiambre?"
+        </div>
+        <div class="speaker-card speaker-merchant">
+          <span class="speaker-name">Dueño:</span>
+          "Uff, varios joven, todo el día me timbran y escriben."
+        </div>
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">Tú (Cazador):</span>
+          "¿Y cuántas veces está usted aquí cobrando con tres personas en fila y no puede contestar el teléfono a tiempo?"
+        </div>
+        <div class="speaker-card speaker-merchant">
+          <span class="speaker-name">Dueño:</span>
+          "Casi siempre. Si atiendo el celular descuido la caja y se me van los que están aquí."
+        </div>
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">Tú (Disparo al dolor):</span>
+          "Exacto Don [Nombre]. Y usted sabe mejor que nadie que cuando un vecino del condominio o de la cuadra no recibe respuesta en 3 minutos, no espera: pide por delivery de afuera o se va a la tienda de la esquina. Cada vez que usted tarda en contestar, le está regalando Bs. 30 o Bs. 50 a la competencia."
+        </div>
+      </div>
+
+      <h3>📱 Paso 2: El Despliegue de la "Pantalla Vecino" (El Momento WOW)</h3>
+      <p><em>Sacas tu celular o le pides permiso para mandarle un enlace a su propio WhatsApp.</em></p>
+
+      <div class="script-dialog">
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">Tú (Cazador):</span>
+          "Don [Nombre], mire su celular un segundo. Le acabo de mandar un enlace. Toque ahí.<br><br>
+          Mire esto. Ponga el dedo en el buscador y escriba 'leche' o 'cerveza'. ¿Vio? 1 segundo. Foto oficial, precio exacto y botón de agregar. Toque el signo más (+).<br><br>
+          Ahora imagínese esto: Son las 10:30 de la noche. Una vecina del edificio de al frente está en su cama y necesita pañales, pan y leche para el desayuno de sus hijos. No va a bajar al frío a ver si usted está abierto.<br><br>
+          Abre su catálogo desde su cama, toca lo que quiere, el sistema le suma los centavos exactos, le genera el QR del banco para que le pague al tiro, y a su WhatsApp de usted le entra el ticket listo.<br><br>
+          Usted solo alista la bolsita y cobra. Cero llamadas, cero mandar 10 audios explicando qué tiene en la estantería.<br><br>
+          <strong>¿Cuántas ventas más cree que cerraría si todos sus vecinos tuvieran su tienda en el bolsillo?</strong>"
+        </div>
+      </div>
+
+      <h3>💰 Paso 3: La Matemática Destructora de Objeciones (La Ecuación de Bs. 2.50 al Día)</h3>
+
+      <div class="script-dialog">
+        <div class="speaker-card speaker-merchant">
+          <span class="speaker-name">Dueño:</span>
+          "Se ve muy lindo joven, pero seguro estos sistemas cobran comisiones caras por cada pedido o una mensualidad inalcanzable."
+        </div>
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">Tú (Cazador):</span>
+          "Don [Nombre], nosotros <strong>no cobramos ni un solo centavo de comisión</strong> por sus ventas. El 100% de la plata de sus clientes va directo a su bolsillo o a su cuenta bancaria.<br><br>
+          Y el costo mensual es casi un chiste: <strong>cuesta solo Bs. 2.50 al día</strong> (Bs. 75 al mes completo).<br><br>
+          Haga la cuenta conmigo Don [Nombre]: ¿Cuánto me cobró ahorita por este refresco personal que le compré? Bs. 2.50.<br>
+          Si usted vende <strong>UN solo producto de Bs. 2.50 al día</strong>, el sistema ya se pagó completamente solo.<br><br>
+          Y a cambio de esos Bs. 2.50 diarios, usted recibe:<br>
+          1. Su Catálogo Web Vecino activo las 24 horas.<br>
+          2. Punto de Venta (POS) en su mostrador para cobrar en 2 clics.<br>
+          3. Arqueo de caja automático al cerrar la noche.<br>
+          4. Control de fiados digital para que nunca más pierda dinero en disputas.<br>
+          5. Alerta de Stock Bajo antes de quedarse sin Coca-Cola o aceite.<br><br>
+          <strong>¿Usted prefiere seguir perdiendo más de Bs. 2.000 al mes en ventas fugadas, o invertir Bs. 2.50 al día y tener su tienda moderna como un supermercado?</strong>"
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 4 ==================== -->
+    <section>
+      <h2>🛡️ 4. Las 6 Garantías de Confianza: "Sin Letra Chica"</h2>
+      <p>Cuando el comerciante dude o tema arriesgarse, saca a relucir estas 6 garantías inquebrantables:</p>
+
+      <div class="guarantees-grid">
+        <div class="guarantee-item">
+          <div class="guarantee-num">1</div>
+          <div>
+            <h4>Lo pruebas en vivo, aquí mismo</h4>
+            <p>Conectamos su tienda ahorita y hacemos un pedido de prueba desde su celular para que vea cómo timbra.</p>
+          </div>
+        </div>
+
+        <div class="guarantee-item">
+          <div class="guarantee-num">2</div>
+          <div>
+            <h4>Listo en 5 minutos</h4>
+            <p>Catálogo semilla con los 50 productos más vendidos de Bolivia. Escaneas el QR y ya estás vendiendo.</p>
+          </div>
+        </div>
+
+        <div class="guarantee-item">
+          <div class="guarantee-num">3</div>
+          <div>
+            <h4>Cancelas cuando quieras</h4>
+            <p>Sin permanencia forzosa, sin multas ni llamadas de retención. Si un mes no quieres, no pagas y listo.</p>
+          </div>
+        </div>
+
+        <div class="guarantee-item">
+          <div class="guarantee-num">4</div>
+          <div>
+            <h4>Tus datos son 100% tuyos</h4>
+            <p>Inventario, clientes y ventas exportables a Excel y PDF con un solo clic. Si te vas, te llevas todo.</p>
+          </div>
+        </div>
+
+        <div class="guarantee-item">
+          <div class="guarantee-num">5</div>
+          <div>
+            <h4>Te acompañamos al arrancar</h4>
+            <p>Te ayudamos a cargar tus productos y calibrar tus precios en vivo. No te dejamos solo con el panel.</p>
+          </div>
+        </div>
+
+        <div class="guarantee-item">
+          <div class="guarantee-num">6</div>
+          <div>
+            <h4>Soporte en español, hora Bolivia</h4>
+            <p>Gente local que entiende QR Simple, BCP, BNB, Banco Unión y los horarios y feriados bolivianos.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 5 ==================== -->
+    <section>
+      <h2>🥊 5. Demolición de Objeciones Típicas</h2>
+
+      <div class="objection-card">
+        <div class="objection-header">
+          <span>❌</span>
+          <span class="objection-title">Objeción 1: "Es que yo no entiendo mucho de tecnología o computadoras."</span>
+        </div>
+        <div class="objection-body">
+          <strong>🎯 Respuesta Cazador:</strong> "Don [Nombre], si usted sabe enviar un sticker por WhatsApp, ya sabe manejar MarketSaaS al 100%. No necesita computadora; todo funciona desde su mismo celular. Además, yo no le vendo y me voy: yo me siento aquí a su lado, le cargo sus productos estrella y le enseño en 5 minutos. Si en 5 minutos no le parece tan fácil como tomar un vaso de agua, me doy media vuelta y no me paga nada."
+        </div>
+      </div>
+
+      <div class="objection-card">
+        <div class="objection-header">
+          <span>❌</span>
+          <span class="objection-title">Objeción 2: "Es que mis clientes son mayores y no usan internet."</span>
+        </div>
+        <div class="objection-body">
+          <strong>🎯 Respuesta Cazador:</strong> "Don [Nombre], las caseritas de siempre van a seguir viniendo a charlar con usted a la reja y las atenderá igual de bien. Pero dígame la verdad: ¿quién hace las compras grandes de fin de semana en las casas? Los hijos y los jóvenes que no tienen tiempo de salir a buscar. Esa gente no entra a su tienda si no ve fotos y precios en el celular; se piden de PedidosYa o se van al Hipermaxi. El sistema es para capturar toda la plata de los que hoy se le están escapando a los supermercados grandes."
+        </div>
+      </div>
+
+      <div class="objection-card">
+        <div class="objection-header">
+          <span>❌</span>
+          <span class="objection-title">Objeción 3: "Es que ya estoy acostumbrado a mi cuaderno de apuntes."</span>
+        </div>
+        <div class="objection-body">
+          <strong>🎯 Respuesta Cazador:</strong> "Don [Nombre], el cuaderno le sirvió cuando empezó. Pero respóndame con total franqueza: ¿cuántas veces se le ha manchado una hoja con aceite? ¿Cuántas veces un vecino le ha discutido una cuenta de fiado y por no pelear usted ha tenido que perder plata? El cuaderno no le avisa si la leche se vence mañana, ni le dice cuánto ganó en limpio en el mes. Y lo peor de todo: el cuaderno lo amarra a estar parado aquí 16 horas sin poder ir al cumpleaños de sus hijos. Con MarketSaaS, usted puede salir y ver desde su celular cuánto dinero está entrando en tiempo real."
+        </div>
+      </div>
+
+      <div class="objection-card">
+        <div class="objection-header">
+          <span>❌</span>
+          <span class="objection-title">Objeción 4: "Ahorita las ventas están bajas, no puedo asumir gastos."</span>
+        </div>
+        <div class="objection-body">
+          <strong>🎯 Respuesta Cazador:</strong> "Don [Nombre], justamente porque las ventas están bajas es que le urge tener esto hoy. Si su tienda estuviera reventando de clientes en fila, usted no me necesitaría. Las ventas están bajas porque la gente compra donde le responden al instante. Pero no le pido que gaste ni un centavo hoy: le estoy dejando <strong>1 MES COMPLETO DE PRUEBA GRATIS (30 DÍAS)</strong>. Pruébelo todo este mes sin pagar nada. Si en 30 días no vendió más, se cancela y tan amigos como siempre. ¿Qué tiene que perder? Absolutamente nada. ¿Qué tiene que ganar? Cientos de pesos en ventas."
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 6 ==================== -->
+    <section>
+      <h2>⚡ 6. El Cierre de Doble Opción (Trial Close)</h2>
+      <div class="callout-box rose">
+        <strong>⚠️ Regla de Oro del Cazador:</strong> NUNCA preguntes <em>«¿Qué le parece?»</em> o <em>«¿Le gustaría pensarlo?»</em> porque abres la puerta a la duda y a la postergación.
+      </div>
+
+      <p>Aplica siempre el cierre de dos alternativas positivas donde ambas conducen a la activación inmediata:</p>
+
+      <div class="script-dialog">
+        <div class="speaker-card speaker-hunter">
+          <span class="speaker-name">🎯 Cierre A (Acción Inmediata con Catálogo Semilla):</span>
+          "Don [Nombre], nosotros tenemos un catálogo precargado con los 50 productos más vendidos de Bolivia: Pil, Coca-Cola, Guabirá, Fino, galletas Mabel's. En 3 minutos se lo dejo listo con sus propios precios para que arranque su mes gratis. <strong>¿Prefiere que le pongamos el nombre comercial de su minimarket o el nombre que conocen sus caseros?</strong>"
+        </div>
+
+        <div class="speaker-card speaker-hunter" style="margin-top:10px;">
+          <span class="speaker-name">🎯 Cierre B (Demostración de Compra en Vivo):</span>
+          "Don [Nombre], hagamos una cosa: activamos su mes gratis ahorita en su celular, yo me salgo a la vereda de enfrente como si fuera su vecino, le hago un pedido por su catálogo web y usted ve cómo le timbra su WhatsApp con la orden lista. <strong>¿Le parece que lo probemos de una vez?</strong>"
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== SECCIÓN 7 ==================== -->
+    <section>
+      <h2>🎒 7. Checklist del Cazador en Terreno</h2>
+      <ul class="checklist">
+        <li class="checklist-item"><span>✅</span> <strong>Celular con batería al 100%</strong> y con el catálogo demo de MarketSaaS guardado en favoritos.</li>
+        <li class="checklist-item"><span>✅</span> <strong>Billetes de cambio chico (Bs. 2.50, Bs. 5, Bs. 10)</strong> para comprar un producto pequeño al entrar y romper el hielo.</li>
+        <li class="checklist-item"><span>✅</span> <strong>Enlace de activación rápida listo</strong> para enviar al WhatsApp del dueño en 5 segundos.</li>
+        <li class="checklist-item"><span>✅</span> <strong>Sticker o letrero QR físico de prueba</strong> para mostrarle cómo queda pegado en su mostrador.</li>
+        <li class="checklist-item"><span>✅</span> <strong>Mentalidad de cazador:</strong> Tu meta no es convencerlo de comprar; tu meta es mostrarle la plata que está perdiendo y ayudarle a recuperarla hoy mismo.</li>
+      </ul>
+    </section>
+
+    <!-- Footer -->
+    <footer class="doc-footer">
+      <span>MarketSaaS · Plataforma de Comercio Hiperlocal</span>
+      <span>Confidencial · Edición 2026</span>
+    </footer>
+
+  </main>
+
+</body>
+</html>
