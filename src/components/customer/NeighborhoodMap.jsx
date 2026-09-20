@@ -228,7 +228,7 @@ export const NeighborhoodMap = ({
     }
   }, []);
 
-  // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ
+  // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ CON ACELERACIÓN MÓVIL A 60 FPS
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -236,20 +236,56 @@ export const NeighborhoodMap = ({
     const initialLat = DEFAULT_CITY_CENTER_COORDS.lat;
     const initialLng = DEFAULT_CITY_CENTER_COORDS.lng;
 
+    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator.maxTouchPoints > 0));
+
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
       zoom: 15,
       zoomControl: false,
-      attributionControl: true
+      attributionControl: true,
+      preferCanvas: true, // Renderizado acelerado por Canvas para máxima fluidez en móvil
+      tap: false, // Deshabilita la emulación de tap heredada que generaba latencia táctil en teléfonos
+      touchZoom: true,
+      bounceAtZoomLimits: false, // Elimina el rebote que causaba tirones en los límites de zoom
+      zoomAnimation: true,
+      zoomAnimationThreshold: 4,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
+      // Configuración de inercia y física de deslizamiento natural idéntica a Google Maps
+      inertia: true,
+      inertiaDeceleration: isTouchDevice ? 1900 : 2500, // Menor fricción = deslizamiento fluido y suave al soltar el dedo
+      inertiaMaxSpeed: 2800,
+      easeLinearity: 0.08, // Curva de deceleración exponencial ultra-fluida
+      wheelDebounceTime: 30,
+      wheelPxPerZoomLevel: 100
     });
 
     const streetLayer = L.tileLayer(STREET_MAP_URL, {
       attribution: STREET_MAP_ATTRIBUTION,
       maxNativeZoom: 18,
-      maxZoom: 19
+      maxZoom: 19,
+      updateWhenIdle: false, // Carga continua de teselas mientras se desliza con el dedo (sin cuadros grises)
+      updateWhenZooming: false,
+      keepBuffer: isTouchDevice ? 8 : 4, // Mantiene teselas adyacentes en caché DOM para movimiento instantáneo
+      crossOrigin: true
     }).addTo(map);
 
     tileLayerRef.current = streetLayer;
+
+    // Pausar animaciones pesadas durante el deslizamiento táctil para asignar el 100% de la GPU al movimiento
+    const handleMoveStart = () => {
+      if (mapContainerRef.current) {
+        mapContainerRef.current.classList.add('is-panning');
+      }
+    };
+    const handleMoveEnd = () => {
+      if (mapContainerRef.current) {
+        mapContainerRef.current.classList.remove('is-panning');
+      }
+    };
+
+    map.on('movestart', handleMoveStart);
+    map.on('moveend', handleMoveEnd);
 
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
@@ -258,9 +294,11 @@ export const NeighborhoodMap = ({
 
     setTimeout(() => {
       map.invalidateSize();
-    }, 200);
+    }, 150);
 
     return () => {
+      map.off('movestart', handleMoveStart);
+      map.off('moveend', handleMoveEnd);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -275,17 +313,27 @@ export const NeighborhoodMap = ({
       map.removeLayer(tileLayerRef.current);
     }
 
+    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator.maxTouchPoints > 0));
+
     if (mapType === 'satellite') {
       tileLayerRef.current = L.tileLayer(SATELLITE_URL, {
         attribution: SATELLITE_ATTRIBUTION,
         maxNativeZoom: 18,
-        maxZoom: 19
+        maxZoom: 19,
+        updateWhenIdle: false,
+        updateWhenZooming: false,
+        keepBuffer: isTouchDevice ? 8 : 4,
+        crossOrigin: true
       }).addTo(map);
     } else {
       tileLayerRef.current = L.tileLayer(STREET_MAP_URL, {
         attribution: STREET_MAP_ATTRIBUTION,
         maxNativeZoom: 18,
-        maxZoom: 19
+        maxZoom: 19,
+        updateWhenIdle: false,
+        updateWhenZooming: false,
+        keepBuffer: isTouchDevice ? 8 : 4,
+        crossOrigin: true
       }).addTo(map);
     }
   }, [mapType]);
@@ -336,12 +384,12 @@ export const NeighborhoodMap = ({
       // para evitar que flyTo entre en cálculo parabólico con delta cero y deje el mapa en blanco
       if (distanceMeters < 300) {
         if (currentZoom === targetZoom) {
-          map.panTo([targetLat, targetLng], { animate: true, duration: 0.5 });
+          map.panTo([targetLat, targetLng], { animate: true, duration: 0.35, easeLinearity: 0.08 });
         } else {
-          map.setView([targetLat, targetLng], targetZoom, { animate: true, duration: 0.5 });
+          map.setView([targetLat, targetLng], targetZoom, { animate: true, duration: 0.35 });
         }
       } else {
-        map.flyTo([targetLat, targetLng], targetZoom, { duration: 0.8 });
+        map.flyTo([targetLat, targetLng], targetZoom, { duration: 0.65, easeLinearity: 0.08 });
       }
 
       // Asegurar redibujado de teselas tras completar la animación
@@ -528,7 +576,7 @@ export const NeighborhoodMap = ({
   }, [activeStore]);
 
   return (
-    <div className="google-map-component-container relative z-0 isolate w-full h-[440px] sm:h-[480px] md:h-[520px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
+    <div className="google-map-component-container relative z-0 isolate w-full h-[390px] sm:h-[460px] md:h-[500px] bg-slate-100 rounded-3xl overflow-hidden shadow-xl border border-slate-200/90 select-none">
       
       {/* 1. MOTOR INTERACTIVO MULTI-MARCADOR LEAFLET */}
       <div 

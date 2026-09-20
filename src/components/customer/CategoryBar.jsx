@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   Sparkles, 
   Milk, 
@@ -25,8 +25,19 @@ const iconMap = {
   Layers: <Layers className="w-4 h-4" />
 };
 
-export const CategoryBar = ({ selectedCategory, onSelectCategory }) => {
-  const { categories, products } = useStore();
+export const CategoryBar = React.memo(({ selectedCategory, onSelectCategory }) => {
+  const { categories = [], products = [] } = useStore();
+
+  // Diccionario precalculado O(1) de cantidad de productos por categoría
+  const categoryCounts = useMemo(() => {
+    const counts = { all: products.length };
+    products.forEach((p) => {
+      if (!p) return;
+      const cat = (p.category || '').toLowerCase().trim();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
 
   return (
     <div className="mb-8">
@@ -39,21 +50,22 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }) => {
         </span>
       </div>
 
-      {/* Barra de scroll horizontal limpia */}
-      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth">
+      {/* Barra de scroll horizontal limpia y optimizada para deslizamiento táctil */}
+      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth overscroll-x-contain">
         {categories.map((cat) => {
-          const isSelected = selectedCategory === cat.id || (selectedCategory !== 'all' && selectedCategory?.toLowerCase()?.trim() === cat.id?.toLowerCase()?.trim());
+          const catIdNorm = (cat.id || '').toLowerCase().trim();
+          const isSelected = selectedCategory === cat.id || (selectedCategory !== 'all' && selectedCategory?.toLowerCase()?.trim() === catIdNorm);
           const count = cat.count !== undefined
             ? cat.count
             : (cat.id === 'all'
               ? products.length
-              : products.filter(p => (p.category || '').toLowerCase().trim() === (cat.id || '').toLowerCase().trim()).length);
+              : (categoryCounts[catIdNorm] || 0));
 
           return (
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 shrink-0 border ${
+              className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 shrink-0 border cursor-pointer active:scale-95 ${
                 isSelected
                   ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 scale-[1.02]'
                   : 'bg-white text-slate-700 border-slate-200/90 hover:border-emerald-300 hover:bg-emerald-50/50 shadow-2xs'
@@ -76,4 +88,4 @@ export const CategoryBar = ({ selectedCategory, onSelectCategory }) => {
       </div>
     </div>
   );
-};
+});

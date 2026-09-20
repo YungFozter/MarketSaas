@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
@@ -60,23 +60,26 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   const [currentPage, setCurrentPage] = useState(1);
   const catalogGridRef = useRef(null);
 
-  // Filtrado
-  const filteredProducts = products.filter((prod) => {
-    const matchesCategory = 
-      selectedCategory === 'all' || 
-      prod.category === selectedCategory || 
-      (prod.category && selectedCategory && prod.category.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
+  // Filtrado reactivo optimizado con useMemo para navegación ultra-ligera en móvil
+  const filteredProducts = useMemo(() => {
     const cleanQuery = normalizeSearchText(searchQuery);
-    if (!cleanQuery) return matchesCategory;
+    const targetCat = selectedCategory === 'all' ? null : selectedCategory.toLowerCase().trim();
 
-    const matchesSearch = 
-      normalizeSearchText(prod.name).includes(cleanQuery) ||
-      normalizeSearchText(prod.category).includes(cleanQuery) ||
-      normalizeSearchText(prod.code).includes(cleanQuery) ||
-      normalizeSearchText(prod.description).includes(cleanQuery);
+    return products.filter((prod) => {
+      if (!prod) return false;
+      const prodCat = (prod.category || '').toLowerCase().trim();
+      const matchesCategory = !targetCat || prodCat === targetCat;
+      if (!matchesCategory) return false;
+      if (!cleanQuery) return true;
 
-    return matchesCategory && matchesSearch;
-  });
+      return (
+        normalizeSearchText(prod.name).includes(cleanQuery) ||
+        prodCat.includes(cleanQuery) ||
+        normalizeSearchText(prod.code).includes(cleanQuery) ||
+        normalizeSearchText(prod.description).includes(cleanQuery)
+      );
+    });
+  }, [products, selectedCategory, searchQuery]);
 
   // Resetear a la página 1 cuando cambia categoría, búsqueda o cantidad por página
   useEffect(() => {
@@ -85,7 +88,9 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedProducts = useMemo(() => {
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, startIndex, itemsPerPage]);
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;

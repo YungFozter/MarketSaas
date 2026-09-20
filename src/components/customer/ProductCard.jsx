@@ -3,7 +3,7 @@ import { Plus, Minus, Check, Sparkles, Tag, Eye } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './ProductCard.css';
 
-export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
+export const ProductCard = React.memo(({ product, onOpenDetail, onRequestProduct }) => {
   const { cart, addToCart, updateCartQuantity, storeConfig } = useStore();
 
   const cartItem = cart.find(item => item.id === product.id);
@@ -167,4 +167,4 @@ export const ProductCard = ({ product, onOpenDetail, onRequestProduct }) => {
       </div>
     </div>
   );
-};
+});

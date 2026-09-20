@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import './StoreCard.css';
 
-export const StoreCard = ({ 
+export const StoreCard = React.memo(({ 
   store, 
   variant = 'compact', // 'featured' | 'compact'
   onSelect, 
@@ -380,4 +380,4 @@ export const StoreCard = ({
       </div>
     </article>
   );
-};
+});
