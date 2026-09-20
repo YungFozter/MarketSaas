@@ -474,6 +474,208 @@
       font-weight: 700;
     }
 
+    /* Slide Confianza (Diseño idéntico a imagen de referencia) */
+    .confidence-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 60px;
+      row-gap: 28px;
+      margin-top: 32px;
+    }
+
+    .conf-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .conf-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 900;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      font-family: var(--mono);
+    }
+
+    .conf-body h4 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 5px;
+    }
+
+    .conf-body p {
+      font-size: 13.5px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    /* Estilos para Pantalla Vecino (Slide 5) */
+    .neighbor-features-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .neighbor-feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 14px;
+      border-radius: 12px;
+    }
+
+    .neighbor-feat-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .neighbor-feat-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-bottom: 2px;
+    }
+
+    .neighbor-feat-desc {
+      font-size: 11.5px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .neighbor-phone {
+      background: #0d131f;
+      border: 2px solid #1f293d;
+      border-radius: 28px;
+      padding: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      max-width: 360px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .neighbor-phone-notch {
+      width: 80px;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 9999px;
+      margin: 0 auto 10px auto;
+    }
+
+    .neighbor-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+    }
+
+    .neighbor-store-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .neighbor-search-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .neighbor-categories {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      overflow-x: hidden;
+    }
+
+    .neighbor-cat-pill {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .neighbor-cat-pill.active {
+      background: #10b981;
+      color: #064e3b;
+      font-weight: 800;
+    }
+
+    .neighbor-items-mini {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .neighbor-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #1e293b;
+      padding: 7px 10px;
+      border-radius: 10px;
+    }
+
+    .neighbor-item-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .neighbor-item-thumb {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      background: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      border: 1px solid #334155;
+    }
+
+    .neighbor-cart-sticky {
+      background: #10b981;
+      color: #064e3b;
+      font-weight: 800;
+      font-size: 11.5px;
+      padding: 9px 14px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+    }
+
     /* Print styling para exportar a PDF */
     @media print {
       body {
@@ -507,7 +709,7 @@
   <!-- Barra de Navegación del Pitch Deck -->
   <div class="deck-nav">
     <button onclick="prevSlide()">← Anterior</button>
-    <span class="slide-counter" id="slideCounter">1 / 6</span>
+    <span class="slide-counter" id="slideCounter">1 / 8</span>
     <button onclick="nextSlide()">Siguiente →</button>
     <button class="btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
   </div>
@@ -527,7 +729,8 @@
           <div class="badges-row">
             <div class="badge-pill highlight">⚡ Catálogo en 3 segundos</div>
             <div class="badge-pill">📱 Pedidos directos a tu WhatsApp</div>
-            <div class="badge-pill highlight">💰 Desde Bs. 3 al día</div>
+            <div class="badge-pill highlight">💰 Solo Bs. 2.50 al día (Bs. 75/mes)</div>
+            <div class="badge-pill" style="border-color:#34d399; color:#34d399;">🎁 1 Mes de Prueba Gratis</div>
           </div>
 
           <p style="font-size: 13px; color: #64748b; font-family: var(--mono);">
@@ -691,8 +894,8 @@
           <div class="kpi-sub"><strong>Bs. 35.640 perdidos al año</strong> en desorden, ventas fugadas a la competencia y fiados fantasma.</div>
         </div>
         <div class="kpi-card gain">
-          <div class="kpi-val">33× veces</div>
-          <div class="kpi-sub">más de lo que cuesta el plan mensual completo de MarketSaaS (Bs. 90 al mes).</div>
+          <div class="kpi-val">40× veces</div>
+          <div class="kpi-sub">más de lo que cuesta el plan mensual completo de MarketSaaS (Bs. 75 al mes).</div>
         </div>
       </div>
     </div>
@@ -749,8 +952,215 @@
       </div>
     </div>
 
-    <!-- ==================== SLIDE 5: LA COMPARACIÓN HONESTA ==================== -->
-    <div class="slide theme-light" id="slide-5">
+    <!-- ==================== SLIDE 5: LA EXPERIENCIA VECINO ==================== -->
+    <div class="slide theme-dark" id="slide-5">
+      <div class="sub-tag" style="color:var(--emerald);">EXPERIENCIA VECINO · EL VENDEDOR AUTOMÁTICO EN EL BOLSILLO DEL CLIENTE</div>
+      <div class="grid-2">
+        <div>
+          <h2 class="slide-title">Tu tienda abierta en el celular de cada vecino, las 24 horas.</h2>
+          <p class="slide-desc" style="margin-bottom:18px;">
+            El vecino de condominio o de barrio <strong>no quiere descargar apps pesadas ni crear cuentas</strong>. Abre tu enlace en 1 segundo, ve fotos HD y te envía el pedido armado directo a tu WhatsApp.
+          </p>
+
+          <div class="neighbor-features-list">
+            <div class="neighbor-feat-item">
+              <div class="neighbor-feat-icon">⚡</div>
+              <div>
+                <h4 class="neighbor-feat-title">Búsqueda Instantánea en 1 Segundo</h4>
+                <p class="neighbor-feat-desc">Escribe "Coca", "Pan" o "Pil" y aparece al instante con foto oficial y precio exacto. Cero mensajes de "¿A cuánto está?".</p>
+              </div>
+            </div>
+
+            <div class="neighbor-feat-item">
+              <div class="neighbor-feat-icon">🛒</div>
+              <div>
+                <h4 class="neighbor-feat-title">Carrito Inteligente & Suma Exacta</h4>
+                <p class="neighbor-feat-desc">Agrega cantidades con botones (+) y (-) y ve el total con centavos. Se eliminan las dudas y los vueltos mal calculados.</p>
+              </div>
+            </div>
+
+            <div class="neighbor-feat-item">
+              <div class="neighbor-feat-icon">📲</div>
+              <div>
+                <h4 class="neighbor-feat-title">Pedido Estructurado por WhatsApp</h4>
+                <p class="neighbor-feat-desc">Recibes un ticket limpio: lista de productos, total, dirección o departamento y cómo te va a pagar (QR o Efectivo).</p>
+              </div>
+            </div>
+
+            <div class="neighbor-feat-item">
+              <div class="neighbor-feat-icon">📈</div>
+              <div>
+                <h4 class="neighbor-feat-title">+25% en Ticket Promedio por Impulso</h4>
+                <p class="neighbor-feat-desc">Ver fotos nítidas despierta la tentación. El vecino que entraba por pan termina pidiendo leche, galletas y mantequilla.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup Visual de la Pantalla Vecino -->
+        <div>
+          <div class="neighbor-phone">
+            <div class="neighbor-phone-notch"></div>
+            
+            <div class="neighbor-header-bar">
+              <div class="neighbor-store-name">
+                <span style="font-size:16px;">🏪</span>
+                <div>
+                  <strong>Minimarket Don Pepe</strong>
+                  <span style="display:block; font-size:10px; color:#10b981; font-weight:600;">● Abierto · Envíos al barrio</span>
+                </div>
+              </div>
+              <span style="background:#1e293b; color:#94a3b8; font-size:11px; padding:4px 8px; border-radius:6px; font-family:var(--mono);">
+                📍 Barrio Sirari
+              </span>
+            </div>
+
+            <div class="neighbor-search-box">
+              <span>🔍</span>
+              <span>Buscar leche, pan, sodas, galletas...</span>
+            </div>
+
+            <div class="neighbor-categories">
+              <div class="neighbor-cat-pill active">🔥 Todos</div>
+              <div class="neighbor-cat-pill">🥛 Lácteos</div>
+              <div class="neighbor-cat-pill">🥤 Bebidas</div>
+              <div class="neighbor-cat-pill">🍞 Panadería</div>
+              <div class="neighbor-cat-pill">🧼 Limpieza</div>
+            </div>
+
+            <div class="neighbor-items-mini">
+              <!-- Item 1 -->
+              <div class="neighbor-item-row">
+                <div class="neighbor-item-info">
+                  <div class="neighbor-item-thumb">🥤</div>
+                  <div>
+                    <strong style="color:#fff; font-size:12px; display:block;">Coca-Cola 2L Original</strong>
+                    <span style="color:#34d399; font-size:11px; font-weight:700;">Bs. 13.00</span>
+                  </div>
+                </div>
+                <span style="background:#064e3b; color:#34d399; font-size:10px; font-weight:800; padding:4px 10px; border-radius:6px;">
+                  + Agregar
+                </span>
+              </div>
+
+              <!-- Item 2 -->
+              <div class="neighbor-item-row" style="border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.06);">
+                <div class="neighbor-item-info">
+                  <div class="neighbor-item-thumb">🥛</div>
+                  <div>
+                    <strong style="color:#fff; font-size:12px; display:block;">Leche Pil Natural 1L</strong>
+                    <span style="color:#34d399; font-size:11px; font-weight:700;">Bs. 8.50 c/u</span>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; background:#1e293b; padding:2px 6px; border-radius:6px; font-size:11px; color:#fff; font-weight:800;">
+                  <span>-</span>
+                  <span style="color:#34d399;">2</span>
+                  <span>+</span>
+                </div>
+              </div>
+
+              <!-- Item 3 -->
+              <div class="neighbor-item-row" style="border-color:rgba(16,185,129,0.4); background:rgba(16,185,129,0.06);">
+                <div class="neighbor-item-info">
+                  <div class="neighbor-item-thumb">🍞</div>
+                  <div>
+                    <strong style="color:#fff; font-size:12px; display:block;">Pan Surtido Casero</strong>
+                    <span style="color:#34d399; font-size:11px; font-weight:700;">Bs. 0.50 c/u</span>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; background:#1e293b; padding:2px 6px; border-radius:6px; font-size:11px; color:#fff; font-weight:800;">
+                  <span>-</span>
+                  <span style="color:#34d399;">6</span>
+                  <span>+</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="neighbor-cart-sticky">
+              <div>
+                <span style="font-size:10px; text-transform:uppercase; opacity:0.8; display:block;">CARRITO · 8 ARTÍCULOS</span>
+                <strong style="font-size:14px;">Bs. 20.00</strong>
+              </div>
+              <span style="background:#064e3b; color:#d1fae5; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:800;">
+                Pedir por WhatsApp →
+              </span>
+            </div>
+
+            <span style="display:block; text-align:center; font-size:10px; color:#64748b; margin-top:8px; font-family:var(--mono);">
+              El vecino no instala nada · Funciona en cualquier celular
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 6: CONFIANZA ==================== -->
+    <div class="slide theme-light" id="slide-6">
+      <div class="sub-tag" style="color:#4338ca;">CONFIANZA</div>
+      <h2 class="slide-title" style="margin-bottom:10px;">Sin contrato de permanencia. Sin letra chica.</h2>
+      <p class="slide-desc" style="max-width:850px; margin-bottom:20px;">
+        No te pedimos que confíes a ciegas: te lo dejamos funcionando en esta misma reunión.
+      </p>
+
+      <div class="confidence-grid">
+        <!-- 1 -->
+        <div class="conf-card">
+          <div class="conf-num">1</div>
+          <div class="conf-body">
+            <h4>Lo pruebas en vivo, aquí mismo</h4>
+            <p>Conectamos tu tienda en la reunión y le escribes desde tu propio celular. Ves cómo responde antes de decidir.</p>
+          </div>
+        </div>
+
+        <!-- 2 -->
+        <div class="conf-card">
+          <div class="conf-num">2</div>
+          <div class="conf-body">
+            <h4>Listo en 5 minutos</h4>
+            <p>Escaneas un QR, subimos tu catálogo y ya estás vendiendo. No cambias de número ni instalas nada.</p>
+          </div>
+        </div>
+
+        <!-- 3 -->
+        <div class="conf-card">
+          <div class="conf-num">3</div>
+          <div class="conf-body">
+            <h4>Cancelas cuando quieras</h4>
+            <p>Sin contrato de permanencia, sin multa y sin llamadas de retención. Avisas y listo.</p>
+          </div>
+        </div>
+
+        <!-- 4 -->
+        <div class="conf-card">
+          <div class="conf-num">4</div>
+          <div class="conf-body">
+            <h4>Tus datos son tuyos</h4>
+            <p>Clientes, catálogo y ventas exportables a Excel y PDF en cualquier momento. Si te vas, te llevas todo.</p>
+          </div>
+        </div>
+
+        <!-- 5 -->
+        <div class="conf-card">
+          <div class="conf-num">5</div>
+          <div class="conf-body">
+            <h4>Te acompañamos al arrancar</h4>
+            <p>Te ayudamos a cargar el catálogo y poner tus precios. No te dejamos solo con el panel.</p>
+          </div>
+        </div>
+
+        <!-- 6 -->
+        <div class="conf-card">
+          <div class="conf-num">6</div>
+          <div class="conf-body">
+            <h4>Soporte en español, hora Bolivia</h4>
+            <p>Hablas con gente que entiende tu mercado, tus bancos (QR Simple, BCP, BNB, Banco Unión) y tus feriados.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 7: LA COMPARACIÓN HONESTA ==================== -->
+    <div class="slide theme-light" id="slide-7">
       <div class="sub-tag">LA COMPARACIÓN HONESTA</div>
       <h2 class="slide-title">Minimarket Tradicional vs. Minimarket con MarketSaaS</h2>
       <p class="slide-desc">
@@ -800,31 +1210,31 @@
       </table>
     </div>
 
-    <!-- ==================== SLIDE 6: LA OFERTA IRRESISTIBLE ==================== -->
-    <div class="slide theme-dark" id="slide-6">
+    <!-- ==================== SLIDE 8: LA OFERTA IRRESISTIBLE ==================== -->
+    <div class="slide theme-dark" id="slide-8">
       <div class="sub-tag" style="color:var(--emerald);">LA OFERTA IRRESISTIBLE</div>
       <div class="grid-2">
         <div>
-          <h2 class="slide-title">Una sola venta de Bs. 3 al día ya paga todo tu sistema.</h2>
+          <h2 class="slide-title">Una sola venta de Bs. 2.50 al día ya paga todo tu sistema.</h2>
           <p class="slide-desc">
-            Haz la prueba matemática: Vendes <strong>un paquete de galletas o una gaseosa chica de Bs. 3 al día</strong> durante el mes y ya recuperaste los Bs. 90 de la suscripción.
+            Haz la prueba matemática: Vendes <strong>un solo pan o un chicle de Bs. 2.50 al día</strong> durante el mes y ya recuperaste los Bs. 75 de la suscripción completa.
           </p>
 
           <div style="background:rgba(16,185,129,0.1); border:1px solid #059669; padding:24px; border-radius:20px; margin-bottom:24px;">
             <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px;">
-              <span style="font-size:48px; font-weight:900; color:#fff; font-family:var(--mono);">Bs. 90</span>
+              <span style="font-size:48px; font-weight:900; color:#fff; font-family:var(--mono);">Bs. 75</span>
               <span style="font-size:16px; color:#a7f3d0; font-weight:700;">/ mes completo</span>
             </div>
             <p style="font-size:13px; color:#d1fae5; line-height:1.5;">
-              Menos de lo que te cuesta un almuerzo corriente. Con todo incluido: Catálogo Web Ilimitado, Punto de Venta (POS), Arqueo de Caja, Gestión de Inventarios y Soporte Continuo.
+              Menos de lo que te cuesta un refresco con empanada. Con todo incluido: Catálogo Web Ilimitado para Vecinos, Punto de Venta (POS), Arqueo Diario de Caja, Control de Fiados, Alertas de Stock y Soporte Continuo.
             </p>
           </div>
 
           <div style="display:flex; gap:16px; align-items:center;">
             <div style="background:#047857; color:#fff; font-weight:800; padding:12px 24px; border-radius:14px; font-size:14px;">
-              🎁 14 DÍAS DE PRUEBA GRATIS
+              🎁 1 MES DE PRUEBA GRATIS (30 DÍAS COMPLETOS)
             </div>
-            <span style="font-size:12px; color:#94a3b8;">Sin tarjeta de crédito · Activación en 5 minutos</span>
+            <span style="font-size:12px; color:#94a3b8;">Sin tarjeta de crédito · Sin contrato de permanencia · Activación en 5 minutos</span>
           </div>
         </div>
 
@@ -839,7 +1249,7 @@
               Activar Mi Minimarket Ahora
             </div>
             <span style="display:block; font-size:11px; color:#64748b; margin-top:12px; font-family:var(--mono);">
-              soporte directo en Santa Cruz, La Paz y Cochabamba
+              1 Mes Gratis · Soporte en Santa Cruz, La Paz y Cochabamba
             </span>
           </div>
         </div>
@@ -850,7 +1260,7 @@
 
   <script>
     let currentSlide = 1;
-    const totalSlides = 6;
+    const totalSlides = 8;
 
     function showSlide(n) {
       if (n < 1) n = 1;
