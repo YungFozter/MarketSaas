@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -145,14 +145,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const isOpen = storeConfig?.isOpen !== false;
 
   // Cálculos de KPIs en tiempo real
-  const validOrders = orders.filter(o => o.status !== 'cancelled');
+  const validOrders = (orders || []).filter(o => o && o.status !== 'cancelled');
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
   // Desglose por método de pago para Ventas y Cierre de Caja
-  const cashOrders = validOrders.filter(o => o.paymentMethod === 'cash');
-  const qrOrders = validOrders.filter(o => o.paymentMethod === 'qr');
-  const cardOrders = validOrders.filter(o => o.paymentMethod === 'card');
+  const cashOrders = validOrders.filter(o => o?.paymentMethod === 'cash');
+  const qrOrders = validOrders.filter(o => o?.paymentMethod === 'qr');
+  const cardOrders = validOrders.filter(o => o?.paymentMethod === 'card');
 
   const totalCashSales = cashOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const totalQrSales = qrOrders.reduce((acc, o) => acc + (o.total || 0), 0);
@@ -160,7 +160,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalSalesCount = cashOrders.length + qrOrders.length + cardOrders.length;
   const totalDaySales = totalCashSales + totalQrSales + totalCardSales;
   const totalDeliveryCollected = validOrders
-    .filter(o => o.deliveryType === 'delivery')
+    .filter(o => o?.deliveryType === 'delivery')
     .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
 
   // Helper para clasificar si un pedido corresponde a Mostrador (presencial POS o retiro en tienda) vs Domicilio
@@ -203,7 +203,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   };
 
   // Filtrado de pedidos según condominio seleccionado en el Kanban
-  const condoFilteredOrders = orders.filter(o => {
+  const condoFilteredOrders = (orders || []).filter(o => {
+    if (!o) return false;
     if (selectedCondoFilter === 'all') return true;
     return o.customer?.condominium === selectedCondoFilter;
   });
@@ -214,13 +215,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const onTheWayOrders = condoFilteredOrders.filter(o => o.status === 'on_the_way');
   const deliveredOrders = condoFilteredOrders.filter(o => o.status === 'delivered');
 
-  const lowStockProducts = products.filter(p => {
-    if (p.stock === 'Sin definir' || p.stock == null || p.minStock === 'Sin definir' || p.minStock == null) return false;
+  const lowStockProducts = (products || []).filter(p => {
+    if (!p || p.stock === 'Sin definir' || p.stock == null || p.minStock === 'Sin definir' || p.minStock == null) return false;
     const numStock = Number(p.stock);
     const numMin = Number(p.minStock);
     return !isNaN(numStock) && !isNaN(numMin) && numStock <= numMin;
   });
-  const pendingRequests = productRequests.filter(r => r.status === 'pending');
+  const pendingRequests = (productRequests || []).filter(r => r && r.status === 'pending');
 
   // Enlace público de la tienda
   const publicStoreUrl = `${window.location.origin}${window.location.pathname}?store=${tenantSlug}`;
@@ -397,7 +398,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   }, []);
 
   const suppliersVisitingToday = useMemo(() => {
-    return suppliers.filter(s => Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
+    return (suppliers || []).filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
   }, [suppliers, currentDayBolivia]);
 
   const navItems = [

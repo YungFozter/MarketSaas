@@ -15,6 +15,7 @@ import { LocationModal } from './components/customer/LocationModal';
 import { CustomerFooter } from './components/customer/CustomerFooter';
 import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { AuthModal } from './components/auth/AuthModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './App.css';
 
 const AppContent = () => {
@@ -248,8 +249,10 @@ const AppContent = () => {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <AppContent />
-    </StoreProvider>
+    <ErrorBoundary>
+      <StoreProvider>
+        <AppContent />
+      </StoreProvider>
+    </ErrorBoundary>
   );
 }

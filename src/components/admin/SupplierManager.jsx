@@ -80,7 +80,8 @@ export const SupplierManager = () => {
 
   // Productos de la tienda con Stock Bajo o Agotados
   const lowStockProducts = useMemo(() => {
-    return products.filter(p => {
+    return (products || []).filter(p => {
+      if (!p) return false;
       const stock = parseInt(p.stock, 10);
       const minStock = parseInt(p.minStock || 5, 10);
       return !isNaN(stock) && stock <= minStock;
@@ -89,15 +90,17 @@ export const SupplierManager = () => {
 
   // Filtrado de proveedores
   const filteredSuppliers = useMemo(() => {
-    return suppliers.filter(s => {
+    const list = Array.isArray(suppliers) ? suppliers : [];
+    return list.filter(s => {
+      if (!s) return false;
       // Búsqueda por texto (nombre proveedor, preventista, notas o nombre de producto pedido)
-      const q = searchTerm.toLowerCase().trim();
+      const q = (searchTerm || '').toLowerCase().trim();
       const matchesSearch = !q || (
-        s.name.toLowerCase().includes(q) ||
+        (s.name && s.name.toLowerCase().includes(q)) ||
         (s.contactName && s.contactName.toLowerCase().includes(q)) ||
         (s.phone && s.phone.includes(q)) ||
         (s.notes && s.notes.toLowerCase().includes(q)) ||
-        (Array.isArray(s.orderItems) && s.orderItems.some(i => i.productName.toLowerCase().includes(q)))
+        (Array.isArray(s.orderItems) && s.orderItems.some(i => i?.productName && i.productName.toLowerCase().includes(q)))
       );
 
       // Filtro por categoría
@@ -116,14 +119,15 @@ export const SupplierManager = () => {
   }, [suppliers, searchTerm, selectedCategory, selectedDayFilter, currentDayBolivia]);
 
   // Estadísticas rápidas
-  const totalSuppliers = suppliers.length;
+  const totalSuppliers = (suppliers || []).length;
   const suppliersVisitingToday = useMemo(() => {
-    return suppliers.filter(s => Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
+    return (suppliers || []).filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
   }, [suppliers, currentDayBolivia]);
 
   const totalPendingItems = useMemo(() => {
-    return suppliers.reduce((acc, s) => {
-      const pending = (s.orderItems || []).filter(i => i.status !== 'received').length;
+    return (suppliers || []).reduce((acc, s) => {
+      if (!s) return acc;
+      const pending = (s.orderItems || []).filter(i => i && i.status !== 'received').length;
       return acc + pending;
     }, 0);
   }, [suppliers]);
