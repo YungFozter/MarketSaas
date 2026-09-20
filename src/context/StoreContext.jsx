@@ -1055,6 +1055,9 @@ export const StoreProvider = ({ children }) => {
         const sessionUser = (await supabase.auth.getUser())?.data?.user || currentUser;
         const ownerId = sessionUser?.id || merchantStore?.owner_id || safeConfig.owner_id || null;
 
+        // Construir payload con las columnas existentes en el esquema de public.store_config.
+        // Todos los campos específicos (bannerUrl, logoUrl, zone, reference, latitude, longitude,
+        // googleMapsCoordinates, etc.) se preservan de forma segura e íntegra dentro de config (JSONB).
         const payload = {
           id: effectiveTenant,
           tenant_id: effectiveTenant,
@@ -1069,20 +1072,36 @@ export const StoreProvider = ({ children }) => {
           config: safeConfig,
           coupons: safeConfig.coupons || [],
           owner_id: ownerId,
-          logo_url: safeConfig.logoUrl || null,
-          banner_url: safeConfig.bannerUrl || null,
           qr_image_url: safeConfig.qrImageUrl || null,
-          zone: safeConfig.zone || safeConfig.condominium || null,
-          reference: safeConfig.reference || null,
-          latitude: validCoords ? validCoords.lat : null,
-          longitude: validCoords ? validCoords.lng : null,
           updated_at: new Date().toISOString()
         };
 
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('store_config')
           .upsert([payload], { onConflict: 'id' })
           .select();
+
+        // Fallback de resiliencia: Si Supabase reporta que alguna columna no existe en el schema cache (código PGRST204 o mensaje similar)
+        if (error && (error.code === 'PGRST204' || error.message?.includes('schema cache') || error.message?.includes('column'))) {
+          console.warn('Aviso de columna no encontrada en store_config, reintentando con payload esencial garantizado:', error.message);
+          const resilientPayload = {
+            id: effectiveTenant,
+            tenant_id: effectiveTenant,
+            name: safeConfig.name || 'Tienda',
+            address: safeConfig.address || null,
+            phone: safeConfig.phone || null,
+            is_open: safeConfig.isOpen !== false,
+            config: safeConfig,
+            owner_id: ownerId,
+            updated_at: new Date().toISOString()
+          };
+          const retryRes = await supabase
+            .from('store_config')
+            .upsert([resilientPayload], { onConflict: 'id' })
+            .select();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
 
         if (error) {
           console.error('Error sincronizando storeConfig en Supabase:', error);
