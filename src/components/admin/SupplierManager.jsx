@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useStore } from '../../context/StoreContext';
+import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
 import { 
   Truck, 
   Phone, 
@@ -88,9 +88,13 @@ export const SupplierManager = () => {
     });
   }, [products]);
 
-  // Filtrado de proveedores
+  // Filtrado de proveedores con depuración de demos
+  const cleanSuppliers = useMemo(() => {
+    return filterOutDemoSuppliers(suppliers || []);
+  }, [suppliers]);
+
   const filteredSuppliers = useMemo(() => {
-    const list = Array.isArray(suppliers) ? suppliers : [];
+    const list = cleanSuppliers;
     return list.filter(s => {
       if (!s) return false;
       // Búsqueda por texto (nombre proveedor, preventista, notas o nombre de producto pedido)
@@ -116,21 +120,21 @@ export const SupplierManager = () => {
 
       return matchesSearch && matchesCategory && matchesDay;
     });
-  }, [suppliers, searchTerm, selectedCategory, selectedDayFilter, currentDayBolivia]);
+  }, [cleanSuppliers, searchTerm, selectedCategory, selectedDayFilter, currentDayBolivia]);
 
   // Estadísticas rápidas
-  const totalSuppliers = (suppliers || []).length;
+  const totalSuppliers = cleanSuppliers.length;
   const suppliersVisitingToday = useMemo(() => {
-    return (suppliers || []).filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
-  }, [suppliers, currentDayBolivia]);
+    return cleanSuppliers.filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
+  }, [cleanSuppliers, currentDayBolivia]);
 
   const totalPendingItems = useMemo(() => {
-    return (suppliers || []).reduce((acc, s) => {
+    return cleanSuppliers.reduce((acc, s) => {
       if (!s) return acc;
       const pending = (s.orderItems || []).filter(i => i && i.status !== 'received').length;
       return acc + pending;
     }, 0);
-  }, [suppliers]);
+  }, [cleanSuppliers]);
 
   // Abrir modal de creación
   const handleOpenCreateModal = () => {

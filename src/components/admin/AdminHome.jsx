@@ -59,7 +59,7 @@ import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { ShareStoreModal } from './ShareStoreModal';
 import { OrderNotificationBanner } from './OrderNotificationBanner/OrderNotificationBanner';
 import { playOrderNotificationSound, sendOrderNotification } from '../../services/orderNotificationService';
-import { useStore } from '../../context/StoreContext';
+import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
 import './AdminHome.css';
 
@@ -398,7 +398,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   }, []);
 
   const suppliersVisitingToday = useMemo(() => {
-    return (suppliers || []).filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
+    return filterOutDemoSuppliers(suppliers || []).filter(s => s && Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
   }, [suppliers, currentDayBolivia]);
 
   const navItems = [

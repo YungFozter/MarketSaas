@@ -461,13 +461,64 @@ export const filterOutTestRequests = (requests) => {
   return requests.filter(r => r && r.id && !String(r.id).startsWith('TEST-') && !String(r.id).startsWith('VERIFY-'));
 };
 
-// Identificadores de proveedores demo a ignorar/purgar
+// Identificadores y nombres de proveedores demo a ignorar/purgar definitivamente
 export const DEMO_SUPPLIER_IDS = ['sup-coca-cola', 'sup-pil-andina', 'sup-cbn-pacena', 'sup-sofia'];
+
+export const isDemoSupplier = (s) => {
+  if (!s || typeof s !== 'object') return false;
+  const id = String(s.id || '').toLowerCase().trim();
+  const name = String(s.name || '').toLowerCase().trim();
+  if (DEMO_SUPPLIER_IDS.includes(s.id) || DEMO_SUPPLIER_IDS.includes(id)) return true;
+  if (id.startsWith('sup-coca-cola') || id.startsWith('sup-pil') || id.startsWith('sup-cbn') || id.startsWith('sup-sofia')) return true;
+  if (
+    name.includes('embol') || 
+    name.includes('coca-cola') || 
+    name.includes('pil andina') || 
+    name.includes('cervecería boliviana') || 
+    name.includes('cerveceria boliviana') || 
+    name.includes('paceña') || 
+    name.includes('pacena') || 
+    name.includes('sofía alimentos') || 
+    name.includes('sofia alimentos')
+  ) return true;
+  return false;
+};
 
 export const filterOutDemoSuppliers = (list) => {
   if (!Array.isArray(list)) return [];
-  return list.filter(s => s && s.id && !DEMO_SUPPLIER_IDS.includes(s.id));
+  return list.filter(s => s && !isDemoSupplier(s));
 };
+
+// Purga inmediata y forzosa de proveedores demo en todo localStorage al iniciar el script
+if (typeof window !== 'undefined') {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.includes('supplier')) {
+        const item = localStorage.getItem(key);
+        if (item && (
+          item.includes('sup-coca-cola') || 
+          item.includes('Embol') || 
+          item.includes('sup-pil') || 
+          item.includes('PIL Andina') || 
+          item.includes('cbn') || 
+          item.includes('sofia') ||
+          item.includes('Sofía')
+        )) {
+          try {
+            const parsed = JSON.parse(item);
+            if (Array.isArray(parsed)) {
+              const cleaned = filterOutDemoSuppliers(parsed);
+              localStorage.setItem(key, JSON.stringify(cleaned));
+            }
+          } catch {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    }
+  } catch (e) {}
+}
 
 export const normalizeSupplier = (s) => {
   if (!s || typeof s !== 'object') return null;
