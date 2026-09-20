@@ -53,6 +53,7 @@ import { SalesHistory } from './SalesHistory';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { SubscriptionManager } from './SubscriptionManager';
+import { SupplierManager } from './SupplierManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { ShareStoreModal } from './ShareStoreModal';
@@ -73,6 +74,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     setProducts,
     saveProduct,
     productRequests, 
+    suppliers = [],
     storeConfig, 
     setStoreConfig,
     tenantSlug, 
@@ -93,12 +95,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
-      if (urlTab && ['kanban', 'pos', 'sales', 'inventory', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
+      if (urlTab && ['kanban', 'pos', 'sales', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
         return urlTab;
       }
       try {
         const saved = localStorage.getItem(`marketsaas_${tenantSlug}_admin_tab`);
-        if (saved && ['kanban', 'pos', 'sales', 'inventory', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
+        if (saved && ['kanban', 'pos', 'sales', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
           return saved;
         }
       } catch (e) {
@@ -381,11 +383,29 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     });
   };
 
+  const currentDayBolivia = useMemo(() => {
+    try {
+      const now = new Date();
+      const dayName = new Intl.DateTimeFormat('es-BO', { 
+        timeZone: 'America/La_Paz', 
+        weekday: 'long' 
+      }).format(now);
+      return dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    } catch {
+      return 'Lunes';
+    }
+  }, []);
+
+  const suppliersVisitingToday = useMemo(() => {
+    return suppliers.filter(s => Array.isArray(s.visitDays) && s.visitDays.includes(currentDayBolivia));
+  }, [suppliers, currentDayBolivia]);
+
   const navItems = [
     { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
     { id: 'pos', label: 'Punto de Venta', icon: Store, badge: !isSubscriptionActive ? '🔒' : null },
     { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
+    { id: 'suppliers', label: 'Proveedores', icon: Truck, badge: suppliersVisitingToday.length > 0 ? 'Hoy' : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
     { id: 'subscription', label: 'Mi Suscripción', icon: KeyRound, badge: !isSubscriptionActive ? 'Vencido' : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
@@ -1580,7 +1600,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
-          {/* TAB 5: BUZÓN DE VECINOS */}
+          {/* TAB 5: PROVEEDORES & REABASTECIMIENTO */}
+          {activeTab === 'suppliers' && (
+            <div className="animate-fadeIn">
+              <SupplierManager />
+            </div>
+          )}
+
+          {/* TAB 6: BUZÓN DE VECINOS */}
           {activeTab === 'requests' && (
             <div className="animate-fadeIn">
               <ProductRequestsAdmin />

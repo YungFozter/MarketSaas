@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
+import { initialSuppliers } from '../data/supplierInitialData';
 import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
@@ -1098,7 +1099,19 @@ export const StoreProvider = ({ children }) => {
     return tenantSlug === 'default' ? initialProductRequests.map(normalizeProductRequest) : [];
   });
 
-  // 9. Cupones de descuento aplicados
+  // 9. Proveedores y Preventistas de la tienda (Directorio de compras y pedidos de abastecimiento)
+  const [suppliers, setSuppliers] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return initialSuppliers;
+  });
+
+  // 10. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   // 10. Pedido activo para seguimiento y modal de tracking
@@ -1862,6 +1875,12 @@ export const StoreProvider = ({ children }) => {
       localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(productRequests));
     }
   }, [productRequests, tenantSlug]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(suppliers));
+    } catch (e) {}
+  }, [suppliers, tenantSlug]);
 
   // Exportar ventas a CSV para la contabilidad del dueño
   const exportSalesCSV = () => {
@@ -3160,7 +3179,152 @@ export const StoreProvider = ({ children }) => {
     showToast('Petición descartada.', 'info');
   };
 
+  // ==============================================================================
+  // GESTIÓN DE PROVEEDORES Y PEDIDOS DE ABASTECIMIENTO
+  // ==============================================================================
 
+  const addSupplier = async (supplierData) => {
+    const newSupplier = {
+      id: `sup-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: supplierData.name.trim(),
+      contactName: supplierData.contactName?.trim() || '',
+      phone: supplierData.phone?.trim() || '',
+      category: supplierData.category || 'Otros',
+      visitDays: Array.isArray(supplierData.visitDays) ? supplierData.visitDays : [],
+      notes: supplierData.notes?.trim() || '',
+      orderItems: Array.isArray(supplierData.orderItems) ? supplierData.orderItems : [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setSuppliers(prev => [newSupplier, ...prev]);
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('suppliers').insert([{
+          ...newSupplier,
+          tenant_id: tenantSlug
+        }]);
+      }
+    } catch (e) {
+      // Fallback seguro a localStorage si la tabla no está creada en Supabase
+    }
+
+    showToast(`Proveedor "${newSupplier.name}" registrado con éxito.`, 'success');
+    return newSupplier;
+  };
+
+  const updateSupplier = async (supplierId, updatedFields) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        return {
+          ...s,
+          ...updatedFields,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('suppliers')
+          .update({ ...updatedFields, updatedAt: new Date().toISOString() })
+          .eq('id', supplierId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
+
+    showToast('Proveedor actualizado.', 'info');
+  };
+
+  const deleteSupplier = async (supplierId) => {
+    const supplierToDelete = suppliers.find(s => s.id === supplierId);
+    setSuppliers(prev => prev.filter(s => s.id !== supplierId));
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('suppliers')
+          .delete()
+          .eq('id', supplierId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
+
+    showToast(`Proveedor "${supplierToDelete?.name || ''}" eliminado.`, 'info');
+  };
+
+  const addSupplierOrderItem = (supplierId, item) => {
+    const newItem = {
+      id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      productName: item.productName.trim(),
+      quantity: item.quantity?.trim() || '1 unidad',
+      status: 'pending',
+      notes: item.notes?.trim() || ''
+    };
+
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        const orderItems = Array.isArray(s.orderItems) ? s.orderItems : [];
+        return {
+          ...s,
+          orderItems: [...orderItems, newItem],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+
+    showToast(`"${newItem.productName}" agregado a la lista de pedido.`, 'success');
+  };
+
+  const removeSupplierOrderItem = (supplierId, itemId) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        return {
+          ...s,
+          orderItems: (s.orderItems || []).filter(item => item.id !== itemId),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+  };
+
+  const toggleSupplierOrderItemStatus = (supplierId, itemId) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        return {
+          ...s,
+          orderItems: (s.orderItems || []).map(item => {
+            if (item.id === itemId) {
+              const nextStatus = item.status === 'received' ? 'pending' : 'received';
+              return { ...item, status: nextStatus };
+            }
+            return item;
+          }),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+  };
+
+  const clearSupplierOrderItems = (supplierId, onlyReceived = false) => {
+    setSuppliers(prev => prev.map(s => {
+      if (s.id === supplierId) {
+        return {
+          ...s,
+          orderItems: onlyReceived 
+            ? (s.orderItems || []).filter(item => item.status !== 'received')
+            : [],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    }));
+    showToast(onlyReceived ? 'Ítems recibidos limpiados.' : 'Lista de compras vaciada.', 'info');
+  };
 
   const removeCoupon = () => {
     setAppliedCoupon(null);
@@ -3509,6 +3673,15 @@ export const StoreProvider = ({ children }) => {
         voteProductRequest,
         updateRequestStatus,
         deleteProductRequest,
+        suppliers,
+        setSuppliers,
+        addSupplier,
+        updateSupplier,
+        deleteSupplier,
+        addSupplierOrderItem,
+        removeSupplierOrderItem,
+        toggleSupplierOrderItemStatus,
+        clearSupplierOrderItems,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         isTrackingModalOpen,

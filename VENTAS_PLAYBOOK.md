@@ -104,6 +104,7 @@ Cuando le muestras la **Pantalla Vecino**:
 > 3. *Arqueo de caja automático: al cerrar la noche aprieta un botón y sabe exactamente cuánto entró en efectivo y cuánto en QR.*
 > 4. *Control de fiados digital para que nunca más un vecino le diga 'yo ya le pagué' y usted pierda plata.*
 > 5. *Alerta de Stock Bajo: el sistema le avisa antes de que se quede sin Coca-Cola o aceite.*
+> 6. *Agenda de Proveedores y Preventistas: anota qué mercadería le falta a cada distribuidor (Pil, Coca-Cola, Paceña) y le manda el pedido en 1 clic por WhatsApp antes de que pase el camión.*
 >
 > *¿Usted prefiere seguir perdiendo más de Bs. 2.000 al mes en ventas fugadas y fiados perdidos, o invertir Bs. 2.50 al día y tener su tienda moderna como un supermercado?"*
 
