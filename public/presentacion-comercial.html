@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketSaaS · Presentación Comercial 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-dark: #131926;
+      --card-border: #1f293d;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000;
+      font-family: var(--font);
+      color: var(--text-main);
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* Controles de Presentación Flotantes */
+    .deck-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 1000;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .deck-nav button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      transition: all 0.2s;
+    }
+
+    .deck-nav button:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .deck-nav .btn-primary {
+      background: var(--emerald);
+      color: #064e3b;
+    }
+
+    .deck-nav .btn-primary:hover {
+      background: #34d399;
+    }
+
+    .slide-counter {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Contenedor Principal de Slides */
+    .deck-container {
+      width: 100vw;
+      max-width: 1366px;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background: var(--bg-dark);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 20px auto;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      transform: scale(0.98);
+      display: flex;
+      flex-direction: column;
+      padding: 50px 70px;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    /* Variantes de Fondo */
+    .slide.theme-dark {
+      background: #0b0f19;
+      color: #f8fafc;
+    }
+
+    .slide.theme-light {
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    .slide.theme-light .sub-tag {
+      color: #4338ca;
+    }
+
+    .slide.theme-light .slide-title {
+      color: #0f172a;
+    }
+
+    .slide.theme-light .slide-desc {
+      color: #475569;
+    }
+
+    /* Header de Slide */
+    .sub-tag {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #6366f1;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-title {
+      font-size: 46px;
+      font-weight: 900;
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      max-width: 90%;
+    }
+
+    .slide-desc {
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+
+    /* Layout 2 Columnas */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 40px;
+      height: 100%;
+      align-items: center;
+    }
+
+    /* Badges & Pills */
+    .badges-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .badge-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px 18px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-pill.highlight {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    /* Chat Mockup Estilo WhatsApp / Pedido */
+    .phone-mockup {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      font-size: 13px;
+    }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #1f2937;
+      margin-bottom: 16px;
+    }
+
+    .avatar-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #059669;
+      color: white;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+    }
+
+    .chat-bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      line-height: 1.45;
+      max-width: 85%;
+      position: relative;
+    }
+
+    .bubble-in {
+      background: #1f2937;
+      color: #e5e7eb;
+      border-top-left-radius: 4px;
+      align-self: flex-start;
+    }
+
+    .bubble-out {
+      background: #064e3b;
+      color: #d1fae5;
+      border-top-right-radius: 4px;
+      margin-left: auto;
+    }
+
+    .bubble-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      opacity: 0.6;
+      margin-top: 4px;
+      display: block;
+      text-align: right;
+    }
+
+    .qr-card-box {
+      background: #032e24;
+      border: 1px solid #065f46;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Estadísticas Grandes (Slide 2) */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 30px;
+    }
+
+    .stat-box {
+      border-top: 2px solid rgba(255, 255, 255, 0.1);
+      padding-top: 16px;
+    }
+
+    .stat-number {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--rose);
+      line-height: 1;
+      margin-bottom: 10px;
+      font-family: var(--mono);
+    }
+
+    .stat-number.green {
+      color: var(--emerald);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    /* Tablas de Pérdidas y Comparación (Slides 3 & 5) */
+    .ledger-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .ledger-table th {
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      padding: 12px 14px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .ledger-table td {
+      padding: 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1e293b;
+      font-weight: 500;
+    }
+
+    .ledger-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .callout-pill-red {
+      color: var(--rose);
+      font-weight: 800;
+    }
+
+    .kpi-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .kpi-card {
+      padding: 24px;
+      border-radius: 20px;
+    }
+
+    .kpi-card.loss {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+    }
+
+    .kpi-card.gain {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+
+    .kpi-val {
+      font-size: 40px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .kpi-card.loss .kpi-val { color: #be123c; }
+    .kpi-card.gain .kpi-val { color: #15803d; }
+
+    .kpi-sub {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* Timeline Horizontal (Slide 4) */
+    .timeline-steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      margin: 30px 0;
+    }
+
+    .time-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+    }
+
+    .time-badge {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 800;
+      color: #2563eb;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .time-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .time-desc {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    /* Tabla Comparativa */
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+
+    .comp-table th {
+      padding: 12px 14px;
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .comp-table th.col-bad { color: #e11d48; background: #fff1f2; }
+    .comp-table th.col-good { color: #059669; background: #ecfdf5; }
+
+    .comp-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+
+    .comp-table tr td:nth-child(2) {
+      color: #991b1b;
+      background: #fff5f5;
+      font-weight: 600;
+    }
+
+    .comp-table tr td:nth-child(3) {
+      color: #065f46;
+      background: #f0fdf4;
+      font-weight: 700;
+    }
+
+    /* Print styling para exportar a PDF */
+    @media print {
+      body {
+        background: #fff !important;
+      }
+      .deck-nav {
+        display: none !important;
+      }
+      .deck-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+      }
+      .slide {
+        position: relative !important;
+        page-break-after: always !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        height: 100vh !important;
+        box-sizing: border-box !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Navegación del Pitch Deck -->
+  <div class="deck-nav">
+    <button onclick="prevSlide()">← Anterior</button>
+    <span class="slide-counter" id="slideCounter">1 / 6</span>
+    <button onclick="nextSlide()">Siguiente →</button>
+    <button class="btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- ==================== SLIDE 1: PORTADA DE ALTO IMPACTO ==================== -->
+    <div class="slide theme-dark active" id="slide-1">
+      <div class="sub-tag">PRESENTACIÓN COMERCIAL · 2026</div>
+      <div class="grid-2">
+        <div>
+          <h1 class="slide-title">Tu minimarket pierde ventas todos los días mientras duermes o atiendes en caja.</h1>
+          <p class="slide-desc">
+            <strong>MarketSaaS</strong> digitaliza tu tienda de barrio en 5 minutos: catálogo web por WhatsApp para tus vecinos, cobro por QR al instante y control de caja y stock sin tocar una calculadora.
+          </p>
+
+          <div class="badges-row">
+            <div class="badge-pill highlight">⚡ Catálogo en 3 segundos</div>
+            <div class="badge-pill">📱 Pedidos directos a tu WhatsApp</div>
+            <div class="badge-pill highlight">💰 Desde Bs. 3 al día</div>
+          </div>
+
+          <p style="font-size: 13px; color: #64748b; font-family: var(--mono);">
+            Hoy: Catálogo Web + POS + Arqueo Diario + Control de Fiados.
+          </p>
+        </div>
+
+        <!-- Mockup Visual -->
+        <div>
+          <div class="phone-mockup">
+            <div class="chat-header">
+              <div class="avatar-circle">MS</div>
+              <div>
+                <strong style="color:#fff; font-size:14px; display:block;">Vecino Condominio</strong>
+                <span style="color:#10b981; font-size:11px;">● En línea hace 2 min</span>
+              </div>
+            </div>
+
+            <div class="chat-bubble bubble-in">
+              Buenas noches don Pepe, ¿tiene leche Pil roja y pan surtido todavía?
+              <span class="bubble-time">23:47</span>
+            </div>
+
+            <div class="chat-bubble bubble-out">
+              ¡Buenas noches! Sí vecina, nos queda leche fresca y pan caliente recién horneado. Aquí tiene el catálogo en vivo con fotos y precios:
+              <br><strong style="text-decoration:underline;">marketsaas.com/donpepe</strong>
+              <span class="bubble-time">23:47 ✓✓</span>
+            </div>
+
+            <div class="chat-bubble bubble-in">
+              Perfecto, le agregué 2 leches y 5 panes en el carrito. Le pago por QR.
+              <span class="bubble-time">23:49</span>
+            </div>
+
+            <div class="qr-card-box">
+              <div>
+                <span style="font-size:10px; text-transform:uppercase; color:#34d399; font-weight:800; display:block;">ORDEN #148 · CONFIRMADA</span>
+                <strong style="font-size:20px; color:#fff;">Bs. 23,50</strong>
+              </div>
+              <span style="background:#059669; color:#fff; padding:6px 12px; border-radius:8px; font-weight:800; font-size:11px;">
+                ✓ Pagado por QR
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 2: EL GRAN PROBLEMA ==================== -->
+    <div class="slide theme-dark" id="slide-2">
+      <div class="sub-tag" style="color:var(--rose);">EL PROBLEMA DEL COMERCIO DE BARRIO</div>
+      <div class="grid-2">
+        <div>
+          <h2 class="slide-title">La venta no se pierde por precio.<br>Se pierde por silencio.</h2>
+          <p class="slide-desc">
+            El vecino de condominio o de barrio no espera. Si no sabe si tienes el producto o tardas en contestarle porque estás atendiendo en el mostrador, <strong>le compra al que responde primero o va al supermercado</strong>.
+          </p>
+
+          <div class="stats-row">
+            <div class="stat-box">
+              <div class="stat-number">82%</div>
+              <div class="stat-label">de los clientes le compran a la tienda que muestra precios y stock al instante</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number">1 de 3</div>
+              <div class="stat-label">pedidos por WhatsApp llegan en horas punta o cuando estás cobrando en caja</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-number">3 min</div>
+              <div class="stat-label">dura el impulso de compra de un vecino antes de ir a buscar a otra parte</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="phone-mockup" style="border-color:#374151;">
+            <div class="chat-header">
+              <div class="avatar-circle" style="background:#475569;">VB</div>
+              <div>
+                <strong style="color:#fff; font-size:14px; display:block;">Tu WhatsApp hoy (Sin Sistema)</strong>
+                <span style="color:#f43f5e; font-size:11px;">Última conexión: hace 4 horas</span>
+              </div>
+            </div>
+
+            <div class="chat-bubble bubble-in">
+              Hola, ¿tienen carbón de 4kg y cerveza Paceña fría para churrasco?
+              <span class="bubble-time">19:30</span>
+            </div>
+
+            <div class="chat-bubble bubble-in">
+              ¿Hola? ¿Están atendiendo?
+              <span class="bubble-time">19:42</span>
+            </div>
+
+            <div style="margin: 18px 0; border: 1px dashed rgba(244,63,94,0.4); background: rgba(244,63,94,0.08); padding: 12px; border-radius: 12px; text-align: center; color: #fda4af; font-family: var(--mono); font-size: 11px; font-weight: 700;">
+              ⏳ 1 HORA Y 20 MINUTOS DE SILENCIO (Estabas con gente en caja)
+            </div>
+
+            <div class="chat-bubble bubble-out" style="background:#334155; color:#cbd5e1;">
+              ¡Buenas tardes! Sí tenemos, perdón la demora estábamos llenos en tienda.
+              <span class="bubble-time">20:50 ✓✓</span>
+            </div>
+
+            <div class="chat-bubble bubble-in" style="background:#1e293b; color:#94a3b8;">
+              Gracias, ya pedí por delivery de otro lado.
+              <span class="bubble-time">20:51</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 3: LA CUENTA QUE NADIE HACE ==================== -->
+    <div class="slide theme-light" id="slide-3">
+      <div class="sub-tag">LA CUENTA QUE NINGÚN COMERCIANTE SE ATREVE A HACER</div>
+      <h2 class="slide-title">Lo que te cuesta seguir anotando en cuaderno.</h2>
+      <p class="slide-desc" style="max-width:850px;">
+        Un minimarket promedio atiende entre 30 y 60 consultas o ventas diarias. Hagamos la resta matemática real de lo que se te está fugando:
+      </p>
+
+      <table class="ledger-table">
+        <thead>
+          <tr>
+            <th>Concepto de Fuga</th>
+            <th>Frecuencia Mensual</th>
+            <th>Por Qué Ocurre</th>
+            <th style="text-align:right;">Impacto en Tu Bolsillo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Ventas perdidas por responder tarde</strong></td>
+            <td>45 pedidos al mes</td>
+            <td>Estabas cobrando o descargando mercadería</td>
+            <td style="text-align:right;" class="callout-pill-red">- Bs. 1.800 / mes</td>
+          </tr>
+          <tr>
+            <td><strong>Fiados que se olvidan cobrar o discutir</strong></td>
+            <td>8 a 15 cuentas</td>
+            <td>Hojas rotas, cuadernos manchados, "yo ya le pagué"</td>
+            <td style="text-align:right;" class="callout-pill-red">- Bs. 450 / mes</td>
+          </tr>
+          <tr>
+            <td><strong>Productos vencidos por falta de alerta</strong></td>
+            <td>Lácteos, snacks, embutidos</td>
+            <td>No hay conteo de stock mínimo ni fechas</td>
+            <td style="text-align:right;" class="callout-pill-red">- Bs. 320 / mes</td>
+          </tr>
+          <tr>
+            <td><strong>Fugas y diferencias en cierre de caja</strong></td>
+            <td>Diario (monedas, vueltos)</td>
+            <td>Sumar boletas y calcular a mano al cerrar</td>
+            <td style="text-align:right;" class="callout-pill-red">- Bs. 400 / mes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="kpi-cards-grid">
+        <div class="kpi-card loss">
+          <div class="kpi-val">- Bs. 2.970 / mes</div>
+          <div class="kpi-sub"><strong>Bs. 35.640 perdidos al año</strong> en desorden, ventas fugadas a la competencia y fiados fantasma.</div>
+        </div>
+        <div class="kpi-card gain">
+          <div class="kpi-val">33× veces</div>
+          <div class="kpi-sub">más de lo que cuesta el plan mensual completo de MarketSaaS (Bs. 90 al mes).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 4: CÓMO FUNCIONA ==================== -->
+    <div class="slide theme-light" id="slide-4">
+      <div class="sub-tag">SIMPLICIDAD TOTAL · CÓMO FUNCIONA</div>
+      <h2 class="slide-title">De «¿Tiene esto?» a venta cobrada en 2 minutos.</h2>
+      <p class="slide-desc">
+        Sin instalar aplicaciones pesadas ni cambiar de celular. Todo funciona directamente en el navegador web y en el WhatsApp que ya usas.
+      </p>
+
+      <div class="timeline-steps">
+        <div class="time-card">
+          <span class="time-badge">PASO 1</span>
+          <h4 class="time-title">Compartes tu Enlace</h4>
+          <p class="time-desc">Tus vecinos entran desde WhatsApp o código QR pegado en tu mostrador al catálogo de tu minimarket.</p>
+        </div>
+        <div class="time-card">
+          <span class="time-badge">PASO 2</span>
+          <h4 class="time-title">Ven Stock y Fotos HD</h4>
+          <p class="time-desc">Precios transparentes y fotos oficiales. Nunca más mandar 10 audios explicando qué tienes en la estantería.</p>
+        </div>
+        <div class="time-card">
+          <span class="time-badge">PASO 3</span>
+          <h4 class="time-title">Arman su Carrito</h4>
+          <p class="time-desc">El vecino añade los productos con un toque. El pedido se arma con total exactitud de precios y cantidades.</p>
+        </div>
+        <div class="time-card">
+          <span class="time-badge">PASO 4</span>
+          <h4 class="time-title">Cobro por QR</h4>
+          <p class="time-desc">Pagan directamente con QR bancario boliviano o seleccionan pago contra entrega en efectivo al recibir.</p>
+        </div>
+        <div class="time-card" style="background:#ecfdf5; border-color:#a7f3d0;">
+          <span class="time-badge" style="color:#059669;">PASO 5</span>
+          <h4 class="time-title" style="color:#065f46;">Venta Cerrada</h4>
+          <p class="time-desc" style="color:#047857;">Te llega la alerta sonora con el ticket listo. El stock se descuenta automáticamente de tu inventario.</p>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-top:15px;">
+        <div style="padding:18px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0;">
+          <strong style="color:#0f172a; font-size:14px; display:block; margin-bottom:4px;">🛡️ Nunca inventa precios</strong>
+          <span style="font-size:12px; color:#64748b;">El precio que tú configuras en el sistema es exactamente lo que el vecino ve y paga. Cero errores de vuelto.</span>
+        </div>
+        <div style="padding:18px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0;">
+          <strong style="color:#0f172a; font-size:14px; display:block; margin-bottom:4px;">📊 Arqueo de Caja Diario en 1 Clic</strong>
+          <span style="font-size:12px; color:#64748b;">Al terminar el día sabes cuánto entró en efectivo, cuánto por QR y tu ganancia neta en un segundo.</span>
+        </div>
+        <div style="padding:18px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0;">
+          <strong style="color:#0f172a; font-size:14px; display:block; margin-bottom:4px;">🔔 Alerta de Stock Bajo</strong>
+          <span style="font-size:12px; color:#64748b;">El sistema te avisa antes de que te quedes sin Coca-Cola, pan o leche para pedir al proveedor a tiempo.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== SLIDE 5: LA COMPARACIÓN HONESTA ==================== -->
+    <div class="slide theme-light" id="slide-5">
+      <div class="sub-tag">LA COMPARACIÓN HONESTA</div>
+      <h2 class="slide-title">Minimarket Tradicional vs. Minimarket con MarketSaaS</h2>
+      <p class="slide-desc">
+        No se trata de cambiar cómo trabajas; se trata de que dejes de ser esclavo del mostrador y ganes más con menos estrés.
+      </p>
+
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th style="width:30%;">LO QUE IMPORTA EN TU NEGOCIO</th>
+            <th class="col-bad" style="width:35%;">TIENDA CON CUADERNO Y CALCULADORA</th>
+            <th class="col-good" style="width:35%;">TIENDA CON MARKETSAAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Catálogo para vecinos</strong></td>
+            <td>✗ Fotos sueltas y desordenadas por chat</td>
+            <td>✓ Catálogo web interactivo con fotos HD y buscador</td>
+          </tr>
+          <tr>
+            <td><strong>Ventas cuando estás ocupado</strong></td>
+            <td>✗ Se pierden mientras atiendes la fila</td>
+            <td>✓ El vecino pide solo y te llega el ticket armado</td>
+          </tr>
+          <tr>
+            <td><strong>Cierre y Arqueo de Caja</strong></td>
+            <td>✗ 45 minutos contando monedas y papelitos</td>
+            <td>✓ 1 clic: desglose exacto de efectivo y QR</td>
+          </tr>
+          <tr>
+            <td><strong>Control de Fiados</strong></td>
+            <td>✗ Hojas borroneadas, disputas de "yo ya pagué"</td>
+            <td>✓ Registro digital por cliente con saldo exacto</td>
+          </tr>
+          <tr>
+            <td><strong>Control de Inventario</strong></td>
+            <td>✗ Te enteras que no hay cuando el cliente pide</td>
+            <td>✓ Alerta automática de Stock Bajo y compras</td>
+          </tr>
+          <tr>
+            <td><strong>Libertad del Dueño</strong></td>
+            <td>✗ Esclavo de 7 am a 11 pm sin poder salir</td>
+            <td>✓ Monitoreas las ventas desde tu cama o celular</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ==================== SLIDE 6: LA OFERTA IRRESISTIBLE ==================== -->
+    <div class="slide theme-dark" id="slide-6">
+      <div class="sub-tag" style="color:var(--emerald);">LA OFERTA IRRESISTIBLE</div>
+      <div class="grid-2">
+        <div>
+          <h2 class="slide-title">Una sola venta de Bs. 3 al día ya paga todo tu sistema.</h2>
+          <p class="slide-desc">
+            Haz la prueba matemática: Vendes <strong>un paquete de galletas o una gaseosa chica de Bs. 3 al día</strong> durante el mes y ya recuperaste los Bs. 90 de la suscripción.
+          </p>
+
+          <div style="background:rgba(16,185,129,0.1); border:1px solid #059669; padding:24px; border-radius:20px; margin-bottom:24px;">
+            <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:8px;">
+              <span style="font-size:48px; font-weight:900; color:#fff; font-family:var(--mono);">Bs. 90</span>
+              <span style="font-size:16px; color:#a7f3d0; font-weight:700;">/ mes completo</span>
+            </div>
+            <p style="font-size:13px; color:#d1fae5; line-height:1.5;">
+              Menos de lo que te cuesta un almuerzo corriente. Con todo incluido: Catálogo Web Ilimitado, Punto de Venta (POS), Arqueo de Caja, Gestión de Inventarios y Soporte Continuo.
+            </p>
+          </div>
+
+          <div style="display:flex; gap:16px; align-items:center;">
+            <div style="background:#047857; color:#fff; font-weight:800; padding:12px 24px; border-radius:14px; font-size:14px;">
+              🎁 14 DÍAS DE PRUEBA GRATIS
+            </div>
+            <span style="font-size:12px; color:#94a3b8;">Sin tarjeta de crédito · Activación en 5 minutos</span>
+          </div>
+        </div>
+
+        <div style="text-align:center;">
+          <div style="background:#131926; border:1px solid #1e293b; padding:32px; border-radius:28px; max-width:400px; margin:0 auto;">
+            <div style="font-size:44px; margin-bottom:12px;">🏪</div>
+            <h3 style="font-size:22px; font-weight:900; color:#fff; margin-bottom:10px;">Comienza Hoy Mismo</h3>
+            <p style="font-size:13px; color:#94a3b8; line-height:1.6; margin-bottom:24px;">
+              No dejes que tu minimarket se quede atrás mientras la tienda vecina se lleva a tus clientes por internet.
+            </p>
+            <div style="background:#10b981; color:#064e3b; font-weight:900; padding:14px; border-radius:14px; font-size:15px; cursor:pointer;">
+              Activar Mi Minimarket Ahora
+            </div>
+            <span style="display:block; font-size:11px; color:#64748b; margin-top:12px; font-family:var(--mono);">
+              soporte directo en Santa Cruz, La Paz y Cochabamba
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 6;
+
+    function showSlide(n) {
+      if (n < 1) n = 1;
+      if (n > totalSlides) n = totalSlides;
+      currentSlide = n;
+
+      for (let i = 1; i <= totalSlides; i++) {
+        const slide = document.getElementById(`slide-${i}`);
+        if (slide) {
+          slide.classList.remove('active');
+        }
+      }
+
+      const activeSlide = document.getElementById(`slide-${currentSlide}`);
+      if (activeSlide) {
+        activeSlide.classList.add('active');
+      }
+
+      document.getElementById('slideCounter').innerText = `${currentSlide} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    // Navegación con Teclado
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>
