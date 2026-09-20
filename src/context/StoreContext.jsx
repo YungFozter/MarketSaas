@@ -98,24 +98,66 @@ export const createDefaultSubscription = (durationMinutes = TRIAL_DURATION_MINUT
   };
 };
 
-// Normalizador seguro de suscripción
-export const normalizeSubscription = (sub) => {
+// Normalizador seguro y blindado de suscripción (evita regalar tiempo indebido o quitar vigencia ganada)
+export const normalizeSubscription = (sub, fallbackCreatedAt = null) => {
+  const now = Date.now();
+
+  // Si no existe objeto de suscripción previo:
   if (!sub || typeof sub !== 'object') {
+    // Si conocemos la fecha real de creación de la tienda en Supabase, calculamos el mes gratis a partir de dicha fecha
+    if (fallbackCreatedAt) {
+      const createdTime = new Date(fallbackCreatedAt).getTime();
+      if (!isNaN(createdTime)) {
+        const trialEnd = new Date(createdTime + TRIAL_DURATION_MINUTES * 60 * 1000);
+        const isExpired = trialEnd.getTime() <= now;
+        return {
+          status: isExpired ? 'expired' : 'trial',
+          trialStartedAt: new Date(createdTime).toISOString(),
+          trialEndsAt: trialEnd.toISOString(),
+          subscriptionExpiresAt: trialEnd.toISOString(),
+          plan: 'trial_free',
+          history: []
+        };
+      }
+    }
     return createDefaultSubscription();
   }
-  const now = Date.now();
-  const expiresAt = sub.subscriptionExpiresAt || sub.trialEndsAt || sub.trialEnds || new Date().toISOString();
-  const isExpired = new Date(expiresAt).getTime() <= now;
 
-  let resolvedStatus = sub.status || (isExpired ? 'expired' : 'trial');
+  // 1. Determinar fecha de inicio del mes de prueba
+  const trialStartIso = sub.trialStartedAt || sub.trialStarted || fallbackCreatedAt || new Date().toISOString();
+  const trialStartTime = new Date(trialStartIso).getTime();
+
+  // 2. Determinar fecha de expiración con máxima fidelidad
+  let expiresAt = sub.subscriptionExpiresAt || sub.trialEndsAt || sub.trialEnds;
+  
+  // Si no tiene fecha de expiración explícita pero tiene fecha de inicio de prueba
+  if (!expiresAt && !isNaN(trialStartTime)) {
+    expiresAt = new Date(trialStartTime + TRIAL_DURATION_MINUTES * 60 * 1000).toISOString();
+  } else if (!expiresAt && fallbackCreatedAt) {
+    const createdTime = new Date(fallbackCreatedAt).getTime();
+    if (!isNaN(createdTime)) {
+      expiresAt = new Date(createdTime + TRIAL_DURATION_MINUTES * 60 * 1000).toISOString();
+    }
+  }
+
+  if (!expiresAt) {
+    expiresAt = new Date().toISOString();
+  }
+
+  const isExpired = new Date(expiresAt).getTime() <= now;
+  let resolvedStatus = sub.status || (isExpired ? 'expired' : (sub.plan === 'trial_free' ? 'trial' : 'active'));
   if (isExpired) {
     resolvedStatus = 'expired';
+  } else if (!isExpired && resolvedStatus === 'expired') {
+    resolvedStatus = (sub.plan && sub.plan !== 'trial_free') ? 'active' : 'trial';
   }
+
+  const trialEndsIso = sub.trialEndsAt || sub.trialEnds || (!isNaN(trialStartTime) ? new Date(trialStartTime + TRIAL_DURATION_MINUTES * 60 * 1000).toISOString() : expiresAt);
 
   return {
     status: resolvedStatus,
-    trialStartedAt: sub.trialStartedAt || sub.trialStarted || new Date().toISOString(),
-    trialEndsAt: sub.trialEndsAt || sub.trialEnds || expiresAt,
+    trialStartedAt: trialStartIso,
+    trialEndsAt: trialEndsIso,
     subscriptionExpiresAt: expiresAt,
     plan: sub.plan || 'trial_free',
     history: Array.isArray(sub.history) ? sub.history : []
@@ -1348,10 +1390,15 @@ export const StoreProvider = ({ children }) => {
         const effectiveLogo = configData.logoUrl || storeRecord.logo_url || savedLocalLogo || '';
         const effectiveBanner = configData.bannerUrl || storeRecord.banner_url || savedLocalBanner || presetBanners[0].url;
         const effectiveQr = configData.qrImageUrl || storeRecord.qr_image_url || savedLocalQr || '';
+        const effectiveSubscription = normalizeSubscription(
+          configData.subscription || storeRecord.subscription,
+          storeRecord.created_at
+        );
 
         const resolvedConfig = {
           ...initialStoreConfig,
           ...configData,
+          subscription: effectiveSubscription,
           logoUrl: effectiveLogo,
           bannerUrl: effectiveBanner,
           qrImageUrl: effectiveQr,
@@ -1529,7 +1576,7 @@ export const StoreProvider = ({ children }) => {
           const effectiveLogo = configData.logoUrl || data.logo_url || (prev?.logoUrl || '');
           const effectiveBanner = configData.bannerUrl || data.banner_url || (prev?.bannerUrl || presetBanners[0].url);
           const effectiveQr = configData.qrImageUrl || data.qr_image_url || (prev?.qrImageUrl || '');
-          const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || prev?.subscription);
+          const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || prev?.subscription, data.created_at);
           return {
             ...prev,
             ...configData,
@@ -1898,7 +1945,7 @@ export const StoreProvider = ({ children }) => {
                 isRegisteredStore: true,
                 isVerified: true,
                 isCurrentOwnerStore: Boolean(isCurrentOwner),
-                subscription: (isCurrentOwner && storeConfig?.subscription) ? storeConfig.subscription : normalizeSubscription(conf.subscription || rs.subscription),
+                subscription: (isCurrentOwner && storeConfig?.subscription) ? storeConfig.subscription : normalizeSubscription(conf.subscription || rs.subscription, rs.created_at),
                 owner_id: rs.owner_id || conf.owner_id || null,
                 totalStockItems: 120,
                 perks: [
@@ -2175,16 +2222,16 @@ export const StoreProvider = ({ children }) => {
 
   // Validación reactiva de si la suscripción de la tienda actual está activa
   const isSubscriptionActive = useMemo(() => {
-    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt;
+    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
     if (!expiresAt) return false;
     return new Date(expiresAt).getTime() > currentTick;
-  }, [storeConfig?.subscription?.subscriptionExpiresAt, currentTick]);
+  }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt, currentTick]);
 
   // Tiempo restante de la suscripción (días, horas, minutos, segundos)
   const subscriptionTimeRemaining = useMemo(() => {
-    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt;
+    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
     return calculateSubscriptionTimeRemaining(expiresAt, currentTick);
-  }, [storeConfig?.subscription?.subscriptionExpiresAt, currentTick]);
+  }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt, currentTick]);
 
   // Generar códigos de suscripción (uno o por lotes)
   const generateSubscriptionCodes = async ({ count = 1, durationDays = 0, durationMinutes = 0, planName = 'Premium', notes = '' }) => {
@@ -2265,7 +2312,7 @@ export const StoreProvider = ({ children }) => {
           const totalMinutesToAdd = Number(rpcRes.duration_minutes) || 43200;
           const days = Number(rpcRes.duration_days) || 0;
           const now = new Date();
-          const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+          const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
           let baseTime = now.getTime();
           if (currentExp) {
             const currentExpTime = new Date(currentExp).getTime();
@@ -2346,7 +2393,7 @@ export const StoreProvider = ({ children }) => {
 
     // 3. Extender fecha de expiración
     const now = new Date();
-    const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+    const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
     let baseTime = now.getTime();
     if (currentExp) {
       const currentExpTime = new Date(currentExp).getTime();
@@ -2417,7 +2464,7 @@ export const StoreProvider = ({ children }) => {
     const now = new Date();
 
     if (storeId === tenantSlug) {
-      const currentExp = storeConfig?.subscription?.subscriptionExpiresAt;
+      const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
       let baseTime = now.getTime();
       if (currentExp) {
         const expTime = new Date(currentExp).getTime();
@@ -2440,7 +2487,7 @@ export const StoreProvider = ({ children }) => {
         if (data) {
           const cfg = data.config || data;
           let baseTime = now.getTime();
-          const currentExp = cfg?.subscription?.subscriptionExpiresAt;
+          const currentExp = cfg?.subscription?.subscriptionExpiresAt || cfg?.subscription?.trialEndsAt;
           if (currentExp && new Date(currentExp).getTime() > baseTime) {
             baseTime = new Date(currentExp).getTime();
           }
