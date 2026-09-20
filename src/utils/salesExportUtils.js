@@ -76,14 +76,17 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
 /**
  * Exporta a Excel (.XLSX) con soporte para columnas separadas y autoajuste de ancho
  */
-export const exportSalesToXLSX = (orders, storeConfig, formatBoliviaDateTime) => {
+export const exportSalesToXLSX = (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
   const { rows, summary } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
+  const reportTitle = titleSuffix 
+    ? `REPORTE DE VENTAS (${titleSuffix.toUpperCase()}) - ${storeName.toUpperCase()}`
+    : `REPORTE DE VENTAS - ${storeName.toUpperCase()}`;
 
   // Estructura en matriz para SheetJS
   const data = [
-    [`REPORTE DE VENTAS - ${storeName.toUpperCase()}`],
+    [reportTitle],
     [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total Recaudado: ${currency} ${summary.totalAmountFormatted}`],
     [], // Fila en blanco
     ['#', 'ID Pedido', 'Fecha y Hora', 'Cliente', 'Teléfono', 'Ubicación / Condominio', 'Torre / Depto', 'Modalidad', 'Método de Pago', `Total (${currency})`, 'Estado']
@@ -137,10 +140,13 @@ export const exportSalesToXLSX = (orders, storeConfig, formatBoliviaDateTime) =>
 /**
  * Exporta a Excel con Diseño y Colores (.XLS estilizado con celdas esmeralda, bordes y estilos)
  */
-export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateTime) => {
+export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
   const { rows, summary } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
+  const reportMainTitle = titleSuffix
+    ? `REPORTE OFICIAL DE VENTAS &bull; ${storeName.toUpperCase()} &bull; ${titleSuffix.toUpperCase()}`
+    : `REPORTE OFICIAL DE VENTAS &bull; ${storeName.toUpperCase()}`;
 
   const tableRowsHtml = rows.map((r, i) => `
     <tr style="background-color: ${i % 2 === 0 ? '#ffffff' : '#f8fafc'};">
@@ -186,12 +192,12 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
         <table>
           <tr>
             <td colspan="11" style="background-color: #064e3b; color: #ffffff; font-size: 18px; font-weight: bold; text-align: center; padding: 15px;">
-              REPORTE OFICIAL DE VENTAS &bull; ${storeName.toUpperCase()}
+              ${reportMainTitle}
             </td>
           </tr>
           <tr>
             <td colspan="6" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px;">
-              <b>Fecha de Emisión:</b> ${new Date().toLocaleString('es-BO')} &nbsp;|&nbsp; <b>Zona Horaria:</b> Bolivia (UTC-04:00)
+              <b>Fecha de Emisión:</b> ${new Date().toLocaleString('es-BO')} &nbsp;|&nbsp; <b>Zona Horaria:</b> Bolivia (UTC-04:00) ${titleSuffix ? `&nbsp;|&nbsp; <b>Filtro:</b> ${titleSuffix}` : ''}
             </td>
             <td colspan="5" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px; text-align: right;">
               <b>Total Recaudado:</b> ${currency} ${summary.totalAmountFormatted} &nbsp;|&nbsp; <b>Transacciones:</b> ${summary.totalCount}
@@ -233,7 +239,8 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
   const link = document.createElement('a');
   link.href = url;
   const cleanStoreName = storeName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  link.download = `reporte_ventas_${cleanStoreName}_${Date.now()}.xls`;
+  const cleanSuffix = titleSuffix ? `_${titleSuffix.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : '';
+  link.download = `reporte_ventas_${cleanStoreName}${cleanSuffix}_${Date.now()}.xls`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -243,7 +250,7 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
 /**
  * Exporta a CSV optimizado con separador de punto y coma (;) y BOM UTF-8 para Excel en español
  */
-export const exportSalesToCSV = (orders, storeConfig, formatBoliviaDateTime) => {
+export const exportSalesToCSV = (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
   const { rows } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -283,7 +290,8 @@ export const exportSalesToCSV = (orders, storeConfig, formatBoliviaDateTime) => 
   const link = document.createElement('a');
   link.href = url;
   const cleanStoreName = storeName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  link.download = `reporte_ventas_${cleanStoreName}_${Date.now()}.csv`;
+  const cleanSuffix = titleSuffix ? `_${titleSuffix.toLowerCase().replace(/[^a-z0-9]/g, '_')}` : '';
+  link.download = `reporte_ventas_${cleanStoreName}${cleanSuffix}_${Date.now()}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -293,7 +301,7 @@ export const exportSalesToCSV = (orders, storeConfig, formatBoliviaDateTime) => 
 /**
  * Genera una vista imprimible de alta fidelidad para descargar como PDF
  */
-export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime) => {
+export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
   const { rows, summary } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -325,7 +333,7 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime) => 
     <html lang="es">
       <head>
         <meta charset="UTF-8" />
-        <title>Reporte de Ventas - ${storeName}</title>
+        <title>Reporte de Ventas - ${storeName} ${titleSuffix ? `(${titleSuffix})` : ''}</title>
         <style>
           @page {
             size: letter landscape;
@@ -490,8 +498,8 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime) => 
 
         <div class="header">
           <div>
-            <h1 class="store-title">${storeName}</h1>
-            <p class="store-subtitle">Reporte Oficial de Ventas &bull; MarketSaaS Comercio Hiperlocal</p>
+            <h1 class="store-title">${storeName} ${titleSuffix ? `<span style="font-size: 16px; font-weight: bold; color: #047857;">(${titleSuffix})</span>` : ''}</h1>
+            <p class="store-subtitle">Reporte Oficial de Ventas &bull; MarketSaaS Comercio Hiperlocal ${titleSuffix ? `&bull; <b>Filtro:</b> ${titleSuffix}` : ''}</p>
           </div>
           <div style="text-align: right;">
             <p style="font-size: 11px; font-weight: 700; color: #334155;">Emisión: ${new Date().toLocaleString('es-BO')}</p>

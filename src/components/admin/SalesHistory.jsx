@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
+import { ExportSalesReportModal } from './ExportSalesReportModal';
 import './SalesHistory.css';
 
 export const SalesHistory = () => {
@@ -38,6 +39,9 @@ export const SalesHistory = () => {
 
   // Modal de Detalle / Comanda de Venta
   const [selectedSale, setSelectedSale] = useState(null);
+
+  // Modal de Exportación de Reporte
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Paginación
   const [itemsPerPage, setItemsPerPage] = useState(10); // 10, 25, 50, 'all'
@@ -87,8 +91,18 @@ export const SalesHistory = () => {
     return 'pickup';
   };
 
-  // Filtrado reactivo de ventas
-  const filteredSales = useMemo(() => {
+  // Toggle interactivo para los filtros de método de pago (desde tarjetas KPI o selector)
+  const handleTogglePaymentMethod = (method) => {
+    if (method === 'all') {
+      setSelectedPaymentMethod('all');
+    } else {
+      setSelectedPaymentMethod(prev => (prev === method ? 'all' : method));
+    }
+  };
+
+  // 1. Filtrado base de ventas (período, canal, búsqueda) - SIN filtrar aún por método de pago
+  // Esto garantiza que los importes en las 4 tarjetas KPI siempre muestren los totales reales del período
+  const baseSales = useMemo(() => {
     return orders
       .filter((order) => {
         // Excluir pedidos cancelados para no distorsionar ingresos ni estadísticas
@@ -97,12 +111,6 @@ export const SalesHistory = () => {
         // Filtro por Período
         const dateMatch = matchesPeriod(order.createdAt || order.created_at, selectedPeriod);
         if (!dateMatch) return false;
-
-        // Filtro por Método de Pago
-        const paymentMatch = 
-          selectedPaymentMethod === 'all' || 
-          order.paymentMethod === selectedPaymentMethod;
-        if (!paymentMatch) return false;
 
         // Filtro por Canal / Tipo de Venta
         const channel = getSaleChannel(order);
@@ -136,34 +144,56 @@ export const SalesHistory = () => {
         const timeB = new Date(b.createdAt || b.created_at || 0).getTime();
         return timeB - timeA;
       });
-  }, [orders, selectedPeriod, selectedPaymentMethod, selectedChannel, searchTerm]);
+  }, [orders, selectedPeriod, selectedChannel, searchTerm]);
 
-  // Cálculos de métricas del conjunto filtrado
+  // Totales de las tarjetas basados en baseSales (para que los valores en las 4 tarjetas permanezcan visibles y reales)
   const totalRevenue = useMemo(() => {
-    return filteredSales.reduce((acc, order) => acc + (Number(order.total) || 0), 0);
-  }, [filteredSales]);
+    return baseSales.reduce((acc, order) => acc + (Number(order.total) || 0), 0);
+  }, [baseSales]);
 
-  const totalSalesCount = filteredSales.length;
-  const averageTicket = totalSalesCount > 0 ? totalRevenue / totalSalesCount : 0;
-
-  // Desglose por método de pago del filtro actual
   const cashTotal = useMemo(() => {
-    return filteredSales
+    return baseSales
       .filter(o => o.paymentMethod === 'cash')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-  }, [filteredSales]);
+  }, [baseSales]);
 
   const qrTotal = useMemo(() => {
-    return filteredSales
+    return baseSales
       .filter(o => o.paymentMethod === 'qr')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-  }, [filteredSales]);
+  }, [baseSales]);
 
   const cardTotal = useMemo(() => {
-    return filteredSales
+    return baseSales
       .filter(o => o.paymentMethod === 'card')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+  }, [baseSales]);
+
+  // 2. Ventas filtradas específicamente por el Método de Pago seleccionado (para la tabla/lista de ventas)
+  const filteredSales = useMemo(() => {
+    if (selectedPaymentMethod === 'all') return baseSales;
+    return baseSales.filter(o => o.paymentMethod === selectedPaymentMethod);
+  }, [baseSales, selectedPaymentMethod]);
+
+  const totalSalesCount = filteredSales.length;
+  const filteredRevenue = useMemo(() => {
+    return filteredSales.reduce((acc, order) => acc + (Number(order.total) || 0), 0);
   }, [filteredSales]);
+  const averageTicket = totalSalesCount > 0 ? filteredRevenue / totalSalesCount : 0;
+
+  // Etiqueta legible para la exportación de acuerdo al filtro activo
+  const exportTitleSuffix = useMemo(() => {
+    switch (selectedPaymentMethod) {
+      case 'cash':
+        return 'Efectivo';
+      case 'qr':
+        return 'QR Simple';
+      case 'card':
+        return 'Tarjeta POS';
+      default:
+        return 'Recaudación Total';
+    }
+  }, [selectedPaymentMethod]);
 
   // Paginación
   const totalPages = itemsPerPage === 'all' ? 1 : Math.max(1, Math.ceil(totalSalesCount / itemsPerPage));
@@ -329,82 +359,182 @@ export const SalesHistory = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+          {/* Botón Exportar Reporte Filtrado */}
+          <button
+            type="button"
+            onClick={() => setIsExportModalOpen(true)}
+            className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
+            title="Exportar reporte contable de ventas con los filtros actuales (PDF, Excel)"
+          >
+            <Download className="w-4 h-4 text-emerald-400" />
+            <span>Exportar Reporte</span>
+            {selectedPaymentMethod !== 'all' && (
+              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
+              </span>
+            )}
+          </button>
+
+          <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{totalSalesCount} operaciones registradas</span>
+            <span>{totalSalesCount} {totalSalesCount === 1 ? 'operación' : 'operaciones'}</span>
           </span>
         </div>
       </div>
 
-      {/* 2. Tarjetas de Resumen KPI */}
+      {/* 2. Tarjetas de Resumen KPI (Interactivas: Clic para filtrar/desfiltrar por Método de Pago) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Recaudado */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+        {/* Total Recaudado (Muestra todas las ventas) */}
+        <button
+          type="button"
+          onClick={() => handleTogglePaymentMethod('all')}
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+            selectedPaymentMethod === 'all'
+              ? 'bg-slate-50 border-slate-900 ring-2 ring-slate-900/80 shadow-xs'
+              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-2xs'
+          }`}
+          title="Ver todas las ventas sin filtrar por forma de pago"
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Recaudación Total</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <TrendingUp className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              {selectedPaymentMethod === 'all' && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white">
+                  Todas
+                </span>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                <TrendingUp className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
             {currency} {totalRevenue.toFixed(2)}
           </p>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            {selectedPeriod === 'today' ? 'Ventas de hoy' : 
-             selectedPeriod === 'yesterday' ? 'Ventas de ayer' : 
-             selectedPeriod === 'week' ? 'Últimos 7 días' : 
-             selectedPeriod === 'month' ? 'Este mes' : 'Todo el período filtrado'}
-          </p>
-        </div>
+          <div className="text-[11px] text-slate-400 mt-0.5 font-medium flex items-center justify-between">
+            <span>
+              {selectedPeriod === 'today' ? 'Ventas de hoy' : 
+               selectedPeriod === 'yesterday' ? 'Ventas de ayer' : 
+               selectedPeriod === 'week' ? 'Últimos 7 días' : 
+               selectedPeriod === 'month' ? 'Este mes' : 'Todo el período'}
+            </span>
+            <span className="text-[10px] text-slate-500 font-bold group-hover:text-slate-800 transition-colors">
+              {selectedPaymentMethod === 'all' ? '● Mostrando todas' : 'Ver todas'}
+            </span>
+          </div>
+        </button>
 
         {/* Efectivo Cobrado */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => handleTogglePaymentMethod('cash')}
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+            selectedPaymentMethod === 'cash'
+              ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500 shadow-sm'
+              : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-emerald-50/20 hover:shadow-2xs'
+          }`}
+          title={selectedPaymentMethod === 'cash' ? 'Clic para quitar filtro de efectivo' : 'Clic para filtrar solo ventas en efectivo'}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-800">Efectivo 💵</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <Banknote className="w-4 h-4" />
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'cash' ? 'text-emerald-900 font-bold' : 'text-emerald-800'}`}>
+              Efectivo 💵
+            </span>
+            <div className="flex items-center gap-1.5">
+              {selectedPaymentMethod === 'cash' && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white animate-pulse">
+                  Filtrando
+                </span>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center font-bold">
+                <Banknote className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black text-emerald-950 mt-1">
             {currency} {cashTotal.toFixed(2)}
           </p>
-          <p className="text-[11px] text-emerald-700 mt-0.5 font-medium">
-            Cobrado en billetes / monedas
-          </p>
-        </div>
+          <div className="text-[11px] text-emerald-700 mt-0.5 font-medium flex items-center justify-between">
+            <span>Billetes / monedas</span>
+            <span className="text-[10px] font-bold">
+              {selectedPaymentMethod === 'cash' ? '✕ Quitar filtro' : 'Filtrar'}
+            </span>
+          </div>
+        </button>
 
         {/* QR Simple Cobrado */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+        <button
+          type="button"
+          onClick={() => handleTogglePaymentMethod('qr')}
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+            selectedPaymentMethod === 'qr'
+              ? 'bg-cyan-50/80 border-cyan-500 ring-2 ring-cyan-500 shadow-sm'
+              : 'bg-white border-slate-200/90 hover:border-cyan-300 hover:bg-cyan-50/20 hover:shadow-2xs'
+          }`}
+          title={selectedPaymentMethod === 'qr' ? 'Clic para quitar filtro de QR' : 'Clic para filtrar solo ventas por QR Simple'}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-cyan-800">QR Simple 📲</span>
-            <div className="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold">
-              <QrCode className="w-4 h-4" />
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'qr' ? 'text-cyan-900 font-bold' : 'text-cyan-800'}`}>
+              QR Digital / Simple 📲
+            </span>
+            <div className="flex items-center gap-1.5">
+              {selectedPaymentMethod === 'qr' && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-600 text-white animate-pulse">
+                  Filtrando
+                </span>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center font-bold">
+                <QrCode className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black text-cyan-950 mt-1">
             {currency} {qrTotal.toFixed(2)}
           </p>
-          <p className="text-[11px] text-cyan-700 mt-0.5 font-medium">
-            Transferencias electrónicas
-          </p>
-        </div>
+          <div className="text-[11px] text-cyan-700 mt-0.5 font-medium flex items-center justify-between">
+            <span>Transferencias electrónicas</span>
+            <span className="text-[10px] font-bold">
+              {selectedPaymentMethod === 'qr' ? '✕ Quitar filtro' : 'Filtrar'}
+            </span>
+          </div>
+        </button>
 
-        {/* Tarjeta POS / Ticket Promedio */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+        {/* Tarjeta POS */}
+        <button
+          type="button"
+          onClick={() => handleTogglePaymentMethod('card')}
+          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+            selectedPaymentMethod === 'card'
+              ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500 shadow-sm'
+              : 'bg-white border-slate-200/90 hover:border-amber-300 hover:bg-amber-50/20 hover:shadow-2xs'
+          }`}
+          title={selectedPaymentMethod === 'card' ? 'Clic para quitar filtro de Tarjeta POS' : 'Clic para filtrar solo ventas con Tarjeta POS'}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-800">Tarjeta POS 💳</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-              <CreditCard className="w-4 h-4" />
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'card' ? 'text-amber-900 font-bold' : 'text-amber-800'}`}>
+              Tarjeta POS 💳
+            </span>
+            <div className="flex items-center gap-1.5">
+              {selectedPaymentMethod === 'card' && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white animate-pulse">
+                  Filtrando
+                </span>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center font-bold">
+                <CreditCard className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <p className="text-xl sm:text-2xl font-black text-amber-950 mt-1">
             {currency} {cardTotal.toFixed(2)}
           </p>
-          <p className="text-[11px] text-amber-700 mt-0.5 font-medium">
-            Ticket prom: {currency} {averageTicket.toFixed(2)}
-          </p>
-        </div>
+          <div className="text-[11px] text-amber-700 mt-0.5 font-medium flex items-center justify-between">
+            <span>Ticket prom: {currency} {averageTicket.toFixed(2)}</span>
+            <span className="text-[10px] font-bold">
+              {selectedPaymentMethod === 'card' ? '✕ Quitar filtro' : 'Filtrar'}
+            </span>
+          </div>
+        </button>
       </div>
 
       {/* 3. Barra de Búsqueda y Filtros Rápidos */}
@@ -492,7 +622,7 @@ export const SalesHistory = () => {
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => setSelectedPaymentMethod(m.id)}
+                  onClick={() => handleTogglePaymentMethod(m.id)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     selectedPaymentMethod === m.id ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
                   }`}
@@ -961,6 +1091,14 @@ export const SalesHistory = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Exportación de Reporte de Ventas (Filtrado según selección activa) */}
+      <ExportSalesReportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        customOrders={filteredSales}
+        titleSuffix={exportTitleSuffix}
+      />
     </div>
   );
 };

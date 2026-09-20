@@ -14,11 +14,12 @@ import {
   prepareSalesData 
 } from '../../utils/salesExportUtils';
 
-export const ExportSalesReportModal = ({ isOpen, onClose }) => {
-  const { orders = [], storeConfig, formatBoliviaDateTime, showToast } = useStore();
+export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, titleSuffix = '' }) => {
+  const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast } = useStore();
 
   if (!isOpen) return null;
 
+  const orders = customOrders !== null ? customOrders : storeOrders;
   const { rows, summary } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -28,7 +29,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose }) => {
       showToast('No hay pedidos registrados para exportar.', 'warning');
       return;
     }
-    exportSalesToPDF(orders, storeConfig, formatBoliviaDateTime);
+    exportSalesToPDF(orders, storeConfig, formatBoliviaDateTime, titleSuffix);
     showToast('Generando vista de reporte PDF...', 'success');
   };
 
@@ -37,7 +38,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose }) => {
       showToast('No hay pedidos registrados para exportar.', 'warning');
       return;
     }
-    exportSalesToStyledExcel(orders, storeConfig, formatBoliviaDateTime);
+    exportSalesToStyledExcel(orders, storeConfig, formatBoliviaDateTime, titleSuffix);
     showToast('Planilla Excel con celdas estilizadas descargada con éxito.', 'success');
   };
 
@@ -64,11 +65,19 @@ export const ExportSalesReportModal = ({ isOpen, onClose }) => {
             <Download className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">
-              Exportar Reporte de Ventas
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Exportar Reporte de Ventas
+              </h3>
+              {titleSuffix && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  {titleSuffix}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Descarga tu historial contable para <strong className="text-slate-800 font-bold">{storeName}</strong>
+              {titleSuffix ? <span className="text-emerald-700 font-medium"> &bull; Filtrado por {titleSuffix}</span> : ''}
             </p>
           </div>
         </div>
