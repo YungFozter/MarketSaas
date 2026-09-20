@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CheckCircle2, 
@@ -15,16 +15,69 @@ import { useStore } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
-  const { orders, storeConfig, selectedStore, tenantSlug } = useStore();
+  const { orders, storeConfig, selectedStore, tenantSlug, supabase } = useStore();
 
-  const order = orders.find(o => o.id === orderId);
+  const [order, setOrder] = useState(() => {
+    const memory = (orders || []).find(o => o.id === orderId);
+    if (memory) return memory;
+    try {
+      const savedObj = localStorage.getItem('marketsaas_active_order_obj');
+      if (savedObj) {
+        const parsed = JSON.parse(savedObj);
+        if (parsed && parsed.id === orderId) return parsed;
+      }
+      const savedList = localStorage.getItem(`marketsaas_${tenantSlug}_orders`) || localStorage.getItem('marketsaas_default_orders');
+      if (savedList) {
+        const parsedList = JSON.parse(savedList);
+        if (Array.isArray(parsedList)) {
+          const found = parsedList.find(o => o.id === orderId);
+          if (found) return found;
+        }
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  useEffect(() => {
+    const memory = (orders || []).find(o => o.id === orderId);
+    if (memory) {
+      setOrder(memory);
+      return;
+    }
+    if (supabase && orderId) {
+      supabase.from('orders').select('*').eq('id', orderId).maybeSingle().then(({ data, error }) => {
+        if (!error && data) {
+          setOrder(data);
+        }
+      });
+    }
+  }, [orders, orderId, supabase]);
 
   const isOfficialStore = Boolean(
     (tenantSlug && tenantSlug !== 'default') ||
     (selectedStore && selectedStore.id && selectedStore.id !== 'default')
   );
 
-  if (!order) return null;
+  if (!order) {
+    return (
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+        <div className="relative bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+          <div className="w-12 h-12 rounded-full border-4 border-emerald-500/30 border-t-emerald-600 animate-spin mx-auto" />
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Cargando seguimiento de tu pedido...</h3>
+            <p className="text-xs text-slate-500 mt-1">Pedido #{orderId}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-colors"
+          >
+            Cerrar ventana
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isPickup = order.deliveryType === 'pickup' || order.delivery_type === 'pickup';

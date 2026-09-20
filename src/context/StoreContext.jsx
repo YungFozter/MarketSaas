@@ -782,11 +782,21 @@ export const StoreProvider = ({ children }) => {
       return;
     }
     setViewModeState(newMode);
+    // Si cambiamos a Vista Dueño (admin), asegurar que tenantSlug corresponda a la tienda del dueño
+    if (newMode === 'admin' && merchantStore?.id) {
+      setTenantSlug(merchantStore.id);
+      try {
+        localStorage.setItem('marketsaas_active_tenant', merchantStore.id);
+      } catch (e) {}
+    }
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('marketsaas_active_view_mode', newMode);
         const url = new URL(window.location.href);
         url.searchParams.set('view', newMode);
+        if (newMode === 'admin' && merchantStore?.id) {
+          url.searchParams.set('store', merchantStore.id);
+        }
         window.history.replaceState({}, '', url.toString());
       } catch (e) {
         console.error('Error al persistir vista activa:', e);
@@ -1535,31 +1545,40 @@ export const StoreProvider = ({ children }) => {
 
     // 3. Cargar pedidos por tienda con filtro server-side seguro y purga de órdenes fantasma
     if (currentUser) {
-      supabase.from('orders')
-        .select('*')
-        .eq('tenant_id', tenantSlug)
-        .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (error) {
-            console.warn('Aviso cargando pedidos en Supabase:', error.message);
-          } else if (Array.isArray(data)) {
-            // Purgar de Supabase cualquier orden fantasma vacía o de prueba generada por error
-            const ghostOrders = data.filter(o => !filterOutGhostOrders([o]).length);
-            if (ghostOrders.length > 0) {
-              ghostOrders.forEach(go => {
-                supabase.from('orders').delete().eq('id', go.id).then(() => {
-                  console.log('Orden fantasma de prueba eliminada de Supabase:', go.id);
-                });
-              });
-            }
+      const activeAdminTenant = merchantStore?.id || tenantSlug;
+      let query = supabase.from('orders').select('*');
+      if (currentUser?.id && activeAdminTenant && activeAdminTenant !== 'default') {
+        query = query.or(`tenant_id.eq.${activeAdminTenant},owner_id.eq.${currentUser.id}`);
+      } else if (activeAdminTenant && activeAdminTenant !== 'default') {
+        query = query.eq('tenant_id', activeAdminTenant);
+      } else if (currentUser?.id) {
+        query = query.eq('owner_id', currentUser.id);
+      }
 
-            const normalized = filterOutGhostOrders(data.map(normalizeOrder));
-            setOrders(normalized);
-            try {
-              localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
-            } catch (e) {}
+      query.order('created_at', { ascending: false }).then(({ data, error }) => {
+        if (error) {
+          console.warn('Aviso cargando pedidos en Supabase:', error.message);
+        } else if (Array.isArray(data)) {
+          // Purgar de Supabase cualquier orden fantasma vacía o de prueba generada por error
+          const ghostOrders = data.filter(o => !filterOutGhostOrders([o]).length);
+          if (ghostOrders.length > 0) {
+            ghostOrders.forEach(go => {
+              supabase.from('orders').delete().eq('id', go.id).then(() => {
+                console.log('Orden fantasma de prueba eliminada de Supabase:', go.id);
+              });
+            });
           }
-        });
+
+          const normalized = filterOutGhostOrders(data.map(normalizeOrder));
+          setOrders(normalized);
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
+            if (activeAdminTenant && activeAdminTenant !== tenantSlug) {
+              localStorage.setItem(`marketsaas_${activeAdminTenant}_orders`, JSON.stringify(normalized));
+            }
+          } catch (e) {}
+        }
+      });
     } else if (activeTrackingOrderId) {
       // Para clientes vecinos anónimos: consultar únicamente el pedido activo en curso para sincronizar su estado
       const syncTrackingOrder = async () => {
@@ -1624,7 +1643,7 @@ export const StoreProvider = ({ children }) => {
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
           if (!error && Array.isArray(data)) {
-            const normalized = filterOutDemoSuppliers(data).map(normalizeSupplier).filter(Boolean);
+            const normalized = filterOutDemoSuppliers(data.map(normalizeSupplier));
             setSuppliers(normalized);
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(normalized));
@@ -1633,29 +1652,49 @@ export const StoreProvider = ({ children }) => {
         });
     }
 
-    // Subscripciones en Tiempo Real (Realtime) con filtro de fila de Postgres por tenant_id
+    // Subscripciones en Tiempo Real (Realtime)
     const ordersChannel = supabase
-      .channel(`public:orders:${tenantSlug}`)
+      .channel(`public:orders:${tenantSlug || 'all'}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'orders',
-        filter: `tenant_id=eq.${tenantSlug}`
+        table: 'orders'
       }, payload => {
         if (payload.eventType === 'INSERT' && payload.new) {
           const normalized = normalizeOrder(payload.new);
-          setOrders(prev => {
-            const exists = prev.some(o => o.id === normalized.id);
-            if (!exists) {
+          const isOurStore = 
+            normalized.tenant_id === tenantSlug || 
+            (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
+            (currentUser && normalized.owner_id === currentUser.id) ||
+            (!tenantSlug || tenantSlug === 'default');
+
+          if (isOurStore) {
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === normalized.id);
+              if (!exists) {
+                try {
+                  window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalized }));
+                } catch (e) {}
+              }
+              const updated = [normalized, ...prev.filter(o => o.id !== normalized.id)];
               try {
-                window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalized }));
+                localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+                if (merchantStore?.id) {
+                  localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+                }
               } catch (e) {}
-            }
-            return [normalized, ...prev.filter(o => o.id !== normalized.id)];
-          });
+              return updated;
+            });
+          }
         } else if (payload.eventType === 'UPDATE' && payload.new) {
           const normalized = normalizeOrder(payload.new);
-          setOrders(prev => prev.map(o => (o.id === normalized.id ? normalized : o)));
+          setOrders(prev => {
+            const updated = prev.map(o => (o.id === normalized.id ? normalized : o));
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
         } else if (payload.eventType === 'DELETE' && payload.old) {
           setOrders(prev => prev.filter(o => o.id !== payload.old.id));
         }
@@ -1722,7 +1761,7 @@ export const StoreProvider = ({ children }) => {
           if (norm && !DEMO_SUPPLIER_IDS.includes(norm.id)) {
             setSuppliers(prev => prev.map(s => (s.id === norm.id ? norm : s)));
           }
-        } else if (payload.eventType === 'DELETE' && payload.old) {
+        } else if (payload.eventType === 'DELETE') {
           setSuppliers(prev => prev.filter(s => s.id !== payload.old.id));
         }
       })
@@ -1734,7 +1773,7 @@ export const StoreProvider = ({ children }) => {
       supabase.removeChannel(requestsChannel);
       supabase.removeChannel(suppliersChannel);
     };
-  }, [tenantSlug]);
+  }, [tenantSlug, viewMode, currentUser, merchantStore?.id]);
 
   // Auto-purga en Supabase de peticiones de prueba residuales generadas durante diagnósticos
   useEffect(() => {
@@ -2665,8 +2704,25 @@ export const StoreProvider = ({ children }) => {
       setAppliedCoupon(null);
     }
 
-    // Agregar a la lista de pedidos y persistir en Supabase
-    setOrders(prev => [newOrder, ...prev]);
+    // Agregar a la lista de pedidos y persistir de inmediato en memoria y localStorage
+    setOrders(prev => {
+      const updated = [newOrder, ...prev.filter(o => o.id !== newOrder.id)];
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (storeConfig?.tenant_id) {
+          localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
+
+    try {
+      localStorage.setItem('marketsaas_active_order_obj', JSON.stringify(newOrder));
+      localStorage.setItem(`marketsaas_${tenantSlug}_active_order`, orderId);
+      localStorage.setItem('marketsaas_default_active_order', orderId);
+    } catch (e) {}
+
     try {
       window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: newOrder }));
     } catch (e) {}
@@ -2699,9 +2755,6 @@ export const StoreProvider = ({ children }) => {
     clearCart();
     setActiveTrackingOrderId(orderId);
     setIsTrackingModalOpen(true);
-    try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_active_order`, orderId);
-    } catch (e) {}
     triggerConfetti();
     showToast(`¡Pedido ${orderId} recibido con éxito! La tienda ya lo está preparando.`, 'success');
 

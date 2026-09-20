@@ -118,10 +118,17 @@ const playHarmonicChimeFallback = () => {
 };
 
 /**
- * Reproduce el sonido acústico de alerta de nuevo pedido
+ * Reproduce el sonido acústico de alerta de nuevo pedido y vibra en el teléfono
  */
 export const playOrderNotificationSound = () => {
   unlockAudioContext();
+
+  // Vibración háptica en celulares
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([400, 150, 400, 150, 600]);
+    } catch (e) {}
+  }
 
   try {
     const audio = new Audio('/mp3/Notificacion de orden de compra.mp3');
@@ -162,10 +169,20 @@ export const sendOrderNotification = async (order, storeConfig = {}) => {
     ? `${window.location.origin}${window.location.pathname}?view=admin`
     : '/?view=admin';
 
-  // Opción 1: Notificación mediante Service Worker (ideal para celulares Android y segundo plano)
+  // Vibración directa al disparar notificación
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([400, 150, 400, 150, 600]);
+    } catch (e) {}
+  }
+
+  // Opción 1: Notificación mediante Service Worker con timeout de seguridad (ideal para celulares Android y segundo plano)
   if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SW ready timeout')), 1200))
+      ]);
       if (registration && registration.showNotification) {
         await registration.showNotification(title, {
           body,
@@ -174,13 +191,13 @@ export const sendOrderNotification = async (order, storeConfig = {}) => {
           tag: `order-${orderId}`,
           renotify: true,
           requireInteraction: true,
-          vibrate: [300, 100, 300, 100, 300],
+          vibrate: [400, 150, 400, 150, 600],
           data: { url: targetUrl }
         });
         return true;
       }
     } catch (swErr) {
-      // Fallback a Notification directa
+      // Fallback inmediato a Notification de ventana
     }
   }
 

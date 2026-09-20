@@ -261,6 +261,39 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     };
   }, [soundAlertsActive, showToast, storeConfig]);
 
+  // Monitoreo al desbloquear el teléfono o volver a la pestaña (visibilitychange / focus)
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        // Al regresar a la pestaña, verificar si hay pedidos pendientes no notificados
+        const recentPending = (orders || []).filter(o => {
+          if (!o || o.status !== 'pending' || !o.id) return false;
+          if (notifiedOrderIds.current.has(o.id)) return false;
+          const orderAgeMs = Date.now() - new Date(o.createdAt || o.created_at || Date.now()).getTime();
+          // Notificar si el pedido tiene menos de 2 horas de antigüedad
+          return orderAgeMs < 2 * 60 * 60 * 1000;
+        });
+
+        if (recentPending.length > 0) {
+          const newest = recentPending[0];
+          notifiedOrderIds.current.add(newest.id);
+          if (soundAlertsActive) {
+            playOrderNotificationSound();
+          }
+          sendOrderNotification(newest, storeConfig);
+          showToast?.(`¡Tienes un pedido pendiente #${newest.id} de ${newest.customer?.name || 'Vecino'}!`, 'info');
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [orders, soundAlertsActive, storeConfig, showToast]);
+
   // Toggle de apertura / cierre en vivo
   const handleToggleStoreOpen = (targetState) => {
     const updated = { ...storeConfig, isOpen: targetState };
