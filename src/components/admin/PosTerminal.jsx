@@ -1074,7 +1074,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                 <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
                   <UserCheck className="w-4 h-4" />
                 </div>
-                <h4 className="font-black text-sm text-slate-900">Registrar Vecino a Cuenta</h4>
+                <h4 className="font-black text-sm text-slate-900">Registrar Nuevo Deudor</h4>
               </div>
               <button
                 type="button"
@@ -1149,7 +1149,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                 }}
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs cursor-pointer"
               >
-                Guardar y Seleccionar
+                Guardar Deudor y Seleccionar
               </button>
             </div>
           </div>

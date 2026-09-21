@@ -283,7 +283,7 @@ export const CreditManager = () => {
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm shadow-md shadow-indigo-600/20 hover:shadow-lg transition-all cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          <span>+ Nuevo Vecino a Crédito</span>
+          <span>+ Nuevo Deudor</span>
         </button>
       </div>
 
@@ -410,7 +410,7 @@ export const CreditManager = () => {
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>Registrar Primer Vecino</span>
+            <span>Registrar Primer Deudor</span>
           </button>
         </div>
       ) : (
@@ -576,7 +576,7 @@ export const CreditManager = () => {
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <h3 className="font-black text-base text-slate-900">
-                  {editingCustomer ? 'Editar Datos del Vecino' : 'Registrar Nuevo Vecino a Crédito'}
+                  {editingCustomer ? 'Editar Datos del Deudor' : 'Registrar Nuevo Deudor'}
                 </h3>
               </div>
               <button
@@ -633,7 +633,7 @@ export const CreditManager = () => {
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Límite Máximo de Crédito ({currency}) - Opcional
+                  ¿Hasta cuánto le permites fiar? (Límite máximo en {currency} - Opcional)
                 </label>
                 <input
                   type="number"
@@ -641,37 +641,53 @@ export const CreditManager = () => {
                   min="0"
                   value={customerForm.creditLimit}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, creditLimit: e.target.value }))}
-                  placeholder="Ej. 300 (0 = sin límite)"
+                  placeholder="Ej. 300 (déjalo vacío o en 0 si no tiene tope)"
                   className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Te alertará si el vecino supera esta cifra en compras fiadas.
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  💡 El sistema te avisará automáticamente cuando sus compras fiadas alcancen este monto.
                 </span>
               </div>
 
-              {/* Si es nuevo vecino: Saldo inicial previo opcional */}
+              {/* Si es nuevo deudor: Saldo pendiente anterior opcional */}
               {!editingCustomer && (
-                <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-2xl space-y-2">
-                  <span className="text-xs font-bold text-amber-800 block">
-                    ¿Ya te debía dinero anteriormente? (Saldo previo)
-                  </span>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={customerForm.initialBalance}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, initialBalance: e.target.value }))}
-                      placeholder={`Monto (${currency})`}
-                      className="px-3 py-2 text-xs rounded-xl bg-white border border-amber-200 focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      value={customerForm.initialConcept}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, initialConcept: e.target.value }))}
-                      placeholder="Concepto (ej. Libreta vieja)"
-                      className="px-3 py-2 text-xs rounded-xl bg-white border border-amber-200 focus:outline-none"
-                    />
+                <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2.5">
+                  <div>
+                    <span className="text-xs font-bold text-amber-900 block">
+                      ¿Ya te debía dinero de antes? (Deuda inicial opcional)
+                    </span>
+                    <p className="text-[11px] text-amber-700 leading-tight mt-0.5">
+                      Si viene de tu libreta de papel o días anteriores, anota aquí lo que ya debe para que empiece con esa cuenta.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-amber-900 block mb-1">
+                        Monto que ya debe ({currency})
+                      </label>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={customerForm.initialBalance}
+                        onChange={(e) => setCustomerForm(prev => ({ ...prev, initialBalance: e.target.value }))}
+                        placeholder="Ej. 120.00"
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-amber-300 focus:outline-none focus:border-amber-500 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-amber-900 block mb-1">
+                        Motivo o detalle (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        value={customerForm.initialConcept}
+                        onChange={(e) => setCustomerForm(prev => ({ ...prev, initialConcept: e.target.value }))}
+                        placeholder="Ej. Libreta vieja, víveres..."
+                        className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-amber-300 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -701,7 +717,7 @@ export const CreditManager = () => {
                   type="submit"
                   className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer"
                 >
-                  {editingCustomer ? 'Guardar Cambios' : 'Registrar Vecino'}
+                  {editingCustomer ? 'Guardar Cambios' : 'Registrar Deudor'}
                 </button>
               </div>
             </form>
