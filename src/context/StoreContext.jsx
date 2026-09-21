@@ -1810,6 +1810,23 @@ export const StoreProvider = ({ children }) => {
         });
     }
 
+    // 6. Cargar deudores / libreta de créditos por tienda desde Supabase
+    if (tenantSlug && tenantSlug !== 'default') {
+      supabase.from('credit_customers')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && Array.isArray(data)) {
+            const normalized = data.map(normalizeCreditCustomer).filter(Boolean);
+            setCreditCustomers(normalized);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(normalized));
+            } catch (e) {}
+          }
+        });
+    }
+
     // Subscripciones en Tiempo Real (Realtime)
     const ordersChannel = supabase
       .channel(`public:orders:${tenantSlug || 'all'}`)
@@ -1934,11 +1951,36 @@ export const StoreProvider = ({ children }) => {
       })
       .subscribe();
 
+    const creditsChannel = supabase
+      .channel(`public:credit_customers:${tenantSlug}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'credit_customers',
+        filter: `tenant_id=eq.${tenantSlug}`
+      }, payload => {
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const norm = normalizeCreditCustomer(payload.new);
+          if (norm) {
+            setCreditCustomers(prev => [norm, ...prev.filter(c => c.id !== norm.id)]);
+          }
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const norm = normalizeCreditCustomer(payload.new);
+          if (norm) {
+            setCreditCustomers(prev => prev.map(c => (c.id === norm.id ? norm : c)));
+          }
+        } else if (payload.eventType === 'DELETE') {
+          setCreditCustomers(prev => prev.filter(c => c.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(productsChannel);
       supabase.removeChannel(requestsChannel);
       supabase.removeChannel(suppliersChannel);
+      supabase.removeChannel(creditsChannel);
     };
   }, [tenantSlug, viewMode, currentUser, merchantStore?.id]);
 
@@ -3796,10 +3838,10 @@ export const StoreProvider = ({ children }) => {
   // LIBRETA DE CRÉDITOS Y CUENTAS POR COBRAR (FIAO VECINAL DIGITAL)
   // ==============================================================================
 
-  const addCreditCustomer = (customerData) => {
+  const addCreditCustomer = async (customerData) => {
     const cleanName = (customerData.name || '').trim();
     if (!cleanName) {
-      showToast('Ingresa el nombre del vecino para registrar su cuenta.', 'warning');
+      showToast('Ingresa el nombre del deudor para registrar su cuenta.', 'warning');
       return null;
     }
 
@@ -3827,11 +3869,32 @@ export const StoreProvider = ({ children }) => {
     });
 
     setCreditCustomers(prev => [newCustomer, ...prev]);
-    showToast(`Vecino "${newCustomer.name}" registrado en la libreta de cuentas.`, 'success');
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('credit_customers').insert([{
+          id: newCustomer.id,
+          tenant_id: tenantSlug,
+          name: newCustomer.name,
+          phone: newCustomer.phone,
+          apartment: newCustomer.apartment,
+          notes: newCustomer.notes,
+          balance: newCustomer.balance,
+          credit_limit: newCustomer.creditLimit,
+          transactions: newCustomer.transactions,
+          created_at: newCustomer.createdAt,
+          updated_at: newCustomer.updatedAt
+        }]);
+      }
+    } catch (e) {
+      // Fallback seguro a localStorage
+    }
+
+    showToast(`Deudor "${newCustomer.name}" registrado en la libreta de cuentas.`, 'success');
     return newCustomer;
   };
 
-  const updateCreditCustomer = (customerId, updatedFields) => {
+  const updateCreditCustomer = async (customerId, updatedFields) => {
     setCreditCustomers(prev => prev.map(c => {
       if (c.id === customerId) {
         return normalizeCreditCustomer({
@@ -3842,20 +3905,50 @@ export const StoreProvider = ({ children }) => {
       }
       return c;
     }));
-    showToast('Datos del vecino actualizados.', 'info');
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        const payload = {};
+        if (updatedFields.name !== undefined) payload.name = updatedFields.name;
+        if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
+        if (updatedFields.apartment !== undefined) payload.apartment = updatedFields.apartment;
+        if (updatedFields.notes !== undefined) payload.notes = updatedFields.notes;
+        if (updatedFields.creditLimit !== undefined) payload.credit_limit = updatedFields.creditLimit;
+        payload.updated_at = new Date().toISOString();
+
+        await supabase.from('credit_customers')
+          .update(payload)
+          .eq('id', customerId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
+
+    showToast('Datos del deudor actualizados.', 'info');
   };
 
-  const deleteCreditCustomer = (customerId) => {
+  const deleteCreditCustomer = async (customerId) => {
     const cust = creditCustomers.find(c => c.id === customerId);
     setCreditCustomers(prev => prev.filter(c => c.id !== customerId));
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        await supabase.from('credit_customers')
+          .delete()
+          .eq('id', customerId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
+
     showToast(`Cuenta de "${cust?.name || ''}" eliminada de la libreta.`, 'info');
   };
 
-  const addCustomerCharge = (customerId, amount, concept = 'Compra a cuenta / Fiao', items = []) => {
+  const addCustomerCharge = async (customerId, amount, concept = 'Compra a cuenta / Fiao', items = []) => {
     const numAmount = Math.max(0, parseFloat(amount) || 0);
     if (numAmount <= 0) return;
 
     let targetName = '';
+    let updatedCustomer = null;
+
     setCreditCustomers(prev => prev.map(c => {
       if (c.id === customerId) {
         targetName = c.name;
@@ -3869,21 +3962,35 @@ export const StoreProvider = ({ children }) => {
           balanceAfter: newBalance,
           items: Array.isArray(items) ? items : []
         };
-        return {
+        updatedCustomer = {
           ...c,
           balance: newBalance,
           transactions: [newTx, ...(c.transactions || [])],
           updatedAt: new Date().toISOString()
         };
+        return updatedCustomer;
       }
       return c;
     }));
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default' && updatedCustomer) {
+        await supabase.from('credit_customers')
+          .update({
+            balance: updatedCustomer.balance,
+            transactions: updatedCustomer.transactions,
+            updated_at: updatedCustomer.updatedAt
+          })
+          .eq('id', customerId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
 
     const cur = storeConfig?.currencySymbol || 'Bs.';
     showToast(`Anotado a la cuenta de ${targetName}: +${cur} ${numAmount.toFixed(2)}`, 'warning');
   };
 
-  const addCustomerPayment = (customerId, amount, paymentMethod = 'cash', note = '') => {
+  const addCustomerPayment = async (customerId, amount, paymentMethod = 'cash', note = '') => {
     const numAmount = Math.max(0, parseFloat(amount) || 0);
     if (numAmount <= 0) {
       showToast('Ingresa un monto válido a abonar.', 'warning');
@@ -3892,6 +3999,8 @@ export const StoreProvider = ({ children }) => {
 
     let targetName = '';
     let newBal = 0;
+    let updatedCustomer = null;
+
     setCreditCustomers(prev => prev.map(c => {
       if (c.id === customerId) {
         targetName = c.name;
@@ -3905,15 +4014,29 @@ export const StoreProvider = ({ children }) => {
           paymentMethod,
           balanceAfter: newBal
         };
-        return {
+        updatedCustomer = {
           ...c,
           balance: newBal,
           transactions: [newTx, ...(c.transactions || [])],
           updatedAt: new Date().toISOString()
         };
+        return updatedCustomer;
       }
       return c;
     }));
+
+    try {
+      if (supabase && tenantSlug && tenantSlug !== 'default' && updatedCustomer) {
+        await supabase.from('credit_customers')
+          .update({
+            balance: updatedCustomer.balance,
+            transactions: updatedCustomer.transactions,
+            updated_at: updatedCustomer.updatedAt
+          })
+          .eq('id', customerId)
+          .eq('tenant_id', tenantSlug);
+      }
+    } catch (e) {}
 
     const cur = storeConfig?.currencySymbol || 'Bs.';
     triggerConfetti();
