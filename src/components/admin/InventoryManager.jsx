@@ -97,18 +97,66 @@ export const InventoryManager = () => {
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [previewOriginalPhoto, setPreviewOriginalPhoto] = useState(null);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [isCreatingInlineCategory, setIsCreatingInlineCategory] = useState(false);
+  const [inlineCategoryInput, setInlineCategoryInput] = useState('');
+  const [isSavingInlineCategory, setIsSavingInlineCategory] = useState(false);
   const categoryDropdownRef = useRef(null);
+
+  // Crear y guardar nueva categoría directamente desde el dropdown de edición de producto
+  const handleCreateCategoryInline = async (e) => {
+    if (e) e.preventDefault();
+    const cleanCat = inlineCategoryInput.trim();
+    if (!cleanCat) return;
+
+    // Validar si ya existe
+    const existing = activeCategories.find(c => c.toLowerCase() === cleanCat.toLowerCase());
+    if (existing) {
+      showToast(`La categoría "${existing}" ya existe. Seleccionada.`, 'info');
+      setEditingProduct(prev => ({ ...prev, category: existing }));
+      setIsCreatingInlineCategory(false);
+      setInlineCategoryInput('');
+      setIsCategoryDropdownOpen(false);
+      return;
+    }
+
+    try {
+      setIsSavingInlineCategory(true);
+      const updatedCategories = [...activeCategories, cleanCat];
+      
+      // Guardar en base de datos Supabase (store_config.categories) y sincronizar localmente
+      await setStoreConfig(prev => ({
+        ...prev,
+        categories: updatedCategories
+      }));
+
+      // Seleccionar inmediatamente en el producto actual
+      setEditingProduct(prev => ({ ...prev, category: cleanCat }));
+      showToast(`Categoría "${cleanCat}" creada y guardada en la base de datos.`, 'success');
+      setInlineCategoryInput('');
+      setIsCreatingInlineCategory(false);
+      setIsCategoryDropdownOpen(false);
+    } catch (err) {
+      console.error('Error creando nueva categoría desde edición:', err);
+      showToast('No se pudo guardar la categoría en la nube.', 'error');
+    } finally {
+      setIsSavingInlineCategory(false);
+    }
+  };
 
   // Cerrar el selector de categorías al hacer click fuera o presionar Esc
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target)) {
         setIsCategoryDropdownOpen(false);
+        setIsCreatingInlineCategory(false);
+        setInlineCategoryInput('');
       }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsCategoryDropdownOpen(false);
+        setIsCreatingInlineCategory(false);
+        setInlineCategoryInput('');
       }
     };
 
@@ -126,6 +174,8 @@ export const InventoryManager = () => {
   useEffect(() => {
     if (!editingProduct) {
       setIsCategoryDropdownOpen(false);
+      setIsCreatingInlineCategory(false);
+      setInlineCategoryInput('');
     }
   }, [editingProduct]);
 
@@ -886,41 +936,112 @@ export const InventoryManager = () => {
                   </button>
 
                   {isCategoryDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 max-h-48 overflow-y-auto divide-y divide-slate-50 animate-fadeIn">
-                      {!activeCategories.includes(editingProduct.category) && editingProduct.category && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingProduct({ ...editingProduct, category: editingProduct.category });
-                            setIsCategoryDropdownOpen(false);
-                          }}
-                          className="w-full px-3.5 py-2 text-left text-xs flex items-center justify-between bg-emerald-50 text-emerald-800 font-bold transition-colors cursor-pointer"
-                        >
-                          <span className="truncate">{editingProduct.category}</span>
-                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" />
-                        </button>
-                      )}
-                      {activeCategories.map(cat => {
-                        const isSelected = (editingProduct.category || 'Sin definir') === cat;
-                        return (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden divide-y divide-slate-100 animate-fadeIn">
+                      {/* Sección Superior: Crear Nueva Categoría y Guardar en BD */}
+                      <div className="p-2 bg-slate-50 border-b border-slate-100">
+                        {isCreatingInlineCategory ? (
+                          <div className="space-y-1.5 animate-fadeIn" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1.5">
+                              <input 
+                                type="text"
+                                autoFocus
+                                value={inlineCategoryInput}
+                                onChange={(e) => setInlineCategoryInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleCreateCategoryInline();
+                                  } else if (e.key === 'Escape') {
+                                    setIsCreatingInlineCategory(false);
+                                  }
+                                }}
+                                placeholder="Nombre de categoría..."
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs font-semibold bg-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+                              />
+                              <button
+                                type="button"
+                                disabled={isSavingInlineCategory || !inlineCategoryInput.trim()}
+                                onClick={handleCreateCategoryInline}
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                                title="Guardar nueva categoría en base de datos"
+                              >
+                                {isSavingInlineCategory ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Crear</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsCreatingInlineCategory(false);
+                                  setInlineCategoryInput('');
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+                                title="Cancelar"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block px-1">
+                              Presiona Enter para guardar en la nube
+                            </span>
+                          </div>
+                        ) : (
                           <button
-                            key={cat}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsCreatingInlineCategory(true);
+                            }}
+                            className="w-full py-1.5 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>+ Crear nueva categoría</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Lista de Categorías Existentes */}
+                      <div className="max-h-48 overflow-y-auto divide-y divide-slate-50">
+                        {!activeCategories.includes(editingProduct.category) && editingProduct.category && (
+                          <button
                             type="button"
                             onClick={() => {
-                              setEditingProduct({ ...editingProduct, category: cat });
+                              setEditingProduct({ ...editingProduct, category: editingProduct.category });
                               setIsCategoryDropdownOpen(false);
                             }}
-                            className={`w-full px-3.5 py-2.5 text-left text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                              isSelected
-                                ? 'bg-emerald-50 text-emerald-800 font-bold'
-                                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
-                            }`}
+                            className="w-full px-3.5 py-2 text-left text-xs flex items-center justify-between bg-emerald-50 text-emerald-800 font-bold transition-colors cursor-pointer"
                           >
-                            <span className="truncate">{cat}</span>
-                            {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" />}
+                            <span className="truncate">{editingProduct.category}</span>
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" />
                           </button>
-                        );
-                      })}
+                        )}
+                        {activeCategories.map(cat => {
+                          const isSelected = (editingProduct.category || 'Sin definir') === cat;
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                setEditingProduct({ ...editingProduct, category: cat });
+                                setIsCategoryDropdownOpen(false);
+                              }}
+                              className={`w-full px-3.5 py-2.5 text-left text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                                isSelected
+                                  ? 'bg-emerald-50 text-emerald-800 font-bold'
+                                  : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                              }`}
+                            >
+                              <span className="truncate">{cat}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-2" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
