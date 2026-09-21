@@ -390,41 +390,41 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('all')}
-          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-none cursor-pointer relative group ${
             selectedPaymentMethod === 'all'
-              ? 'bg-slate-100 border-slate-900 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+              : 'bg-slate-50/90 border-slate-200 text-slate-800 hover:border-slate-300'
           }`}
           title="Ver todas las ventas sin filtrar por forma de pago"
         >
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'all' ? 'text-slate-900 font-bold' : 'text-slate-600'}`}>
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'all' ? 'text-slate-100 font-bold' : 'text-slate-600'}`}>
               Recaudación Total
             </span>
             <div className="flex items-center gap-1.5">
               {selectedPaymentMethod === 'all' && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white shadow-2xs">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500 text-slate-950 shadow-2xs">
                   Todas
                 </span>
               )}
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
-                selectedPaymentMethod === 'all' ? 'bg-slate-900 text-white' : 'bg-emerald-50 text-emerald-600'
+                selectedPaymentMethod === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-200/80 text-slate-700'
               }`}>
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+          <p className={`text-xl sm:text-2xl font-black mt-1 ${selectedPaymentMethod === 'all' ? 'text-white' : 'text-slate-900'}`}>
             {currency} {totalRevenue.toFixed(2)}
           </p>
-          <div className="text-[11px] text-slate-400 mt-0.5 font-medium flex items-center justify-between">
+          <div className={`text-[11px] mt-0.5 font-medium flex items-center justify-between ${selectedPaymentMethod === 'all' ? 'text-slate-300' : 'text-slate-500'}`}>
             <span>
               {selectedPeriod === 'today' ? 'Ventas de hoy' : 
                selectedPeriod === 'yesterday' ? 'Ventas de ayer' : 
                selectedPeriod === 'week' ? 'Últimos 7 días' : 
                selectedPeriod === 'month' ? 'Este mes' : 'Todo el período'}
             </span>
-            <span className="text-[10px] text-slate-500 font-bold group-hover:text-slate-800 transition-colors">
+            <span className={`text-[10px] font-bold ${selectedPaymentMethod === 'all' ? 'text-emerald-400' : 'text-slate-500'}`}>
               {selectedPaymentMethod === 'all' ? '● Mostrando todas' : 'Ver todas'}
             </span>
           </div>
@@ -434,10 +434,10 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('cash')}
-          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-none cursor-pointer relative group ${
             selectedPaymentMethod === 'cash'
-              ? 'bg-emerald-50 border-emerald-500 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-emerald-300'
+              ? 'bg-emerald-100 border-emerald-600 shadow-sm'
+              : 'bg-emerald-50/40 border-emerald-200/80 hover:border-emerald-300'
           }`}
           title={selectedPaymentMethod === 'cash' ? 'Clic para quitar filtro de efectivo' : 'Clic para filtrar solo ventas en efectivo'}
         >
@@ -473,10 +473,10 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('qr')}
-          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-none cursor-pointer relative group ${
             selectedPaymentMethod === 'qr'
-              ? 'bg-cyan-50 border-cyan-500 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-cyan-300'
+              ? 'bg-cyan-100 border-cyan-600 shadow-sm'
+              : 'bg-cyan-50/40 border-cyan-200/80 hover:border-cyan-300'
           }`}
           title={selectedPaymentMethod === 'qr' ? 'Clic para quitar filtro de QR' : 'Clic para filtrar solo ventas por QR Simple'}
         >
@@ -512,10 +512,10 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('card')}
-          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-none cursor-pointer relative group ${
             selectedPaymentMethod === 'card'
-              ? 'bg-amber-50 border-amber-500 shadow-xs'
-              : 'bg-white border-slate-200 hover:border-amber-300'
+              ? 'bg-amber-100 border-amber-600 shadow-sm'
+              : 'bg-amber-50/40 border-amber-200/80 hover:border-amber-300'
           }`}
           title={selectedPaymentMethod === 'card' ? 'Clic para quitar filtro de Tarjeta POS' : 'Clic para filtrar solo ventas con Tarjeta POS'}
         >
@@ -610,8 +610,8 @@ export const SalesHistory = () => {
                   key={c.id}
                   type="button"
                   onClick={() => setSelectedChannel(c.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedChannel === c.id ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-none cursor-pointer ${
+                    selectedChannel === c.id ? 'bg-emerald-600 text-white shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {c.label}
@@ -634,8 +634,8 @@ export const SalesHistory = () => {
                   key={m.id}
                   type="button"
                   onClick={() => handleTogglePaymentMethod(m.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors duration-150 cursor-pointer ${
-                    selectedPaymentMethod === m.id ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-none cursor-pointer ${
+                    selectedPaymentMethod === m.id ? 'bg-emerald-600 text-white shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {m.label}
@@ -721,9 +721,9 @@ export const SalesHistory = () => {
                   key={`sales-limit-${limit}`}
                   type="button"
                   onClick={() => setItemsPerPage(limit)}
-                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-extrabold transition-none cursor-pointer ${
                     isSelected
-                      ? 'bg-white text-emerald-700 shadow-2xs font-black'
+                      ? 'bg-emerald-600 text-white shadow-2xs font-black'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
