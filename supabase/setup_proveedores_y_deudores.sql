@@ -278,3 +278,11 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.credit_customers;
   END IF;
 END $$;
+
+-- ==============================================================================
+-- PARTE 4: COLUMNAS DE PROVEEDOR EN PRODUCTOS (Para asignación directa)
+-- ==============================================================================
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS supplier_id TEXT DEFAULT '';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS supplier_name TEXT DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_products_supplier_id ON public.products(tenant_id, supplier_id);
+

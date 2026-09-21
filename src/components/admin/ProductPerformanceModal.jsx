@@ -78,15 +78,27 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
     return filterOutDemoSuppliers(suppliers || []).filter(Boolean);
   }, [suppliers]);
 
-  // Preseleccionar proveedor si coincide con la categoría del producto
-  const [selectedSupplierId, setSelectedSupplierId] = useState(() => {
+  // Preseleccionar proveedor si el producto ya tiene un proveedor asignado, o si coincide con la categoría
+  const resolveInitialSupplierId = () => {
     if (!product || activeSuppliers.length === 0) return '';
-    const match = activeSuppliers.find(s => 
+    const assignedId = product.supplierId || product.supplier_id;
+    if (assignedId) {
+      const match = activeSuppliers.find(s => s.id === assignedId);
+      if (match) return match.id;
+    }
+    const catMatch = activeSuppliers.find(s => 
       s.category && product.category && 
       s.category.toLowerCase() === product.category.toLowerCase()
     );
-    return match ? match.id : (activeSuppliers[0]?.id || '');
-  });
+    return catMatch ? catMatch.id : (activeSuppliers[0]?.id || '');
+  };
+
+  const [selectedSupplierId, setSelectedSupplierId] = useState(resolveInitialSupplierId);
+
+  useEffect(() => {
+    setSelectedSupplierId(resolveInitialSupplierId());
+    setIsAddedSuccess(false);
+  }, [product, activeSuppliers]);
 
   const [orderQuantity, setOrderQuantity] = useState('12');
   const [orderNote, setOrderNote] = useState('Reponer stock para tienda');

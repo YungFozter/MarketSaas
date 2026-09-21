@@ -144,3 +144,9 @@ BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.suppliers;
   END IF;
 END $$;
+
+-- 4. COLUMNAS DE PROVEEDOR EN PRODUCTOS (Para asignar proveedor a productos)
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS supplier_id TEXT DEFAULT '';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS supplier_name TEXT DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_products_supplier_id ON public.products(tenant_id, supplier_id);
+

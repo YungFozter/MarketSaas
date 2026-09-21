@@ -454,6 +454,10 @@ export const normalizeProduct = (p) => {
     image: resolvedImage || '/products/producto-sin-imagen.png',
     code: p.code ? String(p.code) : '',
     badge: p.badge || '',
+    supplierId: p.supplierId ? String(p.supplierId) : (p.supplier_id ? String(p.supplier_id) : ''),
+    supplier_id: p.supplierId ? String(p.supplierId) : (p.supplier_id ? String(p.supplier_id) : ''),
+    supplierName: p.supplierName ? String(p.supplierName) : (p.supplier_name ? String(p.supplier_name) : ''),
+    supplier_name: p.supplierName ? String(p.supplierName) : (p.supplier_name ? String(p.supplier_name) : ''),
     isPopular: Boolean(p.isPopular ?? p.is_popular),
     is_popular: Boolean(p.isPopular ?? p.is_popular),
     isActive: p.isActive !== undefined ? Boolean(p.isActive) : (p.is_active !== undefined ? Boolean(p.is_active) : true),
@@ -3088,6 +3092,10 @@ export const StoreProvider = ({ children }) => {
       is_active: isAct,
       isactive: isAct,
       isActive: isAct,
+      supplier_id: String(productData.supplierId || productData.supplier_id || ''),
+      supplierId: String(productData.supplierId || productData.supplier_id || ''),
+      supplier_name: String(productData.supplierName || productData.supplier_name || ''),
+      supplierName: String(productData.supplierName || productData.supplier_name || ''),
       updated_at: new Date().toISOString()
     };
 
@@ -3161,6 +3169,21 @@ export const StoreProvider = ({ children }) => {
             } else if (upsertErr) {
               lastError = upsertErr;
             }
+          }
+        }
+
+        // Si falló por falta de columnas como supplier_id en Supabase, reintentar con baseDbRecord
+        if (!savedSuccessfully && lastError?.message && (lastError.message.includes('supplier_id') || lastError.message.includes('supplier'))) {
+          const cleanDbRecord = { ...dbRecord };
+          delete cleanDbRecord.supplier_id;
+          delete cleanDbRecord.supplierId;
+          delete cleanDbRecord.supplier_name;
+          delete cleanDbRecord.supplierName;
+          const { data: retryData, error: retryErr } = isEdit
+            ? await supabase.from('products').update(cleanDbRecord).eq('id', prodId).select()
+            : await supabase.from('products').insert([cleanDbRecord]).select();
+          if (!retryErr && retryData && retryData.length > 0) {
+            savedSuccessfully = true;
           }
         }
 
