@@ -21,13 +21,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Loader2
+  Loader2,
+  Camera,
+  Maximize2,
+  Upload
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
 import { normalizeSearchText } from '../../utils/formatters';
 import { compressImage } from '../../utils/imageUtils';
 import { SeedCatalogModal } from './SeedCatalogModal/SeedCatalogModal';
+import { ProductCameraModal } from './ProductCameraModal';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -90,6 +94,8 @@ export const InventoryManager = () => {
   const [isNew, setIsNew] = useState(false);
   const [isCompressingImage, setIsCompressingImage] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [previewOriginalPhoto, setPreviewOriginalPhoto] = useState(null);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const categoryDropdownRef = useRef(null);
 
@@ -1030,72 +1036,130 @@ export const InventoryManager = () => {
                 </div>
               </div>
 
-              {/* Cargar Foto de Producto (Archivo + URL) */}
-              <div className="space-y-2 p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                <label className="text-xs font-bold text-slate-800 block">Foto del Producto (Cargar desde Archivo o Enlace)</label>
+              {/* Cargar Foto de Producto (Cámara, Archivo o Enlace) */}
+              <div className="space-y-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>Foto del Producto</span>
+                    <span className="text-[10px] text-slate-400 font-normal">(Cámara, Archivo o Enlace)</span>
+                  </label>
+                  {editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' && (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewOriginalPhoto(editingProduct.image)}
+                      className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+                      title="Ver foto en tamaño original"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Ver tamaño original</span>
+                    </button>
+                  )}
+                </div>
                 
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1 shadow-2xs relative">
+                <div className="flex flex-col sm:flex-row items-center gap-3.5">
+                  {/* Miniatura con zoom / clic para ver tamaño original */}
+                  <div 
+                    onClick={() => {
+                      if (editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png') {
+                        setPreviewOriginalPhoto(editingProduct.image);
+                      }
+                    }}
+                    className={`w-20 h-20 rounded-2xl bg-white border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center p-1.5 shadow-2xs relative group transition-all ${
+                      editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png'
+                        ? 'cursor-pointer hover:border-emerald-400 hover:shadow-md'
+                        : ''
+                    }`}
+                    title={editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' ? 'Clic para ver en tamaño original' : 'Foto del producto'}
+                  >
                     {isCompressingImage ? (
                       <div className="flex flex-col items-center justify-center gap-0.5 text-emerald-600">
                         <Loader2 className="w-5 h-5 animate-spin" />
                         <span className="text-[8px] font-bold">Optimizando...</span>
                       </div>
                     ) : (
-                      <img 
-                        src={editingProduct.image?.trim() || '/products/producto-sin-imagen.png'} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = '/products/producto-sin-imagen.png';
-                        }}
-                      />
+                      <>
+                        <img 
+                          src={editingProduct.image?.trim() || '/products/producto-sin-imagen.png'} 
+                          alt="Preview" 
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = '/products/producto-sin-imagen.png';
+                          }}
+                        />
+                        {editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' && (
+                          <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white text-[9px] font-bold transition-opacity rounded-xl gap-0.5">
+                            <Maximize2 className="w-4 h-4" />
+                            <span>Ampliar</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-2 w-full">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={isCompressingImage || isSavingProduct}
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          try {
-                            setIsCompressingImage(true);
-                            const compressed = await compressImage(file, 800, 800, 0.82);
-                            setEditingProduct(prev => ({ ...prev, image: compressed }));
-                            showToast('Foto cargada y optimizada para la base de datos', 'success');
-                          } catch (err) {
-                            console.error('Error procesando imagen:', err);
-                            showToast('No se pudo optimizar la imagen seleccionada', 'error');
-                          } finally {
-                            setIsCompressingImage(false);
-                          }
-                        }
-                      }}
-                      className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer disabled:opacity-50"
-                    />
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="O pega una URL de foto en Internet (opcional)..."
-                        value={editingProduct.image || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                  <div className="flex-1 space-y-2.5 w-full">
+                    {/* Botones de acción rápida: Abrir Cámara y Subir Archivo */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsCameraModalOpen(true)}
                         disabled={isCompressingImage || isSavingProduct}
-                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-hidden focus:border-emerald-500 disabled:bg-slate-100"
-                      />
+                        className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-sm shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        title="Abrir cámara web o del teléfono para tomar foto del producto"
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Tomar Foto con Cámara</span>
+                      </button>
+
+                      <label className="px-3 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50">
+                        <Upload className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Subir Archivo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isCompressingImage || isSavingProduct}
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                setIsCompressingImage(true);
+                                const compressed = await compressImage(file, 800, 800, 0.82);
+                                setEditingProduct(prev => ({ ...prev, image: compressed }));
+                                showToast('Foto cargada y lista para guardar.', 'success');
+                              } catch (err) {
+                                console.error('Error procesando imagen:', err);
+                                showToast('No se pudo optimizar la imagen seleccionada', 'error');
+                              } finally {
+                                setIsCompressingImage(false);
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+
                       {editingProduct.image && editingProduct.image !== '/products/producto-sin-imagen.png' && (
                         <button
                           type="button"
                           onClick={() => setEditingProduct({ ...editingProduct, image: '/products/producto-sin-imagen.png' })}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-500 hover:text-rose-600 font-bold px-2 py-0.5 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="Usar imagen predeterminada"
+                          className="px-2.5 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer"
+                          title="Quitar foto y usar predeterminada"
                         >
                           Quitar foto
                         </button>
                       )}
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="O escribe/pega una URL de imagen web (opcional)..."
+                        value={editingProduct.image && !editingProduct.image.startsWith('data:') ? editingProduct.image : ''}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                        disabled={isCompressingImage || isSavingProduct}
+                        className="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white focus:outline-hidden focus:border-emerald-500 disabled:bg-slate-100 placeholder:text-slate-400"
+                      />
                     </div>
                   </div>
                 </div>
@@ -1666,6 +1730,65 @@ export const InventoryManager = () => {
         currency={currency}
         triggerConfetti={triggerConfetti}
       />
+
+      {/* Modal de Cámara para Foto de Producto */}
+      <ProductCameraModal
+        isOpen={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onPhotoSelected={(photoUrl) => {
+          setEditingProduct(prev => ({ ...prev, image: photoUrl }));
+          showToast('Foto capturada y lista. Se guardará al presionar "Guardar Producto".', 'success');
+        }}
+      />
+
+      {/* Modal Lightbox de Vista Previa en Tamaño Original */}
+      {previewOriginalPhoto && (
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-slate-950/85 backdrop-blur-sm animate-fadeIn"
+          onClick={() => setPreviewOriginalPhoto(null)}
+        >
+          <div 
+            className="relative max-w-4xl w-full bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl p-4 sm:p-5 flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between pb-3 text-white border-b border-slate-800 mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                  <Maximize2 className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-bold text-slate-200">Foto del Producto (Tamaño Original)</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewOriginalPhoto(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Cerrar vista previa"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="w-full overflow-auto max-h-[72vh] flex items-center justify-center rounded-2xl bg-black/50 p-2 sm:p-4">
+              <img 
+                src={previewOriginalPhoto} 
+                alt="Foto en tamaño original" 
+                className="max-h-[68vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              />
+            </div>
+
+            <div className="w-full flex items-center justify-between pt-3 text-xs text-slate-400">
+              <span>Vista en resolución original</span>
+              <button
+                type="button"
+                onClick={() => setPreviewOriginalPhoto(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
