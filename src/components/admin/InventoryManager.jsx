@@ -24,7 +24,8 @@ import {
   Loader2,
   Camera,
   Maximize2,
-  Upload
+  Upload,
+  TrendingUp
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
@@ -32,6 +33,7 @@ import { normalizeSearchText } from '../../utils/formatters';
 import { compressImage } from '../../utils/imageUtils';
 import { SeedCatalogModal } from './SeedCatalogModal/SeedCatalogModal';
 import { ProductCameraModal } from './ProductCameraModal';
+import { ProductPerformanceModal } from './ProductPerformanceModal';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -100,6 +102,7 @@ export const InventoryManager = () => {
   const [isCreatingInlineCategory, setIsCreatingInlineCategory] = useState(false);
   const [inlineCategoryInput, setInlineCategoryInput] = useState('');
   const [isSavingInlineCategory, setIsSavingInlineCategory] = useState(false);
+  const [selectedProductForPerformance, setSelectedProductForPerformance] = useState(null);
   const categoryDropdownRef = useRef(null);
 
   // Crear y guardar nueva categoría directamente desde el dropdown de edición de producto
@@ -727,18 +730,25 @@ export const InventoryManager = () => {
 
                     {/* Producto */}
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-3">
+                      <div 
+                        onClick={() => setSelectedProductForPerformance(prod)}
+                        className="flex items-center gap-3 cursor-pointer group select-none"
+                        title="Haz clic para ver ventas del producto y pedir al proveedor"
+                      >
                         <img
                           src={prod.image || '/products/producto-sin-imagen.png'}
                           alt={prod.name}
-                          className="w-10 h-10 rounded-xl object-contain bg-slate-50 border border-slate-100 shrink-0 p-0.5"
+                          className="w-10 h-10 rounded-xl object-contain bg-slate-50 border border-slate-100 shrink-0 p-0.5 group-hover:scale-105 group-hover:border-emerald-300 transition-all shadow-2xs"
                           onError={(e) => {
                             e.currentTarget.onerror = null;
                             e.currentTarget.src = '/products/producto-sin-imagen.png';
                           }}
                         />
-                        <div>
-                          <p className="font-extrabold text-slate-900 leading-snug">{prod.name}</p>
+                        <div className="min-w-0">
+                          <p className="font-extrabold text-slate-900 leading-snug group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
+                            <span className="truncate">{prod.name}</span>
+                            <span className="text-[10px] text-emerald-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">📊</span>
+                          </p>
                           <p className="text-[11px] text-slate-400">
                             {prod.unit === 'Sin definir' ? <span className="italic">Sin formato</span> : prod.unit}
                           </p>
@@ -795,15 +805,22 @@ export const InventoryManager = () => {
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
+                          onClick={() => setSelectedProductForPerformance(prod)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 transition-colors cursor-pointer"
+                          title="Ver ventas (Día/Semana/Mes) y pedir al proveedor"
+                        >
+                          <TrendingUp className="w-4 h-4 text-indigo-600" />
+                        </button>
+                        <button
                           onClick={() => handleOpenEdit(prod)}
-                          className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
                           title="Editar producto"
                         >
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setProductToDelete(prod)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                           title="Eliminar producto"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1909,6 +1926,19 @@ export const InventoryManager = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Rendimiento del Producto y Pedido al Proveedor */}
+      {selectedProductForPerformance && (
+        <ProductPerformanceModal
+          product={selectedProductForPerformance}
+          isOpen={!!selectedProductForPerformance}
+          onClose={() => setSelectedProductForPerformance(null)}
+          onEditProduct={(prod) => {
+            setSelectedProductForPerformance(null);
+            handleOpenEdit(prod);
+          }}
+        />
       )}
     </div>
   );
