@@ -93,6 +93,7 @@ export const SalesHistory = () => {
 
   // Toggle interactivo para los filtros de método de pago (desde tarjetas KPI o selector)
   const handleTogglePaymentMethod = (method) => {
+    setCurrentPage(1);
     if (method === 'all') {
       setSelectedPaymentMethod('all');
     } else {
@@ -389,22 +390,26 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('all')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
             selectedPaymentMethod === 'all'
-              ? 'bg-slate-50 border-slate-900 ring-2 ring-slate-900/80 shadow-xs'
-              : 'bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-2xs'
+              ? 'bg-slate-100 border-slate-900 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-slate-300'
           }`}
           title="Ver todas las ventas sin filtrar por forma de pago"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Recaudación Total</span>
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'all' ? 'text-slate-900 font-bold' : 'text-slate-600'}`}>
+              Recaudación Total
+            </span>
             <div className="flex items-center gap-1.5">
               {selectedPaymentMethod === 'all' && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-900 text-white shadow-2xs">
                   Todas
                 </span>
               )}
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                selectedPaymentMethod === 'all' ? 'bg-slate-900 text-white' : 'bg-emerald-50 text-emerald-600'
+              }`}>
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
@@ -429,24 +434,26 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('cash')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
             selectedPaymentMethod === 'cash'
-              ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500 shadow-sm'
-              : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-emerald-50/20 hover:shadow-2xs'
+              ? 'bg-emerald-50 border-emerald-500 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-emerald-300'
           }`}
           title={selectedPaymentMethod === 'cash' ? 'Clic para quitar filtro de efectivo' : 'Clic para filtrar solo ventas en efectivo'}
         >
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'cash' ? 'text-emerald-900 font-bold' : 'text-emerald-800'}`}>
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'cash' ? 'text-emerald-950 font-bold' : 'text-emerald-800'}`}>
               Efectivo 💵
             </span>
             <div className="flex items-center gap-1.5">
               {selectedPaymentMethod === 'cash' && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white animate-pulse">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-2xs">
                   Filtrando
                 </span>
               )}
-              <div className="w-8 h-8 rounded-xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center font-bold">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                selectedPaymentMethod === 'cash' ? 'bg-emerald-600 text-white' : 'bg-emerald-100/80 text-emerald-700'
+              }`}>
                 <Banknote className="w-4 h-4" />
               </div>
             </div>
@@ -466,24 +473,26 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('qr')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
             selectedPaymentMethod === 'qr'
-              ? 'bg-cyan-50/80 border-cyan-500 ring-2 ring-cyan-500 shadow-sm'
-              : 'bg-white border-slate-200/90 hover:border-cyan-300 hover:bg-cyan-50/20 hover:shadow-2xs'
+              ? 'bg-cyan-50 border-cyan-500 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-cyan-300'
           }`}
           title={selectedPaymentMethod === 'qr' ? 'Clic para quitar filtro de QR' : 'Clic para filtrar solo ventas por QR Simple'}
         >
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'qr' ? 'text-cyan-900 font-bold' : 'text-cyan-800'}`}>
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'qr' ? 'text-cyan-950 font-bold' : 'text-cyan-800'}`}>
               QR Digital / Simple 📲
             </span>
             <div className="flex items-center gap-1.5">
               {selectedPaymentMethod === 'qr' && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-600 text-white animate-pulse">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-600 text-white shadow-2xs">
                   Filtrando
                 </span>
               )}
-              <div className="w-8 h-8 rounded-xl bg-cyan-100/80 text-cyan-700 flex items-center justify-center font-bold">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                selectedPaymentMethod === 'qr' ? 'bg-cyan-600 text-white' : 'bg-cyan-100/80 text-cyan-700'
+              }`}>
                 <QrCode className="w-4 h-4" />
               </div>
             </div>
@@ -503,24 +512,26 @@ export const SalesHistory = () => {
         <button
           type="button"
           onClick={() => handleTogglePaymentMethod('card')}
-          className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative group active:scale-[0.99] ${
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-colors duration-150 cursor-pointer relative group ${
             selectedPaymentMethod === 'card'
-              ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-500 shadow-sm'
-              : 'bg-white border-slate-200/90 hover:border-amber-300 hover:bg-amber-50/20 hover:shadow-2xs'
+              ? 'bg-amber-50 border-amber-500 shadow-xs'
+              : 'bg-white border-slate-200 hover:border-amber-300'
           }`}
           title={selectedPaymentMethod === 'card' ? 'Clic para quitar filtro de Tarjeta POS' : 'Clic para filtrar solo ventas con Tarjeta POS'}
         >
           <div className="flex items-center justify-between">
-            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'card' ? 'text-amber-900 font-bold' : 'text-amber-800'}`}>
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'card' ? 'text-amber-950 font-bold' : 'text-amber-800'}`}>
               Tarjeta POS 💳
             </span>
             <div className="flex items-center gap-1.5">
               {selectedPaymentMethod === 'card' && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white animate-pulse">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white shadow-2xs">
                   Filtrando
                 </span>
               )}
-              <div className="w-8 h-8 rounded-xl bg-amber-100/80 text-amber-700 flex items-center justify-center font-bold">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                selectedPaymentMethod === 'card' ? 'bg-amber-600 text-white' : 'bg-amber-100/80 text-amber-700'
+              }`}>
                 <CreditCard className="w-4 h-4" />
               </div>
             </div>
@@ -623,7 +634,7 @@ export const SalesHistory = () => {
                   key={m.id}
                   type="button"
                   onClick={() => handleTogglePaymentMethod(m.id)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors duration-150 cursor-pointer ${
                     selectedPaymentMethod === m.id ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >

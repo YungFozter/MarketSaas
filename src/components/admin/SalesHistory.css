@@ -10,3 +10,18 @@
 .sales-table-row:hover {
   background-color: rgba(241, 245, 249, 0.7);
 }
+
+.sales-kpi-card {
+  -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-appearance: none;
+  outline: none !important;
+}
+
+.sales-kpi-card:focus,
+.sales-kpi-card:focus-visible {
+  outline: none !important;
+}
+

@@ -1,11 +1,17 @@
 @import "tailwindcss";
 
 @layer base {
+  *, *::before, *::after {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
+  }
+  button, a, [role="button"] {
+    touch-action: manipulation;
   }
 }
 
