@@ -274,8 +274,8 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                     3
                   </span>
                   <div>
-                    <strong className="text-xs font-black text-slate-900 block leading-tight">¡Te lo llevamos!</strong>
-                    <span className="text-[10px] text-slate-500 leading-tight block">Entrega directa en tu puerta o retíralo listo.</span>
+                    <strong className="text-xs font-black text-slate-900 block leading-tight">¡Listo!</strong>
+                    <span className="text-[10px] text-slate-500 leading-tight block">Tu orden lista para recoger o enviar segun disponibilidad.</span>
                   </div>
                 </div>
               </div>
@@ -402,7 +402,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
 
                   <div className="space-y-0.5 text-[10px] text-slate-600 font-semibold">
                     <p className="text-emerald-700 font-black">Escanea con tu celular</p>
-                    <p>Te lo llevamos a tu puerta</p>
+                    <p>Listo para recoger o enviar</p>
                     {storePhone && <p className="font-bold text-slate-800">WhatsApp: {storePhone}</p>}
                   </div>
                 </div>
