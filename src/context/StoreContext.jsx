@@ -684,35 +684,44 @@ export const deduplicateProducts = (productList) => {
   return result;
 };
 
-// Filtra automáticamente los 14 productos demo sembrados si la tienda ya cuenta con productos reales/importados
-// y descarta productos descontinuados (ej. queso gouda menorita)
+// Registro y consulta de IDs de productos eliminados explícitamente por el dueño
+export const getDeletedProductIds = (slug) => {
+  if (!slug) return new Set();
+  try {
+    const raw = localStorage.getItem(`marketsaas_${slug}_deleted_products`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed.map(String));
+    }
+  } catch (e) {
+    console.warn('Error leyendo deleted_products:', e);
+  }
+  return new Set();
+};
+
+export const recordDeletedProductIds = (slug, ids = []) => {
+  if (!slug || !Array.isArray(ids) || ids.length === 0) return;
+  try {
+    const current = getDeletedProductIds(slug);
+    ids.forEach(id => {
+      if (id != null) current.add(String(id));
+    });
+    localStorage.setItem(`marketsaas_${slug}_deleted_products`, JSON.stringify(Array.from(current)));
+  } catch (e) {
+    console.warn('Error guardando deleted_products:', e);
+  }
+};
+
+// Sanitiza productos descartando elementos nulos o residuos descontinuados sin eliminar productos válidos
 export const filterOutLegacyDemoProducts = (productList, slug) => {
   if (!Array.isArray(productList)) {
     return [];
   }
-  // Excluir siempre queso gouda / menorita eliminado canónicamente
-  const sanitized = productList.filter(p => {
-    if (!p) return false;
+  // Excluir siempre queso gouda / menorita eliminado canónicamente y elementos inválidos
+  return productList.filter(p => {
+    if (!p || typeof p !== 'object') return false;
     const n = ((p.name || '') + ' ' + (p.id || '')).toLowerCase();
     return !n.includes('gouda') && !n.includes('menorita');
-  });
-
-  if (!slug || slug === 'default') {
-    return sanitized;
-  }
-  const hasCustomProducts = sanitized.some(p => {
-    if (!p || !p.id) return false;
-    return /prod-\d{10,}/.test(p.id) || !p.id.startsWith(`${slug}-prod-`);
-  });
-
-  if (!hasCustomProducts) {
-    return sanitized;
-  }
-
-  return sanitized.filter(p => {
-    if (!p || !p.id) return false;
-    const isLegacyDemoId = new RegExp(`^${slug}-prod-([1-9]|1[0-4])$`).test(p.id);
-    return !isLegacyDemoId;
   });
 };
 
@@ -940,16 +949,25 @@ export const StoreProvider = ({ children }) => {
       // Pre-cargar de forma inmediata el catálogo variado de la tienda seleccionada
       try {
         const localProds = localStorage.getItem(`marketsaas_${foundStore.slug}_products`);
+        const baseCatalog = getStoreCatalog(foundStore.slug).map(normalizeProduct);
+        const deletedIds = getDeletedProductIds(foundStore.slug);
         if (localProds) {
           const parsed = JSON.parse(localProds);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const synced = syncProductsWithCanonicalCatalog(parsed, foundStore.slug);
-            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(synced), foundStore.slug));
+            const existingIds = new Set(parsed.map(p => String(p.id)));
+            const combined = [...parsed];
+            baseCatalog.forEach(bp => {
+              if (!existingIds.has(String(bp.id)) && !deletedIds.has(String(bp.id))) {
+                combined.push(bp);
+              }
+            });
+            const synced = syncProductsWithCanonicalCatalog(combined, foundStore.slug);
+            setProducts(deduplicateProducts(filterOutLegacyDemoProducts(synced, foundStore.slug)));
           } else {
-            setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
+            setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
           }
         } else {
-          setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
+          setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
         }
       } catch {
         setProducts(getStoreCatalog(foundStore.slug).map(normalizeProduct));
@@ -981,19 +999,28 @@ export const StoreProvider = ({ children }) => {
   // 2. Productos
   const [products, setProducts] = useState(() => {
     if (tenantSlug && tenantSlug !== 'default') {
+      const baseCatalog = getStoreCatalog(tenantSlug).map(normalizeProduct);
+      const deletedIds = getDeletedProductIds(tenantSlug);
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const synced = syncProductsWithCanonicalCatalog(parsed, tenantSlug);
-            return filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug);
+            const existingIds = new Set(parsed.map(p => String(p.id)));
+            const combined = [...parsed];
+            baseCatalog.forEach(bp => {
+              if (!existingIds.has(String(bp.id)) && !deletedIds.has(String(bp.id))) {
+                combined.push(bp);
+              }
+            });
+            const synced = syncProductsWithCanonicalCatalog(combined, tenantSlug);
+            return deduplicateProducts(filterOutLegacyDemoProducts(synced, tenantSlug));
           }
         } catch (e) {
           // fallback
         }
       }
-      return getStoreCatalog(tenantSlug).map(normalizeProduct);
+      return baseCatalog.filter(bp => !deletedIds.has(String(bp.id)));
     }
     return tenantSlug === 'default' ? initialProducts.map(normalizeProduct) : [];
   });
@@ -1496,16 +1523,25 @@ export const StoreProvider = ({ children }) => {
     try {
       if (tenantSlug !== 'default') {
         const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
+        const baseCatalog = getStoreCatalog(tenantSlug).map(normalizeProduct);
+        const deletedIds = getDeletedProductIds(tenantSlug);
         if (localProds) {
           const parsed = JSON.parse(localProds);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            const synced = syncProductsWithCanonicalCatalog(parsed, tenantSlug);
-            setProducts(filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug));
+            const existingIds = new Set(parsed.map(p => String(p.id)));
+            const combined = [...parsed];
+            baseCatalog.forEach(bp => {
+              if (!existingIds.has(String(bp.id)) && !deletedIds.has(String(bp.id))) {
+                combined.push(bp);
+              }
+            });
+            const synced = syncProductsWithCanonicalCatalog(combined, tenantSlug);
+            setProducts(deduplicateProducts(filterOutLegacyDemoProducts(synced, tenantSlug)));
           } else {
-            setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
+            setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
           }
         } else {
-          setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
+          setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
         }
         const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
         if (localOrders) {
@@ -1548,16 +1584,63 @@ export const StoreProvider = ({ children }) => {
 
     if (!supabase) return;
 
-    // 1. Cargar productos por tienda de forma aislada a nivel servidor con deduplicación y purga de demo
+    // 1. Cargar productos por tienda combinando con catálogo base y asegurando persistencia
     const productQuery = tenantSlug === 'default'
       ? supabase.from('products').select('*').or(`tenant_id.eq.${tenantSlug},tenant_id.is.null`)
       : supabase.from('products').select('*').eq('tenant_id', tenantSlug);
 
-    productQuery.then(({ data, error }) => {
-      if (!error && data && data.length > 0) {
-        const synced = syncProductsWithCanonicalCatalog(data, tenantSlug);
-        const cleaned = filterOutLegacyDemoProducts(deduplicateProducts(synced), tenantSlug);
+    productQuery.then(async ({ data, error }) => {
+      if (!error && Array.isArray(data)) {
+        const baseCatalog = tenantSlug === 'default'
+          ? initialProducts.map(normalizeProduct)
+          : getStoreCatalog(tenantSlug).map(normalizeProduct);
+        const deletedIds = getDeletedProductIds(tenantSlug);
+        const existingIds = new Set(data.map(p => String(p.id)));
+
+        // Combinar datos remotos con los productos base no eliminados
+        const combined = [...data];
+        baseCatalog.forEach(bp => {
+          if (!existingIds.has(String(bp.id)) && !deletedIds.has(String(bp.id))) {
+            combined.push(bp);
+          }
+        });
+
+        const synced = syncProductsWithCanonicalCatalog(combined, tenantSlug);
+        const cleaned = deduplicateProducts(filterOutLegacyDemoProducts(synced, tenantSlug));
         setProducts(cleaned);
+
+        // Auto-sincronizar con Supabase productos base que falten para garantizar persistencia remota
+        const missingFromDb = baseCatalog.filter(bp => !existingIds.has(String(bp.id)) && !deletedIds.has(String(bp.id)));
+        if (missingFromDb.length > 0 && tenantSlug !== 'default') {
+          try {
+            const batch = missingFromDb.map(p => ({
+              id: String(p.id),
+              tenant_id: tenantSlug,
+              name: String(p.name || 'Sin nombre'),
+              category: p.category || 'Sin definir',
+              code: p.code ? String(p.code) : '',
+              price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0),
+              original_price: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
+              originalPrice: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
+              cost_price: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
+              costPrice: p.costPrice != null ? String(p.costPrice) : 'Sin definir',
+              stock: p.stock != null ? String(p.stock) : '20',
+              min_stock: p.minStock != null ? String(p.minStock) : '4',
+              minStock: p.minStock != null ? String(p.minStock) : '4',
+              unit: p.unit || 'Sin definir',
+              image: p.image || '/products/producto-sin-imagen.png',
+              description: p.description || 'Sin definir',
+              badge: p.badge || '',
+              is_popular: Boolean(p.isPopular),
+              isPopular: Boolean(p.isPopular),
+              is_active: true,
+              isActive: true
+            }));
+            await supabase.from('products').upsert(batch);
+          } catch (e) {
+            console.warn('Aviso sincronizando productos base iniciales en Supabase:', e);
+          }
+        }
       }
     });
 
@@ -1759,9 +1842,18 @@ export const StoreProvider = ({ children }) => {
         filter: `tenant_id=eq.${tenantSlug}`
       }, payload => {
         if (payload.eventType === 'INSERT') {
-          setProducts(prev => filterOutLegacyDemoProducts(deduplicateProducts([normalizeProduct(payload.new), ...prev.filter(p => p.id !== payload.new.id)]), tenantSlug));
+          const norm = normalizeProduct(payload.new);
+          setProducts(prev => {
+            const exists = prev.some(p => p.id === norm.id);
+            const list = exists ? prev.map(p => p.id === norm.id ? norm : p) : [norm, ...prev];
+            return deduplicateProducts(filterOutLegacyDemoProducts(list, tenantSlug));
+          });
         } else if (payload.eventType === 'UPDATE') {
-          setProducts(prev => filterOutLegacyDemoProducts(deduplicateProducts(prev.map(p => (p.id === payload.new.id ? normalizeProduct(payload.new) : p))), tenantSlug));
+          const norm = normalizeProduct(payload.new);
+          setProducts(prev => {
+            const list = prev.map(p => (p.id === norm.id ? norm : p));
+            return deduplicateProducts(filterOutLegacyDemoProducts(list, tenantSlug));
+          });
         } else if (payload.eventType === 'DELETE') {
           setProducts(prev => prev.filter(p => p.id !== payload.old.id));
         }
@@ -3046,6 +3138,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   const deleteProduct = async (productId) => {
+    recordDeletedProductIds(tenantSlug, [productId]);
     let nextProducts = [];
     setProducts(prev => {
       nextProducts = prev.filter(p => p.id !== productId);
@@ -3074,6 +3167,7 @@ export const StoreProvider = ({ children }) => {
   // Eliminación Masiva de Productos Seleccionados
   const deleteProductsBatch = async (productIds) => {
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return;
+    recordDeletedProductIds(tenantSlug, productIds);
     const idSet = new Set(productIds);
     setProducts(prev => {
       const updated = prev.filter(p => !idSet.has(p.id));
