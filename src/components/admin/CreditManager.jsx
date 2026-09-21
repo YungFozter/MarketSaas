@@ -292,24 +292,36 @@ export const CreditManager = () => {
         {/* Total por Cobrar */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-rose-100 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-rose-600">Total por Cobrar</span>
-            <div className="p-2 bg-rose-50 rounded-xl text-rose-600">
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-rose-600">Total que te Deben</span>
+              <p className="text-[11px] text-slate-500 font-medium">Dinero fiado pendiente por cobrar</p>
+            </div>
+            <div className="p-2 bg-rose-50 rounded-xl text-rose-600 shrink-0">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
             {currency} {totalDebt.toFixed(2)}
           </p>
-          <p className="text-xs text-rose-500 font-bold mt-1 flex items-center gap-1">
-            <span>{customersWithDebtCount} {customersWithDebtCount === 1 ? 'vecino con saldo pendiente' : 'vecinos con saldo pendiente'}</span>
+          <p className="text-xs font-bold mt-1">
+            {customersWithDebtCount === 0 ? (
+              <span className="text-slate-400 font-medium">Nadie te debe dinero actualmente</span>
+            ) : (
+              <span className="text-rose-600 flex items-center gap-1">
+                ⚠️ {customersWithDebtCount} {customersWithDebtCount === 1 ? 'persona tiene saldo pendiente' : 'personas tienen saldo pendiente'}
+              </span>
+            )}
           </p>
         </div>
 
-        {/* Vecinos Registrados */}
+        {/* Deudores Registrados */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-600">Vecinos con Libreta</span>
-            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600">
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-indigo-600">Deudores en Libreta</span>
+              <p className="text-[11px] text-slate-500 font-medium">Clientes registrados con cuenta</p>
+            </div>
+            <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 shrink-0">
               <UserCheck className="w-4 h-4" />
             </div>
           </div>
@@ -317,15 +329,26 @@ export const CreditManager = () => {
             {creditCustomers.length}
           </p>
           <p className="text-xs text-slate-500 font-bold mt-1">
-            {creditCustomers.length - customersWithDebtCount} al día sin deuda
+            {creditCustomers.length === 0 ? (
+              <span className="font-normal text-slate-400">Sin personas anotadas todavía</span>
+            ) : (
+              <span>
+                <strong className="text-rose-600">{customersWithDebtCount} deben</strong>
+                {' • '}
+                <strong className="text-emerald-600">{creditCustomers.length - customersWithDebtCount} al día</strong>
+              </span>
+            )}
           </p>
         </div>
 
         {/* Total Cobrado en el Mes */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-emerald-100 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-600">Cobrado Este Mes</span>
-            <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-600">Cobrado Este Mes</span>
+              <p className="text-[11px] text-slate-500 font-medium">Dinero recuperado de fiados</p>
+            </div>
+            <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600 shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
@@ -333,7 +356,11 @@ export const CreditManager = () => {
             {currency} {totalCollectedThisMonth.toFixed(2)}
           </p>
           <p className="text-xs text-emerald-600 font-bold mt-1">
-            Recaudado en abonos y liquidaciones
+            {totalCollectedThisMonth === 0 ? (
+              <span className="text-slate-400 font-normal">Sin pagos de fiados registrados este mes</span>
+            ) : (
+              <span>Total recibido en abonos y cancelaciones</span>
+            )}
           </p>
         </div>
       </div>
