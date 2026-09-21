@@ -20,14 +20,26 @@ import {
   RotateCcw,
   Receipt,
   Download,
-  Maximize2
+  Maximize2,
+  BookOpen,
+  Send,
+  UserCheck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import './PosTerminal.css';
 
 export const PosTerminal = ({ onClose, onSaleCompleted }) => {
-  const { products, categories, completePosSale, showToast, storeConfig, currentUser } = useStore();
+  const { 
+    products, 
+    categories, 
+    completePosSale, 
+    showToast, 
+    storeConfig, 
+    currentUser,
+    creditCustomers = [],
+    addCreditCustomer 
+  } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   // Flujo por pasos: 'catalog' -> 'payment' -> 'success'
@@ -39,10 +51,13 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const [posCart, setPosCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
-  const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'qr' | 'card'
+  const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'qr' | 'card' | 'credit'
   const [cashReceived, setCashReceived] = useState('');
   const [lastCompletedSale, setLastCompletedSale] = useState(null);
   const [isQrZoomOpen, setIsQrZoomOpen] = useState(false);
+  const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
+  const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
+  const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '', apartment: '' });
 
   const filteredProducts = products.filter((p) => {
     const matchCat = 
@@ -88,12 +103,6 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
       setPosCart(prev => prev.filter(i => i.id !== id));
       return;
     }
-    const product = products.find(p => p.id === id);
-    const isDefined = product && product.stock !== 'Sin definir' && product.stock != null;
-    if (isDefined && newQty > Number(product.stock)) {
-      showToast('Stock máximo alcanzado para este producto', 'warning');
-      return;
-    }
     setPosCart(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
   };
 
@@ -117,13 +126,33 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
       return;
     }
 
-    const createdOrder = completePosSale(posCart, paymentType);
+    let creditOptions = {};
+    if (paymentType === 'credit') {
+      if (!selectedCreditCustomerId) {
+        showToast('Selecciona a qué vecino se le anotará la cuenta.', 'warning');
+        return;
+      }
+      const targetCust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
+      if (!targetCust) {
+        showToast('El vecino seleccionado no es válido.', 'warning');
+        return;
+      }
+      creditOptions = {
+        customerId: targetCust.id,
+        customerName: targetCust.name,
+        customerPhone: targetCust.phone,
+        customerApartment: targetCust.apartment
+      };
+    }
+
+    const createdOrder = completePosSale(posCart, paymentType, creditOptions);
     const effectiveOrder = createdOrder || {
       id: `${storeConfig?.id || 'POS'}-${Date.now().toString().slice(-4)}`,
       items: posCart,
       subtotal,
       total: subtotal,
       paymentMethod: paymentType,
+      customer: paymentType === 'credit' ? { name: creditOptions.customerName, phone: creditOptions.customerPhone } : undefined,
       createdAt: new Date().toISOString()
     };
 
@@ -140,6 +169,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     setCashReceived('');
     setLastCompletedSale(null);
     setPaymentType('cash');
+    setSelectedCreditCustomerId('');
     setStep('catalog');
     setMobileView('catalog');
   };
@@ -158,6 +188,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const items = Array.isArray(sale.items) ? sale.items : [];
     const paymentLabel = 
+      sale.paymentMethod === 'credit' ? 'A Cuenta / Fiao' :
       sale.paymentMethod === 'qr' ? 'QR Simple (Digital)' :
       sale.paymentMethod === 'card' ? 'Tarjeta POS' : 'Efectivo';
 
@@ -293,6 +324,26 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
 
         {/* Botones de Acción */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          {lastCompletedSale?.paymentMethod === 'credit' && lastCompletedSale.customer?.phone && lastCompletedSale.customer.phone !== 'Presencial' && (
+            <button
+              type="button"
+              onClick={() => {
+                const phone = lastCompletedSale.customer.phone.replace(/[^\d]/g, '');
+                const cleanPhone = phone.length === 8 ? `591${phone}` : phone;
+                const itemsSummary = lastCompletedSale.items?.map(i => `  • ${i.quantity}x ${i.name} (${currency} ${((Number(i.price) || 0) * i.quantity).toFixed(2)})`).join('\n') || '';
+                const msg = `Hola *${lastCompletedSale.customer.name}*! 👋 Le saludamos de *${storeConfig?.name || 'la tienda'}*.\n\n` +
+                  `Registramos su compra a cuenta (#${lastCompletedSale.id}) por *${currency} ${lastCompletedSale.total?.toFixed(2)}*:\n\n` +
+                  `${itemsSummary}\n\n` +
+                  `¡Muchas gracias por su preferencia! 😊`;
+                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+              }}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>Notificar por WhatsApp</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => handlePrintReceipt(lastCompletedSale)}
@@ -369,23 +420,23 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             Selecciona la forma de pago del cliente:
           </label>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {/* Efectivo */}
             <button
               type="button"
               onClick={() => setPaymentType('cash')}
-              className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 cursor-pointer text-center ${
+              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
                 paymentType === 'cash'
                   ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-2 ring-emerald-500/20'
                   : 'border-slate-200 bg-white hover:bg-slate-50'
               }`}
             >
-              <div className={`p-2.5 rounded-xl ${paymentType === 'cash' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Banknote className="w-5 h-5" />
+              <div className={`p-2 rounded-xl ${paymentType === 'cash' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <Banknote className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
                 <p className="font-extrabold text-xs sm:text-sm text-slate-900">Efectivo</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Billetes / Monedas</p>
+                <p className="text-[10px] text-slate-400">Billetes</p>
               </div>
             </button>
 
@@ -393,18 +444,18 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <button
               type="button"
               onClick={() => setPaymentType('qr')}
-              className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 cursor-pointer text-center ${
+              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
                 paymentType === 'qr'
                   ? 'border-cyan-500 bg-cyan-50/80 shadow-xs ring-2 ring-cyan-500/20'
                   : 'border-slate-200 bg-white hover:bg-slate-50'
               }`}
             >
-              <div className={`p-2.5 rounded-xl ${paymentType === 'qr' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <QrCode className="w-5 h-5" />
+              <div className={`p-2 rounded-xl ${paymentType === 'qr' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
                 <p className="font-extrabold text-xs sm:text-sm text-slate-900">QR Simple</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Transferencia QR</p>
+                <p className="text-[10px] text-slate-400">Transferencia</p>
               </div>
             </button>
 
@@ -412,18 +463,37 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <button
               type="button"
               onClick={() => setPaymentType('card')}
-              className={`p-3.5 sm:p-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 cursor-pointer text-center ${
+              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
                 paymentType === 'card'
                   ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/20'
                   : 'border-slate-200 bg-white hover:bg-slate-50'
               }`}
             >
-              <div className={`p-2.5 rounded-xl ${paymentType === 'card' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <CreditCard className="w-5 h-5" />
+              <div className={`p-2 rounded-xl ${paymentType === 'card' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
                 <p className="font-extrabold text-xs sm:text-sm text-slate-900">Tarjeta POS</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Lector bancario</p>
+                <p className="text-[10px] text-slate-400">POS físico</p>
+              </div>
+            </button>
+
+            {/* A Cuenta / Fiao */}
+            <button
+              type="button"
+              onClick={() => setPaymentType('credit')}
+              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
+                paymentType === 'credit'
+                  ? 'border-indigo-500 bg-indigo-50/80 shadow-xs ring-2 ring-indigo-500/20'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className={`p-2 rounded-xl ${paymentType === 'credit' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div>
+                <p className="font-extrabold text-xs sm:text-sm text-slate-900">A Cuenta</p>
+                <p className="text-[10px] text-slate-400">Fiao Vecinal</p>
               </div>
             </button>
           </div>
@@ -553,6 +623,82 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
               <p className="text-[11px] text-slate-400">
                 Una vez impreso el comprobante del banco, presiona el botón inferior para sellar la venta.
               </p>
+            </div>
+          )}
+
+          {paymentType === 'credit' && (
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-200 space-y-3.5 shadow-xs animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 block">
+                  Selecciona al vecino a cuya cuenta se cargará:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddCustomerOpen(true)}
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Nuevo Vecino</span>
+                </button>
+              </div>
+
+              {creditCustomers.length === 0 ? (
+                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-center space-y-2">
+                  <p className="text-xs text-slate-600 font-medium">Aún no tienes vecinos registrados en tu libreta.</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddCustomerOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs cursor-pointer shadow-xs"
+                  >
+                    Registrar vecino ahora
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  <select
+                    value={selectedCreditCustomerId}
+                    onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 bg-white"
+                  >
+                    <option value="">-- Elige un vecino ({creditCustomers.length} en libreta) --</option>
+                    {creditCustomers.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.apartment ? `(${c.apartment})` : ''} - Saldo actual: {currency} {c.balance.toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Detalle del Vecino Seleccionado */}
+                  {selectedCreditCustomerId && (() => {
+                    const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
+                    if (!cust) return null;
+                    const newBal = (cust.balance || 0) + subtotal;
+                    const exceedsLimit = cust.creditLimit > 0 && newBal > cust.creditLimit;
+
+                    return (
+                      <div className={`p-3.5 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/60 border-indigo-100'}`}>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600 font-medium">Saldo actual del vecino:</span>
+                          <span className="font-bold text-slate-800">{currency} {cust.balance.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600 font-medium">+ Esta compra a cuenta:</span>
+                          <span className="font-bold text-indigo-700">+{currency} {subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="border-t border-slate-200/80 pt-1.5 flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-800">Nuevo saldo acumulado:</span>
+                          <span className="font-black text-rose-600 text-sm">{currency} {newBal.toFixed(2)}</span>
+                        </div>
+                        {exceedsLimit && (
+                          <p className="text-[11px] font-bold text-rose-600 pt-1">
+                            ⚠️ Aviso: Esta compra superará el límite de crédito fijado ({currency} {cust.creditLimit.toFixed(2)}).
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -916,6 +1062,97 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <span>Ver Ticket / Cobrar</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {/* MODAL RÁPIDO: REGISTRAR NUEVO VECINO DESDE EL POS */}
+      {isQuickAddCustomerOpen && (
+        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+                <h4 className="font-black text-sm text-slate-900">Registrar Vecino a Cuenta</h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsQuickAddCustomerOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={quickCustomerForm.name}
+                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ej. Don Carlos Mendoza"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+                <input
+                  type="tel"
+                  value={quickCustomerForm.phone}
+                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Ej. 77123456"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-slate-700 block mb-1">Torre / Depto / Casa</label>
+                <input
+                  type="text"
+                  value={quickCustomerForm.apartment}
+                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, apartment: e.target.value }))}
+                  placeholder="Ej. Torre B - 402"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsQuickAddCustomerOpen(false)}
+                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!quickCustomerForm.name.trim()) {
+                    showToast('Escribe el nombre del vecino.', 'warning');
+                    return;
+                  }
+                  const created = addCreditCustomer({
+                    name: quickCustomerForm.name.trim(),
+                    phone: quickCustomerForm.phone.trim(),
+                    apartment: quickCustomerForm.apartment.trim()
+                  });
+                  if (created) {
+                    setSelectedCreditCustomerId(created.id);
+                  }
+                  setQuickCustomerForm({ name: '', phone: '', apartment: '' });
+                  setIsQuickAddCustomerOpen(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs cursor-pointer"
+              >
+                Guardar y Seleccionar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

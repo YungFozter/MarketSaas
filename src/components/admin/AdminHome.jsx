@@ -45,11 +45,14 @@ import {
   Square,
   Receipt,
   Lock,
-  KeyRound
+  KeyRound,
+  BookOpen
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
 import { SalesHistory } from './SalesHistory';
+import { CreditManager } from './CreditManager';
+import { StorePrintKitModal } from './StorePrintKitModal';
 import { StoreSettings } from './StoreSettings';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { SubscriptionManager } from './SubscriptionManager';
@@ -88,19 +91,20 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     exportSalesCSV,
     isSubscriptionActive,
     subscriptionTimeRemaining,
-    formatBoliviaDateTime
+    formatBoliviaDateTime,
+    creditCustomers = []
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
-      if (urlTab && ['kanban', 'pos', 'sales', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
+      if (urlTab && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
         return urlTab;
       }
       try {
         const saved = localStorage.getItem(`marketsaas_${tenantSlug}_admin_tab`);
-        if (saved && ['kanban', 'pos', 'sales', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
+        if (saved && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
           return saved;
         }
       } catch (e) {
@@ -139,6 +143,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -222,6 +227,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return !isNaN(numStock) && !isNaN(numMin) && numStock <= numMin;
   });
   const pendingRequests = (productRequests || []).filter(r => r && r.status === 'pending');
+  const creditDebtorsCount = (creditCustomers || []).filter(c => (c.balance || 0) > 0).length;
 
   // Enlace público de la tienda
   const publicStoreUrl = `${window.location.origin}${window.location.pathname}?store=${tenantSlug}`;
@@ -438,6 +444,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
     { id: 'pos', label: 'Punto de Venta', icon: Store, badge: !isSubscriptionActive ? '🔒' : null },
     { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
+    { id: 'credits', label: 'Libreta de Deudas', icon: BookOpen, badge: creditDebtorsCount > 0 ? `${creditDebtorsCount} debe` : null },
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
     { id: 'suppliers', label: 'Proveedores', icon: Truck, badge: suppliersVisitingToday.length > 0 ? 'Hoy' : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
@@ -838,6 +845,15 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               )}
             </button>
 
+
+            <button
+              onClick={() => setIsPrintKitOpen(true)}
+              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Diseñar e imprimir cartel QR para vitrina o carpa de mostrador"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Cartel QR Mostrador</span>
+            </button>
 
             <button
               onClick={() => setIsExportModalOpen(true)}
@@ -1627,6 +1643,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
+          {/* TAB: LIBRETA DE CRÉDITOS / FIAO VECINAL */}
+          {activeTab === 'credits' && (
+            <div className="animate-fadeIn">
+              <CreditManager />
+            </div>
+          )}
+
           {/* TAB 4: INVENTARIO */}
           {activeTab === 'inventory' && (
             <div className="animate-fadeIn">
@@ -1730,6 +1753,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       <ShareStoreModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* Modal Kit Imprimible de Mostrador & QR de Vitrina */}
+      <StorePrintKitModal
+        isOpen={isPrintKitOpen}
+        onClose={() => setIsPrintKitOpen(false)}
       />
     </div>
   );

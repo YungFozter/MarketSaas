@@ -27,11 +27,13 @@ import {
   X,
   Check,
   RotateCcw,
-  Loader2
+  Loader2,
+  Printer
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
 import { escapeHtml } from '../../utils/formatters';
+import { StorePrintKitModal } from './StorePrintKitModal';
 import './StoreSettings.css';
 
 // Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
@@ -518,6 +520,8 @@ export const StoreSettings = () => {
   const initialLng = (storeConfig?.longitude !== undefined && storeConfig?.longitude !== null && storeConfig?.longitude !== '') 
     ? storeConfig.longitude 
     : (storeConfig?.googleMapsCoordinates?.lng ?? '');
+
+  const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
 
   const [form, setForm] = useState({ 
     currencySymbol: 'Bs.',
@@ -1313,6 +1317,22 @@ export const StoreSettings = () => {
               </div>
             </div>
           </div>
+
+          {/* Kit Imprimible de Mostrador & Cartel QR */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+            <div>
+              <p className="text-xs font-bold text-slate-800">¿Quieres exhibir tu código QR en tu negocio?</p>
+              <p className="text-[11px] text-slate-500">Genera carteles para vitrina, carpa de mostrador y volantes listos para imprimir.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsPrintKitOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
+            >
+              <Printer className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Imprimir Carteles QR</span>
+            </button>
+          </div>
         </div>
 
         {/* Card 5: Cupones de Descuento de la Tienda */}
@@ -1553,6 +1573,12 @@ export const StoreSettings = () => {
         </div>
       </div>
     </div>
+
+    {/* Modal Kit Imprimible de Mostrador & QR de Vitrina */}
+    <StorePrintKitModal
+      isOpen={isPrintKitOpen}
+      onClose={() => setIsPrintKitOpen(false)}
+    />
 </form>
   );
 };

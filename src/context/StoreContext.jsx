@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import { initialSuppliers } from '../data/supplierInitialData';
+import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
 import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
@@ -1299,7 +1300,21 @@ export const StoreProvider = ({ children }) => {
     return [];
   });
 
-  // 10. Cupones de descuento aplicados
+  // 10. Libreta de Créditos y Cuentas por Cobrar (El Fiao Vecinal Digital)
+  const [creditCustomers, setCreditCustomers] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_credits`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(normalizeCreditCustomer).filter(Boolean);
+        }
+      }
+    } catch (e) {}
+    return tenantSlug === 'default' ? initialCreditCustomers.map(normalizeCreditCustomer) : [];
+  });
+
+  // 11. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
 
   // 10. Pedido activo para seguimiento y modal de tracking
@@ -1574,9 +1589,20 @@ export const StoreProvider = ({ children }) => {
         } else {
           setSuppliers([]);
         }
+
+        const localCredits = localStorage.getItem(`marketsaas_${tenantSlug}_credits`);
+        if (localCredits) {
+          const parsed = JSON.parse(localCredits);
+          if (Array.isArray(parsed)) {
+            setCreditCustomers(parsed.map(normalizeCreditCustomer).filter(Boolean));
+          }
+        } else {
+          setCreditCustomers([]);
+        }
       } else {
         setProductRequests(initialProductRequests.map(normalizeProductRequest));
         setSuppliers([]);
+        setCreditCustomers(initialCreditCustomers.map(normalizeCreditCustomer));
       }
     } catch (e) {
       console.warn('Error cargando caché local de tenant:', e);
@@ -2227,6 +2253,12 @@ export const StoreProvider = ({ children }) => {
       localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(suppliers));
     } catch (e) {}
   }, [suppliers, tenantSlug]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(creditCustomers));
+    } catch (e) {}
+  }, [creditCustomers, tenantSlug]);
 
   // Exportar ventas a CSV para la contabilidad del dueño
   const exportSalesCSV = () => {
@@ -3325,7 +3357,7 @@ export const StoreProvider = ({ children }) => {
   };
 
   // Venta en POS de Mostrador (Dueño)
-  const completePosSale = (posItems, paymentType = 'cash') => {
+  const completePosSale = (posItems, paymentType = 'cash', creditOptions = {}) => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const saleNum = Math.floor(1000 + Math.random() * 9000);
     const saleEntropy = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -3357,18 +3389,33 @@ export const StoreProvider = ({ children }) => {
       console.warn('Error al guardar en localStorage tras venta POS:', e);
     }
 
-    // 2. Registrar como pedido completado directo
+    // 2. Si el cobro es "A Cuenta / Fiao", registrar el cargo al cliente en su libreta
+    const isCredit = paymentType === 'credit';
+    const customerInfo = isCredit && creditOptions?.customerId ? {
+      name: creditOptions.customerName || 'Vecino a Cuenta',
+      phone: creditOptions.customerPhone || 'A Cuenta',
+      condominium: creditOptions.customerApartment || 'En Tienda',
+      tower: '-',
+      apartment: creditOptions.customerApartment || '-'
+    } : {
+      name: 'Venta de Mostrador (Presencial)',
+      phone: 'Presencial',
+      condominium: 'En Tienda',
+      tower: '-',
+      apartment: '-'
+    };
+
+    if (isCredit && creditOptions?.customerId) {
+      const summaryItems = posItems.map(i => `${i.quantity}x ${i.name}`).join(', ');
+      addCustomerCharge(creditOptions.customerId, subtotal, `Venta POS #${saleId}: ${summaryItems}`, posItems);
+    }
+
+    // 3. Registrar como pedido completado directo
     const posOrder = {
       id: saleId,
       tenant_id: tenantSlug,
       owner_id: currentUser?.id || storeConfig?.owner_id || null,
-      customer: {
-        name: 'Venta de Mostrador (Presencial)',
-        phone: 'Presencial',
-        condominium: 'En Tienda',
-        tower: '-',
-        apartment: '-'
-      },
+      customer: customerInfo,
       items: posItems,
       subtotal,
       deliveryFee: 0,
@@ -3386,7 +3433,7 @@ export const StoreProvider = ({ children }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
       });
 
-      // 3. Descontar inventario de forma atómica en Supabase para productos con stock numérico definido
+      // Descontar inventario de forma atómica en Supabase
       posItems.forEach(item => {
         const prod = products.find(p => p.id === item.id);
         if (prod && prod.stock !== 'Sin definir' && prod.stock != null) {
@@ -3403,7 +3450,11 @@ export const StoreProvider = ({ children }) => {
     }
     triggerConfetti();
     const currency = storeConfig.currencySymbol || 'Bs.';
-    showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
+    if (isCredit) {
+      showToast(`Venta a cuenta #${saleId} guardada para ${creditOptions.customerName || 'el vecino'}.`, 'success');
+    } else {
+      showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
+    }
     return posOrder;
   };
 
@@ -3739,6 +3790,143 @@ export const StoreProvider = ({ children }) => {
 
     syncSupplierOrderItemsToSupabase(supplierId, updatedList);
     showToast(onlyReceived ? 'Ítems recibidos limpiados.' : 'Lista de compras vaciada.', 'info');
+  };
+
+  // ==============================================================================
+  // LIBRETA DE CRÉDITOS Y CUENTAS POR COBRAR (FIAO VECINAL DIGITAL)
+  // ==============================================================================
+
+  const addCreditCustomer = (customerData) => {
+    const cleanName = (customerData.name || '').trim();
+    if (!cleanName) {
+      showToast('Ingresa el nombre del vecino para registrar su cuenta.', 'warning');
+      return null;
+    }
+
+    const initialAmount = Math.max(0, parseFloat(customerData.initialBalance) || 0);
+    const newCustomer = normalizeCreditCustomer({
+      id: `cred-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: cleanName,
+      phone: (customerData.phone || '').trim(),
+      apartment: (customerData.apartment || customerData.address || '').trim(),
+      notes: (customerData.notes || '').trim(),
+      balance: initialAmount,
+      creditLimit: parseFloat(customerData.creditLimit) || 0,
+      transactions: initialAmount > 0 ? [
+        {
+          id: `tx-${Date.now()}`,
+          date: new Date().toISOString(),
+          type: 'charge',
+          amount: initialAmount,
+          concept: customerData.initialConcept?.trim() || 'Saldo inicial / Deuda previa',
+          balanceAfter: initialAmount
+        }
+      ] : [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    setCreditCustomers(prev => [newCustomer, ...prev]);
+    showToast(`Vecino "${newCustomer.name}" registrado en la libreta de cuentas.`, 'success');
+    return newCustomer;
+  };
+
+  const updateCreditCustomer = (customerId, updatedFields) => {
+    setCreditCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        return normalizeCreditCustomer({
+          ...c,
+          ...updatedFields,
+          updatedAt: new Date().toISOString()
+        });
+      }
+      return c;
+    }));
+    showToast('Datos del vecino actualizados.', 'info');
+  };
+
+  const deleteCreditCustomer = (customerId) => {
+    const cust = creditCustomers.find(c => c.id === customerId);
+    setCreditCustomers(prev => prev.filter(c => c.id !== customerId));
+    showToast(`Cuenta de "${cust?.name || ''}" eliminada de la libreta.`, 'info');
+  };
+
+  const addCustomerCharge = (customerId, amount, concept = 'Compra a cuenta / Fiao', items = []) => {
+    const numAmount = Math.max(0, parseFloat(amount) || 0);
+    if (numAmount <= 0) return;
+
+    let targetName = '';
+    setCreditCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        targetName = c.name;
+        const newBalance = Number((c.balance + numAmount).toFixed(2));
+        const newTx = {
+          id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          date: new Date().toISOString(),
+          type: 'charge',
+          amount: numAmount,
+          concept: concept.trim() || 'Compra a crédito',
+          balanceAfter: newBalance,
+          items: Array.isArray(items) ? items : []
+        };
+        return {
+          ...c,
+          balance: newBalance,
+          transactions: [newTx, ...(c.transactions || [])],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return c;
+    }));
+
+    const cur = storeConfig?.currencySymbol || 'Bs.';
+    showToast(`Anotado a la cuenta de ${targetName}: +${cur} ${numAmount.toFixed(2)}`, 'warning');
+  };
+
+  const addCustomerPayment = (customerId, amount, paymentMethod = 'cash', note = '') => {
+    const numAmount = Math.max(0, parseFloat(amount) || 0);
+    if (numAmount <= 0) {
+      showToast('Ingresa un monto válido a abonar.', 'warning');
+      return;
+    }
+
+    let targetName = '';
+    let newBal = 0;
+    setCreditCustomers(prev => prev.map(c => {
+      if (c.id === customerId) {
+        targetName = c.name;
+        newBal = Math.max(0, Number((c.balance - numAmount).toFixed(2)));
+        const newTx = {
+          id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          date: new Date().toISOString(),
+          type: 'payment',
+          amount: numAmount,
+          concept: note.trim() || `Abono recibido (${paymentMethod === 'qr' ? 'QR Digital' : 'Efectivo'})`,
+          paymentMethod,
+          balanceAfter: newBal
+        };
+        return {
+          ...c,
+          balance: newBal,
+          transactions: [newTx, ...(c.transactions || [])],
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return c;
+    }));
+
+    const cur = storeConfig?.currencySymbol || 'Bs.';
+    triggerConfetti();
+    showToast(`✓ Abono de ${cur} ${numAmount.toFixed(2)} registrado para ${targetName}. Saldo: ${cur} ${newBal.toFixed(2)}`, 'success');
+  };
+
+  const clearCustomerBalance = (customerId, paymentMethod = 'cash') => {
+    const cust = creditCustomers.find(c => c.id === customerId);
+    if (!cust || cust.balance <= 0) {
+      showToast('Este vecino ya está al día sin saldo pendiente.', 'info');
+      return;
+    }
+    addCustomerPayment(customerId, cust.balance, paymentMethod, 'Liquidación total de cuenta');
   };
 
   const removeCoupon = () => {
@@ -4098,6 +4286,14 @@ export const StoreProvider = ({ children }) => {
         removeSupplierOrderItem,
         toggleSupplierOrderItemStatus,
         clearSupplierOrderItems,
+        creditCustomers,
+        setCreditCustomers,
+        addCreditCustomer,
+        updateCreditCustomer,
+        deleteCreditCustomer,
+        addCustomerCharge,
+        addCustomerPayment,
+        clearCustomerBalance,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         isTrackingModalOpen,
