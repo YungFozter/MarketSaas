@@ -31,17 +31,28 @@
 }
 
 /* ========================================================================= */
-/* REGLAS DE IMPRESIÓN PROFESIONAL A4 (@media print) */
+/* REGLAS DE IMPRESIÓN PROFESIONAL (CARTA / A4 - 1 SOLA HOJA) */
 /* ========================================================================= */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 8mm;
+    size: portrait;
+    margin: 6mm 8mm;
   }
 
-  /* Ocultar todo el sitio web de fondo, modales y botones de pantalla */
-  body * {
-    visibility: hidden;
+  /* Ocultar absolutamente todos los elementos del body excepto el modal portaleado */
+  body > *:not(.print-kit-modal-overlay) {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   .no-print,
@@ -49,25 +60,30 @@
     display: none !important;
   }
 
-  /* Hacer visible y centrar únicamente la hoja del cartel imprimible */
-  .print-page-wrapper,
-  .print-page,
-  .print-page * {
-    visibility: visible;
-  }
-
   .print-kit-modal-overlay {
     position: static !important;
     background: transparent !important;
     padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   .print-kit-modal-content {
     border: none !important;
     box-shadow: none !important;
     max-height: none !important;
+    height: auto !important;
     max-width: 100% !important;
+    width: 100% !important;
     padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+    display: block !important;
   }
 
   .print-page-wrapper {
@@ -76,34 +92,66 @@
     margin: 0 auto !important;
     display: flex !important;
     justify-content: center !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   .print-page {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-shadow: none !important;
-    border: 1px solid #e2e8f0 !important;
+    position: relative !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-shadow: none !important;
+    margin: 0 auto !important;
   }
 
   .print-poster-a4 {
-    height: 98vh !important;
-    padding: 24px !important;
+    width: 100% !important;
+    max-width: 185mm !important;
+    height: auto !important;
+    max-height: 258mm !important;
+    padding: 6mm 8mm !important;
+    border: 2px solid #059669 !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
 
   .print-counter-tent {
     width: 100% !important;
-    margin-top: 40px !important;
+    max-width: 195mm !important;
+    height: auto !important;
+    max-height: 125mm !important;
+    padding: 6mm 8mm !important;
+    margin: 10mm auto 0 auto !important;
+    border: 2px solid #0f172a !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
   }
 
   .print-flyers-pocket {
-    height: 98vh !important;
+    width: 100% !important;
+    max-width: 190mm !important;
+    height: auto !important;
+    max-height: 258mm !important;
+    padding: 4mm !important;
+    margin: 0 auto !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 3mm !important;
   }
 }

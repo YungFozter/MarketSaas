@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Printer, 
   X, 
@@ -94,9 +95,9 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn print-kit-modal-overlay"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn print-kit-modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -116,7 +117,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
               <h2 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5 sm:gap-2 truncate">
                 <span className="truncate">Kit Imprimible de Mostrador & QR</span>
                 <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] sm:text-[10px] font-black uppercase shrink-0">
-                  Listo en A4
+                  Listo en Carta / A4
                 </span>
               </h2>
               <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
@@ -158,7 +159,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              📄 Cartel de Vitrina (A4)
+              📄 Cartel de Vitrina (Carta / A4)
             </button>
             <button
               type="button"
@@ -209,101 +210,101 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
         <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-8 bg-slate-100/80 flex justify-center items-start print-page-wrapper">
           
           {/* ================================================================= */}
-          {/* FORMATO 1: PÓSTER DE VITRINA A4 (Vertical) */}
+          {/* FORMATO 1: PÓSTER DE VITRINA (Carta / A4 Vertical 1 Sola Hoja)   */}
           {/* ================================================================= */}
           {selectedFormat === 'poster_a4' && (
             <div 
               ref={printAreaRef}
-              className="print-page print-poster-a4 bg-white w-full max-w-[620px] aspect-auto sm:aspect-[1/1.414] print:aspect-[1/1.414] rounded-2xl shadow-xl border border-slate-200/90 p-4 sm:p-10 flex flex-col justify-between text-center relative"
+              className="print-page print-poster-a4 bg-white w-full max-w-[600px] aspect-auto sm:aspect-[1/1.38] rounded-2xl shadow-xl border border-slate-200/90 p-4 sm:p-8 flex flex-col justify-between text-center relative"
             >
               {/* Marco de diseño elegante superior */}
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2.5 sm:space-y-3.5 print:space-y-2">
                 {/* Logo o Icono de la Tienda */}
-                <div className="flex items-center justify-center gap-2.5 sm:gap-3">
+                <div className="flex items-center justify-center gap-2.5 sm:gap-3 print:gap-2.5">
                   {storeLogo ? (
                     <img 
                       src={storeLogo} 
                       alt={storeName} 
-                      className="w-12 h-12 sm:w-20 sm:h-20 object-contain rounded-2xl border border-slate-100 p-1 shadow-xs" 
+                      className="w-12 h-12 sm:w-16 sm:h-16 print:w-12 print:h-12 object-contain rounded-2xl border border-slate-100 p-1 shadow-xs" 
                     />
                   ) : (
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
-                      <Store className="w-7 h-7 sm:w-10 sm:h-10" />
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 print:w-12 print:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                      <Store className="w-6 h-6 sm:w-8 sm:h-8 print:w-7 print:h-7" />
                     </div>
                   )}
                   <div className="text-left">
-                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-emerald-600 block">
+                    <span className="text-[10px] sm:text-[11px] print:text-[10px] font-black uppercase tracking-widest text-emerald-600 block">
                       Catálogo Online & Delivery
                     </span>
-                    <h1 className="text-xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
+                    <h1 className="text-xl sm:text-3xl print:text-2xl font-black text-slate-900 tracking-tight leading-none">
                       {storeName}
                     </h1>
                   </div>
                 </div>
 
                 {/* Frase Gancho / Titular */}
-                <div className="bg-slate-900 text-white py-2.5 sm:py-3.5 px-4 sm:px-6 rounded-2xl shadow-md">
-                  <p className="text-base sm:text-2xl font-black tracking-tight leading-snug">
+                <div className="bg-slate-900 text-white py-2 sm:py-3 print:py-2 px-4 sm:px-6 print:px-4 rounded-2xl shadow-md">
+                  <p className="text-sm sm:text-xl print:text-base font-black tracking-tight leading-snug">
                     {activeTagline}
                   </p>
-                  <p className="text-[11px] sm:text-sm text-emerald-400 font-extrabold mt-0.5">
+                  <p className="text-[11px] sm:text-xs print:text-[10px] text-emerald-400 font-extrabold mt-0.5">
                     ¡Abre la cámara de tu celular y escanea este código!
                   </p>
                 </div>
               </div>
 
               {/* Código QR Central con Marco Nítido */}
-              <div className="my-3 sm:my-6 flex flex-col items-center justify-center">
-                <div className="p-3 sm:p-5 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
+              <div className="my-2 sm:my-4 print:my-2 flex flex-col items-center justify-center">
+                <div className="p-2.5 sm:p-4 print:p-3 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
                   <img 
                     src={qrCodeUrl} 
                     alt={`QR de ${storeName}`} 
-                    className="w-40 h-40 sm:w-64 sm:h-64 object-contain"
+                    className="w-40 h-40 sm:w-52 sm:h-52 print:w-44 print:h-44 object-contain"
                   />
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-3 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
+                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-[11px] print:text-[10px] font-black uppercase tracking-wider px-3 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
                     ESCANEA CON TU CELULAR
                   </div>
                 </div>
               </div>
 
               {/* 3 Pasos Rápidos para el Vecino */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-4 my-3 text-left">
-                <div className="bg-slate-50 p-2.5 sm:p-3 rounded-2xl border border-slate-100 flex items-start gap-2.5">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-3 print:gap-2 my-2 print:my-1.5 text-left">
+                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                     1
                   </span>
                   <div>
-                    <strong className="text-xs font-black text-slate-900 block leading-tight">Apunta tu cámara</strong>
-                    <span className="text-[10px] text-slate-500 leading-tight block">Sin descargar apps, abre en el navegador.</span>
+                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Apunta tu cámara</strong>
+                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Sin apps, abre en el navegador.</span>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-2.5 sm:p-3 rounded-2xl border border-slate-100 flex items-start gap-2.5">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                     2
                   </span>
                   <div>
-                    <strong className="text-xs font-black text-slate-900 block leading-tight">Elige tus cosas</strong>
-                    <span className="text-[10px] text-slate-500 leading-tight block">Leche, pan, bebidas, abarrotes y snacks.</span>
+                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Elige tus cosas</strong>
+                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Leche, pan, bebidas, abarrotes y snacks.</span>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-2.5 sm:p-3 rounded-2xl border border-slate-100 flex items-start gap-2.5">
-                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                     3
                   </span>
                   <div>
-                    <strong className="text-xs font-black text-slate-900 block leading-tight">¡Listo!</strong>
-                    <span className="text-[10px] text-slate-500 leading-tight block">Tu orden lista para recoger o enviar segun disponibilidad.</span>
+                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">¡Listo!</strong>
+                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Orden lista para recoger o delivery.</span>
                   </div>
                 </div>
               </div>
 
               {/* Pie de Página con Datos del Local */}
-              <div className="border-t border-slate-200/80 pt-3 sm:pt-4 mt-2 flex flex-col sm:flex-row print:flex-row items-center justify-between gap-2 text-xs text-slate-600 font-semibold">
+              <div className="border-t border-slate-200/80 pt-2 sm:pt-3 print:pt-2 mt-1 print:mt-1 flex flex-col sm:flex-row print:flex-row items-center justify-between gap-1.5 text-xs print:text-[10px] text-slate-600 font-semibold">
                 {storePhone ? (
                   <div className="flex items-center gap-1.5">
-                    <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <Phone className="w-3.5 h-3.5 print:w-3 print:h-3 text-emerald-600 shrink-0" />
                     <span>WhatsApp Pedidos: <strong>{storePhone}</strong></span>
                   </div>
                 ) : (
@@ -312,7 +313,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
 
                 {storeAddress ? (
                   <div className="flex items-center gap-1.5 truncate max-w-[280px]">
-                    <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <MapPin className="w-3.5 h-3.5 print:w-3 print:h-3 text-emerald-600 shrink-0" />
                     <span className="truncate">{storeAddress}</span>
                   </div>
                 ) : (
@@ -323,12 +324,12 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
           )}
 
           {/* ================================================================= */}
-          {/* FORMATO 2: CARPA PARA MOSTRADOR / CAJA (A5 Apaisado) */}
+          {/* FORMATO 2: CARPA PARA MOSTRADOR / CAJA (A5 Apaisado)              */}
           {/* ================================================================= */}
           {selectedFormat === 'counter_tent' && (
             <div 
               ref={printAreaRef}
-              className="print-page print-counter-tent bg-white w-full max-w-[700px] rounded-2xl shadow-xl border border-slate-200/90 p-4 sm:p-8 flex flex-col sm:flex-row print:flex-row items-center gap-4 sm:gap-6 text-left relative"
+              className="print-page print-counter-tent bg-white w-full max-w-[700px] rounded-2xl shadow-xl border border-slate-200/90 p-4 sm:p-7 flex flex-col sm:flex-row print:flex-row items-center gap-4 sm:gap-6 text-left relative"
             >
               {/* Código QR a la Izquierda */}
               <div className="shrink-0 flex flex-col items-center">
@@ -336,51 +337,51 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                   <img 
                     src={qrCodeUrl} 
                     alt={`QR de ${storeName}`} 
-                    className="w-36 h-36 sm:w-52 sm:h-52 object-contain"
+                    className="w-36 h-36 sm:w-48 sm:h-48 print:w-40 print:h-40 object-contain"
                   />
                 </div>
-                <span className="text-[11px] font-black uppercase text-emerald-700 mt-2 block tracking-wider">
+                <span className="text-[11px] print:text-[10px] font-black uppercase text-emerald-700 mt-2 block tracking-wider">
                   ¡Haz tu pedido online!
                 </span>
               </div>
 
               {/* Contenido a la Derecha */}
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-2.5 print:space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                    <Store className="w-5 h-5" />
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                    <Store className="w-4 h-4" />
                   </div>
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+                    <h2 className="text-xl sm:text-2xl print:text-xl font-black text-slate-900 leading-tight">
                       {storeName}
                     </h2>
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                       Tienda Digital & Pedidos Rápidos
                     </span>
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-900 text-white rounded-xl">
-                  <p className="text-sm sm:text-base font-extrabold leading-snug">
+                <div className="p-2.5 sm:p-3 print:p-2.5 bg-slate-900 text-white rounded-xl">
+                  <p className="text-sm sm:text-base print:text-sm font-extrabold leading-snug">
                     ¿Mucho frío o sin tiempo para bajar?
                   </p>
-                  <p className="text-xs text-emerald-400 font-bold mt-0.5">
+                  <p className="text-xs print:text-[11px] text-emerald-400 font-bold mt-0.5">
                     Escanea este QR y te lo llevamos directamente a tu departamento.
                   </p>
                 </div>
 
-                <div className="space-y-1 text-xs text-slate-600 font-medium">
+                <div className="space-y-1 text-xs print:text-[11px] text-slate-600 font-medium">
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>Catálogo completo con precios actualizados.</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>Pagas por QR o en efectivo cuando lo recibas.</span>
                   </p>
                   {storePhone && (
                     <p className="flex items-center gap-2 font-bold text-slate-800">
-                      <Phone className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>WhatsApp: {storePhone}</span>
                     </p>
                   )}
@@ -390,19 +391,19 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
           )}
 
           {/* ================================================================= */}
-          {/* FORMATO 3: 4 VOLANTES EN 1 HOJA A4 (Para recortar y repartir) */}
+          {/* FORMATO 3: 4 VOLANTES EN 1 HOJA (Para recortar y repartir)       */}
           {/* ================================================================= */}
           {selectedFormat === 'flyers_pocket' && (
             <div 
               ref={printAreaRef}
-              className="print-page print-flyers-pocket bg-white w-full max-w-[620px] aspect-auto sm:aspect-[1/1.414] print:aspect-[1/1.414] rounded-2xl shadow-xl border border-slate-200/90 p-3 sm:p-6 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-3 sm:gap-4 text-center"
+              className="print-page print-flyers-pocket bg-white w-full max-w-[600px] aspect-auto sm:aspect-[1/1.38] rounded-2xl shadow-xl border border-slate-200/90 p-3 sm:p-5 grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-3 sm:gap-3.5 text-center"
             >
               {[1, 2, 3, 4].map(idx => (
                 <div 
                   key={idx} 
-                  className="border-2 border-dashed border-slate-300 rounded-2xl p-3 sm:p-4 flex flex-col justify-between items-center bg-slate-50/50"
+                  className="border-2 border-dashed border-slate-300 rounded-2xl p-2.5 sm:p-3.5 flex flex-col justify-between items-center bg-slate-50/50 print:bg-white"
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <span className="text-[10px] font-black uppercase text-emerald-600 tracking-wider block">
                       {storeName}
                     </span>
@@ -411,18 +412,18 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                     </h3>
                   </div>
 
-                  <div className="my-2 p-2 bg-white rounded-xl border-2 border-emerald-600 shadow-xs">
+                  <div className="my-1.5 p-1.5 bg-white rounded-xl border-2 border-emerald-600 shadow-xs">
                     <img 
                       src={qrCodeUrl} 
                       alt="QR" 
-                      className="w-20 h-20 sm:w-28 sm:h-28 object-contain"
+                      className="w-20 h-20 sm:w-24 sm:h-24 print:w-20 print:h-20 object-contain"
                     />
                   </div>
 
-                  <div className="space-y-0.5 text-[10px] text-slate-600 font-semibold">
+                  <div className="space-y-0.5 text-[10px] print:text-[9px] text-slate-600 font-semibold leading-tight">
                     <p className="text-emerald-700 font-black">Escanea con tu celular</p>
                     <p>Listo para recoger o enviar</p>
-                    {storePhone && <p className="font-bold text-slate-800">WhatsApp: {storePhone}</p>}
+                    {storePhone && <p className="font-bold text-slate-800 truncate max-w-[140px]">Tel: {storePhone}</p>}
                   </div>
                 </div>
               ))}
@@ -431,6 +432,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
 
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
