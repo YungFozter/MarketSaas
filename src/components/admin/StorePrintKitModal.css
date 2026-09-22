@@ -2,6 +2,27 @@
 
 .print-kit-modal-overlay {
   animation: modalFadeIn 0.2s ease-out;
+  overscroll-behavior: contain;
+}
+
+.print-kit-modal-content {
+  overscroll-behavior: contain;
+}
+
+.print-page-wrapper {
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Ocultar barra de desplazamiento en selectores horizontales */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 @keyframes modalFadeIn {
