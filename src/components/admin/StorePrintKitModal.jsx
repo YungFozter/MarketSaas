@@ -253,49 +253,52 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Código QR Central con Marco Nítido */}
-              <div className="my-2 sm:my-4 print:my-2 flex flex-col items-center justify-center">
-                <div className="p-2.5 sm:p-4 print:p-3 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
-                  <img 
-                    src={qrCodeUrl} 
-                    alt={`QR de ${storeName}`} 
-                    className="w-40 h-40 sm:w-52 sm:h-52 print:w-44 print:h-44 object-contain"
-                  />
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-[11px] print:text-[10px] font-black uppercase tracking-wider px-3 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
-                    ESCANEA CON TU CELULAR
-                  </div>
-                </div>
-              </div>
-
-              {/* 3 Pasos Rápidos para el Vecino */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-3 print:gap-2 my-2 print:my-1.5 text-left">
-                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                    1
-                  </span>
-                  <div>
-                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Apunta tu cámara</strong>
-                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Sin apps, abre en el navegador.</span>
+              {/* Bloque Central: QR Protagonista Ampliado + Pasos 1, 2, 3 Agrupados Armónicamente */}
+              <div className="flex-1 flex flex-col items-center justify-center my-auto py-2 sm:py-3 print:py-1 w-full">
+                {/* Código QR Central con Marco Nítido */}
+                <div className="flex flex-col items-center justify-center">
+                  <div className="p-3 sm:p-4 print:p-3 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt={`QR de ${storeName}`} 
+                      className="w-48 h-48 sm:w-60 sm:h-60 print-poster-qr-img object-contain"
+                    />
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs print:text-[10px] font-black uppercase tracking-wider px-3.5 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
+                      ESCANEA CON TU CELULAR
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                    2
-                  </span>
-                  <div>
-                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Elige tus cosas</strong>
-                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Leche, pan, bebidas, abarrotes y snacks.</span>
+                {/* 3 Pasos Rápidos para el Vecino (Distancia reducida y armónica respecto al QR) */}
+                <div className="w-full grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-2.5 print:gap-2 mt-5 sm:mt-6 print:mt-3.5 text-left">
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                      1
+                    </span>
+                    <div>
+                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Apunta tu cámara</strong>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Sin apps, abre en el navegador.</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
-                  <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                    3
-                  </span>
-                  <div>
-                    <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">¡Listo!</strong>
-                    <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Orden lista para recoger o delivery.</span>
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                      2
+                    </span>
+                    <div>
+                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Elige tus cosas</strong>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Leche, pan, bebidas, abarrotes y snacks.</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                      3
+                    </span>
+                    <div>
+                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">¡Listo!</strong>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Orden lista para recoger o delivery.</span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -115,7 +115,7 @@
   .print-poster-a4 {
     width: 100% !important;
     max-width: 185mm !important;
-    height: auto !important;
+    height: 255mm !important;
     max-height: 258mm !important;
     padding: 6mm 8mm !important;
     border: 2px solid #059669 !important;
@@ -124,6 +124,13 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+  }
+
+  .print-poster-qr-img {
+    width: 72mm !important;
+    height: 72mm !important;
+    max-width: 72mm !important;
+    max-height: 72mm !important;
   }
 
   .print-counter-tent {
