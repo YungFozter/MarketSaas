@@ -9,7 +9,8 @@ import {
   MessageCircle, 
   Sparkles, 
   PackageCheck,
-  AlertCircle
+  AlertCircle,
+  Ban
 } from 'lucide-react';
 import { useStore, normalizeOrder } from '../../context/StoreContext';
 import './OrderTrackingModal.css';
@@ -18,6 +19,8 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
   const { 
     orders, 
     setOrders, 
+    cancelOrder,
+    setActiveTrackingOrderId,
     storeConfig, 
     selectedStore, 
     tenantSlug, 
@@ -210,6 +213,40 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
 
   const currentIndex = getStageIndex(order.status);
   const isCancelled = order.status === 'cancelled';
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // El vecino puede cancelar/anular si el pedido está en pending, preparing o on_the_way (antes de entregado)
+  const canCancel = order && ['pending', 'preparing', 'on_the_way'].includes(order.status);
+
+  const handleCancelOrder = async () => {
+    if (!order || !canCancel) return;
+    setIsCancelling(true);
+    try {
+      if (cancelOrder) {
+        cancelOrder(order.id);
+      }
+      setOrder(prev => prev ? { ...prev, status: 'cancelled' } : null);
+      setIsCancelConfirmOpen(false);
+      showToast?.(`Pedido #${order.id} anulado con éxito.`, 'info');
+    } catch (err) {
+      console.error('Error al anular pedido:', err);
+      showToast?.('No se pudo anular el pedido. Por favor intenta nuevamente.', 'error');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (order?.status === 'cancelled' && setActiveTrackingOrderId) {
+      setActiveTrackingOrderId(null);
+      try {
+        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
+        localStorage.removeItem('marketsaas_default_active_order');
+      } catch (e) {}
+    }
+    onClose?.();
+  };
 
   // Generar link de WhatsApp directo para hablar con el dueño sobre este pedido
   const waMessage = encodeURIComponent(
@@ -240,7 +277,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
             </h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -382,25 +419,79 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
           </div>
 
           {/* Botones de Acción */}
-          <div className="flex items-center gap-3">
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>Contactar a la Tienda por WhatsApp</span>
-            </a>
+          <div className="space-y-2.5 pt-1">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 py-3 sm:py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">Contactar por WhatsApp</span>
+              </a>
 
-            <button
-              onClick={onClose}
-              className="px-5 py-3.5 rounded-2xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors"
-            >
-              Cerrar
-            </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 sm:px-5 py-3 sm:py-3.5 rounded-2xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            {canCancel && (
+              <button
+                type="button"
+                onClick={() => setIsCancelConfirmOpen(true)}
+                className="w-full py-2.5 rounded-xl border border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-[0.99]"
+              >
+                <Ban className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>Cancelar / Anular Pedido</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Modal de Confirmación para Cancelar Pedido */}
+        {isCancelConfirmOpen && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+            <div 
+              className="relative w-full max-w-sm bg-white rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-100 text-center space-y-4 animate-scaleUp"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 mx-auto shadow-xs">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                  ¿Deseas anular este pedido?
+                </h3>
+                <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                  Tu pedido <strong className="text-slate-800 font-bold">#{order.id}</strong> pasará a estado cancelado y se notificará a {storeConfig?.name || 'la tienda'}. Esta acción no se puede deshacer.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={() => setIsCancelConfirmOpen(false)}
+                  className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  No, mantener
+                </button>
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={handleCancelOrder}
+                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/20 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isCancelling ? 'Anulando...' : 'Sí, anular'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

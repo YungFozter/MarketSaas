@@ -2980,8 +2980,10 @@ export const StoreProvider = ({ children }) => {
     return newOrder;
   };
 
-  // Actualizar estado de pedido (Dueño)
+  // Actualizar estado de pedido (Dueño o Cancelación por Vecino)
   const updateOrderStatus = (orderId, newStatus) => {
+    const targetOrder = orders.find(ord => ord.id === orderId);
+
     setOrders(prev =>
       prev.map(ord => (ord.id === orderId ? { ...ord, status: newStatus } : ord))
     );
@@ -2991,7 +2993,35 @@ export const StoreProvider = ({ children }) => {
       });
     }
 
-    if (newStatus === 'delivered' || newStatus === 'cancelled') {
+    // Revertir inventario si el pedido es cancelado y no estaba cancelado previamente
+    if (newStatus === 'cancelled' && targetOrder && targetOrder.status !== 'cancelled' && Array.isArray(targetOrder.items)) {
+      targetOrder.items.forEach(item => {
+        if (item.stock !== 'Sin definir' && item.stock != null) {
+          const qty = Number(item.quantity) || 1;
+          if (supabase) {
+            supabase.rpc('increment_stock', { product_id: item.id, quantity: qty }).then(({ error }) => {
+              if (error) {
+                const prod = products.find(p => p.id === item.id);
+                if (prod && typeof prod.stock === 'number') {
+                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id);
+                }
+              }
+            });
+          }
+          setProducts(prev => prev.map(p => {
+            if (p.id === item.id) {
+              const cur = typeof p.stock === 'number' ? p.stock : parseInt(p.stock, 10);
+              if (!isNaN(cur)) {
+                return { ...p, stock: cur + qty };
+              }
+            }
+            return p;
+          }));
+        }
+      });
+    }
+
+    if (newStatus === 'delivered') {
       if (activeTrackingOrderId === orderId) {
         setActiveTrackingOrderId(null);
         try {
@@ -3008,7 +3038,7 @@ export const StoreProvider = ({ children }) => {
       delivered: 'Entregado con Éxito',
       cancelled: 'Cancelado'
     };
-    showToast(`Pedido ${orderId} actualizado a: ${statusLabels[newStatus] || newStatus}`);
+    showToast(`Pedido #${orderId} actualizado a: ${statusLabels[newStatus] || newStatus}`);
   };
 
   // Cancelar pedido
