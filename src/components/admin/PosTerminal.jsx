@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Store, 
   Search, 
@@ -58,6 +58,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
   const [isQuickAddCustomerOpen, setIsQuickAddCustomerOpen] = useState(false);
   const [quickCustomerForm, setQuickCustomerForm] = useState({ name: '', phone: '', apartment: '' });
+  const [debtorSearchTerm, setDebtorSearchTerm] = useState('');
 
   const filteredProducts = products.filter((p) => {
     const matchCat = 
@@ -75,6 +76,18 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
 
     return matchCat && matchSearch;
   });
+
+  const filteredDebtors = useMemo(() => {
+    if (!debtorSearchTerm.trim()) return creditCustomers;
+    const q = normalizeSearchText(debtorSearchTerm);
+    return creditCustomers.filter(c => {
+      return (
+        normalizeSearchText(c.name || '').includes(q) ||
+        normalizeSearchText(c.apartment || '').includes(q) ||
+        normalizeSearchText(c.phone || '').includes(q)
+      );
+    });
+  }, [creditCustomers, debtorSearchTerm]);
 
   const addToPosCart = (product) => {
     const isDefined = product.stock !== 'Sin definir' && product.stock != null;
@@ -129,12 +142,12 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     let creditOptions = {};
     if (paymentType === 'credit') {
       if (!selectedCreditCustomerId) {
-        showToast('Selecciona a qué vecino se le anotará la cuenta.', 'warning');
+        showToast('Selecciona a qué deudor se le anotará la cuenta.', 'warning');
         return;
       }
       const targetCust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
       if (!targetCust) {
-        showToast('El vecino seleccionado no es válido.', 'warning');
+        showToast('El deudor seleccionado no es válido.', 'warning');
         return;
       }
       creditOptions = {
@@ -170,8 +183,117 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     setLastCompletedSale(null);
     setPaymentType('cash');
     setSelectedCreditCustomerId('');
+    setDebtorSearchTerm('');
     setStep('catalog');
     setMobileView('catalog');
+  };
+
+  const handleSaveQuickDebtor = async () => {
+    const cleanName = quickCustomerForm.name.trim();
+    if (!cleanName) {
+      showToast('Escribe el nombre del deudor.', 'warning');
+      return;
+    }
+    try {
+      const created = await addCreditCustomer({
+        name: cleanName,
+        phone: quickCustomerForm.phone.trim(),
+        apartment: quickCustomerForm.apartment.trim()
+      });
+      if (created && created.id) {
+        setSelectedCreditCustomerId(created.id);
+      }
+      setQuickCustomerForm({ name: '', phone: '', apartment: '' });
+      setIsQuickAddCustomerOpen(false);
+    } catch (err) {
+      console.error('Error registrando deudor:', err);
+      showToast('Error al registrar al deudor.', 'error');
+    }
+  };
+
+  const renderQuickAddModal = () => {
+    if (!isQuickAddCustomerOpen) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 z-70 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn"
+        onClick={() => setIsQuickAddCustomerOpen(false)}
+      >
+        <div 
+          className="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border border-slate-100 animate-fadeIn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
+                <UserCheck className="w-4 h-4" />
+              </div>
+              <h4 className="font-black text-sm text-slate-900">Registrar Nuevo Deudor</h4>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsQuickAddCustomerOpen(false)}
+              className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Nombre Completo *</label>
+              <input
+                type="text"
+                autoFocus
+                value={quickCustomerForm.name}
+                onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ej. Don Carlos Mendoza"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
+              <input
+                type="tel"
+                value={quickCustomerForm.phone}
+                onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="Ej. 77123456"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Torre / Depto / Casa</label>
+              <input
+                type="text"
+                value={quickCustomerForm.apartment}
+                onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, apartment: e.target.value }))}
+                placeholder="Ej. Torre B - 402"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setIsQuickAddCustomerOpen(false)}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveQuickDebtor}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer transition-all active:scale-[0.98]"
+            >
+              Guardar Deudor y Seleccionar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Impresión de comanda térmica de venta presencial
@@ -630,45 +752,98 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-200 space-y-3.5 shadow-xs animate-fadeIn">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-800 block">
-                  Selecciona al vecino a cuya cuenta se cargará:
+                  Selecciona al deudor a cuya cuenta se cargará:
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsQuickAddCustomerOpen(true)}
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>+ Nuevo Vecino</span>
+                  <span>+ Nuevo Deudor</span>
                 </button>
               </div>
 
               {creditCustomers.length === 0 ? (
                 <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-center space-y-2">
-                  <p className="text-xs text-slate-600 font-medium">Aún no tienes vecinos registrados en tu libreta.</p>
+                  <p className="text-xs text-slate-600 font-medium">Aún no tienes deudores registrados en tu libreta.</p>
                   <button
                     type="button"
                     onClick={() => setIsQuickAddCustomerOpen(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 text-white font-bold text-xs cursor-pointer shadow-xs"
+                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
                   >
-                    Registrar vecino ahora
+                    Registrar deudor ahora
                   </button>
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  <select
-                    value={selectedCreditCustomerId}
-                    onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-bold text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 bg-white"
-                  >
-                    <option value="">-- Elige un vecino ({creditCustomers.length} en libreta) --</option>
-                    {creditCustomers.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.apartment ? `(${c.apartment})` : ''} - Saldo actual: {currency} {c.balance.toFixed(2)}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Buscador interactivo de deudores */}
+                  {creditCustomers.length > 3 && (
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={debtorSearchTerm}
+                        onChange={(e) => setDebtorSearchTerm(e.target.value)}
+                        placeholder="Buscar deudor por nombre o depto..."
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 font-medium"
+                      />
+                    </div>
+                  )}
 
-                  {/* Detalle del Vecino Seleccionado */}
+                  {/* Lista scrolleable de deudores adaptada al tamaño actual */}
+                  <div className="max-h-44 sm:max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin border border-slate-100 rounded-2xl p-1.5 bg-slate-50/50">
+                    {filteredDebtors.map(c => {
+                      const isSelected = selectedCreditCustomerId === c.id;
+                      return (
+                        <div
+                          key={c.id}
+                          onClick={() => setSelectedCreditCustomerId(c.id)}
+                          className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2 select-none ${
+                            isSelected
+                              ? 'bg-indigo-50 border-indigo-500 shadow-2xs ring-1 ring-indigo-500/30'
+                              : 'bg-white border-slate-200/80 hover:bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border ${
+                                isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'
+                              }`}>
+                                {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                              </span>
+                              <p className={`font-bold text-xs truncate ${isSelected ? 'text-indigo-950' : 'text-slate-800'}`}>
+                                {c.name}
+                              </p>
+                              {c.apartment && (
+                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 shrink-0">
+                                  {c.apartment}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className={`text-xs font-black block ${
+                              (c.balance || 0) > 0 ? 'text-amber-700' : 'text-slate-500'
+                            }`}>
+                              {currency} {Number(c.balance || 0).toFixed(2)}
+                            </span>
+                            <span className="text-[9px] text-slate-400 block -mt-0.5">
+                              {(c.balance || 0) > 0 ? 'Deuda actual' : 'Sin deuda'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {filteredDebtors.length === 0 && (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        No se encontró ningún deudor con "{debtorSearchTerm}"
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Detalle del Deudor Seleccionado */}
                   {selectedCreditCustomerId && (() => {
                     const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
                     if (!cust) return null;
@@ -676,10 +851,14 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                     const exceedsLimit = cust.creditLimit > 0 && newBal > cust.creditLimit;
 
                     return (
-                      <div className={`p-3.5 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/60 border-indigo-100'}`}>
+                      <div className={`p-3 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/70 border-indigo-100'}`}>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Saldo actual del vecino:</span>
-                          <span className="font-bold text-slate-800">{currency} {cust.balance.toFixed(2)}</span>
+                          <span className="text-slate-600 font-medium">Deudor seleccionado:</span>
+                          <span className="font-extrabold text-indigo-950">{cust.name} {cust.apartment ? `(${cust.apartment})` : ''}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-600 font-medium">Saldo actual del deudor:</span>
+                          <span className="font-bold text-slate-800">{currency} {(cust.balance || 0).toFixed(2)}</span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-600 font-medium">+ Esta compra a cuenta:</span>
@@ -778,6 +957,9 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             </div>
           </div>
         )}
+
+        {/* MODAL RÁPIDO: REGISTRAR NUEVO DEUDOR */}
+        {renderQuickAddModal()}
       </div>
     );
   }
@@ -1065,96 +1247,8 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
         </div>
       )}
 
-      {/* MODAL RÁPIDO: REGISTRAR NUEVO VECINO DESDE EL POS */}
-      {isQuickAddCustomerOpen && (
-        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-sm p-5 space-y-4 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <h4 className="font-black text-sm text-slate-900">Registrar Nuevo Deudor</h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsQuickAddCustomerOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Nombre Completo *</label>
-                <input
-                  type="text"
-                  autoFocus
-                  value={quickCustomerForm.name}
-                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ej. Don Carlos Mendoza"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Teléfono / WhatsApp</label>
-                <input
-                  type="tel"
-                  value={quickCustomerForm.phone}
-                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Ej. 77123456"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Torre / Depto / Casa</label>
-                <input
-                  type="text"
-                  value={quickCustomerForm.apartment}
-                  onChange={(e) => setQuickCustomerForm(prev => ({ ...prev, apartment: e.target.value }))}
-                  placeholder="Ej. Torre B - 402"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsQuickAddCustomerOpen(false)}
-                className="px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!quickCustomerForm.name.trim()) {
-                    showToast('Escribe el nombre del vecino.', 'warning');
-                    return;
-                  }
-                  const created = addCreditCustomer({
-                    name: quickCustomerForm.name.trim(),
-                    phone: quickCustomerForm.phone.trim(),
-                    apartment: quickCustomerForm.apartment.trim()
-                  });
-                  if (created) {
-                    setSelectedCreditCustomerId(created.id);
-                  }
-                  setQuickCustomerForm({ name: '', phone: '', apartment: '' });
-                  setIsQuickAddCustomerOpen(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-xs cursor-pointer"
-              >
-                Guardar Deudor y Seleccionar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL RÁPIDO: REGISTRAR NUEVO DEUDOR */}
+      {renderQuickAddModal()}
     </div>
   );
 };
