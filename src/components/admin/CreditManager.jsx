@@ -71,6 +71,7 @@ export const CreditManager = () => {
   });
 
   const [activeCustomerForPayment, setActiveCustomerForPayment] = useState(null);
+  const [customerToDelete, setCustomerToDelete] = useState(null);
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     paymentMethod: 'cash', // 'cash' | 'qr'
@@ -488,13 +489,9 @@ export const CreditManager = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (window.confirm(`¿Seguro que deseas eliminar la cuenta de ${customer.name}?`)) {
-                            deleteCreditCustomer(customer.id);
-                          }
-                        }}
+                        onClick={() => setCustomerToDelete(customer)}
                         className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Eliminar cuenta"
+                        title="Eliminar cuenta de deudor"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1113,6 +1110,96 @@ export const CreditManager = () => {
                   Cerrar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: CONFIRMACIÓN ELEGANTE DE ELIMINACIÓN DE DEUDOR                      */}
+      {/* ========================================================================= */}
+      {customerToDelete && (
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn"
+          onClick={() => setCustomerToDelete(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-sm sm:max-w-md shadow-2xl overflow-hidden border border-slate-100 p-5 sm:p-6 text-center space-y-4 animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icono de advertencia / eliminación */}
+            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center justify-center mx-auto shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                ¿Eliminar cuenta de deudor?
+              </h3>
+              <p className="text-xs text-slate-500">
+                Esta acción no se puede deshacer y removerá la ficha del cliente de la libreta.
+              </p>
+            </div>
+
+            {/* Ficha Resumen del Deudor */}
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-left space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-extrabold text-sm text-slate-900 truncate">
+                    {customerToDelete.name}
+                  </p>
+                  {customerToDelete.phone && (
+                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                      <Phone className="w-3 h-3" />
+                      <span>{customerToDelete.phone}</span>
+                    </p>
+                  )}
+                </div>
+                {customerToDelete.apartment && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 shrink-0">
+                    {customerToDelete.apartment}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60">
+                <span className="text-slate-500 font-medium">Saldo en cuenta:</span>
+                <span className={`font-black ${customerToDelete.balance > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                  {currency} {Number(customerToDelete.balance || 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Alerta si tiene deuda pendiente */}
+            {customerToDelete.balance > 0 && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-left flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-rose-900 font-medium leading-tight">
+                  <strong>Atención:</strong> Este deudor tiene una deuda acumulada de <strong>{currency} {customerToDelete.balance.toFixed(2)}</strong>. Si eliminas su cuenta, perderás el registro de cobro y sus movimientos.
+                </p>
+              </div>
+            )}
+
+            {/* Botones de acción */}
+            <div className="flex items-center gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setCustomerToDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteCreditCustomer(customerToDelete.id);
+                  setCustomerToDelete(null);
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Sí, Eliminar</span>
+              </button>
             </div>
           </div>
         </div>

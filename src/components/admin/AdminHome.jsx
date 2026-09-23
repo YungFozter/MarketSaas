@@ -183,6 +183,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+
+  const getDisplayOrderId = (id) => {
+    if (!id) return '';
+    const str = String(id);
+    if (str.includes('POS-')) {
+      return 'POS-' + str.split('POS-')[1];
+    }
+    return str.length > 14 ? str.slice(-8) : str;
+  };
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isOpen = storeConfig?.isOpen !== false;
@@ -1665,21 +1675,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       const isPickup = tx.deliveryType === 'pickup' || tx.delivery_type === 'pickup' || tx.customer?.condominium === 'Retiro en Tienda' || tx.customer?.condominium === 'En Tienda' || tx.customer?.apartment === 'Mostrador';
                       const payMethod = tx.paymentMethod || tx.payment_method || 'cash';
                       const txTime = tx.createdAt || tx.created_at;
+                      const displayId = getDisplayOrderId(tx.id);
+                      const itemsCount = tx.items?.length || 1;
+
                       return (
                         <div 
                           key={tx.id}
-                          className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
                         >
-                          {/* Izquierda: Método de Pago + Datos del Cliente / Origen */}
-                          <div className="flex items-start sm:items-center gap-3 min-w-0">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                          {/* Izquierda: Método de Pago + Datos del Cliente / Origen + Metadatos */}
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 md:mt-0 ${
                               payMethod === 'cash' 
-                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80'
                                 : payMethod === 'qr'
-                                ? 'bg-cyan-50 text-cyan-600 border border-cyan-200'
+                                ? 'bg-cyan-50 text-cyan-600 border border-cyan-200/80'
                                 : payMethod === 'credit'
-                                ? 'bg-purple-50 text-purple-600 border border-purple-200'
-                                : 'bg-blue-50 text-blue-600 border border-blue-200'
+                                ? 'bg-purple-50 text-purple-600 border border-purple-200/80'
+                                : 'bg-blue-50 text-blue-600 border border-blue-200/80'
                             }`}>
                               {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
                               {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
@@ -1687,52 +1700,58 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               {payMethod === 'credit' && <BookOpen className="w-5 h-5" />}
                             </div>
 
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1 space-y-1">
+                              {/* Fila 1: Origen de la Venta + Badge de método de pago */}
                               <div className="flex items-center gap-2 flex-wrap">
-                                {isPos ? (
-                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                    🏪 Venta Rápida de Mostrador
-                                  </span>
-                                ) : isPickup ? (
-                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                    🛍️ {tx.customer?.name || 'Vecino'} • Retiro en Tienda
-                                  </span>
-                                ) : (
-                                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                    🛵 {tx.customer?.name ? `${tx.customer.name} • ` : ''}{tx.customer?.condominium || 'Domicilio'}
-                                    {(tx.customer?.tower || tx.customer?.apartment) && (
-                                      <span className="font-semibold text-slate-600 ml-1">
-                                        ({[tx.customer?.tower, tx.customer?.apartment].filter(Boolean).join(' - ')})
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                                  payMethod === 'cash' ? 'bg-emerald-100 text-emerald-700' :
-                                  payMethod === 'qr' ? 'bg-cyan-100 text-cyan-700' :
-                                  payMethod === 'credit' ? 'bg-purple-100 text-purple-700' :
-                                  'bg-blue-100 text-blue-700'
+                                <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                  {isPos ? (
+                                    '🏪 Venta Rápida de Mostrador'
+                                  ) : isPickup ? (
+                                    `🛍️ ${tx.customer?.name || 'Vecino'} • Retiro en Tienda`
+                                  ) : (
+                                    `🛵 ${tx.customer?.name ? `${tx.customer.name} • ` : ''}${tx.customer?.condominium || 'Domicilio'}`
+                                  )}
+                                  {!isPos && !isPickup && (tx.customer?.tower || tx.customer?.apartment) && (
+                                    <span className="font-semibold text-slate-600 ml-1">
+                                      ({[tx.customer?.tower, tx.customer?.apartment].filter(Boolean).join(' - ')})
+                                    </span>
+                                  )}
+                                </span>
+
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                                  payMethod === 'cash' ? 'bg-emerald-100 text-emerald-800' :
+                                  payMethod === 'qr' ? 'bg-cyan-100 text-cyan-800' :
+                                  payMethod === 'credit' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-blue-100 text-blue-800'
                                 }`}>
                                   {payMethod === 'cash' ? '💵 Efectivo' : payMethod === 'qr' ? '📱 QR Simple' : payMethod === 'credit' ? '📒 A Cuenta' : '💳 Tarjeta POS'}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
-                                <span className="font-mono font-semibold text-slate-500">#{tx.id}</span>
-                                <span>•</span>
-                                <span>{tx.items?.length || 1} {tx.items?.length === 1 ? 'producto' : 'productos'}</span>
-                                <span>•</span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  {formatRelativeTime(txTime)}
+                              {/* Fila 2: ID limpio en píldora + Cantidad de productos + Tiempo relativo */}
+                              <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] text-slate-400 font-medium flex-wrap">
+                                <span 
+                                  className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 whitespace-nowrap" 
+                                  title={`ID completo: #${tx.id}`}
+                                >
+                                  #{displayId}
+                                </span>
+                                <span className="text-slate-300">•</span>
+                                <span className="whitespace-nowrap text-slate-500">
+                                  {itemsCount} {itemsCount === 1 ? 'producto' : 'productos'}
+                                </span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1 whitespace-nowrap text-slate-400">
+                                  <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{formatRelativeTime(txTime)}</span>
                                 </span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Derecha: Estado + Monto cobrado */}
-                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 self-end sm:self-center w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                          {/* Derecha / Fila inferior en móvil: Estado + Importe + Borrar */}
+                          <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100/90">
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${
                               tx.status === 'delivered'
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                                 : tx.status === 'on_the_way'
@@ -1746,18 +1765,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
                             <div className="flex items-center gap-2">
                               <div className="text-right">
-                                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
                                   +{currency} {(tx.total || 0).toFixed(2)}
                                 </span>
                               </div>
                               <button
-                                onClick={() => {
-                                  if (window.confirm(`¿Deseas descartar/eliminar la transacción #${tx.id}?`)) {
-                                    deleteOrder(tx.id);
-                                  }
-                                }}
-                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Eliminar transacción"
+                                onClick={() => setTransactionToDelete(tx)}
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Eliminar transacción del registro"
                                 type="button"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1937,6 +1952,65 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         isOpen={isPrintKitOpen}
         onClose={() => setIsPrintKitOpen(false)}
       />
+
+      {/* Modal de confirmación para eliminar transacción del Feed */}
+      {transactionToDelete && (
+        <div 
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn"
+          onClick={() => setTransactionToDelete(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 p-5 sm:p-6 text-center space-y-4 animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-13 h-13 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center justify-center mx-auto shadow-xs">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                ¿Descartar transacción?
+              </h3>
+              <p className="text-xs text-slate-500">
+                Esta acción eliminará el pedido del registro y afectará los reportes contables.
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 text-left space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500 font-medium">Pedido:</span>
+                <span className="font-mono font-bold text-slate-800">#{getDisplayOrderId(transactionToDelete.id)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                <span className="text-slate-500 font-medium">Monto cobrado:</span>
+                <span className="font-black text-slate-900">+{currency} {(transactionToDelete.total || 0).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setTransactionToDelete(null)}
+                className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteOrder(transactionToDelete.id);
+                  setTransactionToDelete(null);
+                  showToast('Transacción descartada.', 'info');
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Sí, Descartar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
