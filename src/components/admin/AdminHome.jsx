@@ -198,28 +198,37 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
-  // Desglose por método de pago para Ventas y Cierre de Caja
-  const cashOrders = validOrders.filter(o => o?.paymentMethod === 'cash');
-  const qrOrders = validOrders.filter(o => o?.paymentMethod === 'qr');
-  const cardOrders = validOrders.filter(o => o?.paymentMethod === 'card');
+  // Desglose por método de pago para Ventas y Cierre de Caja (soportando camelCase y snake_case)
+  const getOrderPaymentMethod = (o) => o?.paymentMethod || o?.payment_method || 'cash';
+
+  const cashOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'cash');
+  const qrOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'qr');
+  const cardOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'card');
+  const creditOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'credit');
 
   const totalCashSales = cashOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const totalQrSales = qrOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const totalCardSales = cardOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-  const totalSalesCount = cashOrders.length + qrOrders.length + cardOrders.length;
+  const totalCreditSales = creditOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalSalesCount = cashOrders.length + qrOrders.length + cardOrders.length + creditOrders.length;
   const totalDaySales = totalCashSales + totalQrSales + totalCardSales;
   const totalDeliveryCollected = validOrders
-    .filter(o => o?.deliveryType === 'delivery')
-    .reduce((acc, o) => acc + (o.deliveryFee || 0), 0);
+    .filter(o => (o?.deliveryType || o?.delivery_type) === 'delivery')
+    .reduce((acc, o) => acc + (o.deliveryFee || o.delivery_fee || 0), 0);
 
   // Helper para clasificar si un pedido corresponde a Mostrador (presencial POS o retiro en tienda) vs Domicilio
   const isPickupOrPosOrder = (order) => {
     if (!order) return false;
-    if (order.id?.startsWith('POS-')) return true;
-    if (order.deliveryType === 'pickup') return true;
-    if (order.customer?.name?.includes('Presencial') || order.customer?.name?.includes('Mostrador')) return true;
-    if (order.customer?.condominium === 'Retiro en Tienda' || order.customer?.apartment === 'Mostrador') return true;
-    if (order.deliveryType === 'delivery') return false;
+    const id = String(order.id || '');
+    if (id.includes('POS-') || id.startsWith('POS-')) return true;
+    const dType = order.deliveryType || order.delivery_type;
+    if (dType === 'pickup') return true;
+    const cName = order.customer?.name || '';
+    if (cName.includes('Presencial') || cName.includes('Mostrador') || cName.includes('Cliente Mostrador')) return true;
+    const condo = order.customer?.condominium || '';
+    const apt = order.customer?.apartment || '';
+    if (condo === 'Retiro en Tienda' || condo === 'En Tienda' || apt === 'Mostrador') return true;
+    if (dType === 'delivery') return false;
     return false;
   };
 
@@ -231,7 +240,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       if (feedFilter === 'delivery') return !isPickup;
       return true;
     })
-    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
     .slice(0, 8);
 
   const formatRelativeTime = (isoString) => {
@@ -1559,7 +1568,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-slate-400 text-xs pt-1 border-t border-slate-100">
-                          <span>{order.paymentMethod.toUpperCase()}</span>
+                          <span>{(order.paymentMethod || order.payment_method || 'cash').toUpperCase()}</span>
                           <span className="text-emerald-700 font-bold text-[11px]">★ 5.0 Exitoso</span>
                         </div>
                       </div>
@@ -1651,9 +1660,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     </div>
                   ) : (
                     recentTransactions.map((tx) => {
-                      const isPos = tx.id?.startsWith('POS-') || tx.customer?.name?.includes('Presencial');
-                      const isPickup = tx.deliveryType === 'pickup' || tx.customer?.condominium === 'Retiro en Tienda' || tx.customer?.apartment === 'Mostrador';
-                      const payMethod = tx.paymentMethod || 'cash';
+                      const idStr = String(tx.id || '');
+                      const isPos = idStr.includes('POS-') || tx.customer?.name?.includes('Presencial') || tx.customer?.name?.includes('Mostrador') || tx.customer?.name?.includes('Cliente Mostrador');
+                      const isPickup = tx.deliveryType === 'pickup' || tx.delivery_type === 'pickup' || tx.customer?.condominium === 'Retiro en Tienda' || tx.customer?.condominium === 'En Tienda' || tx.customer?.apartment === 'Mostrador';
+                      const payMethod = tx.paymentMethod || tx.payment_method || 'cash';
+                      const txTime = tx.createdAt || tx.created_at;
                       return (
                         <div 
                           key={tx.id}
@@ -1666,18 +1677,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
                                 : payMethod === 'qr'
                                 ? 'bg-cyan-50 text-cyan-600 border border-cyan-200'
-                                : 'bg-amber-50 text-amber-600 border border-amber-200'
+                                : payMethod === 'credit'
+                                ? 'bg-purple-50 text-purple-600 border border-purple-200'
+                                : 'bg-blue-50 text-blue-600 border border-blue-200'
                             }`}>
                               {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
                               {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
                               {payMethod === 'card' && <CreditCard className="w-5 h-5" />}
+                              {payMethod === 'credit' && <BookOpen className="w-5 h-5" />}
                             </div>
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 {isPos ? (
                                   <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
-                                    🏪 Venta de Mostrador (Presencial)
+                                    🏪 Venta Rápida de Mostrador
                                   </span>
                                 ) : isPickup ? (
                                   <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
@@ -1693,8 +1707,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                     )}
                                   </span>
                                 )}
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 uppercase">
-                                  {payMethod === 'cash' ? 'Efectivo' : payMethod === 'qr' ? 'QR' : 'Tarjeta'}
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                                  payMethod === 'cash' ? 'bg-emerald-100 text-emerald-700' :
+                                  payMethod === 'qr' ? 'bg-cyan-100 text-cyan-700' :
+                                  payMethod === 'credit' ? 'bg-purple-100 text-purple-700' :
+                                  'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {payMethod === 'cash' ? '💵 Efectivo' : payMethod === 'qr' ? '📱 QR Simple' : payMethod === 'credit' ? '📒 A Cuenta' : '💳 Tarjeta POS'}
                                 </span>
                               </div>
 
@@ -1705,7 +1724,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 <span>•</span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-3 h-3 text-slate-400" />
-                                  {formatRelativeTime(tx.createdAt)}
+                                  {formatRelativeTime(txTime)}
                                 </span>
                               </div>
                             </div>

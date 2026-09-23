@@ -3458,16 +3458,16 @@ export const StoreProvider = ({ children }) => {
     const isCredit = paymentType === 'credit';
     const customerInfo = isCredit && creditOptions?.customerId ? {
       name: creditOptions.customerName || 'Vecino a Cuenta',
-      phone: creditOptions.customerPhone || 'A Cuenta',
+      phone: creditOptions.customerPhone || '',
       condominium: creditOptions.customerApartment || 'En Tienda',
       tower: '-',
       apartment: creditOptions.customerApartment || '-'
     } : {
-      name: 'Venta de Mostrador (Presencial)',
-      phone: 'Presencial',
+      name: 'Cliente Mostrador (Venta Rápida)',
+      phone: '',
       condominium: 'En Tienda',
       tower: '-',
-      apartment: '-'
+      apartment: 'Mostrador'
     };
 
     if (isCredit && creditOptions?.customerId) {
@@ -3475,26 +3475,58 @@ export const StoreProvider = ({ children }) => {
       addCustomerCharge(creditOptions.customerId, subtotal, `Venta POS #${saleId}: ${summaryItems}`, posItems);
     }
 
-    // 3. Registrar como pedido completado directo
-    const posOrder = {
+    // 3. Registrar como pedido completado directo con esquema normalizado dual
+    const effectiveTenant = tenantSlug || merchantStore?.id || storeConfig?.id || 'default';
+    const nowIso = new Date().toISOString();
+
+    const dbPayload = {
       id: saleId,
-      tenant_id: tenantSlug,
+      tenant_id: effectiveTenant,
       owner_id: currentUser?.id || storeConfig?.owner_id || null,
       customer: customerInfo,
       items: posItems,
       subtotal,
-      deliveryFee: 0,
       discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'pickup',
       total: subtotal,
-      deliveryType: 'pickup',
-      paymentMethod: paymentType,
       status: 'delivered',
-      createdAt: new Date().toISOString()
+      payment_method: paymentType,
+      coupon_code: null,
+      created_at: nowIso
     };
 
-    setOrders(prev => [posOrder, ...prev]);
-    if (supabase && tenantSlug) {
-      supabase.from('orders').insert([posOrder]).then(({ error }) => {
+    const normalizedPosOrder = normalizeOrder({
+      ...dbPayload,
+      deliveryFee: 0,
+      deliveryType: 'pickup',
+      paymentMethod: paymentType,
+      createdAt: nowIso
+    });
+
+    // Actualizar estado en memoria y persistir de inmediato en localStorage
+    setOrders(prev => {
+      const updated = [normalizedPosOrder, ...prev.filter(o => o.id !== normalizedPosOrder.id)];
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (storeConfig?.tenant_id) {
+          localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
+        }
+        if (merchantStore?.id && merchantStore.id !== tenantSlug) {
+          localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
+
+    try {
+      window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalizedPosOrder }));
+    } catch (e) {}
+
+    // Persistir en Supabase con los nombres de columna canónicos
+    if (supabase && effectiveTenant && effectiveTenant !== 'default') {
+      supabase.from('orders').insert([dbPayload]).then(({ error }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
       });
 
@@ -3518,9 +3550,10 @@ export const StoreProvider = ({ children }) => {
     if (isCredit) {
       showToast(`Venta a cuenta #${saleId} guardada para ${creditOptions.customerName || 'el vecino'}.`, 'success');
     } else {
-      showToast(`Venta de mostrador ${saleId} registrada por ${currency} ${subtotal.toFixed(2)}.`, 'success');
+      const payLabel = paymentType === 'cash' ? 'Efectivo' : paymentType === 'qr' ? 'QR Simple' : 'Tarjeta POS';
+      showToast(`Venta rápida #${saleId} registrada en ${payLabel} por ${currency} ${subtotal.toFixed(2)}.`, 'success');
     }
-    return posOrder;
+    return normalizedPosOrder;
   };
 
   // Solicitar producto ("Pídelo si no está")

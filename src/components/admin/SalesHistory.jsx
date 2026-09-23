@@ -155,28 +155,30 @@ export const SalesHistory = () => {
     return baseSales.reduce((acc, order) => acc + (Number(order.total) || 0), 0);
   }, [baseSales]);
 
+  const getOrderPaymentMethod = (o) => o?.paymentMethod || o?.payment_method || 'cash';
+
   const cashTotal = useMemo(() => {
     return baseSales
-      .filter(o => o.paymentMethod === 'cash')
+      .filter(o => getOrderPaymentMethod(o) === 'cash')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
   }, [baseSales]);
 
   const qrTotal = useMemo(() => {
     return baseSales
-      .filter(o => o.paymentMethod === 'qr')
+      .filter(o => getOrderPaymentMethod(o) === 'qr')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
   }, [baseSales]);
 
   const cardTotal = useMemo(() => {
     return baseSales
-      .filter(o => o.paymentMethod === 'card')
+      .filter(o => getOrderPaymentMethod(o) === 'card')
       .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
   }, [baseSales]);
 
   // 2. Ventas filtradas específicamente por el Método de Pago seleccionado (para la tabla/lista de ventas)
   const filteredSales = useMemo(() => {
     if (selectedPaymentMethod === 'all') return baseSales;
-    return baseSales.filter(o => o.paymentMethod === selectedPaymentMethod);
+    return baseSales.filter(o => getOrderPaymentMethod(o) === selectedPaymentMethod);
   }, [baseSales, selectedPaymentMethod]);
 
   const totalSalesCount = filteredSales.length;
