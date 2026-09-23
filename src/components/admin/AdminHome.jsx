@@ -1889,26 +1889,29 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
           <div className="relative w-full max-w-6xl h-[94vh] max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
             {/* Header del Panel de Venta Rápida */}
-            <div className="p-3.5 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
-                  <Store className="w-5 h-5" />
+            <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
+                  <Store className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                    <span>Punto de Venta (POS)</span>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                      Venta Rápida de Mostrador
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <h3 className="text-sm sm:text-base font-black text-white tracking-tight whitespace-nowrap">
+                      Punto de Venta (POS)
+                    </h3>
+                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Venta Rápida de Mostrador</span>
                     </span>
-                  </h3>
-                  <p className="text-xs text-slate-400">
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-slate-400 truncate mt-0.5 sm:mt-1">
                     Selecciona productos del catálogo, revisa el ticket y procesa el cobro
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsPosModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer shrink-0"
                 title="Cerrar punto de venta"
               >
                 <X className="w-5 h-5" />

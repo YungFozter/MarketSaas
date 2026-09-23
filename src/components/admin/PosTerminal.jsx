@@ -750,16 +750,15 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
 
           {paymentType === 'credit' && (
             <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-200 space-y-3.5 shadow-xs animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <label className="text-xs font-bold text-slate-800 block">
                   Selecciona al deudor a cuya cuenta se cargará:
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsQuickAddCustomerOpen(true)}
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center cursor-pointer transition-colors whitespace-nowrap shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5" />
                   <span>+ Nuevo Deudor</span>
                 </button>
               </div>
