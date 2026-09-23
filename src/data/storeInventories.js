@@ -644,8 +644,9 @@ export const getStoreCatalog = (storeSlug = 'default') => {
     return [];
   }
 
-  const seedHash = getHashFromString(storeSlug);
-  const zone = getZoneCategory(storeSlug);
+  const resolvedSlug = (storeSlug === 'tiendita-fernando' || storeSlug === 'fernando') ? 'minimarket-ian' : storeSlug;
+  const seedHash = getHashFromString(resolvedSlug);
+  const zone = getZoneCategory(resolvedSlug);
 
   const essentialKeys = [
     'cocaCola2L',
@@ -748,8 +749,18 @@ export const getStoreCatalog = (storeSlug = 'default') => {
     const originalPrice = (hashOffset % 3 === 0) ? Number((finalPrice * 1.1).toFixed(2)) : finalPrice;
     const calculatedStock = 10 + ((seedHash + index * 9) % 35);
 
+    let itemStock = calculatedStock;
+    let itemMinStock = 4;
+    const isFernando = resolvedSlug === 'minimarket-ian';
+    if (isFernando) {
+      if (index === 1) { itemStock = 2; itemMinStock = 6; } // Leche Pil 1L: 2 de 6 (Alerta Crítica)
+      else if (index === 2) { itemStock = 3; itemMinStock = 8; } // Huevos Frescos: 3 de 8 (Alerta Crítica)
+      else if (index === 3) { itemStock = 4; itemMinStock = 10; } // Pan Marraqueta: 4 de 10 (Alerta Crítica)
+      else if (index === 5) { itemStock = 1; itemMinStock = 5; } // Aceite Fino: 1 de 5 (Alerta Crítica)
+    }
+
     return {
-      id: `${storeSlug}-prod-${index + 1}`,
+      id: `${resolvedSlug}-prod-${index + 1}`,
       code: `780${((seedHash % 900) + 100)}${String(index + 1).padStart(3, '0')}`,
       name: item.baseName,
       category: item.category,
@@ -758,15 +769,15 @@ export const getStoreCatalog = (storeSlug = 'default') => {
       original_price: originalPrice,
       costPrice: item.costPrice,
       cost_price: item.costPrice,
-      stock: calculatedStock,
-      minStock: 4,
-      min_stock: 4,
+      stock: itemStock,
+      minStock: itemMinStock,
+      min_stock: itemMinStock,
       unit: item.unit,
       image: item.image,
       description: item.description,
       badge: item.badge,
       isPopular: index < 5 || item.badge === 'Más Vendido' || (hashOffset % 4 === 0),
-      tenant_id: storeSlug
+      tenant_id: resolvedSlug
     };
   }).filter(Boolean);
 };

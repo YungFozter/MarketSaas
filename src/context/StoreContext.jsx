@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import { initialSuppliers } from '../data/supplierInitialData';
 import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
+import { fernandoSuppliers, fernandoCreditCustomers } from '../data/tienditaFernandoData';
 import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
@@ -304,16 +305,108 @@ export const resolveCanonicalProductImage = (name = '', currentImage = '') => {
     return '/products/sal-lobos-yodada-500g.png';
   }
   // 26. Jugo Del Valle Fresh 3 L
-  if (normName.includes('del valle fresh') || (normName.includes('del valle') && normName.includes('3')) || normName.includes('huari')) {
+  if (normName.includes('del valle fresh') || (normName.includes('del valle') && normName.includes('3'))) {
     return '/products/jugo-del-valle-fresh-3l.png';
   }
   // 27. Carbon Curupau 4 kg
   if (normName.includes('curupau') || (normName.includes('carbon') && (normName.includes('quebracho') || normName.includes('4')))) {
     return '/products/carbon-curupau-4kg.png';
   }
+  // 28. Cerveza Paceña Huari / 710ml
+  if (normName.includes('huari') || (normName.includes('pacena') && normName.includes('710'))) {
+    return '/products/cerveza-pacena-710ml.png';
+  }
+  // 29. Pan Marraqueta
+  if (normName.includes('marraqueta') || normName.includes('pan ')) {
+    return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80';
+  }
+  // 30. Huevos Frescos Granja / Maple
+  if (normName.includes('huevo') || normName.includes('maple')) {
+    return 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=600&auto=format&fit=crop&q=80';
+  }
+  // 31. Queso Criollo Chaqueño
+  if (normName.includes('queso')) {
+    return 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=600&auto=format&fit=crop&q=80';
+  }
+  // 32. Arroz Grano de Oro
+  if (normName.includes('arroz')) {
+    return 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=600&auto=format&fit=crop&q=80';
+  }
+  // 33. Harina Blancaflor
+  if (normName.includes('harina')) {
+    return 'https://images.unsplash.com/photo-1627485937980-221c88ac04f9?w=600&auto=format&fit=crop&q=80';
+  }
+  // 34. Mermelada de Frutilla
+  if (normName.includes('mermelada')) {
+    return 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=600&auto=format&fit=crop&q=80';
+  }
+  // 35. Plátano Verde-Maduro
+  if (normName.includes('platano') || normName.includes('plátano') || normName.includes('banana')) {
+    return 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=600&auto=format&fit=crop&q=80';
+  }
+  // 36. Tomate Selección
+  if (normName.includes('tomate')) {
+    return 'https://images.unsplash.com/photo-1546470427-e26264be0b11?w=600&auto=format&fit=crop&q=80';
+  }
+  // 37. Manzana Royal Gala
+  if (normName.includes('manzana')) {
+    return 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600&auto=format&fit=crop&q=80';
+  }
+  // 38. Cebolla Roja
+  if (normName.includes('cebolla')) {
+    return 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80';
+  }
+  // 39. Lavavajillas Líquido Limón / Sapolio
+  if (normName.includes('lavavajilla') || normName.includes('sapolio')) {
+    return 'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=600&auto=format&fit=crop&q=80';
+  }
+  // 40. Papel Higiénico Scott
+  if (normName.includes('papel') || normName.includes('scott')) {
+    return 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&auto=format&fit=crop&q=80';
+  }
+  // 41. Hamburguesas de Carne Sofía
+  if (normName.includes('hamburguesa')) {
+    return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80';
+  }
+  // 42. Nuggets de Pollo Sofía
+  if (normName.includes('nugget')) {
+    return 'https://images.unsplash.com/photo-1562967914-608f82629710?w=600&auto=format&fit=crop&q=80';
+  }
+  // 43. Avena Quaker Tradicional
+  if (normName.includes('avena') || normName.includes('quaker')) {
+    return 'https://images.unsplash.com/photo-1584776296944-ab6fb57b0bdd?w=600&auto=format&fit=crop&q=80';
+  }
+  // 44. Vino Tinto Campos de Solana
+  if (normName.includes('vino') || normName.includes('solana') || normName.includes('malbec')) {
+    return 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600&auto=format&fit=crop&q=80';
+  }
+  // 45. Jabón Rexona / Tocador
+  if (normName.includes('rexona') || (normName.includes('jabon') && normName.includes('tocador'))) {
+    return 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=600&auto=format&fit=crop&q=80';
+  }
+  // 46. Jabón Bolívar Barra
+  if (normName.includes('bolivar') || (normName.includes('jabon') && normName.includes('barra'))) {
+    return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&auto=format&fit=crop&q=80';
+  }
+  // 47. Lavandina Clorox
+  if (normName.includes('lavandina') || normName.includes('clorox')) {
+    return 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=600&auto=format&fit=crop&q=80';
+  }
+  // 48. Salsa de Tomate Kris
+  if (normName.includes('salsa') && normName.includes('tomate')) {
+    return 'https://images.unsplash.com/photo-1590736969955-71cc94801759?w=600&auto=format&fit=crop&q=80';
+  }
+  // 49. Papas Pringles
+  if (normName.includes('pringles')) {
+    return 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=600&auto=format&fit=crop&q=80';
+  }
 
-  // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía:
-  if (!currentImage || currentImage.includes('1581441363689')) {
+  // Si la imagen actual es la rosa de Unsplash (antiguo enlace erróneo), o está vacía o es placeholder:
+  if (!currentImage || currentImage.includes('1581441363689') || currentImage.includes('producto-sin-imagen')) {
+    // Fallback inteligente según categoría o palabras clave
+    if (normName.includes('pan') || normName.includes('tostada')) return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80';
+    if (normName.includes('huevo')) return 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=600&auto=format&fit=crop&q=80';
+    if (normName.includes('fruta') || normName.includes('jugo')) return '/products/jugo-del-valle-fresh-3l.png';
     return '/products/producto-sin-imagen.png';
   }
 
@@ -345,8 +438,11 @@ export const syncProductsWithCanonicalCatalog = (prods = [], storeSlug = 'defaul
           ...norm,
           name: canon.name,
           price: canon.price !== undefined ? canon.price : norm.price,
-          image: canon.image,
-          category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category
+          image: (norm.image && !norm.image.includes('producto-sin-imagen')) ? norm.image : canon.image,
+          category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category,
+          stock: (canon.stock <= canon.minStock || norm.stock === 'Sin definir') ? canon.stock : norm.stock,
+          minStock: canon.minStock !== undefined ? canon.minStock : norm.minStock,
+          min_stock: canon.minStock !== undefined ? canon.minStock : norm.minStock
         };
       }
       return norm;
@@ -514,20 +610,13 @@ export const DEMO_SUPPLIER_IDS = ['sup-coca-cola', 'sup-pil-andina', 'sup-cbn-pa
 export const isDemoSupplier = (s) => {
   if (!s || typeof s !== 'object') return false;
   const id = String(s.id || '').toLowerCase().trim();
-  const name = String(s.name || '').toLowerCase().trim();
-  if (DEMO_SUPPLIER_IDS.includes(s.id) || DEMO_SUPPLIER_IDS.includes(id)) return true;
-  if (id.startsWith('sup-coca-cola') || id.startsWith('sup-pil') || id.startsWith('sup-cbn') || id.startsWith('sup-sofia')) return true;
-  if (
-    name.includes('embol') || 
-    name.includes('coca-cola') || 
-    name.includes('pil andina') || 
-    name.includes('cervecería boliviana') || 
-    name.includes('cerveceria boliviana') || 
-    name.includes('paceña') || 
-    name.includes('pacena') || 
-    name.includes('sofía alimentos') || 
-    name.includes('sofia alimentos')
-  ) return true;
+  // Nunca filtrar proveedores oficiales de Tiendita Fernando
+  if (id.startsWith('sup-fernando')) return false;
+  // Solo descartar si es exactamente uno de los IDs demo legacy sin teléfono ni datos de contacto
+  if (DEMO_SUPPLIER_IDS.includes(s.id) || DEMO_SUPPLIER_IDS.includes(id)) {
+    if (s.phone || s.contactName || s.contact_name) return false;
+    return true;
+  }
   return false;
 };
 
@@ -536,22 +625,14 @@ export const filterOutDemoSuppliers = (list) => {
   return list.filter(s => s && !isDemoSupplier(s));
 };
 
-// Purga inmediata y forzosa de proveedores demo en todo localStorage al iniciar el script
+// Purga inmediata y forzosa de proveedores demo legacy
 if (typeof window !== 'undefined') {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.includes('supplier')) {
+      if (key && key.includes('supplier') && !key.includes('minimarket-ian') && !key.includes('tiendita-fernando')) {
         const item = localStorage.getItem(key);
-        if (item && (
-          item.includes('sup-coca-cola') || 
-          item.includes('Embol') || 
-          item.includes('sup-pil') || 
-          item.includes('PIL Andina') || 
-          item.includes('cbn') || 
-          item.includes('sofia') ||
-          item.includes('Sofía')
-        )) {
+        if (item && (item.includes('sup-coca-cola') || item.includes('sup-pil-andina'))) {
           try {
             const parsed = JSON.parse(item);
             if (Array.isArray(parsed)) {
@@ -726,7 +807,12 @@ export const filterOutLegacyDemoProducts = (productList, slug) => {
   return productList.filter(p => {
     if (!p || typeof p !== 'object') return false;
     const n = ((p.name || '') + ' ' + (p.id || '')).toLowerCase();
-    return !n.includes('gouda') && !n.includes('menorita');
+    if (n.includes('gouda') || n.includes('menorita')) return false;
+    // Para Tiendita Fernando (minimarket-ian), descartar los 26 duplicados antiguos sin stock definido
+    if ((slug === 'minimarket-ian' || slug === 'tiendita-fernando') && String(p.id).includes('178930808360')) {
+      return false;
+    }
+    return true;
   });
 };
 
@@ -795,9 +881,16 @@ export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || null;
+    const raw = params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || null;
+    if (raw === 'tiendita-fernando' || raw === 'fernando') return 'minimarket-ian';
+    return raw;
   };
-  const [tenantSlug, setTenantSlug] = useState(getInitialTenantSlug);
+  const [tenantSlugState, setTenantSlugState] = useState(getInitialTenantSlug);
+  const tenantSlug = (tenantSlugState === 'tiendita-fernando' || tenantSlugState === 'fernando') ? 'minimarket-ian' : tenantSlugState;
+  const setTenantSlug = (slug) => {
+    const resolved = (slug === 'tiendita-fernando' || slug === 'fernando') ? 'minimarket-ian' : slug;
+    setTenantSlugState(resolved);
+  };
 
   // Estados de Autenticación de Dueño
   const [currentUser, setCurrentUser] = useState(null);
@@ -933,11 +1026,11 @@ export const StoreProvider = ({ children }) => {
     return deduplicateStoreList(initialStores);
   });
   const [selectedStore, setSelectedStore] = useState(() => {
-    return initialStores.find(s => s.slug === tenantSlug) || null;
+    return initialStores.find(s => s.slug === tenantSlug || s.aliases?.includes(tenantSlug)) || null;
   });
 
   const goToStore = (storeSlugOrId) => {
-    const foundStore = stores.find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId);
+    const foundStore = stores.find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId || s.aliases?.includes(storeSlugOrId));
     if (foundStore) {
       setSelectedStore(foundStore);
       setTenantSlug(foundStore.slug);
@@ -1292,15 +1385,15 @@ export const StoreProvider = ({ children }) => {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const cleaned = filterOutDemoSuppliers(parsed).map(normalizeSupplier).filter(Boolean);
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(cleaned));
-          }
-          return cleaned;
+          if (cleaned.length > 0) return cleaned;
         }
       }
     } catch (e) {}
+    if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
+      return fernandoSuppliers.map(normalizeSupplier);
+    }
     return [];
   });
 
@@ -1315,6 +1408,9 @@ export const StoreProvider = ({ children }) => {
         }
       }
     } catch (e) {}
+    if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
+      return fernandoCreditCustomers.map(normalizeCreditCustomer);
+    }
     return tenantSlug === 'default' ? initialCreditCustomers.map(normalizeCreditCustomer) : [];
   });
 
@@ -1583,13 +1679,16 @@ export const StoreProvider = ({ children }) => {
         const localSuppliers = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
         if (localSuppliers) {
           const parsed = JSON.parse(localSuppliers);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             const cleaned = filterOutDemoSuppliers(parsed).map(normalizeSupplier).filter(Boolean);
             setSuppliers(cleaned);
-            if (cleaned.length !== parsed.length) {
-              localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(cleaned));
-            }
+          } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+            setSuppliers(fernandoSuppliers.map(normalizeSupplier));
+          } else {
+            setSuppliers([]);
           }
+        } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+          setSuppliers(fernandoSuppliers.map(normalizeSupplier));
         } else {
           setSuppliers([]);
         }
@@ -1597,9 +1696,15 @@ export const StoreProvider = ({ children }) => {
         const localCredits = localStorage.getItem(`marketsaas_${tenantSlug}_credits`);
         if (localCredits) {
           const parsed = JSON.parse(localCredits);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setCreditCustomers(parsed.map(normalizeCreditCustomer).filter(Boolean));
+          } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+            setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
+          } else {
+            setCreditCustomers([]);
           }
+        } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+          setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
         } else {
           setCreditCustomers([]);
         }
@@ -1706,7 +1811,7 @@ export const StoreProvider = ({ children }) => {
     });
 
     // 3. Cargar pedidos por tienda con filtro server-side seguro y purga de órdenes fantasma
-    if (currentUser) {
+    if (currentUser || tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
       const activeAdminTenant = merchantStore?.id || tenantSlug;
       let query = supabase.from('orders').select('*');
       if (currentUser?.id && activeAdminTenant && activeAdminTenant !== 'default') {
@@ -1804,11 +1909,17 @@ export const StoreProvider = ({ children }) => {
         .eq('tenant_id', tenantSlug)
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
-          if (!error && Array.isArray(data)) {
+          if (!error && Array.isArray(data) && data.length > 0) {
             const normalized = filterOutDemoSuppliers(data.map(normalizeSupplier));
             setSuppliers(normalized);
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(normalized));
+            } catch (e) {}
+          } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+            const fallback = fernandoSuppliers.map(normalizeSupplier);
+            setSuppliers(fallback);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(fallback));
             } catch (e) {}
           }
         });
@@ -1821,11 +1932,17 @@ export const StoreProvider = ({ children }) => {
         .eq('tenant_id', tenantSlug)
         .order('created_at', { ascending: false })
         .then(({ data, error }) => {
-          if (!error && Array.isArray(data)) {
+          if (!error && Array.isArray(data) && data.length > 0) {
             const normalized = data.map(normalizeCreditCustomer).filter(Boolean);
             setCreditCustomers(normalized);
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(normalized));
+            } catch (e) {}
+          } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+            const fallback = fernandoCreditCustomers.map(normalizeCreditCustomer);
+            setCreditCustomers(fallback);
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(fallback));
             } catch (e) {}
           }
         });

@@ -63,11 +63,12 @@ const rawStores = [
  {
  id: 'minimarket-ian',
  slug: 'minimarket-ian',
- name: 'Minimarket Ian',
- tagline: 'Tu tienda de confianza a pasos de tu puerta',
- address: 'Condominio Icaraí, Calle 3 (Radial 17 y medio al 5to Anillo)',
+ aliases: ['tiendita-fernando', 'fernando'],
+ name: 'Tiendita Fernando',
+ tagline: 'Tu minimarket de barrio con atención cálida, pedidos rápidos y fiao de confianza',
+ address: 'Condominio Icaraí, Calle 3 - Casa 43 (Radial 17 y medio al 5to Anillo)',
  condominium: 'Condominio Icaraí',
- reference: 'Entrada por portería central',
+ reference: 'Entrada por portería central, frente al parque infantil',
  phone: '72125280',
  whatsapp: '72125280',
  qrImageUrl: '',
@@ -79,12 +80,12 @@ const rawStores = [
  isOpen: true,
  statusBadge: 'Abierto Ahora',
  imageUrl: storeImages[1],
- deliveryTime: 'Retiro en Tienda',
- freeDeliveryThreshold: null,
- hasFreeDelivery: false,
+ deliveryTime: '15-25 min',
+ freeDeliveryThreshold: 70,
+ hasFreeDelivery: true,
  acceptsQr: true,
  hasPickup: true,
- hasFastDelivery: false,
+ hasFastDelivery: true,
  category: 'Minimarket Registrado',
  isFeatured: true,
  isRegisteredStore: true,
@@ -94,12 +95,12 @@ const rawStores = [
  totalStockItems: 130,
  perks: [
  { id: 'p1', text: '✅ Registrada en el sistema' },
- { id: 'p2', text: '🛍️ Retiro en Tienda' },
+ { id: 'p2', text: '🛍️ Retiro en Tienda y Entrega a Dpto' },
  { id: 'p3', text: '💳 Pago Qr simple o efectivo' }
  ],
  googleMapsCoordinates: { lat: -17.758405, lng: -63.103469 },
- googleMapsQuery: 'Minimarket Ian, Condominio Icaraí, Santa Cruz de la Sierra',
- mapPosition: { leftPercent: 55, bottomPixels: 60, label: 'Minimarket Ian', badge: 'Registrada' }
+ googleMapsQuery: 'Tiendita Fernando, Condominio Icaraí, Santa Cruz de la Sierra',
+ mapPosition: { leftPercent: 55, bottomPixels: 60, label: 'Tiendita Fernando', badge: 'Registrada' }
  },
 
  // =========================================================================
