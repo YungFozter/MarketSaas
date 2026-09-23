@@ -184,6 +184,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
   const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [mobileKanbanTab, setMobileKanbanTab] = useState('all'); // 'all' | 'pending' | 'preparing' | 'on_the_way' | 'delivered'
 
   const getDisplayOrderId = (id) => {
     if (!id) return '';
@@ -192,6 +193,36 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       return 'POS-' + str.split('POS-')[1];
     }
     return str.length > 14 ? str.slice(-8) : str;
+  };
+
+  const renderPaymentBadge = (method) => {
+    const m = String(method || 'cash').toLowerCase();
+    if (m === 'credit') {
+      return (
+        <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200/80 uppercase tracking-wide">
+          📒 A Cuenta
+        </span>
+      );
+    }
+    if (m === 'qr') {
+      return (
+        <span className="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 text-[10px] font-bold border border-cyan-200/80 uppercase tracking-wide">
+          📱 QR Simple
+        </span>
+      );
+    }
+    if (m === 'card') {
+      return (
+        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200/80 uppercase tracking-wide">
+          💳 Tarjeta POS
+        </span>
+      );
+    }
+    return (
+      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200/80 uppercase tracking-wide">
+        💵 Efectivo
+      </span>
+    );
   };
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -1150,11 +1181,105 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               {/* TABLERO KANBAN DE PEDIDOS                                                 */}
               {/* ========================================================================= */}
               <section className="space-y-3.5">
+                {/* Selector de Pestañas para Móvil (Kanban Mobile Tabs) */}
+                <div className="md:hidden flex items-center gap-1.5 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/90 overflow-x-auto no-scrollbar shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => setMobileKanbanTab('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      mobileKanbanTab === 'all'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <span>Todos</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      mobileKanbanTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {condoFilteredOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileKanbanTab('pending')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      mobileKanbanTab === 'pending'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Pendientes</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      mobileKanbanTab === 'pending' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {pendingOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileKanbanTab('preparing')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      mobileKanbanTab === 'preparing'
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                    <span>En Prep.</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      mobileKanbanTab === 'preparing' ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {preparingOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileKanbanTab('on_the_way')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      mobileKanbanTab === 'on_the_way'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                    <span>{storeConfig?.enableDelivery === false ? 'Listos' : 'En Ruta'}</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      mobileKanbanTab === 'on_the_way' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {onTheWayOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setMobileKanbanTab('delivered')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                      mobileKanbanTab === 'delivered'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span>Entregados</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      mobileKanbanTab === 'delivered' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {deliveredOrders.length}
+                    </span>
+                  </button>
+                </div>
+
                 {/* 4 KANBAN COLUMNS */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
                   
                   {/* COLUMNA 1: 🟡 PENDIENTES */}
-                  <div className="rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col">
+                  <div className={`rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col ${
+                    mobileKanbanTab !== 'all' && mobileKanbanTab !== 'pending' ? 'hidden md:flex' : 'flex'
+                  }`}>
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
@@ -1173,7 +1298,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <span className="text-base font-bold text-slate-900">#{order.id}</span>
+                                <span className="text-base font-bold text-slate-900 tracking-tight whitespace-nowrap">#{getDisplayOrderId(order.id)}</span>
                                 <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-800 font-bold text-[10px]">
                                   Nuevo ⏱️
                                 </span>
@@ -1284,14 +1409,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       </div>
                     ))}
                     {pendingOrders.length === 0 && (
-                      <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                      <div className="py-4 px-3 sm:p-5 text-center text-xs text-slate-400 bg-white/70 rounded-xl border border-dashed border-slate-200">
                         No hay pedidos pendientes
                       </div>
                     )}
                   </div>
 
                   {/* COLUMNA 2: 🔵 EN PREPARACIÓN */}
-                  <div className="rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col">
+                  <div className={`rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col ${
+                    mobileKanbanTab !== 'all' && mobileKanbanTab !== 'preparing' ? 'hidden md:flex' : 'flex'
+                  }`}>
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
@@ -1309,7 +1436,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                         <div className="pl-2 space-y-2">
                           <div className="flex items-start justify-between">
                             <div>
-                              <span className="text-base font-bold text-slate-900">#{order.id}</span>
+                              <span className="text-base font-bold text-slate-900 tracking-tight whitespace-nowrap">#{getDisplayOrderId(order.id)}</span>
                               {order.deliveryType === 'delivery' ? (
                                 <p className="text-xs font-semibold text-slate-900">{[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}</p>
                               ) : (
@@ -1376,14 +1503,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       </div>
                     ))}
                     {preparingOrders.length === 0 && (
-                      <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                      <div className="py-4 px-3 sm:p-5 text-center text-xs text-slate-400 bg-white/70 rounded-xl border border-dashed border-slate-200">
                         No hay pedidos en preparación
                       </div>
                     )}
                   </div>
 
                   {/* COLUMNA 3: 🟣 EN RUTA / LISTOS */}
-                  <div className="rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col">
+                  <div className={`rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col ${
+                    mobileKanbanTab !== 'all' && mobileKanbanTab !== 'on_the_way' ? 'hidden md:flex' : 'flex'
+                  }`}>
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                       <div className="flex items-center gap-2">
                         <span className={`w-2.5 h-2.5 rounded-full ${storeConfig?.enableDelivery === false ? 'bg-emerald-500' : 'bg-purple-500'}`}></span>
@@ -1417,7 +1546,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-base font-bold text-slate-900">#{order.id}</span>
+                                  <span className="text-base font-bold text-slate-900 tracking-tight whitespace-nowrap">#{getDisplayOrderId(order.id)}</span>
                                   <span className={`px-1.5 py-0.5 rounded-full font-bold text-[10px] ${
                                     isPickup 
                                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
@@ -1526,14 +1655,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       );
                     })}
                     {onTheWayOrders.length === 0 && (
-                      <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                      <div className="py-4 px-3 sm:p-5 text-center text-xs text-slate-400 bg-white/70 rounded-xl border border-dashed border-slate-200">
                         {storeConfig?.enableDelivery === false ? 'No hay pedidos listos para recoger' : 'No hay pedidos en ruta ni listos'}
                       </div>
                     )}
                   </div>
 
                   {/* COLUMNA 4: 🟢 ENTREGADOS */}
-                  <div className="rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col">
+                  <div className={`rounded-2xl bg-slate-50/80 p-3.5 space-y-3 border border-slate-200/80 flex flex-col ${
+                    mobileKanbanTab !== 'all' && mobileKanbanTab !== 'delivered' ? 'hidden md:flex' : 'flex'
+                  }`}>
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                       <div className="flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
@@ -1545,46 +1676,66 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     </div>
 
-                    {deliveredOrders.slice(0, 4).map(order => (
-                      <div key={order.id} className="rounded-xl bg-white p-3 shadow-xs border border-slate-100 space-y-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-bold text-slate-900">#{order.id}</span>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    {deliveredOrders.slice(0, 4).map(order => {
+                      const displayId = getDisplayOrderId(order.id);
+                      return (
+                        <div key={order.id} className="rounded-xl bg-white p-3.5 shadow-xs border border-slate-200/80 hover:shadow-sm transition-all space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-sm font-black text-slate-900 tracking-tight whitespace-nowrap">
+                                  #{displayId}
+                                </span>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[10px] font-bold shrink-0">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span>Entregado</span>
+                                </span>
+                              </div>
+                              {order.deliveryType === 'delivery' ? (
+                                <p className="text-xs font-semibold text-slate-800 mt-1 truncate">
+                                  🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                                </p>
+                              ) : (
+                                <p className="text-xs font-bold text-emerald-800 mt-1 flex items-center gap-1">
+                                  <span>🏪 Retirado en Mostrador</span>
+                                </p>
+                              )}
+                              {order.customer?.name && !order.customer?.name.includes('Presencial') && !order.customer?.name.includes('Mostrador') && (
+                                <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                                  {order.customer.name}
+                                </p>
+                              )}
                             </div>
-                            {order.deliveryType === 'delivery' ? (
-                              <p className="text-xs font-semibold text-slate-800">
-                                🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
-                              </p>
-                            ) : (
-                              <p className="text-xs font-bold text-emerald-800">
-                                🏪 Retirado en Mostrador
-                              </p>
-                            )}
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-sm sm:text-base font-black text-slate-900 tracking-tight whitespace-nowrap">
+                                {currency} {order.total.toFixed(2)}
+                              </span>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`¿Deseas eliminar del registro el pedido #${order.id}?`)) {
+                                    deleteOrder(order.id);
+                                  }
+                                }}
+                                className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Eliminar pedido"
+                                type="button"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-sm font-bold text-slate-900">{currency} {order.total.toFixed(2)}</span>
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`¿Deseas eliminar del registro el pedido #${order.id}?`)) {
-                                  deleteOrder(order.id);
-                                }
-                              }}
-                              className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                              title="Eliminar pedido"
-                              type="button"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+
+                          <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+                            {renderPaymentBadge(order.paymentMethod || order.payment_method)}
+                            <span className="text-emerald-700 font-bold text-[11px] flex items-center gap-1 shrink-0">
+                              <span className="text-amber-500">★</span>
+                              <span>5.0 Exitoso</span>
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-slate-400 text-xs pt-1 border-t border-slate-100">
-                          <span>{(order.paymentMethod || order.payment_method || 'cash').toUpperCase()}</span>
-                          <span className="text-emerald-700 font-bold text-[11px]">★ 5.0 Exitoso</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {deliveredOrders.length > 4 && (
                       <button
                         type="button"
@@ -1595,11 +1746,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       </button>
                     )}
                     {deliveredOrders.length === 0 && (
-                      <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
+                      <div className="py-4 px-3 sm:p-5 text-center text-xs text-slate-400 bg-white/70 rounded-xl border border-dashed border-slate-200">
                         {kanbanTimeRange === 'today' 
                           ? 'No hay pedidos entregados aún hoy' 
-                          : kanbanTimeRange === '24h'
-                          ? 'No hay pedidos entregados en las últimas 24 horas'
+                          : kanbanTimeRange === '24h' 
+                          ? 'No hay pedidos entregados en las últimas 24h' 
                           : 'No hay pedidos entregados'}
                       </div>
                     )}
