@@ -15,9 +15,9 @@ export const fernandoSuppliers = [
     visitDays: ['Lunes', 'Jueves'],
     notes: 'Llega entre 08:30 y 10:00 AM. Traer factura con NIT y boleta de canje de productos próximos a vencer.',
     orderItems: [
-      { id: 'item-pil-1', name: 'Leche Pil Entera Bolsa 1L', quantity: 24, unit: 'Bolsas x1L', estimatedCost: 132.00 },
-      { id: 'item-pil-2', name: 'Yogurt Frutilla Bebible 1L', quantity: 12, unit: 'Botellas x1L', estimatedCost: 114.00 },
-      { id: 'item-pil-3', name: 'Mantequilla con Sal Pil 200g', quantity: 10, unit: 'Panes x200g', estimatedCost: 85.00 }
+      { id: 'item-pil-1', productName: 'Leche Pil Entera Bolsa 1L', name: 'Leche Pil Entera Bolsa 1L', quantity: '24 bolsas', unit: 'Bolsas x1L', status: 'pending', estimatedCost: 132.00 },
+      { id: 'item-pil-2', productName: 'Yogurt Frutilla Bebible 1L', name: 'Yogurt Frutilla Bebible 1L', quantity: '12 botellas', unit: 'Botellas x1L', status: 'pending', estimatedCost: 114.00 },
+      { id: 'item-pil-3', productName: 'Mantequilla con Sal Pil 200g', name: 'Mantequilla con Sal Pil 200g', quantity: '10 panes', unit: 'Panes x200g', status: 'pending', estimatedCost: 85.00 }
     ],
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   },
@@ -31,9 +31,9 @@ export const fernandoSuppliers = [
     visitDays: ['Miércoles', 'Viernes'],
     notes: 'Tomar pedido hasta las 18:00 del día anterior. Camión repartidor entrega al mediodía. Pedir afiches para heladera.',
     orderItems: [
-      { id: 'item-cc-1', name: 'Coca-Cola Original 2L Descartable', quantity: 4, unit: 'Fardos x6u', estimatedCost: 256.00 },
-      { id: 'item-cc-2', name: 'Agua Vital Sin Gas 2L', quantity: 3, unit: 'Fardos x6u', estimatedCost: 93.60 },
-      { id: 'item-cc-3', name: 'Coca-Cola Personal 500ml', quantity: 2, unit: 'Fardos x12u', estimatedCost: 112.00 }
+      { id: 'item-cc-1', productName: 'Coca-Cola Original 2L Descartable', name: 'Coca-Cola Original 2L Descartable', quantity: '4 fardos', unit: 'Fardos x6u', status: 'pending', estimatedCost: 256.00 },
+      { id: 'item-cc-2', productName: 'Agua Vital Sin Gas 2L', name: 'Agua Vital Sin Gas 2L', quantity: '3 fardos', unit: 'Fardos x6u', status: 'pending', estimatedCost: 93.60 },
+      { id: 'item-cc-3', productName: 'Coca-Cola Personal 500ml', name: 'Coca-Cola Personal 500ml', quantity: '2 fardos', unit: 'Fardos x12u', status: 'pending', estimatedCost: 112.00 }
     ],
     createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   },
@@ -47,8 +47,8 @@ export const fernandoSuppliers = [
     visitDays: ['Miércoles', 'Sábado'],
     notes: 'Recepción de envases retornables vacíos obligatoria para recambio. Pago por transferencia QR o cheque.',
     orderItems: [
-      { id: 'item-cbn-1', name: 'Paceña Huari 710ml Retornable', quantity: 2, unit: 'Cajas x12u', estimatedCost: 280.00 },
-      { id: 'item-cbn-2', name: 'Cerveza Paceña Pilsener Lata 440ml', quantity: 3, unit: 'Packs x24u', estimatedCost: 396.00 }
+      { id: 'item-cbn-1', productName: 'Paceña Huari 710ml Retornable', name: 'Paceña Huari 710ml Retornable', quantity: '2 cajas', unit: 'Cajas x12u', status: 'pending', estimatedCost: 280.00 },
+      { id: 'item-cbn-2', productName: 'Cerveza Paceña Pilsener Lata 440ml', name: 'Cerveza Paceña Pilsener Lata 440ml', quantity: '3 packs', unit: 'Packs x24u', status: 'pending', estimatedCost: 396.00 }
     ],
     createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString()
   },
@@ -62,9 +62,9 @@ export const fernandoSuppliers = [
     visitDays: ['Martes', 'Viernes'],
     notes: 'Revisar cadena de frío al descargar directo al congelador vertical. Promoción de 1 pack gratis por 10 cajas de hamburguesas.',
     orderItems: [
-      { id: 'item-sof-1', name: 'Nuggets de Pollo Crocantes Sofía 400g', quantity: 8, unit: 'Paquetes', estimatedCost: 136.00 },
-      { id: 'item-sof-2', name: 'Chorizo Parrillero Tradicional Sofía kg', quantity: 5, unit: 'Kilos', estimatedCost: 195.00 },
-      { id: 'item-sof-3', name: 'Hamburguesas de Carne Sofía Caja 4u', quantity: 6, unit: 'Cajas', estimatedCost: 114.00 }
+      { id: 'item-sof-1', productName: 'Nuggets de Pollo Crocantes Sofía 400g', name: 'Nuggets de Pollo Crocantes Sofía 400g', quantity: '8 paquetes', unit: 'Paquetes', status: 'pending', estimatedCost: 136.00 },
+      { id: 'item-sof-2', productName: 'Chorizo Parrillero Tradicional Sofía kg', name: 'Chorizo Parrillero Tradicional Sofía kg', quantity: '5 kg', unit: 'Kilos', status: 'pending', estimatedCost: 195.00 },
+      { id: 'item-sof-3', productName: 'Hamburguesas de Carne Sofía Caja 4u', name: 'Hamburguesas de Carne Sofía Caja 4u', quantity: '6 cajas', unit: 'Cajas', status: 'pending', estimatedCost: 114.00 }
     ],
     createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
   }

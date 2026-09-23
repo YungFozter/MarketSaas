@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
-import { initialSuppliers } from '../data/supplierInitialData';
+import { initialSuppliers, SUPPLIER_CATEGORIES } from '../data/supplierInitialData';
 import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
 import { fernandoSuppliers, fernandoCreditCustomers } from '../data/tienditaFernandoData';
 import { getStoreCatalog } from '../data/storeInventories';
@@ -1397,6 +1397,21 @@ export const StoreProvider = ({ children }) => {
     return [];
   });
 
+  // 9.b Rubros o Categorías Principales de Proveedores
+  const [supplierCategories, setSupplierCategoriesState] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_supplier_categories`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    if (Array.isArray(storeConfig?.supplierCategories) && storeConfig.supplierCategories.length > 0) {
+      return storeConfig.supplierCategories;
+    }
+    return SUPPLIER_CATEGORIES;
+  });
+
   // 10. Libreta de Créditos y Cuentas por Cobrar (El Fiao Vecinal Digital)
   const [creditCustomers, setCreditCustomers] = useState(() => {
     try {
@@ -2414,8 +2429,35 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(suppliers));
+      if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || tenantSlug === 'default') {
+        localStorage.setItem('marketsaas_default_suppliers', JSON.stringify(suppliers));
+        localStorage.setItem('marketsaas_minimarket-ian_suppliers', JSON.stringify(suppliers));
+        localStorage.setItem('marketsaas_tiendita-fernando_suppliers', JSON.stringify(suppliers));
+      }
+      // Backup en Supabase stores.config para persistencia permanente en la nube
+      if (supabase && tenantSlug && tenantSlug !== 'default' && Array.isArray(suppliers) && suppliers.length > 0) {
+        const timer = setTimeout(() => {
+          supabase.from('stores')
+            .update({ config: { ...storeConfig, suppliersBackup: suppliers } })
+            .eq('id', tenantSlug)
+            .then(() => {})
+            .catch(() => {});
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
     } catch (e) {}
   }, [suppliers, tenantSlug]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_supplier_categories`, JSON.stringify(supplierCategories));
+      if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || tenantSlug === 'default') {
+        localStorage.setItem('marketsaas_default_supplier_categories', JSON.stringify(supplierCategories));
+        localStorage.setItem('marketsaas_minimarket-ian_supplier_categories', JSON.stringify(supplierCategories));
+        localStorage.setItem('marketsaas_tiendita-fernando_supplier_categories', JSON.stringify(supplierCategories));
+      }
+    } catch (e) {}
+  }, [supplierCategories, tenantSlug]);
 
   useEffect(() => {
     try {
@@ -4038,6 +4080,131 @@ export const StoreProvider = ({ children }) => {
   };
 
   // ==============================================================================
+  // CRUD DE RUBROS O CATEGORÍAS PRINCIPALES DE PROVEEDORES
+  // ==============================================================================
+
+  const addSupplierCategory = async (newCatName) => {
+    const trimmed = (newCatName || '').trim();
+    if (!trimmed) return false;
+    const exists = supplierCategories.some(c => c.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      showToast(`El rubro "${trimmed}" ya existe.`, 'warning');
+      return false;
+    }
+    const updated = [...supplierCategories, trimmed];
+    setSupplierCategoriesState(updated);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_supplier_categories`, JSON.stringify(updated));
+    } catch (e) {}
+    await setStoreConfig(prev => ({
+      ...prev,
+      supplierCategories: updated
+    }));
+    showToast(`Rubro "${trimmed}" creado con éxito.`, 'success');
+    return true;
+  };
+
+  const updateSupplierCategory = async (oldName, newName) => {
+    const trimmedOld = (oldName || '').trim();
+    const trimmedNew = (newName || '').trim();
+    if (!trimmedNew || trimmedOld === trimmedNew) return false;
+    const exists = supplierCategories.some(c => c.toLowerCase() === trimmedNew.toLowerCase() && c.toLowerCase() !== trimmedOld.toLowerCase());
+    if (exists) {
+      showToast(`Ya existe un rubro llamado "${trimmedNew}".`, 'warning');
+      return false;
+    }
+
+    const updatedCats = supplierCategories.map(c => c === trimmedOld ? trimmedNew : c);
+    setSupplierCategoriesState(updatedCats);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_supplier_categories`, JSON.stringify(updatedCats));
+    } catch (e) {}
+
+    // Cascada a proveedores que tenían la categoría anterior
+    let updatedSuppliers = suppliers;
+    const hasMatch = suppliers.some(s => s.category === trimmedOld);
+    if (hasMatch) {
+      updatedSuppliers = suppliers.map(s => {
+        if (s.category === trimmedOld) {
+          return { ...s, category: trimmedNew, updatedAt: new Date().toISOString() };
+        }
+        return s;
+      });
+      setSuppliers(updatedSuppliers);
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(updatedSuppliers));
+      } catch (e) {}
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        try {
+          await supabase.from('suppliers')
+            .update({ category: trimmedNew })
+            .eq('category', trimmedOld)
+            .eq('tenant_id', tenantSlug);
+        } catch (e) {}
+      }
+    }
+
+    await setStoreConfig(prev => ({
+      ...prev,
+      supplierCategories: updatedCats,
+      suppliersBackup: updatedSuppliers
+    }));
+
+    showToast(`Rubro renombrado a "${trimmedNew}".`, 'success');
+    return true;
+  };
+
+  const deleteSupplierCategory = async (catToDelete) => {
+    const trimmed = (catToDelete || '').trim();
+    if (trimmed.toLowerCase() === 'otros') {
+      showToast('No se puede eliminar el rubro principal "Otros".', 'warning');
+      return false;
+    }
+
+    const updatedCats = supplierCategories.filter(c => c !== trimmed);
+    if (!updatedCats.includes('Otros')) {
+      updatedCats.push('Otros');
+    }
+    setSupplierCategoriesState(updatedCats);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_supplier_categories`, JSON.stringify(updatedCats));
+    } catch (e) {}
+
+    // Reasignar proveedores que tenían este rubro a 'Otros'
+    let updatedSuppliers = suppliers;
+    const hasMatch = suppliers.some(s => s.category === trimmed);
+    if (hasMatch) {
+      updatedSuppliers = suppliers.map(s => {
+        if (s.category === trimmed) {
+          return { ...s, category: 'Otros', updatedAt: new Date().toISOString() };
+        }
+        return s;
+      });
+      setSuppliers(updatedSuppliers);
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_suppliers`, JSON.stringify(updatedSuppliers));
+      } catch (e) {}
+      if (supabase && tenantSlug && tenantSlug !== 'default') {
+        try {
+          await supabase.from('suppliers')
+            .update({ category: 'Otros' })
+            .eq('category', trimmed)
+            .eq('tenant_id', tenantSlug);
+        } catch (e) {}
+      }
+    }
+
+    await setStoreConfig(prev => ({
+      ...prev,
+      supplierCategories: updatedCats,
+      suppliersBackup: updatedSuppliers
+    }));
+
+    showToast(`Rubro "${trimmed}" eliminado. Proveedores reasignados a "Otros".`, 'info');
+    return true;
+  };
+
+  // ==============================================================================
   // LIBRETA DE CRÉDITOS Y CUENTAS POR COBRAR (FIAO VECINAL DIGITAL)
   // ==============================================================================
 
@@ -4603,8 +4770,13 @@ export const StoreProvider = ({ children }) => {
         voteProductRequest,
         updateRequestStatus,
         deleteProductRequest,
+        tenantSlug,
         suppliers,
         setSuppliers,
+        supplierCategories,
+        addSupplierCategory,
+        updateSupplierCategory,
+        deleteSupplierCategory,
         addSupplier,
         updateSupplier,
         deleteSupplier,
