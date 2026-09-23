@@ -947,53 +947,55 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             <div className="space-y-6 animate-fadeIn">
               
               {/* Encabezado del Panel con Selector de Período / Horario */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-1">
                 <div>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black flex items-center gap-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black flex flex-wrap items-center gap-2">
                     <span>Panel de Control</span>
-                    <span className="text-emerald-600 truncate">{storeConfig.name}</span>
+                    <span className="text-emerald-600 font-extrabold truncate">{storeConfig.name}</span>
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                    {kanbanTimeRange === 'today' && '📅 Mostrando estrictamente pedidos y ventas de hoy (desde 00:00)'}
-                    {kanbanTimeRange === '24h' && '⏱️ Mostrando pedidos y ventas de las últimas 24 horas continuas'}
-                    {kanbanTimeRange === 'all' && '🌐 Mostrando todo el historial de pedidos y ventas'}
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
+                    {kanbanTimeRange === 'today' && '📅 Pedidos y ventas de hoy (desde las 00:00)'}
+                    {kanbanTimeRange === '24h' && '⏱️ Pedidos y ventas de las últimas 24 horas'}
+                    {kanbanTimeRange === 'all' && '🌐 Historial completo de pedidos y ventas'}
                   </p>
                 </div>
 
                 {/* Selector de Período de Horario para el Tablero Kanban y Ventas */}
-                <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs self-start sm:self-auto">
+                <div className="w-full sm:w-auto grid grid-cols-3 sm:flex items-center gap-1 bg-slate-100/90 p-1 sm:p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => handleSetKanbanTimeRange('today')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`h-9 sm:h-auto px-2 sm:px-3 py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                       kanbanTimeRange === 'today'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                     }`}
                     title="Filtrar pedidos estrictamente desde las 00:00 del día actual"
                   >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Día Actual (Hoy)</span>
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Día Actual (Hoy)</span>
+                    <span className="sm:hidden">Hoy</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleSetKanbanTimeRange('24h')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`h-9 sm:h-auto px-2 sm:px-3 py-1.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                       kanbanTimeRange === '24h'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                     }`}
                     title="Filtrar pedidos de las últimas 24 horas (desde hace 24h hasta ahora)"
                   >
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Últimas 24 Horas</span>
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">Últimas 24 Horas</span>
+                    <span className="sm:hidden">24 Horas</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleSetKanbanTimeRange('all')}
-                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`h-9 sm:h-auto px-2 sm:px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center transition-all cursor-pointer whitespace-nowrap ${
                       kanbanTimeRange === 'all'
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
@@ -1889,29 +1891,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
           <div className="relative w-full max-w-6xl h-[94vh] max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
             {/* Header del Panel de Venta Rápida */}
-            <div className="px-4 py-3 sm:px-6 sm:py-4 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
-                  <Store className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+            <div className="px-4 py-3 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
+              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
+                  <Store className="w-5 h-5" />
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    <h3 className="text-sm sm:text-base font-black text-white tracking-tight whitespace-nowrap">
-                      Punto de Venta (POS)
-                    </h3>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>Venta Rápida de Mostrador</span>
-                    </span>
-                  </div>
-                  <p className="text-[11px] sm:text-xs text-slate-400 truncate mt-0.5 sm:mt-1">
-                    Selecciona productos del catálogo, revisa el ticket y procesa el cobro
-                  </p>
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                  <h3 className="text-sm sm:text-base font-black text-white tracking-tight whitespace-nowrap">
+                    Punto de Venta (POS)
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Venta Rápida de Mostrador</span>
+                  </span>
                 </div>
               </div>
               <button
                 onClick={() => setIsPosModalOpen(false)}
-                className="p-2 sm:p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer shrink-0"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer shrink-0"
                 title="Cerrar punto de venta"
               >
                 <X className="w-5 h-5" />
