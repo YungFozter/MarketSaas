@@ -60,6 +60,7 @@ export const SalesHistory = () => {
 
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
     const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, -1);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -68,6 +69,8 @@ export const SalesHistory = () => {
     switch (period) {
       case 'today':
         return saleDate >= startOfToday;
+      case '24h':
+        return saleDate >= twentyFourHoursAgo;
       case 'yesterday':
         return saleDate >= startOfYesterday && saleDate <= endOfYesterday;
       case 'week':
@@ -420,6 +423,7 @@ export const SalesHistory = () => {
           <div className={`text-[11px] mt-0.5 font-medium flex items-center justify-between ${selectedPaymentMethod === 'all' ? 'text-slate-300' : 'text-slate-500'}`}>
             <span>
               {selectedPeriod === 'today' ? 'Ventas de hoy' : 
+               selectedPeriod === '24h' ? 'Últimas 24 horas' :
                selectedPeriod === 'yesterday' ? 'Ventas de ayer' : 
                selectedPeriod === 'week' ? 'Últimos 7 días' : 
                selectedPeriod === 'month' ? 'Este mes' : 'Todo el período'}
@@ -572,6 +576,7 @@ export const SalesHistory = () => {
             {[
               { id: 'all', label: 'Todos' },
               { id: 'today', label: 'Hoy' },
+              { id: '24h', label: '24 Horas' },
               { id: 'yesterday', label: 'Ayer' },
               { id: 'week', label: '7 Días' },
               { id: 'month', label: 'Este Mes' }

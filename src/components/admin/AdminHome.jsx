@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Calendar,
   Truck,
   ArrowRight,
   Search,
@@ -131,6 +132,43 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [selectedCondoFilter, setSelectedCondoFilter] = useState('all');
+
+  // Filtro de Horario / Período del Tablero Kanban y KPIs:
+  // 'today' = Estrictamente pedidos/ventas del día calendario actual (desde 00:00:00 de hoy)
+  // '24h'   = Ventana móvil de las últimas 24 horas antes del momento actual
+  // 'all'   = Todo el historial
+  const [kanbanTimeRange, setKanbanTimeRange] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_kanban_time_range`);
+      if (saved && ['today', '24h', 'all'].includes(saved)) return saved;
+    } catch {}
+    return 'today';
+  });
+
+  const handleSetKanbanTimeRange = (range) => {
+    setKanbanTimeRange(range);
+    try {
+      localStorage.setItem(`marketsaas_${tenantSlug}_kanban_time_range`, range);
+    } catch {}
+  };
+
+  const matchesKanbanTimeRange = (dateString, range) => {
+    if (!dateString || range === 'all') return true;
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return true;
+
+    const now = new Date();
+    if (range === 'today') {
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return date >= startOfToday;
+    }
+    if (range === '24h') {
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      return date >= twentyFourHoursAgo;
+    }
+    return true;
+  };
+
   const [checkedItems, setCheckedItems] = useState(() => {
     try {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_checked_items`);
@@ -149,8 +187,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const isOpen = storeConfig?.isOpen !== false;
 
-  // Cálculos de KPIs en tiempo real
-  const validOrders = (orders || []).filter(o => o && o.status !== 'cancelled');
+  // Pedidos filtrados según el rango temporal seleccionado en el Kanban ('today' vs '24h' vs 'all')
+  const timeFilteredOrders = (orders || []).filter(o => {
+    if (!o) return false;
+    return matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange);
+  });
+
+  // Cálculos de KPIs en tiempo real según el período de horario activo
+  const validOrders = timeFilteredOrders.filter(o => o && o.status !== 'cancelled');
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
@@ -207,8 +251,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
 
-  // Filtrado de pedidos según condominio seleccionado en el Kanban
-  const condoFilteredOrders = (orders || []).filter(o => {
+  // Filtrado de pedidos según condominio y período seleccionado en el Kanban
+  const condoFilteredOrders = timeFilteredOrders.filter(o => {
     if (!o) return false;
     if (selectedCondoFilter === 'all') return true;
     return o.customer?.condominium === selectedCondoFilter;
@@ -219,6 +263,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const preparingOrders = condoFilteredOrders.filter(o => o.status === 'preparing');
   const onTheWayOrders = condoFilteredOrders.filter(o => o.status === 'on_the_way');
   const deliveredOrders = condoFilteredOrders.filter(o => o.status === 'delivered');
+
+  // Identificar pedidos activos anteriores al período temporal seleccionado (para no desatender clientes)
+  const allActiveOrders = (orders || []).filter(o => 
+    o && (o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way')
+  );
+  const olderActiveOrders = allActiveOrders.filter(o => 
+    !matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange)
+  );
 
   const lowStockProducts = (products || []).filter(p => {
     if (!p || p.stock === 'Sin definir' || p.stock == null || p.minStock === 'Sin definir' || p.minStock == null) return false;
@@ -875,20 +927,74 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           {activeTab === 'kanban' && (
             <div className="space-y-6 animate-fadeIn">
               
-              {/* Section Title */}
-              <div>
-                <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black">
-                  Panel de Control {storeConfig.name}
-                </h1>
+              {/* Encabezado del Panel con Selector de Período / Horario */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+                <div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl text-slate-900 tracking-tight font-black flex items-center gap-2">
+                    <span>Panel de Control</span>
+                    <span className="text-emerald-600 truncate">{storeConfig.name}</span>
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+                    {kanbanTimeRange === 'today' && '📅 Mostrando estrictamente pedidos y ventas de hoy (desde 00:00)'}
+                    {kanbanTimeRange === '24h' && '⏱️ Mostrando pedidos y ventas de las últimas 24 horas continuas'}
+                    {kanbanTimeRange === 'all' && '🌐 Mostrando todo el historial de pedidos y ventas'}
+                  </p>
+                </div>
+
+                {/* Selector de Período de Horario para el Tablero Kanban y Ventas */}
+                <div className="flex items-center gap-1 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleSetKanbanTimeRange('today')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                      kanbanTimeRange === 'today'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                    title="Filtrar pedidos estrictamente desde las 00:00 del día actual"
+                  >
+                    <Calendar className="w-3.5 h-3.5" />
+                    <span>Día Actual (Hoy)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetKanbanTimeRange('24h')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+                      kanbanTimeRange === '24h'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                    title="Filtrar pedidos de las últimas 24 horas (desde hace 24h hasta ahora)"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Últimas 24 Horas</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetKanbanTimeRange('all')}
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      kanbanTimeRange === 'all'
+                        ? 'bg-slate-900 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
+                    }`}
+                    title="Ver todos los pedidos sin filtro de horario"
+                  >
+                    <span>Todos</span>
+                  </button>
+                </div>
               </div>
 
               {/* 3 TOP OPERATIONAL KPI CARDS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* KPI 1: Ventas del Día */}
+                {/* KPI 1: Ventas del Período Seleccionado */}
                 <div className="relative overflow-hidden rounded-2xl bg-white p-4 shadow-xs border border-slate-100 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="space-y-0.5">
-                      <span className="text-xs text-slate-500 font-medium">Ventas del Día</span>
+                      <span className="text-xs text-slate-500 font-medium">
+                        {kanbanTimeRange === 'today' ? 'Ventas de Hoy' : kanbanTimeRange === '24h' ? 'Ventas (Últimas 24h)' : 'Ventas Totales'}
+                      </span>
                       <p className="text-2xl text-slate-900 tracking-tight font-black">
                         {currency} {totalSales.toFixed(2)}
                       </p>
@@ -902,7 +1008,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     </button>
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-2">
-                    <span className="text-xs text-slate-500 font-medium">{validOrders.length} cobrados</span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {validOrders.length} {kanbanTimeRange === 'today' ? 'cobrados hoy' : kanbanTimeRange === '24h' ? 'cobrados (24h)' : 'cobrados'}
+                    </span>
                     <button
                       onClick={() => setActiveTab('sales')}
                       className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
@@ -969,6 +1077,43 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   <div className="absolute bottom-0 inset-x-0 h-1 bg-rose-500"></div>
                 </div>
               </div>
+
+              {/* Alerta de pedidos activos pendientes de períodos anteriores */}
+              {olderActiveOrders.length > 0 && (
+                <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-950 shadow-2xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-black text-amber-900 leading-tight">
+                        Atención: Hay {olderActiveOrders.length} pedido(s) activo(s) ({olderActiveOrders.filter(o => o.status === 'pending').length} pendientes) realizados antes del filtro actual
+                      </p>
+                      <p className="text-[11px] text-amber-700 font-medium mt-0.5">
+                        Estás viendo {kanbanTimeRange === 'today' ? 'estrictamente el día actual' : 'las últimas 24 horas'}. No olvides atender pedidos de días anteriores.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    {kanbanTimeRange === 'today' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetKanbanTimeRange('24h')}
+                        className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
+                      >
+                        Ver Últimas 24h
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleSetKanbanTimeRange('all')}
+                      className="px-3 py-1.5 rounded-xl bg-white border border-amber-300 hover:bg-amber-100 text-amber-950 font-bold text-xs cursor-pointer transition-colors shadow-2xs"
+                    >
+                      Ver Todos ({allActiveOrders.length} activos)
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* ========================================================================= */}
               {/* ALERTA Y CONFIGURACIÓN DE NOTIFICACIONES PUSH EN DISPOSITIVO              */}
@@ -1419,9 +1564,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                         </div>
                       </div>
                     ))}
+                    {deliveredOrders.length > 4 && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('sales')}
+                        className="w-full py-2 text-center text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100/90 rounded-xl transition-colors cursor-pointer"
+                      >
+                        +{deliveredOrders.length - 4} pedidos más entregados • Ver historial →
+                      </button>
+                    )}
                     {deliveredOrders.length === 0 && (
                       <div className="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-dashed border-slate-200">
-                        No hay pedidos entregados aún hoy
+                        {kanbanTimeRange === 'today' 
+                          ? 'No hay pedidos entregados aún hoy' 
+                          : kanbanTimeRange === '24h'
+                          ? 'No hay pedidos entregados en las últimas 24 horas'
+                          : 'No hay pedidos entregados'}
                       </div>
                     )}
                   </div>
