@@ -1336,9 +1336,10 @@ export const StoreProvider = ({ children }) => {
   // 6. Pedidos (Normalizados para compatibilidad frontend y base de datos)
   const [orders, setOrders] = useState(() => {
     try {
-      const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando';
-      const isMatias = tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default';
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
+      const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian');
+      const isMatias = !isFernando;
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_orders`) || (isMatias ? localStorage.getItem('marketsaas_default_orders') : null);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1351,19 +1352,13 @@ export const StoreProvider = ({ children }) => {
       if (isFernando) {
         return filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
       }
-      if (isMatias) {
-        return filterOutGhostOrders(getMatiasOrders().map(normalizeOrder));
-      }
-      return [];
+      return filterOutGhostOrders(getMatiasOrders().map(normalizeOrder));
     } catch (e) {
       console.warn('Error reading stored orders:', e);
-      if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+      if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
         return filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
       }
-      if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-        return filterOutGhostOrders(getMatiasOrders().map(normalizeOrder));
-      }
-      return [];
+      return filterOutGhostOrders(getMatiasOrders().map(normalizeOrder));
     }
   });
 
@@ -1409,22 +1404,24 @@ export const StoreProvider = ({ children }) => {
   // 8. Solicitudes de productos (En Modo Demostración inicia con listado de ejemplo; en tiendas registradas con su lista o vacía)
   const [productRequests, setProductRequests] = useState(() => {
     try {
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_requests`) || localStorage.getItem('marketsaas_default_requests');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return filterOutTestRequests(parsed.map(normalizeProductRequest));
+        if (Array.isArray(parsed) && parsed.length > 0) return filterOutTestRequests(parsed.map(normalizeProductRequest));
       }
     } catch (e) {}
-    if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-      return matiasProductRequests.map(normalizeProductRequest);
+    if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
+      return [];
     }
-    return [];
+    return matiasProductRequests.map(normalizeProductRequest);
   });
 
   // 9. Proveedores y Preventistas de la tienda (Directorio de compras y pedidos de abastecimiento)
   const [suppliers, setSuppliers] = useState(() => {
     try {
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_suppliers`) || localStorage.getItem('marketsaas_default_suppliers');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1436,16 +1433,14 @@ export const StoreProvider = ({ children }) => {
     if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
       return fernandoSuppliers.map(normalizeSupplier);
     }
-    if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-      return matiasSuppliers.map(normalizeSupplier);
-    }
-    return [];
+    return matiasSuppliers.map(normalizeSupplier);
   });
 
   // 9.b Rubros o Categorías Principales de Proveedores
   const [supplierCategories, setSupplierCategoriesState] = useState(() => {
     try {
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_supplier_categories`);
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_supplier_categories`) || localStorage.getItem('marketsaas_default_supplier_categories');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -1460,7 +1455,8 @@ export const StoreProvider = ({ children }) => {
   // 10. Libreta de Créditos y Cuentas por Cobrar (El Fiao Vecinal Digital)
   const [creditCustomers, setCreditCustomers] = useState(() => {
     try {
-      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_credits`);
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_credits`) || localStorage.getItem('marketsaas_default_credits');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -1471,10 +1467,7 @@ export const StoreProvider = ({ children }) => {
     if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian')) {
       return fernandoCreditCustomers.map(normalizeCreditCustomer);
     }
-    if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-      return matiasCreditCustomers.map(normalizeCreditCustomer);
-    }
-    return [];
+    return matiasCreditCustomers.map(normalizeCreditCustomer);
   });
 
   // 11. Cupones de descuento aplicados
@@ -1745,45 +1738,44 @@ export const StoreProvider = ({ children }) => {
           setProductRequests([]);
         }
 
-        const localSuppliers = localStorage.getItem(`marketsaas_${tenantSlug}_suppliers`);
+        const activeSlug = tenantSlug || 'matias-tiendatodo';
+        const localSuppliers = localStorage.getItem(`marketsaas_${activeSlug}_suppliers`) || localStorage.getItem('marketsaas_default_suppliers');
         if (localSuppliers) {
           const parsed = JSON.parse(localSuppliers);
           if (Array.isArray(parsed) && parsed.length > 0) {
             const cleaned = filterOutDemoSuppliers(parsed).map(normalizeSupplier).filter(Boolean);
-            setSuppliers(cleaned);
+            if (cleaned.length > 0) {
+              setSuppliers(cleaned);
+            } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+              setSuppliers(fernandoSuppliers.map(normalizeSupplier));
+            } else {
+              setSuppliers(matiasSuppliers.map(normalizeSupplier));
+            }
           } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
             setSuppliers(fernandoSuppliers.map(normalizeSupplier));
-          } else if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-            setSuppliers(matiasSuppliers.map(normalizeSupplier));
           } else {
-            setSuppliers([]);
+            setSuppliers(matiasSuppliers.map(normalizeSupplier));
           }
         } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
           setSuppliers(fernandoSuppliers.map(normalizeSupplier));
-        } else if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-          setSuppliers(matiasSuppliers.map(normalizeSupplier));
         } else {
-          setSuppliers([]);
+          setSuppliers(matiasSuppliers.map(normalizeSupplier));
         }
 
-        const localCredits = localStorage.getItem(`marketsaas_${tenantSlug}_credits`);
+        const localCredits = localStorage.getItem(`marketsaas_${activeSlug}_credits`) || localStorage.getItem('marketsaas_default_credits');
         if (localCredits) {
           const parsed = JSON.parse(localCredits);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setCreditCustomers(parsed.map(normalizeCreditCustomer).filter(Boolean));
           } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
             setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
-          } else if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-            setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
           } else {
-            setCreditCustomers([]);
+            setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
           }
         } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
           setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
-        } else if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-          setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
         } else {
-          setCreditCustomers([]);
+          setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
         }
       } else {
         setProductRequests(matiasProductRequests.map(normalizeProductRequest));
@@ -2026,33 +2018,37 @@ export const StoreProvider = ({ children }) => {
     }
 
     // 6. Cargar deudores / libreta de créditos por tienda desde Supabase
-    if (tenantSlug && tenantSlug !== 'default') {
-      supabase.from('credit_customers')
-        .select('*')
-        .eq('tenant_id', tenantSlug)
-        .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (!error && Array.isArray(data) && data.length > 0) {
-            const normalized = data.map(normalizeCreditCustomer).filter(Boolean);
-            setCreditCustomers(normalized);
-            try {
-              localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(normalized));
-            } catch (e) {}
-          } else if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
-            const fallback = fernandoCreditCustomers.map(normalizeCreditCustomer);
-            setCreditCustomers(fallback);
-            try {
-              localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(fallback));
-            } catch (e) {}
-          } else if (tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
-            const fallback = matiasCreditCustomers.map(normalizeCreditCustomer);
-            setCreditCustomers(fallback);
-            try {
-              localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(fallback));
-            } catch (e) {}
-          }
-        });
-    }
+    const isIanCredit = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian');
+    const creditTenantFilter = isIanCredit ? ['minimarket-ian', 'tiendita-fernando'] : ['matias-tiendatodo', 'default'];
+    
+    supabase.from('credit_customers')
+      .select('*')
+      .in('tenant_id', creditTenantFilter)
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const normalized = data.map(normalizeCreditCustomer).filter(Boolean);
+          setCreditCustomers(normalized);
+          try {
+            const activeSlug = tenantSlug || (isIanCredit ? 'minimarket-ian' : 'matias-tiendatodo');
+            localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(normalized));
+            if (!isIanCredit) localStorage.setItem('marketsaas_default_credits', JSON.stringify(normalized));
+          } catch (e) {}
+        } else if (isIanCredit) {
+          const fallback = fernandoCreditCustomers.map(normalizeCreditCustomer);
+          setCreditCustomers(fallback);
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug || 'minimarket-ian'}_credits`, JSON.stringify(fallback));
+          } catch (e) {}
+        } else {
+          const fallback = matiasCreditCustomers.map(normalizeCreditCustomer);
+          setCreditCustomers(fallback);
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug || 'matias-tiendatodo'}_credits`, JSON.stringify(fallback));
+            localStorage.setItem('marketsaas_default_credits', JSON.stringify(fallback));
+          } catch (e) {}
+        }
+      });
 
     // Subscripciones en Tiempo Real (Realtime)
     const ordersChannel = supabase
@@ -2179,13 +2175,19 @@ export const StoreProvider = ({ children }) => {
       .subscribe();
 
     const creditsChannel = supabase
-      .channel(`public:credit_customers:${tenantSlug}`)
+      .channel(`public:credit_customers:${tenantSlug || 'all'}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'credit_customers',
-        filter: `tenant_id=eq.${tenantSlug}`
+        table: 'credit_customers'
       }, payload => {
+        const itemTenant = payload.new?.tenant_id || payload.old?.tenant_id;
+        const isMatch = isIanCredit
+          ? (itemTenant === 'minimarket-ian' || itemTenant === 'tiendita-fernando')
+          : (!itemTenant || itemTenant === 'matias-tiendatodo' || itemTenant === 'default');
+
+        if (!isMatch) return;
+
         if (payload.eventType === 'INSERT' && payload.new) {
           const norm = normalizeCreditCustomer(payload.new);
           if (norm) {
@@ -2196,7 +2198,7 @@ export const StoreProvider = ({ children }) => {
           if (norm) {
             setCreditCustomers(prev => prev.map(c => (c.id === norm.id ? norm : c)));
           }
-        } else if (payload.eventType === 'DELETE') {
+        } else if (payload.eventType === 'DELETE' && payload.old) {
           setCreditCustomers(prev => prev.filter(c => c.id !== payload.old.id));
         }
       })
@@ -2552,7 +2554,11 @@ export const StoreProvider = ({ children }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_credits`, JSON.stringify(creditCustomers));
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+      localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(creditCustomers));
+      if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
+        localStorage.setItem('marketsaas_default_credits', JSON.stringify(creditCustomers));
+      }
     } catch (e) {}
   }, [creditCustomers, tenantSlug]);
 
@@ -4475,10 +4481,12 @@ export const StoreProvider = ({ children }) => {
     setCreditCustomers(prev => [newCustomer, ...prev]);
 
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default') {
+      if (supabase) {
+        const isIan = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando';
+        const targetTenant = isIan ? (tenantSlug || 'minimarket-ian') : 'default';
         await supabase.from('credit_customers').insert([{
           id: newCustomer.id,
-          tenant_id: tenantSlug,
+          tenant_id: targetTenant,
           name: newCustomer.name,
           phone: newCustomer.phone,
           apartment: newCustomer.apartment,
@@ -4511,7 +4519,7 @@ export const StoreProvider = ({ children }) => {
     }));
 
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default') {
+      if (supabase) {
         const payload = {};
         if (updatedFields.name !== undefined) payload.name = updatedFields.name;
         if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
@@ -4522,8 +4530,7 @@ export const StoreProvider = ({ children }) => {
 
         await supabase.from('credit_customers')
           .update(payload)
-          .eq('id', customerId)
-          .eq('tenant_id', tenantSlug);
+          .eq('id', customerId);
       }
     } catch (e) {}
 
@@ -4535,11 +4542,10 @@ export const StoreProvider = ({ children }) => {
     setCreditCustomers(prev => prev.filter(c => c.id !== customerId));
 
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default') {
+      if (supabase) {
         await supabase.from('credit_customers')
           .delete()
-          .eq('id', customerId)
-          .eq('tenant_id', tenantSlug);
+          .eq('id', customerId);
       }
     } catch (e) {}
 
@@ -4578,15 +4584,14 @@ export const StoreProvider = ({ children }) => {
     }));
 
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default' && updatedCustomer) {
+      if (supabase && updatedCustomer) {
         await supabase.from('credit_customers')
           .update({
             balance: updatedCustomer.balance,
             transactions: updatedCustomer.transactions,
             updated_at: updatedCustomer.updatedAt
           })
-          .eq('id', customerId)
-          .eq('tenant_id', tenantSlug);
+          .eq('id', customerId);
       }
     } catch (e) {}
 
@@ -4630,15 +4635,14 @@ export const StoreProvider = ({ children }) => {
     }));
 
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default' && updatedCustomer) {
+      if (supabase && updatedCustomer) {
         await supabase.from('credit_customers')
           .update({
             balance: updatedCustomer.balance,
             transactions: updatedCustomer.transactions,
             updated_at: updatedCustomer.updatedAt
           })
-          .eq('id', customerId)
-          .eq('tenant_id', tenantSlug);
+          .eq('id', customerId);
       }
     } catch (e) {}
 
