@@ -14,7 +14,13 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
     }
   };
 
-  const formattedRows = orders.map((o, idx) => {
+  // Solo ventas efectivamente concretadas y cobradas (Entregado / Cobrado / Vendido)
+  const completedOrders = orders.filter(o => {
+    const s = String(o.status || '').toLowerCase().trim();
+    return s === 'delivered' || s === 'completed' || s === 'paid';
+  });
+
+  const formattedRows = completedOrders.map((o, idx) => {
     const isPos = String(o.id || '').includes('POS');
     const customerName = o.customer?.name || (isPos ? 'Venta de Mostrador (Presencial)' : 'Vecino');
     const phone = o.customer?.phone || (isPos ? 'Presencial' : '-');

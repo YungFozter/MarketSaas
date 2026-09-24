@@ -82,9 +82,17 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
     return 'cash';
   };
 
+  // Solo ventas efectivamente concretadas y cobradas (Entregado / Cobrado / Vendido)
+  const completedBaseOrders = useMemo(() => {
+    return baseOrders.filter(order => {
+      const s = String(order.status || '').toLowerCase().trim();
+      return s === 'delivered' || s === 'completed' || s === 'paid';
+    });
+  }, [baseOrders]);
+
   // Filtrado reactivo en vivo
   const filteredOrders = useMemo(() => {
-    return baseOrders.filter(order => {
+    return completedBaseOrders.filter(order => {
       // 1. Filtro por Método de Pago
       if (paymentFilter !== 'all') {
         const cat = getOrderPaymentCategory(order);
@@ -115,20 +123,20 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
 
       return true;
     });
-  }, [baseOrders, paymentFilter, channelFilter, periodFilter, todayBoliviaKey, yesterdayBoliviaKey, currentMonthBoliviaKey]);
+  }, [completedBaseOrders, paymentFilter, channelFilter, periodFilter, todayBoliviaKey, yesterdayBoliviaKey, currentMonthBoliviaKey]);
 
   // Conteo de órdenes por método de pago para badges de los chips
   const paymentCounts = useMemo(() => {
     let cash = 0, qr = 0, card = 0, credit = 0;
-    baseOrders.forEach(o => {
+    completedBaseOrders.forEach(o => {
       const cat = getOrderPaymentCategory(o);
       if (cat === 'cash') cash++;
       else if (cat === 'qr') qr++;
       else if (cat === 'card') card++;
       else if (cat === 'credit') credit++;
     });
-    return { all: baseOrders.length, cash, qr, card, credit };
-  }, [baseOrders]);
+    return { all: completedBaseOrders.length, cash, qr, card, credit };
+  }, [completedBaseOrders]);
 
   // Cálculos contables de la selección activa
   const { summary } = useMemo(() => {
@@ -310,16 +318,16 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
           <div className="space-y-1.5">
             <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
-              <span>Período de Ventas</span>
+              <span>PERIODO DE VENTAS</span>
             </span>
 
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               {[
+                { id: 'all', label: 'Todo el Historial' },
                 { id: 'today', label: 'Hoy (Cierre diario)' },
                 { id: 'yesterday', label: 'Ayer' },
                 { id: '7days', label: 'Últimos 7 días' },
-                { id: 'month', label: 'Este Mes' },
-                { id: 'all', label: 'Todo el Historial' }
+                { id: 'month', label: 'Este Mes' }
               ].map(period => (
                 <button
                   key={period.id}
