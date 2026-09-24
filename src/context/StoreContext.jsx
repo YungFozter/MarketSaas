@@ -2434,10 +2434,10 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('marketsaas_minimarket-ian_suppliers', JSON.stringify(suppliers));
         localStorage.setItem('marketsaas_tiendita-fernando_suppliers', JSON.stringify(suppliers));
       }
-      // Backup en Supabase stores.config para persistencia permanente en la nube
+      // Backup en Supabase store_config para persistencia permanente en la nube
       if (supabase && tenantSlug && tenantSlug !== 'default' && Array.isArray(suppliers) && suppliers.length > 0) {
         const timer = setTimeout(() => {
-          supabase.from('stores')
+          supabase.from('store_config')
             .update({ config: { ...storeConfig, suppliersBackup: suppliers } })
             .eq('id', tenantSlug)
             .then(() => {})
