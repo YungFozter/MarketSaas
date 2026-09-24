@@ -234,8 +234,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange);
   });
 
-  // Cálculos de KPIs en tiempo real según el período de horario activo
-  const validOrders = timeFilteredOrders.filter(o => o && o.status !== 'cancelled');
+  // Cálculos de KPIs en tiempo real según el período de horario activo (Ventas y Cierre de Caja)
+  const validOrders = timeFilteredOrders.filter(o => o && o.status === 'delivered');
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
@@ -301,20 +301,30 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
 
-  // Filtrado de pedidos según condominio y período seleccionado en el Kanban
-  const condoFilteredOrders = timeFilteredOrders.filter(o => {
+  // Filtrado de pedidos según condominio seleccionado
+  const allCondoOrders = (orders || []).filter(o => {
     if (!o) return false;
     if (selectedCondoFilter === 'all') return true;
     return o.customer?.condominium === selectedCondoFilter;
   });
 
-  const activeOrders = condoFilteredOrders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
-  const pendingOrders = condoFilteredOrders.filter(o => o.status === 'pending');
-  const preparingOrders = condoFilteredOrders.filter(o => o.status === 'preparing');
-  const onTheWayOrders = condoFilteredOrders.filter(o => o.status === 'on_the_way');
-  const deliveredOrders = condoFilteredOrders.filter(o => o.status === 'delivered');
+  // Pedidos activos (Pendientes, En Preparación, En Camino):
+  // NUNCA deben ocultarse por filtros de fecha, pues representan trabajo en curso y atención prioritaria inmediata.
+  const activeOrders = allCondoOrders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
+  const pendingOrders = allCondoOrders.filter(o => o.status === 'pending');
+  const preparingOrders = allCondoOrders.filter(o => o.status === 'preparing');
+  const onTheWayOrders = allCondoOrders.filter(o => o.status === 'on_the_way');
 
-  // Identificar pedidos activos anteriores al período temporal seleccionado (para no desatender clientes)
+  // Pedidos entregados / completados: sí responden al filtro temporal ('today', '24h', 'all')
+  const deliveredOrders = allCondoOrders.filter(o => {
+    if (o.status !== 'delivered') return false;
+    return matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange);
+  });
+
+  // Lista consolidada de pedidos visibles en el Kanban (para contadores de pestañas y vista global)
+  const condoFilteredOrders = [...activeOrders, ...deliveredOrders];
+
+  // Identificar pedidos activos anteriores al período temporal seleccionado (para alerta visual preventiva)
   const allActiveOrders = (orders || []).filter(o => 
     o && (o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way')
   );

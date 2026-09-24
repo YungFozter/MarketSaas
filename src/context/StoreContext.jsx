@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
 import { initialSuppliers, SUPPLIER_CATEGORIES } from '../data/supplierInitialData';
 import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
-import { fernandoSuppliers, fernandoCreditCustomers } from '../data/tienditaFernandoData';
+import { fernandoSuppliers, fernandoCreditCustomers, getFernandoOrders } from '../data/tienditaFernandoData';
 import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
@@ -1310,20 +1310,26 @@ export const StoreProvider = ({ children }) => {
   // 6. Pedidos (Normalizados para compatibilidad frontend y base de datos)
   const [orders, setOrders] = useState(() => {
     try {
+      const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando';
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const cleaned = filterOutGhostOrders(parsed.map(normalizeOrder));
-          if (cleaned.length !== parsed.length) {
-            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(cleaned));
+          if (cleaned.length > 0) {
+            return cleaned;
           }
-          return cleaned;
         }
+      }
+      if (isFernando) {
+        return filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
       }
       return tenantSlug === 'default' ? filterOutGhostOrders(initialOrders.map(normalizeOrder)) : [];
     } catch (e) {
       console.warn('Error reading stored orders:', e);
+      if (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando') {
+        return filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
+      }
       return tenantSlug === 'default' ? filterOutGhostOrders(initialOrders.map(normalizeOrder)) : [];
     }
   });
@@ -1851,7 +1857,10 @@ export const StoreProvider = ({ children }) => {
             });
           }
 
-          const normalized = filterOutGhostOrders(data.map(normalizeOrder));
+          let normalized = filterOutGhostOrders(data.map(normalizeOrder));
+          if (normalized.length === 0 && (tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando')) {
+            normalized = filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
+          }
           setOrders(normalized);
           try {
             localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
