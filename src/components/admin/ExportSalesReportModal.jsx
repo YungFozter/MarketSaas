@@ -30,8 +30,6 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
   const [paymentFilter, setPaymentFilter] = useState('all'); // 'all' | 'cash' | 'qr' | 'card' | 'credit'
   const [channelFilter, setChannelFilter] = useState('all'); // 'all' | 'pos' | 'online'
 
-  if (!isOpen) return null;
-
   const baseOrders = customOrders !== null ? customOrders : storeOrders;
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -176,6 +174,8 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
     exportSalesToStyledExcel(filteredOrders, storeConfig, formatBoliviaDateTime, effectiveTitleSuffix);
     showToast('Planilla Excel descargada con éxito.', 'success');
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs animate-fadeIn overflow-y-auto">
