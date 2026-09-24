@@ -660,7 +660,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   }
 
   // Si el usuario tiene cuenta pero todavía no ha registrado su tienda
-  if (!merchantStore) {
+  if (!merchantStore && !isImpersonating && !isSuperAdmin) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white relative overflow-hidden">
         {/* Luces de fondo ambient */}

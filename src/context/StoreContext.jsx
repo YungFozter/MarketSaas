@@ -2947,6 +2947,16 @@ export const StoreProvider = ({ children }) => {
 
   // Modo Soporte SuperAdmin: Acceder e Impersonar una tienda
   const impersonateStore = (storeSlugOrId) => {
+    const targetStore = (stores || []).find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId);
+    if (targetStore) {
+      setMerchantStore(targetStore);
+    } else {
+      setMerchantStore({
+        id: storeSlugOrId,
+        slug: storeSlugOrId,
+        name: storeConfig?.name || storeSlugOrId
+      });
+    }
     goToStore(storeSlugOrId);
     setIsImpersonating(true);
     try {
@@ -2968,6 +2978,7 @@ export const StoreProvider = ({ children }) => {
   // Salir del modo Soporte SuperAdmin y volver al Panel Maestro
   const stopImpersonating = () => {
     setIsImpersonating(false);
+    setMerchantStore(null);
     try {
       localStorage.removeItem('marketsaas_is_impersonating');
     } catch (e) {}
@@ -4871,6 +4882,24 @@ export const StoreProvider = ({ children }) => {
     showToast('Sesión cerrada correctamente.', 'info');
   };
 
+  // Tienda de comerciante efectiva (resuelve tienda de dueño o tienda impersonada por SuperAdmin)
+  const effectiveMerchantStore = useMemo(() => {
+    if (merchantStore) return merchantStore;
+    if (isImpersonating || (isSuperAdminUser(currentUser) && tenantSlug && tenantSlug !== 'default')) {
+      const match = (stores || []).find(s => s.slug === tenantSlug || s.id === tenantSlug);
+      if (match) return match;
+      if (storeConfig && storeConfig.name) {
+        return {
+          id: tenantSlug,
+          slug: tenantSlug,
+          name: storeConfig.name,
+          ...storeConfig
+        };
+      }
+    }
+    return null;
+  }, [merchantStore, isImpersonating, currentUser, tenantSlug, stores, storeConfig]);
+
   return (
     <StoreContext.Provider
       value={{
@@ -4879,7 +4908,7 @@ export const StoreProvider = ({ children }) => {
         currentUser,
         isSuperAdmin: isSuperAdminUser(currentUser),
         isSuperAdminUser,
-        merchantStore,
+        merchantStore: effectiveMerchantStore,
         isAuthLoading,
         signUpMerchant,
         signInMerchant,

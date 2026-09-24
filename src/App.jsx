@@ -33,6 +33,8 @@ const AppContent = () => {
     storeConfig,
     currentUser,
     merchantStore,
+    isSuperAdmin,
+    isImpersonating,
     isRecoveryMode,
     setIsRecoveryMode,
     showToast
@@ -99,7 +101,7 @@ const AppContent = () => {
       setIsRecoveryMode(false);
     }
     // Si el usuario intentó acceder a admin pero no tiene sesión ni tienda, volver a vista vecino para no dejarlo atrapado
-    if (viewMode === 'admin' && (!currentUser || !merchantStore)) {
+    if (viewMode === 'admin' && (!currentUser || (!merchantStore && !isImpersonating && !isSuperAdmin))) {
       setViewMode('customer');
     }
   };
