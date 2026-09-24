@@ -903,6 +903,31 @@ export const StoreProvider = ({ children }) => {
     return false;
   });
 
+  // Modo Impersonación (SuperAdmin inspeccionando una tienda en vivo)
+  const [isImpersonating, setIsImpersonating] = useState(() => {
+    try {
+      return localStorage.getItem('marketsaas_is_impersonating') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Sistema de Avisos Globales de Difusión (Broadcast del SuperAdmin a todas las tiendas)
+  const [systemBroadcast, setSystemBroadcast] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_system_broadcast');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      active: false,
+      message: '',
+      type: 'info', // 'info' | 'warning' | 'success'
+      link: '',
+      linkText: '',
+      updatedAt: null
+    };
+  });
+
   // 1. Vista actual: Persistencia en localStorage y URL
   // Si el usuario recarga la página, se mantiene en la sección correspondiente (ej. 'customer' / Vista Vecino).
   // NOTA DE SEGURIDAD: 'superadmin' NUNCA se inicializa desde URL pública sin sesión validada.
@@ -931,8 +956,8 @@ export const StoreProvider = ({ children }) => {
       return;
     }
     setViewModeState(newMode);
-    // Si cambiamos a Vista Dueño (admin), asegurar que tenantSlug corresponda a la tienda del dueño
-    if (newMode === 'admin' && merchantStore?.id) {
+    // Si cambiamos a Vista Dueño (admin), asegurar que tenantSlug corresponda a la tienda del dueño (a menos que esté en modo soporte impersonación)
+    if (newMode === 'admin' && merchantStore?.id && !isImpersonating) {
       setTenantSlug(merchantStore.id);
       try {
         localStorage.setItem('marketsaas_active_tenant', merchantStore.id);
@@ -943,7 +968,7 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('marketsaas_active_view_mode', newMode);
         const url = new URL(window.location.href);
         url.searchParams.set('view', newMode);
-        if (newMode === 'admin' && merchantStore?.id) {
+        if (newMode === 'admin' && merchantStore?.id && !isImpersonating) {
           url.searchParams.set('store', merchantStore.id);
         }
         window.history.replaceState({}, '', url.toString());
@@ -2800,6 +2825,7 @@ export const StoreProvider = ({ children }) => {
   const addStoreSubscriptionTime = async (storeId, minutesToAdd) => {
     if (!storeId || !minutesToAdd) return;
     const now = new Date();
+    let newExpiresAtIso = null;
 
     if (storeId === tenantSlug) {
       const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
@@ -2809,14 +2835,13 @@ export const StoreProvider = ({ children }) => {
         if (expTime > baseTime) baseTime = expTime;
       }
       const newExpiresAt = new Date(baseTime + minutesToAdd * 60 * 1000);
+      newExpiresAtIso = newExpiresAt.toISOString();
       const updatedSub = {
         ...(storeConfig.subscription || createDefaultSubscription()),
         status: 'active',
-        subscriptionExpiresAt: newExpiresAt.toISOString()
+        subscriptionExpiresAt: newExpiresAtIso
       };
       await setStoreConfig({ ...storeConfig, subscription: updatedSub });
-      showToast(`¡Se sumaron ${minutesToAdd >= 1440 ? `${Math.round(minutesToAdd / 1440)} día(s)` : `${minutesToAdd} minuto(s)`} a la tienda!`, 'success');
-      return;
     }
 
     if (supabase) {
@@ -2830,10 +2855,11 @@ export const StoreProvider = ({ children }) => {
             baseTime = new Date(currentExp).getTime();
           }
           const newExpiresAt = new Date(baseTime + minutesToAdd * 60 * 1000);
+          newExpiresAtIso = newExpiresAt.toISOString();
           const updatedSub = {
             ...(cfg.subscription || createDefaultSubscription()),
             status: 'active',
-            subscriptionExpiresAt: newExpiresAt.toISOString()
+            subscriptionExpiresAt: newExpiresAtIso
           };
           const updatedCfg = { ...cfg, subscription: updatedSub };
           await supabase.from('store_config').update({ config: updatedCfg, updated_at: now.toISOString() }).eq('id', storeId);
@@ -2842,7 +2868,138 @@ export const StoreProvider = ({ children }) => {
         console.warn('Error añadiendo tiempo a tienda en Supabase:', e);
       }
     }
-    showToast(`Tiempo añadido exitosamente a la tienda "${storeId}".`, 'success');
+
+    if (!newExpiresAtIso) {
+      const targetStore = stores.find(s => s.slug === storeId || s.id === storeId);
+      const currentExp = targetStore?.subscription?.subscriptionExpiresAt || targetStore?.subscription?.trialEndsAt;
+      let baseTime = now.getTime();
+      if (currentExp && new Date(currentExp).getTime() > baseTime) {
+        baseTime = new Date(currentExp).getTime();
+      }
+      newExpiresAtIso = new Date(baseTime + minutesToAdd * 60 * 1000).toISOString();
+    }
+
+    // Actualizar reactivamente la tienda en el estado stores en memoria
+    setStores(prev => prev.map(s => {
+      if (s.slug === storeId || s.id === storeId) {
+        return {
+          ...s,
+          subscription: {
+            ...(s.subscription || createDefaultSubscription()),
+            status: 'active',
+            subscriptionExpiresAt: newExpiresAtIso
+          }
+        };
+      }
+      return s;
+    }));
+
+    showToast(`¡Se sumaron ${minutesToAdd >= 1440 ? `${Math.round(minutesToAdd / 1440)} día(s)` : `${minutesToAdd} minuto(s)`} a "${storeId}"!`, 'success');
+  };
+
+  // Suspender / Expirar suscripción inmediatamente a cualquier tienda (SuperAdmin)
+  const suspendStoreSubscription = async (storeId) => {
+    if (!storeId) return;
+    const pastIso = new Date(Date.now() - 60 * 1000).toISOString();
+
+    if (storeId === tenantSlug) {
+      const updatedSub = {
+        ...(storeConfig.subscription || createDefaultSubscription()),
+        status: 'expired',
+        subscriptionExpiresAt: pastIso
+      };
+      await setStoreConfig({ ...storeConfig, subscription: updatedSub });
+    }
+
+    if (supabase) {
+      try {
+        const { data } = await supabase.from('store_config').select('*').eq('id', storeId).maybeSingle();
+        if (data) {
+          const cfg = data.config || data;
+          const updatedSub = {
+            ...(cfg.subscription || createDefaultSubscription()),
+            status: 'expired',
+            subscriptionExpiresAt: pastIso
+          };
+          await supabase.from('store_config').update({ config: { ...cfg, subscription: updatedSub }, updated_at: new Date().toISOString() }).eq('id', storeId);
+        }
+      } catch (e) {
+        console.warn('Error suspendiendo suscripción en Supabase:', e);
+      }
+    }
+
+    setStores(prev => prev.map(s => {
+      if (s.slug === storeId || s.id === storeId) {
+        return {
+          ...s,
+          subscription: {
+            ...(s.subscription || createDefaultSubscription()),
+            status: 'expired',
+            subscriptionExpiresAt: pastIso
+          }
+        };
+      }
+      return s;
+    }));
+
+    showToast(`Suscripción de "${storeId}" suspendida/vencida.`, 'info');
+  };
+
+  // Modo Soporte SuperAdmin: Acceder e Impersonar una tienda
+  const impersonateStore = (storeSlugOrId) => {
+    goToStore(storeSlugOrId);
+    setIsImpersonating(true);
+    try {
+      localStorage.setItem('marketsaas_is_impersonating', 'true');
+    } catch (e) {}
+    setViewModeState('admin');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('marketsaas_active_view_mode', 'admin');
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', 'admin');
+        url.searchParams.set('store', storeSlugOrId);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+    showToast(`Ingresando a "${storeSlugOrId}" en modo Soporte SuperAdmin.`, 'info');
+  };
+
+  // Salir del modo Soporte SuperAdmin y volver al Panel Maestro
+  const stopImpersonating = () => {
+    setIsImpersonating(false);
+    try {
+      localStorage.removeItem('marketsaas_is_impersonating');
+    } catch (e) {}
+    setViewModeState('superadmin');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('marketsaas_active_view_mode', 'superadmin');
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', 'superadmin');
+        url.searchParams.delete('store');
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+    showToast('Regresando al Panel Maestro SuperAdmin.', 'info');
+  };
+
+  // Guardar y publicar anuncio / difusión global para comerciantes
+  const saveSystemBroadcast = async (broadcastData) => {
+    const updated = {
+      active: Boolean(broadcastData.active),
+      message: (broadcastData.message || '').trim(),
+      type: broadcastData.type || 'info',
+      link: (broadcastData.link || '').trim(),
+      linkText: (broadcastData.linkText || '').trim(),
+      updatedAt: new Date().toISOString()
+    };
+    setSystemBroadcast(updated);
+    try {
+      localStorage.setItem('marketsaas_system_broadcast', JSON.stringify(updated));
+    } catch (e) {}
+
+    showToast(updated.active ? '¡Aviso global publicado para todas las tiendas!' : 'Aviso global desactivado.', 'success');
   };
 
   // Métodos del Carrito
@@ -4818,6 +4975,12 @@ export const StoreProvider = ({ children }) => {
         deleteSubscriptionCode,
         redeemSubscriptionCode,
         addStoreSubscriptionTime,
+        suspendStoreSubscription,
+        impersonateStore,
+        stopImpersonating,
+        isImpersonating,
+        systemBroadcast,
+        saveSystemBroadcast,
         formatBoliviaDateTime,
         TRIAL_DURATION_MINUTES,
         BOLIVIA_TIMEZONE_OFFSET_HOURS

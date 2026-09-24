@@ -94,7 +94,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     isSubscriptionActive,
     subscriptionTimeRemaining,
     formatBoliviaDateTime,
-    creditCustomers = []
+    creditCustomers = [],
+    isSuperAdmin,
+    isImpersonating,
+    stopImpersonating,
+    systemBroadcast
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState(() => {
@@ -205,6 +209,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [mobileKanbanTab, setMobileKanbanTab] = useState('all'); // 'all' | 'pending' | 'preparing' | 'on_the_way' | 'delivered'
+  const [dismissedBroadcast, setDismissedBroadcast] = useState(false);
 
   const getDisplayOrderId = (id) => {
     if (!id) return '';
@@ -911,6 +916,64 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       {/* ========================================================================= */}
       <main className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#f8fafc]">
         
+        {/* Barra Superior de Soporte SuperAdmin (Modo Impersonación) */}
+        {(isSuperAdmin || isImpersonating) && (
+          <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between gap-3 shadow-md z-40 select-none">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-950 shrink-0 animate-ping"></span>
+              <span className="truncate">
+                🛡️ Modo Soporte SuperAdmin: Estás gestionando <strong>{storeConfig.name}</strong> ({tenantSlug})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={stopImpersonating}
+              className="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-900 text-amber-400 font-extrabold text-[11px] transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 shrink-0"
+            >
+              <span>Volver a SuperAdmin</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Barra de Difusión / Aviso Global del Sistema */}
+        {systemBroadcast?.active && systemBroadcast?.message && !dismissedBroadcast && (
+          <div className={`px-4 py-2.5 text-xs font-bold flex items-center justify-between gap-3 shadow-xs z-35 ${
+            systemBroadcast.type === 'warning'
+              ? 'bg-amber-500/15 border-b border-amber-500/30 text-amber-900'
+              : systemBroadcast.type === 'success'
+              ? 'bg-emerald-500/15 border-b border-emerald-500/30 text-emerald-900'
+              : 'bg-indigo-500/15 border-b border-indigo-500/30 text-indigo-950'
+          }`}>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-base shrink-0">
+                {systemBroadcast.type === 'warning' ? '⚠️' : systemBroadcast.type === 'success' ? '🚀' : '📢'}
+              </span>
+              <span className="truncate">
+                {systemBroadcast.message}
+              </span>
+              {systemBroadcast.link && (
+                <a 
+                  href={systemBroadcast.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="underline font-black hover:opacity-80 shrink-0 ml-1"
+                >
+                  {systemBroadcast.linkText || 'Ver más →'}
+                </a>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setDismissedBroadcast(true)}
+              className="p-1 rounded-md hover:bg-black/10 transition-colors shrink-0 text-slate-500 hover:text-slate-800 cursor-pointer"
+              title="Cerrar aviso"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Top Workspace Sub-Header Bar */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
           {/* Botón de apertura de menú para móviles */}

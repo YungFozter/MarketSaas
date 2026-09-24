@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   KeyRound, 
@@ -21,7 +21,21 @@ import {
   Sparkles,
   Zap,
   Filter,
-  LogOut
+  LogOut,
+  Megaphone,
+  ExternalLink,
+  MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  AlertCircle,
+  Ban,
+  X,
+  Send,
+  Eye,
+  CalendarClock,
+  Power,
+  CheckCircle2
 } from 'lucide-react';
 
 export const SuperAdminHome = () => {
@@ -30,6 +44,10 @@ export const SuperAdminHome = () => {
     generateSubscriptionCodes, 
     deleteSubscriptionCode, 
     addStoreSubscriptionTime,
+    suspendStoreSubscription,
+    impersonateStore,
+    systemBroadcast,
+    saveSystemBroadcast,
     stores, 
     formatBoliviaDateTime, 
     setViewMode, 
@@ -49,10 +67,40 @@ export const SuperAdminHome = () => {
   const [copiedCode, setCopiedCode] = useState(null);
 
   // Estados de filtrado y búsqueda
-  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'history' | 'stores'
+  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'history' | 'stores' | 'broadcast'
   const [searchTerm, setSearchTerm] = useState('');
   const [historySearchTerm, setHistorySearchTerm] = useState('');
   const [storeSearchTerm, setStoreSearchTerm] = useState('');
+
+  // Filtros comerciales y paginación de tiendas
+  const [storeStatusFilter, setStoreStatusFilter] = useState('all'); // 'all' | 'active' | 'expiring_soon' | 'expired'
+  const [storesPage, setStoresPage] = useState(1);
+  const STORES_PER_PAGE = 10;
+
+  // Modal de gestión de suscripción
+  const [selectedStoreForSub, setSelectedStoreForSub] = useState(null);
+  const [customDaysInput, setCustomDaysInput] = useState('');
+
+  // Borrador de Aviso Global del Sistema
+  const [broadcastDraft, setBroadcastDraft] = useState({
+    active: false,
+    message: '',
+    type: 'info',
+    link: '',
+    linkText: ''
+  });
+
+  useEffect(() => {
+    if (systemBroadcast) {
+      setBroadcastDraft({
+        active: Boolean(systemBroadcast.active),
+        message: systemBroadcast.message || '',
+        type: systemBroadcast.type || 'info',
+        link: systemBroadcast.link || '',
+        linkText: systemBroadcast.linkText || ''
+      });
+    }
+  }, [systemBroadcast]);
 
   // Separar códigos disponibles de canjeados
   const availableCodes = useMemo(() => {
@@ -62,6 +110,39 @@ export const SuperAdminHome = () => {
   const redeemedCodes = useMemo(() => {
     return (subscriptionCodes || []).filter(c => c.status === 'redeemed');
   }, [subscriptionCodes]);
+
+  // Estadísticas comerciales de tiendas
+  const storeStats = useMemo(() => {
+    const all = stores || [];
+    const now = Date.now();
+    let activeCount = 0;
+    let expiringSoonCount = 0;
+    let expiredCount = 0;
+
+    all.forEach(st => {
+      const sub = st.subscription || {};
+      const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+      const expTime = expIso ? new Date(expIso).getTime() : 0;
+      const isExpired = expTime <= now;
+      const daysRemaining = isExpired ? 0 : Math.ceil((expTime - now) / (1000 * 60 * 60 * 24));
+
+      if (isExpired) {
+        expiredCount++;
+      } else {
+        activeCount++;
+        if (daysRemaining <= 5) {
+          expiringSoonCount++;
+        }
+      }
+    });
+
+    return {
+      total: all.length,
+      active: activeCount,
+      expiringSoon: expiringSoonCount,
+      expired: expiredCount
+    };
+  }, [stores]);
 
   // Filtrado de códigos disponibles
   const filteredAvailableCodes = useMemo(() => {
@@ -86,16 +167,139 @@ export const SuperAdminHome = () => {
     );
   }, [redeemedCodes, historySearchTerm]);
 
-  // Filtrado de tiendas
+  // Filtrado de tiendas combinado (búsqueda y estado de suscripción)
   const filteredStores = useMemo(() => {
-    if (!storeSearchTerm.trim()) return stores;
-    const q = storeSearchTerm.toLowerCase();
-    return (stores || []).filter(s => 
-      s.name?.toLowerCase().includes(q) ||
-      s.slug?.toLowerCase().includes(q) ||
-      s.id?.toLowerCase().includes(q)
-    );
-  }, [stores, storeSearchTerm]);
+    let list = stores || [];
+    const now = Date.now();
+
+    if (storeSearchTerm.trim()) {
+      const q = storeSearchTerm.toLowerCase();
+      list = list.filter(s => 
+        s.name?.toLowerCase().includes(q) ||
+        s.slug?.toLowerCase().includes(q) ||
+        s.id?.toLowerCase().includes(q) ||
+        (s.phone && String(s.phone).toLowerCase().includes(q)) ||
+        (s.whatsapp && String(s.whatsapp).toLowerCase().includes(q))
+      );
+    }
+
+    if (storeStatusFilter !== 'all') {
+      list = list.filter(s => {
+        const sub = s.subscription || {};
+        const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+        const expTime = expIso ? new Date(expIso).getTime() : 0;
+        const isExpired = expTime <= now;
+        const daysRemaining = isExpired ? 0 : Math.ceil((expTime - now) / (1000 * 60 * 60 * 24));
+
+        if (storeStatusFilter === 'active') return !isExpired;
+        if (storeStatusFilter === 'expiring_soon') return !isExpired && daysRemaining > 0 && daysRemaining <= 5;
+        if (storeStatusFilter === 'expired') return isExpired;
+        return true;
+      });
+    }
+
+    return list;
+  }, [stores, storeSearchTerm, storeStatusFilter]);
+
+  // Paginación de tiendas
+  const totalStorePages = Math.max(1, Math.ceil(filteredStores.length / STORES_PER_PAGE));
+  const currentStoresPage = Math.min(storesPage, totalStorePages);
+
+  const paginatedStores = useMemo(() => {
+    const start = (currentStoresPage - 1) * STORES_PER_PAGE;
+    return filteredStores.slice(start, start + STORES_PER_PAGE);
+  }, [filteredStores, currentStoresPage]);
+
+  // Exportar directorio de tiendas a CSV
+  const handleExportStoresCSV = () => {
+    if (!stores || stores.length === 0) {
+      showToast('No hay tiendas para exportar.', 'error');
+      return;
+    }
+
+    const headers = ['ID', 'Nombre', 'Slug', 'Telefono', 'Email', 'Direccion', 'Estado_Suscripcion', 'Dias_Restantes', 'Vence_UTC_4'];
+    const now = Date.now();
+    const rows = stores.map(st => {
+      const sub = st.subscription || {};
+      const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+      const expTime = expIso ? new Date(expIso).getTime() : 0;
+      const isExpired = expTime <= now;
+      const daysRemaining = isExpired ? 0 : Math.ceil((expTime - now) / (1000 * 60 * 60 * 24));
+      const statusText = isExpired ? 'VENCIDA' : (daysRemaining <= 5 ? 'POR_VENCER' : 'ACTIVA');
+
+      return [
+        `"${st.id || ''}"`,
+        `"${(st.name || '').replace(/"/g, '""')}"`,
+        `"${st.slug || ''}"`,
+        `"${st.phone || st.whatsapp || ''}"`,
+        `"${st.email || ''}"`,
+        `"${(st.address || '').replace(/"/g, '""')}"`,
+        `"${statusText}"`,
+        daysRemaining,
+        `"${formatBoliviaDateTime(expIso)}"`
+      ].join(',');
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `directorio_tiendas_marketsaas_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Directorio de tiendas exportado en CSV.', 'success');
+  };
+
+  // WhatsApp helper
+  const getWhatsAppLink = (st, isExpired, isExpiringSoon, daysRemaining) => {
+    const raw = st.phone || st.whatsapp || '';
+    const digits = String(raw).replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    const finalPhone = digits.startsWith('591') ? digits : (digits.length === 8 ? `591${digits}` : digits);
+
+    let text = `Hola *${st.name || 'comerciante'}*, te saludamos de MarketSaaS. `;
+    if (isExpired) {
+      text += `Tu suscripción al sistema ha vencido. ¿Deseas renovar tu plan para seguir vendiendo con normalidad?`;
+    } else if (isExpiringSoon) {
+      text += `Tu suscripción al sistema vencerá en ${daysRemaining} día(s). ¿Deseas renovar tu plan con anticipación?`;
+    } else {
+      text += `Te escribimos para saber cómo va la experiencia en tu tienda y si requieres alguna asistencia.`;
+    }
+
+    return `https://wa.me/${finalPhone}?text=${encodeURIComponent(text)}`;
+  };
+
+  // Handlers para el modal de suscripción
+  const handleAddTimeToSelectedStore = async (minutes) => {
+    if (!selectedStoreForSub) return;
+    const targetSlug = selectedStoreForSub.slug || selectedStoreForSub.id;
+    await addStoreSubscriptionTime(targetSlug, minutes);
+    const updated = (stores || []).find(s => (s.slug || s.id) === targetSlug);
+    if (updated) setSelectedStoreForSub(updated);
+  };
+
+  const handleCustomDaysSubmit = async (e) => {
+    e.preventDefault();
+    const days = parseInt(customDaysInput, 10);
+    if (isNaN(days) || days <= 0) {
+      showToast('Ingresa un número válido de días.', 'error');
+      return;
+    }
+    await handleAddTimeToSelectedStore(days * 1440);
+    setCustomDaysInput('');
+  };
+
+  const handleSuspendSelectedStore = async () => {
+    if (!selectedStoreForSub) return;
+    const confirmName = selectedStoreForSub.name || selectedStoreForSub.slug;
+    if (window.confirm(`¿Estás seguro de suspender inmediatamente la suscripción de "${confirmName}"? La tienda quedará con acceso bloqueado hasta reactivarse.`)) {
+      const targetSlug = selectedStoreForSub.slug || selectedStoreForSub.id;
+      await suspendStoreSubscription(targetSlug);
+      const updated = (stores || []).find(s => (s.slug || s.id) === targetSlug);
+      if (updated) setSelectedStoreForSub(updated);
+    }
+  };
 
   // Manejar generación de códigos
   const handleGenerate = async (e) => {
@@ -480,6 +684,23 @@ export const SuperAdminHome = () => {
               <Store className="w-4 h-4 text-amber-400" />
               <span>Monitoreo de Tiendas ({(stores || []).length})</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('broadcast')}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeTab === 'broadcast'
+                  ? 'bg-slate-800 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              <Megaphone className="w-4 h-4 text-rose-400" />
+              <span className="flex items-center gap-1.5">
+                Avisos Globales
+                {systemBroadcast?.active && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Aviso actualmente activo en tiendas" />
+                )}
+              </span>
+            </button>
           </div>
 
           {/* CONTENIDO DE TAB 1: CÓDIGOS DISPONIBLES */}
@@ -650,101 +871,630 @@ export const SuperAdminHome = () => {
             </div>
           )}
 
-          {/* CONTENIDO DE TAB 3: MONITOREO DE TIENDAS Y TIEMPO DIRECTO */}
+          {/* CONTENIDO DE TAB 3: MONITOREO DE TIENDAS Y GESTIÓN COMERCIAL */}
           {activeTab === 'stores' && (
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-5">
+              {/* Filtros comerciales chips */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  onClick={() => { setStoreStatusFilter('all'); setStoresPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    storeStatusFilter === 'all'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Todas ({storeStats.total})</span>
+                </button>
+
+                <button
+                  onClick={() => { setStoreStatusFilter('active'); setStoresPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    storeStatusFilter === 'active'
+                      ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Activas ({storeStats.active})</span>
+                </button>
+
+                <button
+                  onClick={() => { setStoreStatusFilter('expiring_soon'); setStoresPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    storeStatusFilter === 'expiring_soon'
+                      ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Próximas a Vencer ≤ 5 días ({storeStats.expiringSoon})</span>
+                </button>
+
+                <button
+                  onClick={() => { setStoreStatusFilter('expired'); setStoresPage(1); }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    storeStatusFilter === 'expired'
+                      ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
+                  }`}
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Vencidas / Pausadas ({storeStats.expired})</span>
+                </button>
+              </div>
+
+              {/* Barra de Búsqueda y Exportación */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
                     type="text"
                     value={storeSearchTerm}
-                    onChange={(e) => setStoreSearchTerm(e.target.value)}
-                    placeholder="Buscar tienda por nombre o slug..."
+                    onChange={(e) => { setStoreSearchTerm(e.target.value); setStoresPage(1); }}
+                    placeholder="Buscar por nombre, slug o teléfono..."
                     className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-slate-600 outline-none"
                   />
                 </div>
-                <span className="text-xs text-slate-400 font-medium">
-                  {filteredStores.length} tienda(s) en la plataforma
-                </span>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExportStoresCSV}
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Exportar directorio completo a CSV"
+                  >
+                    <Download className="w-4 h-4 text-emerald-400" />
+                    <span>Exportar Tiendas (.CSV)</span>
+                  </button>
+                </div>
               </div>
 
               {filteredStores.length === 0 ? (
                 <div className="p-10 text-center rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-slate-500 text-xs">
-                  No se encontraron tiendas registradas.
+                  No se encontraron tiendas que coincidan con los filtros seleccionados.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-950/70 uppercase text-[10px] tracking-wider text-slate-400 border-b border-slate-800">
-                      <tr>
-                        <th className="p-3">Tienda</th>
-                        <th className="p-3">Identificador (Slug)</th>
-                        <th className="p-3">Estado Suscripción</th>
-                        <th className="p-3">Vence el (UTC-4)</th>
-                        <th className="p-3 text-right">Inyección de Tiempo</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {filteredStores.map((st) => {
-                        const sub = st.subscription || {};
-                        const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
-                        const isExpired = expIso ? new Date(expIso).getTime() <= Date.now() : true;
+                <>
+                  {/* Vista de Tabla para Escritorio */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-300">
+                      <thead className="bg-slate-950/70 uppercase text-[10px] tracking-wider text-slate-400 border-b border-slate-800">
+                        <tr>
+                          <th className="p-3">Tienda</th>
+                          <th className="p-3">Slug</th>
+                          <th className="p-3">Estado Suscripción</th>
+                          <th className="p-3">Vence el (UTC-4)</th>
+                          <th className="p-3">Contacto Directo</th>
+                          <th className="p-3 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60">
+                        {paginatedStores.map((st) => {
+                          const sub = st.subscription || {};
+                          const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+                          const expTime = expIso ? new Date(expIso).getTime() : 0;
+                          const isExpired = expTime <= Date.now();
+                          const daysRemaining = isExpired ? 0 : Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24));
+                          const isExpiringSoon = !isExpired && daysRemaining > 0 && daysRemaining <= 5;
+                          const waUrl = getWhatsAppLink(st, isExpired, isExpiringSoon, daysRemaining);
 
-                        return (
-                          <tr key={st.id || st.slug} className="hover:bg-slate-800/40 transition-colors">
-                            <td className="p-3">
-                              <span className="font-bold text-white block">
+                          return (
+                            <tr key={st.id || st.slug} className="hover:bg-slate-800/40 transition-colors">
+                              <td className="p-3">
+                                <span className="font-bold text-white block">
+                                  {st.name || 'Minimarket'}
+                                </span>
+                                <span className="text-[10px] text-slate-500 block truncate max-w-xs">
+                                  {st.address || st.tagline || 'Sin dirección registrada'}
+                                </span>
+                              </td>
+                              <td className="p-3 font-mono text-slate-400">
+                                {st.slug || st.id}
+                              </td>
+                              <td className="p-3">
+                                {isExpired ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-rose-500/10 text-rose-400 border-rose-500/20 inline-flex items-center gap-1">
+                                    <Ban className="w-3 h-3" />
+                                    Expirada
+                                  </span>
+                                ) : isExpiringSoon ? (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-500/10 text-amber-400 border-amber-500/20 inline-flex items-center gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    Por vencer ({daysRemaining}d)
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Activa ({daysRemaining}d)
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 font-mono text-slate-400">
+                                {formatBoliviaDateTime(expIso)}
+                              </td>
+                              <td className="p-3">
+                                {waUrl ? (
+                                  <a
+                                    href={waUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] transition-colors"
+                                    title="Escribir por WhatsApp al dueño"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                ) : (
+                                  <span className="text-[11px] text-slate-600 italic">Sin teléfono</span>
+                                )}
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => impersonateStore(st.slug || st.id)}
+                                    className="px-2.5 py-1 rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-indigo-300 hover:text-white font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
+                                    title="Ingresar al panel administrativo de esta tienda (Modo Soporte)"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>Acceder</span>
+                                  </button>
+                                  <button
+                                    onClick={() => setSelectedStoreForSub(st)}
+                                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
+                                    title="Modificar tiempo o suspender suscripción"
+                                  >
+                                    <CalendarClock className="w-3 h-3" />
+                                    <span>Licencia</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Vista de Tarjetas para Móviles */}
+                  <div className="md:hidden space-y-3">
+                    {paginatedStores.map((st) => {
+                      const sub = st.subscription || {};
+                      const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+                      const expTime = expIso ? new Date(expIso).getTime() : 0;
+                      const isExpired = expTime <= Date.now();
+                      const daysRemaining = isExpired ? 0 : Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24));
+                      const isExpiringSoon = !isExpired && daysRemaining > 0 && daysRemaining <= 5;
+                      const waUrl = getWhatsAppLink(st, isExpired, isExpiringSoon, daysRemaining);
+
+                      return (
+                        <div
+                          key={st.id || st.slug}
+                          className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 shadow-md"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h3 className="font-bold text-white text-sm">
                                 {st.name || 'Minimarket'}
-                              </span>
-                              <span className="text-[10px] text-slate-500 block truncate max-w-xs">
-                                {st.address || st.tagline || 'Sin dirección'}
-                              </span>
-                            </td>
-                            <td className="p-3 font-mono text-slate-400">
-                              {st.slug || st.id}
-                            </td>
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                                isExpired 
-                                  ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' 
-                                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                              }`}>
-                                {isExpired ? 'Expirada' : 'Activa'}
-                              </span>
-                            </td>
-                            <td className="p-3 font-mono text-slate-400">
-                              {formatBoliviaDateTime(expIso)}
-                            </td>
-                            <td className="p-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => addStoreSubscriptionTime(st.slug || st.id, 5)}
-                                  className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[11px] transition-colors cursor-pointer"
-                                  title="Añadir 5 minutos para pruebas"
-                                >
-                                  +5 min
-                                </button>
-                                <button
-                                  onClick={() => addStoreSubscriptionTime(st.slug || st.id, 43200)}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] transition-colors cursor-pointer"
-                                  title="Extender 30 días directos"
-                                >
-                                  +30 días
-                                </button>
+                              </h3>
+                              <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                /{st.slug || st.id}
+                              </p>
+                            </div>
+                            <div>
+                              {isExpired ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-rose-500/10 text-rose-400 border-rose-500/20 flex items-center gap-1">
+                                  <Ban className="w-3 h-3" />
+                                  Expirada
+                                </span>
+                              ) : isExpiringSoon ? (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-amber-500/10 text-amber-400 border-amber-500/20 flex items-center gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Vence en {daysRemaining}d
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border bg-emerald-500/10 text-emerald-400 border-emerald-500/20 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Activa ({daysRemaining}d)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="text-[11px] text-slate-400 space-y-1 pt-1 border-t border-slate-900">
+                            <div className="flex items-center justify-between">
+                              <span className="text-slate-500">Vencimiento:</span>
+                              <span className="font-mono text-slate-300">{formatBoliviaDateTime(expIso)}</span>
+                            </div>
+                            {st.phone && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Teléfono:</span>
+                                <span className="font-mono text-slate-300">{st.phone}</span>
                               </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 pt-1">
+                            {waUrl ? (
+                              <a
+                                href={waUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-400 font-bold text-[11px] flex items-center justify-center gap-1 text-center"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>WhatsApp</span>
+                              </a>
+                            ) : (
+                              <button
+                                disabled
+                                className="px-2 py-2 rounded-xl bg-slate-900 text-slate-600 font-bold text-[11px] flex items-center justify-center gap-1 cursor-not-allowed"
+                              >
+                                <span>Sin Wpp</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => impersonateStore(st.slug || st.id)}
+                              className="px-2 py-2 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-indigo-300 font-bold text-[11px] flex items-center justify-center gap-1 text-center cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Acceder</span>
+                            </button>
+
+                            <button
+                              onClick={() => setSelectedStoreForSub(st)}
+                              className="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[11px] flex items-center justify-center gap-1 text-center cursor-pointer"
+                            >
+                              <CalendarClock className="w-3.5 h-3.5" />
+                              <span>Licencia</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Barra de Paginación */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs text-slate-400">
+                    <div>
+                      Mostrando{' '}
+                      <span className="font-bold text-white">
+                        {(currentStoresPage - 1) * STORES_PER_PAGE + 1}
+                      </span>{' '}
+                      a{' '}
+                      <span className="font-bold text-white">
+                        {Math.min(currentStoresPage * STORES_PER_PAGE, filteredStores.length)}
+                      </span>{' '}
+                      de{' '}
+                      <span className="font-bold text-white">{filteredStores.length}</span> tiendas
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setStoresPage(p => Math.max(1, p - 1))}
+                        disabled={currentStoresPage <= 1}
+                        className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white cursor-pointer transition-colors"
+                        title="Página anterior"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="px-3 py-1 bg-slate-950 border border-slate-800 rounded-xl font-mono text-white text-xs">
+                        {currentStoresPage} / {totalStorePages}
+                      </span>
+                      <button
+                        onClick={() => setStoresPage(p => Math.min(totalStorePages, p + 1))}
+                        disabled={currentStoresPage >= totalStorePages}
+                        className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white cursor-pointer transition-colors"
+                        title="Página siguiente"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
+            </div>
+          )}
+
+          {/* CONTENIDO DE TAB 4: AVISOS GLOBALES DEL SISTEMA */}
+          {activeTab === 'broadcast' && (
+            <div className="p-4 sm:p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <Megaphone className="w-5 h-5 text-rose-400" />
+                    Difusión de Avisos Globales a Comerciantes
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configura un banner que se desplegará en la parte superior del panel de control de todas las tiendas.
+                  </p>
+                </div>
+                {broadcastDraft.active && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 inline-flex items-center gap-1.5 self-start sm:self-auto">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Aviso en Vivo
+                  </span>
+                )}
+              </div>
+
+              {/* Vista previa en tiempo real */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Vista Previa en Tiendas:
+                </span>
+                <div className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-md transition-all ${
+                  broadcastDraft.type === 'alert'
+                    ? 'bg-rose-950/80 border-rose-500/40 text-rose-100'
+                    : broadcastDraft.type === 'warning'
+                    ? 'bg-amber-950/80 border-amber-500/40 text-amber-100'
+                    : broadcastDraft.type === 'success'
+                    ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-100'
+                    : 'bg-indigo-950/80 border-indigo-500/40 text-indigo-100'
+                }`}>
+                  <div className="flex items-center gap-2.5 text-xs font-medium">
+                    <Megaphone className={`w-4 h-4 shrink-0 ${
+                      broadcastDraft.type === 'alert' ? 'text-rose-400' :
+                      broadcastDraft.type === 'warning' ? 'text-amber-400' :
+                      broadcastDraft.type === 'success' ? 'text-emerald-400' : 'text-indigo-400'
+                    }`} />
+                    <span>{broadcastDraft.message || 'Escribe un mensaje abajo para previsualizar aquí...'}</span>
+                  </div>
+                  {broadcastDraft.link && (
+                    <span className="text-xs font-bold underline shrink-0 cursor-pointer">
+                      {broadcastDraft.linkText || 'Ver más'} &rarr;
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Formulario de configuración */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveSystemBroadcast(broadcastDraft);
+                }}
+                className="space-y-4 pt-2"
+              >
+                <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                  <input
+                    type="checkbox"
+                    id="broadcastActive"
+                    checked={broadcastDraft.active}
+                    onChange={(e) => setBroadcastDraft(prev => ({ ...prev, active: e.target.checked }))}
+                    className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                  />
+                  <label htmlFor="broadcastActive" className="text-xs font-bold text-white cursor-pointer select-none">
+                    Activar y mostrar este aviso inmediatamente en todas las tiendas
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Tipo de Notificación
+                    </label>
+                    <select
+                      value={broadcastDraft.type}
+                      onChange={(e) => setBroadcastDraft(prev => ({ ...prev, type: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-medium focus:border-amber-400 outline-none transition-colors"
+                    >
+                      <option value="info">ℹ️ Información General (Azul)</option>
+                      <option value="warning">⚠️ Advertencia / Vencimientos (Ámbar)</option>
+                      <option value="success">🎉 Novedad / Éxito (Verde)</option>
+                      <option value="alert">🚨 Urgente / Mantenimiento (Rojo)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Enlace Opcional (URL)
+                    </label>
+                    <input
+                      type="url"
+                      value={broadcastDraft.link}
+                      onChange={(e) => setBroadcastDraft(prev => ({ ...prev, link: e.target.value }))}
+                      placeholder="https://ejemplo.com o #actualizaciones"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs placeholder:text-slate-600 focus:border-amber-400 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Mensaje del Aviso
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={broadcastDraft.message}
+                      onChange={(e) => setBroadcastDraft(prev => ({ ...prev, message: e.target.value }))}
+                      placeholder="Ej: Estimados comerciantes, realizaremos una actualización de servidores hoy a las 23:00 UTC-4 durante 15 minutos."
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs placeholder:text-slate-600 focus:border-amber-400 outline-none transition-colors resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Texto del Botón (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={broadcastDraft.linkText}
+                      onChange={(e) => setBroadcastDraft(prev => ({ ...prev, linkText: e.target.value }))}
+                      placeholder="Ej. Conocer más"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs placeholder:text-slate-600 focus:border-amber-400 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-98 text-slate-950 font-black text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Guardar y Publicar Aviso</span>
+                  </button>
+
+                  {broadcastDraft.active && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = { ...broadcastDraft, active: false };
+                        setBroadcastDraft(updated);
+                        saveSystemBroadcast(updated);
+                      }}
+                      className="px-4 py-2.5 bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-400 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                    >
+                      Desactivar Aviso Actual
+                    </button>
+                  )}
+                </div>
+              </form>
             </div>
           )}
         </div>
       </div>
+
+      {/* MODAL DE GESTIÓN AVANZADA DE SUSCRIPCIÓN PARA UNA TIENDA */}
+      {selectedStoreForSub && (() => {
+        const sub = selectedStoreForSub.subscription || {};
+        const expIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+        const expTime = expIso ? new Date(expIso).getTime() : 0;
+        const isExpired = expTime <= Date.now();
+        const daysRemaining = isExpired ? 0 : Math.ceil((expTime - Date.now()) / (1000 * 60 * 60 * 24));
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-6 shadow-2xl relative">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-black text-white flex items-center gap-2">
+                    <CalendarClock className="w-5 h-5 text-amber-400" />
+                    Gestionar Suscripción de Tienda
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 font-mono">
+                    {selectedStoreForSub.name} ({selectedStoreForSub.slug || selectedStoreForSub.id})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedStoreForSub(null)}
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Estado actual */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Estado de Operación:</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
+                    isExpired
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  }`}>
+                    {isExpired ? 'Licencia Pausada / Expirada' : `Licencia Activa (${daysRemaining} días)`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-slate-500">Fecha de Vencimiento:</span>
+                  <span className="text-slate-300">{formatBoliviaDateTime(expIso)}</span>
+                </div>
+              </div>
+
+              {/* Botones de extensión rápida */}
+              <div className="space-y-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Inyección Directa de Tiempo:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <button
+                    onClick={() => handleAddTimeToSelectedStore(5)}
+                    className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-amber-400 font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    ⚡ +5 Minutos (Test)
+                  </button>
+                  <button
+                    onClick={() => handleAddTimeToSelectedStore(21600)}
+                    className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    🗓️ +15 Días
+                  </button>
+                  <button
+                    onClick={() => handleAddTimeToSelectedStore(43200)}
+                    className="p-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 text-emerald-400 font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    💎 +30 Días (1 Mes)
+                  </button>
+                  <button
+                    onClick={() => handleAddTimeToSelectedStore(129600)}
+                    className="p-2.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-500/30 text-indigo-300 font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    🚀 +90 Días (3 Meses)
+                  </button>
+                  <button
+                    onClick={() => handleAddTimeToSelectedStore(525600)}
+                    className="p-2.5 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/30 text-amber-400 font-bold text-xs transition-colors cursor-pointer text-center col-span-2 sm:col-span-2"
+                  >
+                    👑 +365 Días (1 Año Completo)
+                  </button>
+                </div>
+              </div>
+
+              {/* Extensión personalizada en días */}
+              <form onSubmit={handleCustomDaysSubmit} className="space-y-2 pt-1 border-t border-slate-800/80">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Días Personalizados:
+                </span>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    value={customDaysInput}
+                    onChange={(e) => setCustomDaysInput(e.target.value)}
+                    placeholder="Ej. 45"
+                    className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-mono focus:border-amber-400 outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Aplicar Días
+                  </button>
+                </div>
+              </form>
+
+              {/* Zona de peligro / Suspensión inmediata */}
+              <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Zona Administrativa de Control:
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSuspendSelectedStore}
+                  className="w-full py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 hover:text-rose-300 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Ban className="w-4 h-4" />
+                  <span>Suspender / Pausar Licencia Inmediatamente</span>
+                </button>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  onClick={() => setSelectedStoreForSub(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
+
