@@ -603,6 +603,198 @@ export const getFernandoOrders = () => {
       paymentMethod: 'qr',
       created_at: days(2),
       createdAt: days(2)
+    },
+    {
+      id: 'ORD-9614',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Don Gonzalo Barrientos',
+        notes: 'Compra de pan y desayuno en mostrador',
+        phone: '+591 76012499',
+        tower: '',
+        apartment: 'Mostrador',
+        condominium: 'Retiro en Tienda'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 2 },
+        { id: 'minimarket-ian-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 10, quantity: 1 },
+        { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 1 }
+      ],
+      subtotal: 26.5,
+      total: 26.5,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'cash',
+      paymentMethod: 'cash',
+      created_at: days(2.2),
+      createdAt: days(2.2)
+    },
+    {
+      id: 'ORD-9615',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Sra. Silvia Justiniano',
+        notes: 'Pedido de víveres a domicilio',
+        phone: '+591 71309822',
+        tower: 'Torre B',
+        apartment: 'Depto 102',
+        condominium: 'Condominio Icaraí'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 8.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 13.5, quantity: 1 },
+        { id: 'minimarket-ian-prod-7', name: 'Azúcar Blanca Refinada Guabirá 1kg', price: 6.5, quantity: 2 }
+      ],
+      subtotal: 43.5,
+      total: 43.5,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'delivery',
+      deliveryType: 'delivery',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: days(2.5),
+      createdAt: days(2.5)
+    },
+    {
+      id: 'ORD-9616',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Ing. Marcelo Claure',
+        notes: 'Retiro en mostrador pagado por QR',
+        phone: '+591 77341029',
+        tower: 'Manzana 3',
+        apartment: 'Casa 18',
+        condominium: 'Condominio Icaraí'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-15', name: 'Paceña Cerveza Pilsener Lata 473ml', price: 14, quantity: 3 },
+        { id: 'minimarket-ian-prod-9', name: 'Galletas Mabel’s Cremositas Vainilla', price: 4, quantity: 2 }
+      ],
+      subtotal: 50,
+      total: 50,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: days(3),
+      createdAt: days(3)
+    },
+    {
+      id: 'ORD-9617',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Andrea Banegas',
+        notes: 'Entregar en portería del condominio',
+        phone: '+591 78099124',
+        tower: 'Manzana 2',
+        apartment: 'Casa 15',
+        condominium: 'Condominio Icaraí'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 3 },
+        { id: 'minimarket-ian-prod-3', name: 'Huevos Frescos de Granja (Docena)', price: 12, quantity: 1 }
+      ],
+      subtotal: 31.5,
+      total: 31.5,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'delivery',
+      deliveryType: 'delivery',
+      status: 'delivered',
+      payment_method: 'cash',
+      paymentMethod: 'cash',
+      created_at: days(3.2),
+      createdAt: days(3.2)
+    },
+    {
+      id: 'ORD-9618',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Prof. Carmen Roca',
+        notes: 'Pasa temprano antes del colegio',
+        phone: '+591 75022190',
+        tower: 'Calle 1',
+        apartment: 'Casa 9',
+        condominium: 'Condominio Icaraí'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 2 },
+        { id: 'minimarket-ian-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 10, quantity: 1 }
+      ],
+      subtotal: 20,
+      total: 20,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'cash',
+      paymentMethod: 'cash',
+      created_at: days(3.5),
+      createdAt: days(3.5)
+    },
+    {
+      id: 'ORD-9619',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Dr. Hugo Banzer',
+        notes: 'Víveres y refrescos fin de semana',
+        phone: '+591 72100983',
+        tower: 'Torre A',
+        apartment: 'Depto 404',
+        condominium: 'Condominio Icaraí'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-25', name: 'Vino Tinto Campos de Solana Malbec 750ml', price: 42, quantity: 1 },
+        { id: 'minimarket-ian-prod-9', name: 'Galletas Mabel’s Cremositas Vainilla', price: 4, quantity: 2 }
+      ],
+      subtotal: 77,
+      total: 77,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'delivery',
+      deliveryType: 'delivery',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: days(4),
+      createdAt: days(4)
+    },
+    {
+      id: 'ORD-9620',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Fabiola Salvatierra',
+        notes: 'Retiro en mostrador',
+        phone: '+591 76391044',
+        tower: '',
+        apartment: 'Mostrador',
+        condominium: 'Retiro en Tienda'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-5', name: 'Agua Mineral Vital Sin Gas 2L', price: 7, quantity: 1 }
+      ],
+      subtotal: 34,
+      total: 34,
+      discount: 0,
+      delivery_fee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: days(4.2),
+      createdAt: days(4.2)
     }
   ];
 };

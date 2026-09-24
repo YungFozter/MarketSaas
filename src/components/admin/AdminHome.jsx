@@ -36,6 +36,7 @@ import {
   Check,
   Menu,
   X,
+  ChevronLeft,
   ChevronRight,
   Bike,
   Layers,
@@ -183,6 +184,25 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
+  const [feedPage, setFeedPage] = useState(1);
+  const feedScrollRef = useRef(null);
+  const FEED_PAGE_SIZE = 10;
+
+  const handleSetFeedFilter = (filter) => {
+    setFeedFilter(filter);
+    setFeedPage(1);
+    if (feedScrollRef.current) {
+      feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleSetFeedPage = (newPage) => {
+    setFeedPage(newPage);
+    if (feedScrollRef.current) {
+      feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [mobileKanbanTab, setMobileKanbanTab] = useState('all'); // 'all' | 'pending' | 'preparing' | 'on_the_way' | 'delivered'
 
@@ -273,16 +293,31 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return false;
   };
 
-  // Transacciones recientes para el Feed de Actividad en Vivo
-  const recentTransactions = validOrders
+  // Historial completo de transacciones cobradas/entregadas para el Feed de Actividad en Vivo
+  const allDeliveredOrders = (orders || []).filter(o => o && o.status === 'delivered');
+
+  const filteredFeedTransactions = allDeliveredOrders
     .filter(o => {
       const isPickup = isPickupOrPosOrder(o);
       if (feedFilter === 'pos') return isPickup;
       if (feedFilter === 'delivery') return !isPickup;
       return true;
     })
-    .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
-    .slice(0, 8);
+    .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime());
+
+  const feedTotalCount = filteredFeedTransactions.length;
+  const feedTotalPages = Math.max(1, Math.ceil(feedTotalCount / FEED_PAGE_SIZE));
+  const safeFeedPage = Math.min(Math.max(1, feedPage), feedTotalPages);
+
+  const feedStartIndex = feedTotalCount === 0 ? 0 : (safeFeedPage - 1) * FEED_PAGE_SIZE + 1;
+  const feedEndIndex = Math.min(safeFeedPage * FEED_PAGE_SIZE, feedTotalCount);
+
+  const paginatedFeedTransactions = filteredFeedTransactions.slice(
+    (safeFeedPage - 1) * FEED_PAGE_SIZE,
+    safeFeedPage * FEED_PAGE_SIZE
+  );
+
+  const recentTransactions = paginatedFeedTransactions;
 
   const formatRelativeTime = (isoString) => {
     if (!isoString) return 'Hoy';
@@ -1782,45 +1817,49 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   </div>
 
                   {/* Filtros rápidos: Todos, Mostrador, Domicilio */}
-                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs self-start sm:self-auto">
+                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar max-w-full">
                     <button
                       type="button"
-                      onClick={() => setFeedFilter('all')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      onClick={() => handleSetFeedFilter('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
                         feedFilter === 'all' 
                           ? 'bg-slate-900 text-white shadow-xs' 
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      Todos ({validOrders.length})
+                      Todos ({allDeliveredOrders.length})
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFeedFilter('pos')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      onClick={() => handleSetFeedFilter('pos')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
                         feedFilter === 'pos' 
                           ? 'bg-slate-900 text-white shadow-xs' 
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🏪 Mostrador ({validOrders.filter(isPickupOrPosOrder).length})
+                      🏪 Mostrador ({allDeliveredOrders.filter(isPickupOrPosOrder).length})
                     </button>
                     <button
                       type="button"
-                      onClick={() => setFeedFilter('delivery')}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      onClick={() => handleSetFeedFilter('delivery')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
                         feedFilter === 'delivery' 
                           ? 'bg-slate-900 text-white shadow-xs' 
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🛵 Domicilio ({validOrders.filter(o => !isPickupOrPosOrder(o)).length})
+                      🛵 Domicilio ({allDeliveredOrders.filter(o => !isPickupOrPosOrder(o)).length})
                     </button>
                   </div>
                 </div>
 
-                {/* Lista de Transacciones Recientes */}
-                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs divide-y divide-slate-100 overflow-hidden">
+                {/* Lista de Transacciones Recientes Scrolleable y Paginada */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col">
+                  <div 
+                    ref={feedScrollRef}
+                    className="divide-y divide-slate-100 overflow-y-auto max-h-[560px] sm:max-h-[620px] overscroll-contain transition-all"
+                  >
                   {recentTransactions.length === 0 ? (
                     <div className="p-8 text-center space-y-2">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
@@ -1945,6 +1984,77 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                         </div>
                       );
                     })
+                  )}
+                  </div>
+
+                  {/* Barra Inferior de Paginación Fluida y Responsiva */}
+                  {feedTotalCount > 0 && (
+                    <div className="bg-slate-50/90 border-t border-slate-200/80 px-3.5 sm:px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs select-none">
+                      {/* Información de Registros */}
+                      <div className="flex items-center gap-2 text-slate-500 font-medium text-center sm:text-left">
+                        <span>
+                          Mostrando <strong className="font-extrabold text-slate-800">{feedStartIndex} - {feedEndIndex}</strong> de <strong className="font-extrabold text-slate-800">{feedTotalCount}</strong> {feedTotalCount === 1 ? 'cobro' : 'cobros'}
+                        </span>
+                        <span className="hidden sm:inline text-slate-300">•</span>
+                        <span className="px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 text-[11px] font-bold">
+                          Pág. {safeFeedPage} de {feedTotalPages}
+                        </span>
+                      </div>
+
+                      {/* Controles de Navegación de Páginas */}
+                      <div className="flex items-center gap-1.5 w-full sm:w-auto justify-between sm:justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleSetFeedPage(safeFeedPage - 1)}
+                          disabled={safeFeedPage <= 1}
+                          className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all ${
+                            safeFeedPage <= 1
+                              ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs cursor-pointer active:scale-95'
+                          }`}
+                          title="Página anterior de cobros"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          <span>Anterior</span>
+                        </button>
+
+                        {/* Píldoras numéricas de página directa */}
+                        {feedTotalPages > 1 && (
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: feedTotalPages }, (_, i) => i + 1).map((pg) => (
+                              <button
+                                key={pg}
+                                type="button"
+                                onClick={() => handleSetFeedPage(pg)}
+                                className={`w-8 h-8 rounded-xl font-extrabold text-xs flex items-center justify-center transition-all cursor-pointer ${
+                                  pg === safeFeedPage
+                                    ? 'bg-slate-900 text-white shadow-xs'
+                                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 active:scale-95'
+                                }`}
+                                title={`Ir a la página ${pg}`}
+                              >
+                                {pg}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleSetFeedPage(safeFeedPage + 1)}
+                          disabled={safeFeedPage >= feedTotalPages}
+                          className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold flex items-center gap-1 transition-all ${
+                            safeFeedPage >= feedTotalPages
+                              ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border border-slate-200'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs cursor-pointer active:scale-95'
+                          }`}
+                          title="Página siguiente de cobros"
+                        >
+                          <span>Siguiente</span>
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </section>
