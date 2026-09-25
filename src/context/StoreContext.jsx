@@ -1345,6 +1345,23 @@ export const StoreProvider = ({ children }) => {
         if (Array.isArray(parsed) && parsed.length > 0) {
           const cleaned = filterOutGhostOrders(parsed.map(normalizeOrder));
           if (cleaned.length > 0) {
+            const seedOrders = isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder);
+            const existingIds = new Set(cleaned.map(o => o.id));
+            let hasNewSeed = false;
+            seedOrders.forEach(so => {
+              if (!existingIds.has(so.id)) {
+                cleaned.unshift(so);
+                hasNewSeed = true;
+              }
+            });
+            if (hasNewSeed) {
+              try {
+                localStorage.setItem(`marketsaas_${activeSlug}_orders`, JSON.stringify(cleaned));
+                if (isMatias) {
+                  localStorage.setItem('marketsaas_default_orders', JSON.stringify(cleaned));
+                }
+              } catch (e) {}
+            }
             return cleaned;
           }
         }
@@ -1716,7 +1733,27 @@ export const StoreProvider = ({ children }) => {
         }
         const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
         if (localOrders) {
-          setOrders(JSON.parse(localOrders));
+          try {
+            const parsed = JSON.parse(localOrders);
+            const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando';
+            const seedOrders = isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder);
+            const existingIds = new Set(parsed.map(o => o.id));
+            let hasNewSeed = false;
+            seedOrders.forEach(so => {
+              if (!existingIds.has(so.id)) {
+                parsed.unshift(so);
+                hasNewSeed = true;
+              }
+            });
+            if (hasNewSeed) {
+              try {
+                localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(parsed));
+              } catch (e) {}
+            }
+            setOrders(parsed.map(normalizeOrder));
+          } catch {
+            setOrders(JSON.parse(localOrders));
+          }
         }
         const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
         if (localCfg) {

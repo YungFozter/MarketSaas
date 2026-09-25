@@ -242,6 +242,52 @@ export const getFernandoOrders = () => {
 
   return [
     {
+      id: 'POS-2010',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        condominium: 'Mostrador Físico',
+        tower: '-',
+        apartment: 'Mostrador'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-1', name: 'Coca-Cola 2 Litros', price: 13, quantity: 1 },
+        { id: 'minimarket-ian-prod-12', name: 'Papas Fritas Lays 140g', price: 9, quantity: 1 }
+      ],
+      subtotal: 22,
+      total: 22,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'cash',
+      paymentMethod: 'cash',
+      created_at: mins(20),
+      createdAt: mins(20)
+    },
+    {
+      id: 'POS-2011',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        condominium: 'Mostrador Físico',
+        tower: '-',
+        apartment: 'Mostrador'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 1 }
+      ],
+      subtotal: 18,
+      total: 18,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: hours(2.5),
+      createdAt: hours(2.5)
+    },
+    {
       id: 'ORD-9601',
       tenant_id: 'minimarket-ian',
       customer: {

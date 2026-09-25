@@ -207,6 +207,107 @@ export const getMatiasOrders = () => {
 
   return [
     {
+      id: 'POS-1042',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        condominium: 'Mostrador Físico',
+        tower: '-',
+        apartment: 'Mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-12', name: 'Papas Fritas Lays Clásicas', price: 7.5, quantity: 1 }
+      ],
+      subtotal: 20.5,
+      total: 20.5,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'cash',
+      paymentMethod: 'cash',
+      created_at: mins(18),
+      createdAt: mins(18)
+    },
+    {
+      id: 'POS-1043',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        condominium: 'Mostrador Físico',
+        tower: '-',
+        apartment: 'Mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 10.0, quantity: 1 }
+      ],
+      subtotal: 28.0,
+      total: 28.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'qr',
+      paymentMethod: 'qr',
+      created_at: hours(1.0),
+      createdAt: hours(1.0)
+    },
+    {
+      id: 'POS-1044',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        condominium: 'Mostrador Físico',
+        tower: '-',
+        apartment: 'Mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-25', name: 'Vino Tinto Campos de Solana Malbec 750ml', price: 42.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-9', name: 'Galletas Mabel’s Cremositas Vainilla', price: 4.0, quantity: 2 }
+      ],
+      subtotal: 50.0,
+      total: 50.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'card',
+      paymentMethod: 'card',
+      created_at: hours(4.0),
+      createdAt: hours(4.0)
+    },
+    {
+      id: 'POS-1045',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Ing. Carlos Mendoza',
+        phone: '77215480',
+        condominium: 'Condominio Las Palmas',
+        tower: 'Torre B',
+        apartment: 'Depto 402'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 8.5, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 13.5, quantity: 1 }
+      ],
+      subtotal: 30.5,
+      total: 30.5,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: 'credit',
+      paymentMethod: 'credit',
+      created_at: days(1.0),
+      createdAt: days(1.0)
+    },
+    {
       id: 'ORD-9822',
       tenant_id: 'matias-tiendatodo',
       customer: {
