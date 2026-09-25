@@ -21,17 +21,41 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
   });
 
   const formattedRows = completedOrders.map((o, idx) => {
-    const isPos = String(o.id || '').includes('POS');
-    const customerName = o.customer?.name || (isPos ? 'Venta de Mostrador (Presencial)' : 'Vecino');
-    const phone = o.customer?.phone || (isPos ? 'Presencial' : '-');
-    const condo = o.customer?.condominium || (isPos ? 'En Tienda (Mostrador)' : 'En Tienda');
-    const apt = [o.customer?.tower, o.customer?.apartment].filter(Boolean).join(' - ') || (isPos ? 'Mostrador' : '-');
-    const deliveryType = o.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda';
+    const isPos = String(o.id || '').includes('POS') || o.deliveryType === 'pos' || o.source === 'pos';
+    const isCredit = o.paymentMethod === 'credit' || (typeof o.paymentMethod === 'object' && o.paymentMethod?.method === 'credit');
+
+    let customerName = 'Vecino';
+    let phone = '—';
+    let condo = 'En Tienda';
+    let apt = '—';
+    let deliveryType = 'Retiro en Tienda';
+
+    if (isPos) {
+      if (isCredit && o.customer?.name) {
+        customerName = `${o.customer.name} (A Cuenta / Fiao)`;
+        phone = o.customer?.phone && o.customer.phone !== 'Presencial' ? o.customer.phone : '—';
+        condo = o.customer?.condominium && o.customer.condominium !== 'En Tienda' ? o.customer.condominium : 'Vecino Registrado';
+        apt = o.customer?.apartment && o.customer.apartment !== '-' && o.customer.apartment !== 'Mostrador' ? o.customer.apartment : '—';
+      } else {
+        customerName = 'Venta Rápida (Cliente Mostrador)';
+        phone = '—';
+        condo = 'Mostrador Físico';
+        apt = '—';
+      }
+      deliveryType = 'Venta de Mostrador (POS)';
+    } else {
+      customerName = o.customer?.name || 'Vecino Online';
+      phone = o.customer?.phone || '—';
+      condo = o.customer?.condominium || 'En Tienda';
+      apt = [o.customer?.tower, o.customer?.apartment].filter(Boolean).join(' - ') || '—';
+      deliveryType = o.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda';
+    }
 
     const payMethodRaw = typeof o.paymentMethod === 'object' ? o.paymentMethod?.method : o.paymentMethod;
     const paymentMethodLabel = 
       payMethodRaw === 'qr' ? 'QR Simple (Digital)' :
       payMethodRaw === 'card' ? 'Tarjeta POS' :
+      payMethodRaw === 'credit' ? 'A Cuenta (Fiao)' :
       payMethodRaw === 'cash' ? 'Efectivo' : (payMethodRaw || 'Efectivo');
 
     const statusLabel = 
@@ -55,6 +79,7 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       total: totalVal,
       totalFormatted: totalVal.toFixed(2),
       status: statusLabel,
+      isPos,
       itemCount: Array.isArray(o.items) ? o.items.reduce((acc, item) => acc + (item.quantity || 1), 0) : 0
     };
   });
@@ -64,6 +89,13 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
   const cashTotal = formattedRows.filter(r => r.paymentMethod.includes('Efectivo')).reduce((acc, r) => acc + r.total, 0);
   const qrTotal = formattedRows.filter(r => r.paymentMethod.includes('QR')).reduce((acc, r) => acc + r.total, 0);
   const cardTotal = formattedRows.filter(r => r.paymentMethod.includes('Tarjeta')).reduce((acc, r) => acc + r.total, 0);
+  const creditTotal = formattedRows.filter(r => r.paymentMethod.includes('Cuenta') || r.paymentMethod.includes('Fiao')).reduce((acc, r) => acc + r.total, 0);
+
+  const posRows = formattedRows.filter(r => r.isPos);
+  const onlineRows = formattedRows.filter(r => !r.isPos);
+
+  const posTotal = posRows.reduce((acc, r) => acc + r.total, 0);
+  const onlineTotal = onlineRows.reduce((acc, r) => acc + r.total, 0);
 
   return {
     rows: formattedRows,
@@ -74,6 +106,11 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       cashTotal: cashTotal.toFixed(2),
       qrTotal: qrTotal.toFixed(2),
       cardTotal: cardTotal.toFixed(2),
+      creditTotal: creditTotal.toFixed(2),
+      posCount: posRows.length,
+      posTotalFormatted: posTotal.toFixed(2),
+      onlineCount: onlineRows.length,
+      onlineTotalFormatted: onlineTotal.toFixed(2),
       avgTicket: totalCount > 0 ? (totalAmount / totalCount).toFixed(2) : '0.00'
     }
   };
@@ -93,7 +130,7 @@ export const exportSalesToXLSX = (orders, storeConfig, formatBoliviaDateTime, ti
   // Estructura en matriz para SheetJS
   const data = [
     [reportTitle],
-    [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total Recaudado: ${currency} ${summary.totalAmountFormatted}`],
+    [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total: ${currency} ${summary.totalAmountFormatted} (Mostrador: ${currency} ${summary.posTotalFormatted} [${summary.posCount}] | Online: ${currency} ${summary.onlineTotalFormatted} [${summary.onlineCount}])`],
     [], // Fila en blanco
     ['#', 'ID Pedido', 'Fecha y Hora', 'Cliente', 'Teléfono', 'Ubicación / Condominio', 'Torre / Depto', 'Modalidad', 'Método de Pago', `Total (${currency})`, 'Estado']
   ];
@@ -202,11 +239,11 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
             </td>
           </tr>
           <tr>
-            <td colspan="6" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px;">
+            <td colspan="5" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px;">
               <b>Fecha de Emisión:</b> ${new Date().toLocaleString('es-BO')} &nbsp;|&nbsp; <b>Zona Horaria:</b> Bolivia (UTC-04:00) ${titleSuffix ? `&nbsp;|&nbsp; <b>Filtro:</b> ${titleSuffix}` : ''}
             </td>
-            <td colspan="5" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px; text-align: right;">
-              <b>Total Recaudado:</b> ${currency} ${summary.totalAmountFormatted} &nbsp;|&nbsp; <b>Transacciones:</b> ${summary.totalCount}
+            <td colspan="6" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px; text-align: right;">
+              <b>Total Recaudado:</b> ${currency} ${summary.totalAmountFormatted} (${summary.totalCount} ops) &nbsp;|&nbsp; 🏪 <b>Mostrador:</b> ${currency} ${summary.posTotalFormatted} (${summary.posCount}) &nbsp;|&nbsp; 🛵 <b>Online:</b> ${currency} ${summary.onlineTotalFormatted} (${summary.onlineCount})
             </td>
           </tr>
           <tr><td colspan="11" style="height: 10px;"></td></tr>
@@ -322,7 +359,7 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
       <td class="cell-center text-slate-600 text-xs">${r.date}</td>
       <td class="cell font-semibold text-slate-900 text-xs">${r.customer}</td>
       <td class="cell text-slate-600 text-xs">${r.phone}</td>
-      <td class="cell text-slate-700 text-xs">${r.location} <span class="text-slate-400 text-[10px]">(${r.details})</span></td>
+      <td class="cell text-slate-700 text-xs">${r.location}${r.details && r.details !== '—' ? ` <span class="text-slate-400 text-[10px]">(${r.details})</span>` : ''}</td>
       <td class="cell-center text-xs text-slate-700 font-medium">${r.deliveryType}</td>
       <td class="cell-center text-xs font-semibold text-slate-800">${r.paymentMethod}</td>
       <td class="cell-right font-black text-slate-900 text-xs">${currency} ${r.totalFormatted}</td>
@@ -378,8 +415,8 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
           }
           .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
             margin-bottom: 18px;
           }
           .kpi-card {
@@ -519,11 +556,19 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
             <div class="kpi-val kpi-emerald">${currency} ${summary.totalAmountFormatted}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Ventas Registradas</div>
+            <div class="kpi-label">Total Ventas</div>
             <div class="kpi-val">${summary.totalCount}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Cobros por QR Simple</div>
+            <div class="kpi-label">🏪 Mostrador (POS)</div>
+            <div class="kpi-val">${currency} ${summary.posTotalFormatted} <span style="font-size: 10px; font-weight: normal; color: #64748b;">(${summary.posCount})</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">🛵 Pedidos Online</div>
+            <div class="kpi-val">${currency} ${summary.onlineTotalFormatted} <span style="font-size: 10px; font-weight: normal; color: #64748b;">(${summary.onlineCount})</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cobros QR Simple</div>
             <div class="kpi-val">${currency} ${summary.qrTotal}</div>
           </div>
           <div class="kpi-card">
