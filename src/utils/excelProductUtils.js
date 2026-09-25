@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 /**
  * Limpia y normaliza cadenas de moneda o números con comas/puntos de forma robusta
@@ -131,6 +131,18 @@ export const parseProductExcel = async (file) => {
             return;
           }
 
+          // Si es la fila de muestra/ejemplo de la plantilla oficial, omitirla
+          const isExampleRow = cleanName.toUpperCase().includes('EJEMPLO') || 
+                               cleanName.toUpperCase().includes('MUESTRA');
+          if (isExampleRow) {
+            warnings.push({
+              row: rowNum,
+              product: cleanName,
+              message: `Fila ${rowNum} ("${cleanName}") omitida automáticamente: detectada como producto de muestra de la plantilla.`
+            });
+            return;
+          }
+
           // Validación de Precio de Venta
           const parsedPrice = cleanNumericValue(rawPrice);
           if (parsedPrice === null || parsedPrice <= 0) {
@@ -245,57 +257,148 @@ export const parseProductExcel = async (file) => {
 };
 
 /**
- * Genera y descarga automáticamente la plantilla oficial de Excel
+ * Genera y descarga automáticamente la plantilla oficial de Excel con diseño corporativo elegante,
+ * tipografía estilizada, espaciados generosos y 1 solo producto referencial claramente marcado como muestra.
  */
 export const downloadProductTemplate = () => {
-  const templateData = [
-    {
-      'Nombre del Producto': 'Leche Entera Selección 1L',
-      'Categoría': 'Lácteos & Huevos',
-      'Código / SKU': '78012345678',
-      'Costo Compra (Bs.)': 5.50,
-      'Precio Venta (Bs.)': 7.50,
-      'Precio Normal (Bs.)': 7.50,
-      'Stock Actual (u)': 40,
-      'Alerta Stock Mínimo': 8,
-      'Unidad / Formato': 'Bolsa 1 Litro',
-      'Descripción': 'Leche pasteurizada enriquecida con calcio y vitaminas',
-      'Foto / URL': ''
-    },
-    {
-      'Nombre del Producto': 'Pan Marraqueta Artesanal (Unidad)',
-      'Categoría': '',
-      'Código / SKU': '',
-      'Costo Compra (Bs.)': '',
-      'Precio Venta (Bs.)': 0.80,
-      'Precio Normal (Bs.)': '',
-      'Stock Actual (u)': '',
-      'Alerta Stock Mínimo': '',
-      'Unidad / Formato': '',
-      'Descripción': '',
-      'Foto / URL': ''
-    }
+  const headers = [
+    'Nombre del Producto',
+    'Categoría',
+    'Código / SKU',
+    'Costo Compra (Bs.)',
+    'Precio Venta (Bs.)',
+    'Precio Normal (Bs.)',
+    'Stock Actual (u)',
+    'Alerta Stock Mínimo',
+    'Unidad / Formato',
+    'Descripción',
+    'Foto / URL'
   ];
 
-  const ws = XLSX.utils.json_to_sheet(templateData);
+  // 1 solo producto de muestra (indicando explícitamente que es sólo de ejemplo/muestra)
+  const sampleRow = [
+    'Leche Entera Selección 1L (EJEMPLO / MUESTRA)',
+    'Lácteos & Huevos',
+    '78012345678',
+    5.50,
+    7.50,
+    7.50,
+    40,
+    8,
+    'Bolsa 1 Litro',
+    'Leche pasteurizada enriquecida con calcio y vitaminas (Fila de ejemplo referencial)',
+    'https://ejemplo.com/foto-leche.jpg'
+  ];
 
-  // Ajuste automático del ancho de columnas para legibilidad
+  // Armar matriz de datos: Fila 1 = Encabezados, Fila 2 = Producto Muestra, Filas 3-25 = Filas limpias con cuadrícula lista
+  const rows = [headers, sampleRow];
+  for (let i = 0; i < 22; i++) {
+    rows.push(new Array(headers.length).fill(''));
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Ancho generoso y proporcional de columnas para evitar truncamientos
   ws['!cols'] = [
-    { wch: 35 }, // Nombre
-    { wch: 20 }, // Categoría
-    { wch: 18 }, // Código / SKU
-    { wch: 18 }, // Costo Compra
-    { wch: 18 }, // Precio Venta
-    { wch: 18 }, // Precio Normal
-    { wch: 16 }, // Stock Actual
+    { wch: 46 }, // Nombre del Producto
+    { wch: 24 }, // Categoría
+    { wch: 20 }, // Código / SKU
+    { wch: 20 }, // Costo Compra (Bs.)
+    { wch: 20 }, // Precio Venta (Bs.)
+    { wch: 20 }, // Precio Normal (Bs.)
+    { wch: 18 }, // Stock Actual (u)
     { wch: 20 }, // Alerta Stock Mínimo
-    { wch: 20 }, // Unidad / Formato
-    { wch: 45 }, // Descripción
-    { wch: 30 }  // Foto / URL
+    { wch: 22 }, // Unidad / Formato
+    { wch: 50 }, // Descripción
+    { wch: 35 }  // Foto / URL
   ];
+
+  // Altura elegante de filas
+  ws['!rows'] = [
+    { hpt: 32 }, // Fila 1 (Encabezados corporativos)
+    { hpt: 26 }, // Fila 2 (Fila de Ejemplo / Muestra)
+    ...Array(22).fill({ hpt: 22 }) // Filas para llenar
+  ];
+
+  // Estilo de bordes
+  const borderThin = {
+    top: { style: 'thin', color: { rgb: 'CBD5E1' } },
+    bottom: { style: 'thin', color: { rgb: 'CBD5E1' } },
+    left: { style: 'thin', color: { rgb: 'CBD5E1' } },
+    right: { style: 'thin', color: { rgb: 'CBD5E1' } }
+  };
+
+  const borderHeader = {
+    top: { style: 'medium', color: { rgb: '064E3B' } },
+    bottom: { style: 'medium', color: { rgb: '064E3B' } },
+    left: { style: 'thin', color: { rgb: '047857' } },
+    right: { style: 'thin', color: { rgb: '047857' } }
+  };
+
+  // 1. Aplicar estilo al encabezado (Verde Esmeralda Ejecutivo #064E3B con tipografía blanca en negrita)
+  headers.forEach((h, colIdx) => {
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+    if (ws[cellRef]) {
+      ws[cellRef].s = {
+        fill: { fgColor: { rgb: '064E3B' } },
+        font: { name: 'Calibri', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: borderHeader
+      };
+    }
+  });
+
+  // 2. Aplicar estilo a la fila única de muestra (Tono menta suave #F0FDF4 con cursiva informativa)
+  headers.forEach((h, colIdx) => {
+    const cellRef = XLSX.utils.encode_cell({ r: 1, c: colIdx });
+    if (ws[cellRef]) {
+      const isNum = [3, 4, 5].includes(colIdx);
+      const isInt = [6, 7].includes(colIdx);
+      const isCenter = colIdx === 2;
+      ws[cellRef].s = {
+        fill: { fgColor: { rgb: 'F0FDF4' } },
+        font: { name: 'Calibri', sz: 10.5, italic: true, color: { rgb: '1E293B' } },
+        alignment: { 
+          horizontal: isNum ? 'right' : (isCenter ? 'center' : 'left'), 
+          vertical: 'center' 
+        },
+        border: borderThin,
+        numFmt: isNum ? '#,##0.00' : (isInt ? '#,##0' : undefined)
+      };
+    }
+  });
+
+  // 3. Aplicar estilo a las filas limpias para ingresar productos (alternancia sutil y cuadrícula lista)
+  for (let r = 2; r < 24; r++) {
+    const isZebra = r % 2 === 1;
+    headers.forEach((h, c) => {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+      const isNum = [3, 4, 5].includes(c);
+      const isInt = [6, 7].includes(c);
+      ws[cellRef].s = {
+        fill: { fgColor: { rgb: isZebra ? 'F8FAFC' : 'FFFFFF' } },
+        font: { name: 'Calibri', sz: 10.5, color: { rgb: '334155' } },
+        alignment: { 
+          horizontal: isNum ? 'right' : (c === 2 ? 'center' : 'left'), 
+          vertical: 'center' 
+        },
+        border: {
+          top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+          right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+        },
+        numFmt: isNum ? '#,##0.00' : (isInt ? '#,##0' : undefined)
+      };
+    });
+  }
+
+  // Activar líneas de cuadrícula nativas de Excel
+  ws['!views'] = [{ showGridLines: true }];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Productos');
+  XLSX.utils.book_append_sheet(wb, ws, 'Catálogo de Productos');
 
   XLSX.writeFile(wb, 'Plantilla_Productos_MarketSaaS.xlsx');
 };
