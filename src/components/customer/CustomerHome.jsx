@@ -3,6 +3,7 @@ import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
+import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
 import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
@@ -191,39 +192,18 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         </div>
       </div>
 
+      {/* Vista Previa Profesional del Horario de Hoy y Semana Completa */}
+      <CustomerStoreSchedule 
+        storeConfig={storeConfig} 
+        initialExpanded={storeOpenStatus ? !storeOpenStatus.isOpen : false} 
+      />
+
       {/* Banner Superior Principal */}
       <HeroBanner 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onOpenLocationModal={onOpenLocationModal}
       />
-
-      {/* Banner Informativo si la Tienda Está Cerrada Actualmente */}
-      {storeOpenStatus && !storeOpenStatus.isOpen && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-50/95 border border-amber-300/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-slate-800 animate-fadeIn">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 font-bold mt-0.5 sm:mt-0 shadow-xs">
-              <Clock className="w-5 h-5 text-slate-950" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-xs sm:text-sm text-slate-900">
-                  Tienda Cerrada en este Momento
-                </span>
-                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 border border-amber-300">
-                  {storeOpenStatus.badgeText}
-                </span>
-              </div>
-              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                {storeConfig?.scheduleClosedMessage || storeOpenStatus.nextStatusChangeText || `Horario de atención habitual: ${storeOpenStatus.summary}`}
-              </p>
-            </div>
-          </div>
-          <div className="text-xs text-slate-700 font-semibold self-end sm:self-center shrink-0 bg-white/90 px-3 py-1.5 rounded-xl border border-amber-200 shadow-2xs">
-            📅 {storeOpenStatus.summary}
-          </div>
-        </div>
-      )}
 
       {/* Banner de Pedido en Curso si existe */}
       {activeOrder && (

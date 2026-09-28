@@ -44,11 +44,25 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
               </div>
 
               {storeOpenStatus && (
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black shadow-xs border backdrop-blur-md ${
-                  storeOpenStatus.isOpen
-                    ? 'bg-emerald-500/25 border-emerald-300/40 text-emerald-100'
-                    : 'bg-rose-500/30 border-rose-300/40 text-rose-100'
-                }`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById('store-schedule-section');
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth' });
+                      const btn = el.querySelector('button[aria-expanded]');
+                      if (btn && btn.getAttribute('aria-expanded') === 'false') {
+                        btn.click();
+                      }
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black shadow-xs border backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 transition-all ${
+                    storeOpenStatus.isOpen
+                      ? 'bg-emerald-500/25 hover:bg-emerald-500/35 border-emerald-300/40 text-emerald-100'
+                      : 'bg-rose-500/30 hover:bg-rose-500/40 border-rose-300/40 text-rose-100'
+                  }`}
+                  title="Toca para ver el horario semanal de atención"
+                >
                   <span className="relative flex h-2 w-2 shrink-0">
                     {storeOpenStatus.isOpen ? (
                       <>
@@ -65,7 +79,10 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
                       • {storeOpenStatus.nextStatusChangeText}
                     </span>
                   )}
-                </div>
+                  <span className="text-[10px] opacity-80 font-medium ml-0.5">
+                    ▾
+                  </span>
+                </button>
               )}
             </div>
 
