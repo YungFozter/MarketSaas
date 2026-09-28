@@ -1221,7 +1221,13 @@ export const StoreProvider = ({ children }) => {
     safeConfig.isOpen = calculatedStatus.isOpen;
     setStoreConfigState(safeConfig);
 
-    const effectiveTenant = tenantSlug || merchantStore?.id || safeConfig?.id || localStorage.getItem('marketsaas_active_tenant') || 'default';
+    const effectiveTenant = (tenantSlug && tenantSlug !== 'default' ? tenantSlug : null)
+      || merchantStore?.slug
+      || merchantStore?.id
+      || (safeConfig?.id && safeConfig.id !== 'default' ? safeConfig.id : null)
+      || (safeConfig?.tenant_id && safeConfig.tenant_id !== 'default' ? safeConfig.tenant_id : null)
+      || (localStorage.getItem('marketsaas_active_tenant') && localStorage.getItem('marketsaas_active_tenant') !== 'default' ? localStorage.getItem('marketsaas_active_tenant') : null)
+      || 'minimarket-ian';
 
     try {
       localStorage.setItem(`marketsaas_${effectiveTenant}_store_config`, JSON.stringify(safeConfig));
@@ -1272,8 +1278,8 @@ export const StoreProvider = ({ children }) => {
         const ownerId = sessionUser?.id || merchantStore?.owner_id || safeConfig.owner_id || null;
 
         // Construir payload con las columnas existentes en el esquema de public.store_config.
-        // Todos los campos específicos (bannerUrl, logoUrl, zone, reference, latitude, longitude,
-        // googleMapsCoordinates, etc.) se preservan de forma segura e íntegra dentro de config (JSONB).
+        // Se sincronizan tanto como columnas dedicadas de alta velocidad (is_open, store_open_mode, schedule)
+        // como dentro del JSONB config para resiliencia total y retrocompatibilidad.
         const payload = {
           id: effectiveTenant,
           tenant_id: effectiveTenant,
@@ -1283,6 +1289,8 @@ export const StoreProvider = ({ children }) => {
           phone: safeConfig.phone || null,
           whatsapp: safeConfig.whatsapp || null,
           is_open: safeConfig.isOpen !== false,
+          store_open_mode: safeConfig.storeOpenMode || safeConfig.schedule?.mode || 'auto',
+          schedule: safeConfig.schedule || {},
           enable_delivery: safeConfig.enableDelivery === true,
           categories: safeConfig.categories || [],
           config: safeConfig,
@@ -1337,13 +1345,32 @@ export const StoreProvider = ({ children }) => {
     return calculateStoreOpenStatus(storeConfig);
   }, [storeConfig]);
 
-  // Alternador manual inmediato de ABIERTO / CERRADO (Sincroniza en tiempo real)
+  // Alternador manual inmediato de ABIERTO / CERRADO (Sincroniza en tiempo real en la nube)
   const toggleStoreOpenStatus = async (explicitMode) => {
     const currentStatus = calculateStoreOpenStatus(storeConfig);
-    const nextIsOpen = explicitMode !== undefined
-      ? (explicitMode === 'manual_open' || explicitMode === true)
-      : !currentStatus.isOpen;
-    const targetMode = nextIsOpen ? 'manual_open' : 'manual_closed';
+    let targetMode = 'auto';
+    let nextIsOpen = true;
+
+    if (explicitMode === 'auto') {
+      targetMode = 'auto';
+      const scheduleObj = normalizeStoreSchedule(storeConfig?.schedule);
+      const autoStatus = calculateStoreOpenStatus({
+        ...storeConfig,
+        storeOpenMode: 'auto',
+        schedule: { ...scheduleObj, mode: 'auto' }
+      });
+      nextIsOpen = autoStatus.isOpen;
+    } else if (explicitMode === 'manual_open' || explicitMode === true) {
+      targetMode = 'manual_open';
+      nextIsOpen = true;
+    } else if (explicitMode === 'manual_closed' || explicitMode === false) {
+      targetMode = 'manual_closed';
+      nextIsOpen = false;
+    } else {
+      nextIsOpen = !currentStatus.isOpen;
+      targetMode = nextIsOpen ? 'manual_open' : 'manual_closed';
+    }
+
     const scheduleObj = normalizeStoreSchedule(storeConfig?.schedule);
     const updatedConfig = {
       ...storeConfig,
@@ -1354,10 +1381,13 @@ export const StoreProvider = ({ children }) => {
         mode: targetMode
       }
     };
-    await setStoreConfig(updatedConfig);
+
+    const res = await setStoreConfig(updatedConfig);
     if (typeof showToast === 'function') {
       showToast(
-        nextIsOpen ? '🟢 Tu tienda ahora figura como ABIERTA al público' : '🔴 Tu tienda ahora figura como CERRADA temporalmente',
+        targetMode === 'auto'
+          ? (nextIsOpen ? '🟢 Horario automático: Tienda ABIERTA ahora' : '🟡 Horario automático: Tienda CERRADA ahora')
+          : (nextIsOpen ? '🟢 Tu tienda ahora figura como ABIERTA al público' : '🔴 Tu tienda ahora figura como CERRADA temporalmente'),
         nextIsOpen ? 'success' : 'info'
       );
     }

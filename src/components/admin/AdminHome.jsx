@@ -268,7 +268,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   };
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
-  const isOpen = storeConfig?.isOpen !== false;
+  const isOpen = storeOpenStatus ? storeOpenStatus.isOpen : (storeConfig?.isOpen !== false);
 
   // Pedidos filtrados según el rango temporal seleccionado en el Kanban ('today' vs '24h' vs 'all')
   const timeFilteredOrders = (orders || []).filter(o => {
@@ -469,16 +469,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     };
   }, [orders, soundAlertsActive, storeConfig, showToast]);
 
-  // Toggle de apertura / cierre en vivo
+  // Toggle de apertura / cierre en vivo (Sincronizado de forma permanente con Supabase y en la nube)
   const handleToggleStoreOpen = (targetState) => {
-    const updated = { ...storeConfig, isOpen: targetState };
-    setStoreConfig(updated);
-    showToast(
-      targetState 
-        ? '¡Tienda ABIERTA! Los vecinos ya pueden realizar pedidos.' 
-        : 'Tienda CERRADA. Se pausó la recepción de nuevos pedidos en la app de vecinos.',
-      targetState ? 'success' : 'info'
-    );
+    toggleStoreOpenStatus(targetState ? 'manual_open' : 'manual_closed');
   };
 
   // Imprimir comanda térmica
