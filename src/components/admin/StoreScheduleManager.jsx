@@ -115,75 +115,6 @@ export const StoreScheduleManager = () => {
     });
   };
 
-  // Atajo: Copiar lunes a martes-viernes
-  const handleCopyMondayToWeekdays = () => {
-    setScheduleState(prev => {
-      const current = normalizeStoreSchedule(prev);
-      const mon = current.monday || current.weekly.find(d => d.day === 'monday') || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === 'monday');
-      const monIsOpen = mon.open !== false && mon.enabled !== false;
-
-      const newSched = { ...current };
-      ['tuesday', 'wednesday', 'thursday', 'friday'].forEach(dKey => {
-        newSched[dKey] = {
-          ...newSched[dKey],
-          open: monIsOpen,
-          enabled: monIsOpen,
-          openTime: mon.openTime,
-          closeTime: mon.closeTime
-        };
-      });
-
-      newSched.weekly = current.weekly.map(d => {
-        if (['tuesday', 'wednesday', 'thursday', 'friday'].includes(d.day)) {
-          return newSched[d.day];
-        }
-        return { ...d };
-      });
-
-      return newSched;
-    });
-    showToast('Horario del Lunes copiado a Martes, Miércoles, Jueves y Viernes.', 'info');
-  };
-
-  // Atajo: Horario estándar 08:00 - 22:00
-  const handleSetStandardSchedule = () => {
-    setScheduleState(prev => {
-      const current = normalizeStoreSchedule(prev);
-      const newSched = { ...current };
-      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].forEach(day => {
-        newSched[day] = { ...newSched[day], open: true, enabled: true, openTime: '08:00', closeTime: '22:00' };
-      });
-      newSched.sunday = { ...newSched.sunday, open: true, enabled: true, openTime: '09:00', closeTime: '20:00' };
-      newSched.weekly = daysOrder.map(dKey => newSched[dKey]);
-      return newSched;
-    });
-    showToast('Horario comercial estándar (08:00 - 22:00) aplicado.', 'info');
-  };
-
-  // Atajo: Conmutar Domingos
-  const handleToggleSunday = () => {
-    setScheduleState(prev => {
-      const current = normalizeStoreSchedule(prev);
-      const isSunOpen = current.sunday?.open !== false && current.sunday?.enabled !== false;
-      const nextIsOpen = !isSunOpen;
-
-      const updatedSun = {
-        ...current.sunday,
-        open: nextIsOpen,
-        enabled: nextIsOpen
-      };
-
-      const updatedWeekly = current.weekly.map(d =>
-        d.day === 'sunday' ? updatedSun : { ...d }
-      );
-
-      return {
-        ...current,
-        sunday: updatedSun,
-        weekly: updatedWeekly
-      };
-    });
-  };
 
   // Cambio de modo de funcionamiento (Automático, Forzar Abierto, Forzar Cerrado)
   const handleSetOperatingMode = async (mode) => {
@@ -244,100 +175,80 @@ export const StoreScheduleManager = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fadeIn pb-24">
-      {/* Header Bar */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-            <Clock className="w-5 h-5 text-emerald-600" />
-            <span>Horario de Atención Semanal & Control del Local</span>
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Establece los días y horas que abres tu tienda, y controla manualmente si está ABIERTA o CERRADA en tiempo real.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleSaveSchedule}
-          disabled={saving}
-          className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 disabled:opacity-80 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer shrink-0 active:scale-95"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Guardando...</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              <span>Guardar Horarios</span>
-            </>
-          )}
-        </button>
-      </div>
-
       {/* Bento Card: Estado Actual en Tiempo Real & Reloj Oficial de Bolivia */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Sub-Card 1: Estado del Local & Botón 1 Clic */}
-        <div className={`p-6 rounded-3xl border shadow-2xs flex flex-col justify-between gap-4 lg:col-span-2 ${
+        <div className={`p-5 sm:p-7 rounded-3xl border shadow-xs flex flex-col justify-between gap-5 lg:col-span-2 transition-all ${
           liveStatus.isOpen
-            ? 'bg-gradient-to-br from-emerald-500/10 via-white to-emerald-500/5 border-emerald-300'
-            : 'bg-gradient-to-br from-rose-500/10 via-white to-rose-500/5 border-rose-300'
+            ? 'bg-white border-emerald-300 ring-2 ring-emerald-500/10'
+            : 'bg-white border-rose-300 ring-2 ring-rose-500/10'
         }`}>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block mb-1">
-                Estado Actual del Local
-              </span>
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-3.5 w-3.5">
+          {/* Header del Card con Tag y Badge */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Estado Actual del Local
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
+              liveStatus.isOpen ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
+            }`}>
+              {liveStatus.badgeText}
+            </span>
+          </div>
+
+          {/* Bloque Central: Título + Descripción y Botón */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-3 w-3 shrink-0">
                   {liveStatus.isOpen ? (
                     <>
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                     </>
                   ) : (
-                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                   )}
                 </span>
-                <h3 className={`text-2xl font-black tracking-tight ${
-                  liveStatus.isOpen ? 'text-emerald-900' : 'text-rose-900'
+                <h3 className={`text-xl sm:text-2xl font-black tracking-tight ${
+                  liveStatus.isOpen ? 'text-emerald-950' : 'text-rose-950'
                 }`}>
                   {liveStatus.isOpen ? 'TIENDA ABIERTA' : 'TIENDA CERRADA'}
                 </h3>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${
-                  liveStatus.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                }`}>
-                  {liveStatus.badgeText}
-                </span>
               </div>
-              <p className="text-xs text-slate-600 mt-2 font-medium">
-                {liveStatus.nextStatusChangeText || (liveStatus.isOpen ? 'Tu catálogo recibe pedidos de clientes normalmente.' : 'Tu tienda figura cerrada.')}
+              <p className="text-xs sm:text-sm text-slate-600 font-medium pl-5.5">
+                {liveStatus.nextStatusChangeText || (liveStatus.isOpen ? 'Tu catálogo está activo y recibiendo pedidos.' : 'Tu tienda no recibe pedidos en este momento.')}
               </p>
             </div>
 
-            {/* Botón Acción Rápida */}
+            {/* Botón de Alternancia Rápida */}
             <button
               type="button"
               onClick={handleQuickToggleNow}
-              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer shadow-md active:scale-95 flex items-center justify-center gap-2 shrink-0 ${
+              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0 ${
                 liveStatus.isOpen
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/25 ring-4 ring-rose-500/10'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 ring-4 ring-emerald-500/10'
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/25 ring-2 ring-rose-500/20'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/20'
               }`}
+              title="Alternar estado de apertura de inmediato"
             >
-              <Power className="w-4 h-4" />
+              <Power className="w-4 h-4 shrink-0" />
               <span>{liveStatus.isOpen ? 'Cerrar Tienda Ahora' : 'Abrir Tienda Ahora'}</span>
             </button>
           </div>
 
-          <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500 flex-wrap gap-2">
-            <span>
-              Modo operativo actual: <strong className="text-slate-800 uppercase">{operatingMode === 'auto' ? 'Automático por Horario' : operatingMode}</strong>
-            </span>
-            <span className="font-mono text-emerald-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-              📅 {liveStatus.summary}
-            </span>
+          {/* Footer del Card */}
+          <div className="pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <span>Modo operativo:</span>
+              <span className="font-extrabold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                {operatingMode === 'auto' ? 'Automático por Horario' : operatingMode === 'manual_open' ? 'Siempre Abierto (Manual)' : 'Siempre Cerrado (Manual)'}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+              <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200/80 text-[11px] sm:text-xs">
+                📅 {liveStatus.summary}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -454,38 +365,6 @@ export const StoreScheduleManager = () => {
         </div>
       </div>
 
-      {/* Barra de Atajos Rápidos */}
-      <div className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-          <span className="text-xs font-extrabold text-slate-800">Atajos rápidos de configuración:</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handleCopyMondayToWeekdays}
-            className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-            title="Copiar las horas del Lunes a Martes, Miércoles, Jueves y Viernes"
-          >
-            ⚡ Copiar Lunes a Lun-Vie
-          </button>
-          <button
-            type="button"
-            onClick={handleSetStandardSchedule}
-            className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-            title="Establecer 08:00 - 22:00 de Lunes a Sábado"
-          >
-            🕒 Horario Estándar (08:00 - 22:00)
-          </button>
-          <button
-            type="button"
-            onClick={handleToggleSunday}
-            className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-          >
-            {scheduleState?.sunday?.open !== false && scheduleState?.sunday?.enabled !== false ? '🏖️ Cerrar Domingos' : '✅ Abrir Domingos'}
-          </button>
-        </div>
-      </div>
 
       {/* Cuadrícula Interactiva de 7 Días (Lunes a Domingo) */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
@@ -595,33 +474,69 @@ export const StoreScheduleManager = () => {
       </div>
 
       {/* Resumen para Clientes & Mensaje Opcional de Cierre */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-2">
-          <span className="text-xs font-black text-slate-900 block">
-            📋 Resumen que verán los clientes en la tienda:
-          </span>
-          <p className="text-xs font-bold text-emerald-800 font-mono bg-emerald-50/70 p-3 rounded-2xl border border-emerald-200/70">
-            {formatScheduleSummary(scheduleState)}
-          </p>
-          <p className="text-[11px] text-slate-400">
-            Este texto se genera automáticamente y aparece en la portada oficial y en las tarjetas del directorio.
-          </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Card 1: Resumen de Horarios para Clientes */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between gap-3.5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0 border border-emerald-200/70">
+                📋
+              </div>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                Resumen de Horarios para Clientes
+              </h4>
+            </div>
+            <p className="text-[11px] text-slate-500 pl-9">
+              Aparece en la portada y tarjetas del catálogo del cliente
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-center gap-2.5">
+            <Clock className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span className="text-xs sm:text-sm font-extrabold text-emerald-950 font-mono tracking-tight">
+              {formatScheduleSummary(scheduleState)}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Se actualiza automáticamente al modificar los días y horas arriba.</span>
+          </div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-2">
-          <label className="text-xs font-black text-slate-900 block">
-            Aviso Personalizado (Visible cuando la tienda esté cerrada):
-          </label>
-          <input
-            type="text"
-            placeholder="Ej. ¡Volvemos mañana a primera hora! Puedes dejarnos tu pedido programado."
-            value={closedMessage}
-            onChange={(e) => setClosedMessage(e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs font-medium bg-white focus:outline-hidden focus:border-emerald-500"
-          />
-          <p className="text-[11px] text-slate-400">
-            Si dejas este campo vacío, se mostrará el horario estándar automáticamente.
-          </p>
+        {/* Card 2: Aviso Personalizado para Tienda Cerrada */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col justify-between gap-3.5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs shrink-0 border border-amber-200/70">
+                💬
+              </div>
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                Aviso para Clientes cuando la Tienda esté Cerrada
+              </h4>
+            </div>
+            <p className="text-[11px] text-slate-500 pl-9">
+              Mensaje visible para los clientes cuando la tienda se encuentre fuera de horario
+            </p>
+          </div>
+
+          <div>
+            <input
+              type="text"
+              placeholder="Ej. ¡Volvemos mañana a primera hora! Puedes dejarnos tu pedido programado."
+              value={closedMessage}
+              onChange={(e) => setClosedMessage(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-xs sm:text-sm font-medium bg-slate-50/60 hover:bg-white focus:bg-white focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-slate-800 placeholder:text-slate-400"
+            />
+          </div>
+
+          <div className="text-[11px] text-slate-400">
+            {closedMessage ? (
+              <span className="text-emerald-700 font-medium">✓ Aviso personalizado activo.</span>
+            ) : (
+              <span>Opcional. Si lo dejas en blanco, se mostrará el horario habitual.</span>
+            )}
+          </div>
         </div>
       </div>
 
