@@ -175,108 +175,97 @@ export const StoreScheduleManager = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 animate-fadeIn pb-24">
-      {/* Bento Card: Estado Actual en Tiempo Real & Reloj Oficial de Bolivia */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Sub-Card 1: Estado del Local & Botón 1 Clic */}
-        <div className={`p-5 sm:p-7 rounded-3xl border shadow-xs flex flex-col justify-between gap-5 lg:col-span-2 transition-all ${
-          liveStatus.isOpen
-            ? 'bg-white border-emerald-300 ring-2 ring-emerald-500/10'
-            : 'bg-white border-rose-300 ring-2 ring-rose-500/10'
-        }`}>
-          {/* Header del Card con Tag y Badge */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-              Estado Actual del Local
+      {/* Bento Hero Card: Control en Vivo y Hora Oficial */}
+      <div className={`bg-white rounded-3xl border shadow-xs p-5 sm:p-6 space-y-4 transition-all ${
+        liveStatus.isOpen
+          ? 'border-emerald-300 ring-2 ring-emerald-500/10'
+          : 'border-rose-300 ring-2 ring-rose-500/10'
+      }`}>
+        {/* Fila Superior: Estado en Vivo a la izquierda + Reloj Oficial Bolivia a la derecha */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          {/* Badge Estado */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              {liveStatus.isOpen ? (
+                <>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </>
+              ) : (
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+              )}
             </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${
-              liveStatus.isOpen ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
+            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">
+              Control en Vivo
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border ${
+              liveStatus.isOpen 
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300' 
+                : 'bg-rose-50 text-rose-800 border-rose-300'
             }`}>
               {liveStatus.badgeText}
             </span>
           </div>
 
-          {/* Bloque Central: Título + Descripción y Botón */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex h-3 w-3 shrink-0">
-                  {liveStatus.isOpen ? (
-                    <>
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </>
-                  ) : (
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                  )}
-                </span>
-                <h3 className={`text-xl sm:text-2xl font-black tracking-tight ${
-                  liveStatus.isOpen ? 'text-emerald-950' : 'text-rose-950'
-                }`}>
-                  {liveStatus.isOpen ? 'TIENDA ABIERTA' : 'TIENDA CERRADA'}
-                </h3>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium pl-5.5">
-                {liveStatus.nextStatusChangeText || (liveStatus.isOpen ? 'Tu catálogo está activo y recibiendo pedidos.' : 'Tu tienda no recibe pedidos en este momento.')}
-              </p>
-            </div>
-
-            {/* Botón de Alternancia Rápida */}
-            <button
-              type="button"
-              onClick={handleQuickToggleNow}
-              className={`px-5 py-3 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0 ${
-                liveStatus.isOpen
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/25 ring-2 ring-rose-500/20'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/20'
-              }`}
-              title="Alternar estado de apertura de inmediato"
-            >
-              <Power className="w-4 h-4 shrink-0" />
-              <span>{liveStatus.isOpen ? 'Cerrar Tienda Ahora' : 'Abrir Tienda Ahora'}</span>
-            </button>
-          </div>
-
-          {/* Footer del Card */}
-          <div className="pt-3.5 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-1.5 text-slate-500">
-              <span>Modo operativo:</span>
-              <span className="font-extrabold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
-                {operatingMode === 'auto' ? 'Automático por Horario' : operatingMode === 'manual_open' ? 'Siempre Abierto (Manual)' : 'Siempre Cerrado (Manual)'}
+          {/* Reloj Oficial Bolivia (Elegante y Compacto) */}
+          <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-2xl shadow-xs">
+            <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <div className="flex items-center gap-1.5 font-mono text-xs">
+              <span className="font-black text-white text-sm">
+                {liveStatus.currentBoliviaTime || '--:--'}
               </span>
-            </div>
-            <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-              <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200/80 text-[11px] sm:text-xs">
-                📅 {liveStatus.summary}
+              <span className="text-[10px] text-slate-300 font-sans font-bold capitalize">
+                ({liveStatus.currentDayName})
+              </span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/15 text-emerald-300 font-bold ml-0.5">
+                UTC-4
               </span>
             </div>
           </div>
         </div>
 
-        {/* Sub-Card 2: Reloj Oficial de Bolivia UTC-4 */}
-        <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl flex flex-col justify-between gap-4">
-          <div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Hora Oficial Bolivia</span>
-              </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/10 text-emerald-300 font-bold">
-                UTC-04:00
-              </span>
-            </div>
-
-            <div className="mt-4">
-              <div className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white">
-                {liveStatus.currentBoliviaTime || '--:--'}
-              </div>
-              <p className="text-xs text-slate-400 font-medium mt-1">
-                Día en curso: <strong className="text-white capitalize">{liveStatus.currentDayName}</strong>
-              </p>
-            </div>
+        {/* Fila Central: Título + Subtítulo y Botón de Apertura Rápida */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-0.5">
+          <div className="space-y-1">
+            <h3 className={`text-2xl sm:text-3xl font-black tracking-tight ${
+              liveStatus.isOpen ? 'text-emerald-950' : 'text-rose-950'
+            }`}>
+              {liveStatus.isOpen ? 'Tienda Abierta' : 'Tienda Cerrada'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              {liveStatus.nextStatusChangeText || (liveStatus.isOpen ? 'Tu catálogo está activo y recibiendo pedidos de clientes.' : 'Tu tienda no recibe pedidos en este momento.')}
+            </p>
           </div>
 
-          <div className="text-[11px] text-slate-400 border-t border-slate-800 pt-3">
-            El sistema evalúa apertura y cierre de forma exacta según este huso horario oficial.
+          {/* Botón de Alternancia Rápida */}
+          <button
+            type="button"
+            onClick={handleQuickToggleNow}
+            className={`h-11 px-5 rounded-2xl text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm active:scale-95 flex items-center justify-center gap-2 shrink-0 ${
+              liveStatus.isOpen
+                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/25 ring-2 ring-rose-500/20'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/20'
+            }`}
+            title="Alternar estado de apertura de inmediato"
+          >
+            <Power className="w-4 h-4 shrink-0" />
+            <span>{liveStatus.isOpen ? 'Cerrar Tienda Ahora' : 'Abrir Tienda Ahora'}</span>
+          </button>
+        </div>
+
+        {/* Fila Inferior: Modo Operativo + Resumen Semanal */}
+        <div className="pt-3.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <span>Modo operativo:</span>
+            <span className="font-extrabold text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+              {operatingMode === 'auto' ? 'Automático por Horario' : operatingMode === 'manual_open' ? 'Siempre Abierto (Manual)' : 'Siempre Cerrado (Manual)'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+            <span className="font-mono text-emerald-900 font-bold bg-emerald-50/80 px-3 py-1 rounded-xl border border-emerald-200/80 text-[11px] sm:text-xs">
+              📅 {liveStatus.summary}
+            </span>
           </div>
         </div>
       </div>
