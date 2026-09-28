@@ -98,7 +98,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     isSuperAdmin,
     isImpersonating,
     stopImpersonating,
-    systemBroadcast
+    systemBroadcast,
+    storeOpenStatus,
+    toggleStoreOpenStatus
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState(() => {
@@ -1036,6 +1038,39 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 </>
               )}
             </button>
+
+            {/* Control Rápido de Estado de la Tienda (ABIERTO / CERRADO en Tiempo Real) */}
+            {storeOpenStatus && (
+              <button
+                type="button"
+                onClick={() => toggleStoreOpenStatus()}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-black transition-all border shadow-2xs cursor-pointer active:scale-95 ${
+                  storeOpenStatus.isOpen
+                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 border-emerald-300'
+                    : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-300'
+                }`}
+                title={`Estado actual: ${storeOpenStatus.badgeText}. Clic para alternar Apertura/Cierre inmediato.`}
+              >
+                <span className="relative flex h-2 w-2 shrink-0">
+                  {storeOpenStatus.isOpen ? (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </>
+                  ) : (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                  )}
+                </span>
+                <span className="tracking-tight">
+                  {storeOpenStatus.isOpen ? 'ABIERTO' : 'CERRADO'}
+                </span>
+                {storeOpenStatus.mode !== 'auto' && (
+                  <span className="text-[10px] opacity-70 font-semibold hidden md:inline">
+                    (Manual)
+                  </span>
+                )}
+              </button>
+            )}
           </div>
 
           {/* Quick Action CTA Buttons */}
@@ -1089,6 +1124,36 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </button>
           </div>
         </header>
+
+        {/* Banner Informativo si el Local está Cerrado */}
+        {storeOpenStatus && !storeOpenStatus.isOpen && (
+          <div className="bg-amber-500/10 border-b border-amber-300/80 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950 animate-fadeIn">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 animate-pulse"></span>
+              <span className="font-extrabold text-amber-900 shrink-0">Tu tienda figura en estado CERRADO:</span>
+              <span className="text-amber-800 font-medium truncate">
+                {storeOpenStatus.nextStatusChangeText || `Horario configurado: ${storeOpenStatus.summary}`}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => toggleStoreOpenStatus('manual_open')}
+                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-2xs transition-all cursor-pointer active:scale-95 flex items-center gap-1"
+              >
+                <span>●</span>
+                <span>Abrir Tienda Ahora</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('settings')}
+                className="px-2.5 py-1 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
+              >
+                Configurar Horarios
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ========================================================================= */}
         {/* 3. WORKSPACE CONTAINER (Changes based on activeTab)                      */}

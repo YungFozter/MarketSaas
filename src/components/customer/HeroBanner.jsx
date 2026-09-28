@@ -1,10 +1,10 @@
 import React from 'react';
-import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin } from 'lucide-react';
+import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin, Clock } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './HeroBanner.css';
 
 export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal }) => {
-  const { storeConfig, selectedLocation, cartSavings } = useStore();
+  const { storeConfig, selectedLocation, cartSavings, storeOpenStatus } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
@@ -35,14 +35,42 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
             </div>
           ) : null}
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 shadow-xs max-w-full">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
-              <span className="truncate">
-                🛍️ Catálogo Oficial • {storeConfig?.name || 'Tienda de Barrio'}
-              </span>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 shadow-xs max-w-full">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
+                <span className="truncate">
+                  🛍️ Catálogo Oficial • {storeConfig?.name || 'Tienda de Barrio'}
+                </span>
+              </div>
+
+              {storeOpenStatus && (
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black shadow-xs border backdrop-blur-md ${
+                  storeOpenStatus.isOpen
+                    ? 'bg-emerald-500/25 border-emerald-300/40 text-emerald-100'
+                    : 'bg-rose-500/30 border-rose-300/40 text-rose-100'
+                }`}>
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    {storeOpenStatus.isOpen ? (
+                      <>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                      </>
+                    ) : (
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400"></span>
+                    )}
+                  </span>
+                  <span>{storeOpenStatus.isOpen ? 'Abierto Ahora' : 'Cerrado Ahora'}</span>
+                  {storeOpenStatus.nextStatusChangeText && (
+                    <span className="text-[10px] opacity-80 font-normal hidden sm:inline">
+                      • {storeOpenStatus.nextStatusChangeText}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+
             {storeConfig?.tagline && (
-              <p className="text-xs text-emerald-100/90 font-medium mt-1 truncate">
+              <p className="text-xs text-emerald-100/90 font-medium truncate">
                 {storeConfig.tagline}
               </p>
             )}
@@ -101,7 +129,7 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
         </div>
 
         {/* Ventajas y Garantías Visuales */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-4 mt-5 pt-5 border-t border-white/15 text-xs text-emerald-100">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-5 pt-5 border-t border-white/15 text-xs text-emerald-100">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
               <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -126,8 +154,22 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">
+                {storeOpenStatus?.badgeText || 'Horario'}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate" title={storeOpenStatus?.summary}>
+                {storeOpenStatus?.summary || 'Atención según horario'}
+              </p>
+            </div>
+          </div>
+
           <div className="hidden sm:flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300 shrink-0">
               <HeartHandshake className="w-4 h-4" />
             </div>
             <div className="min-w-0">

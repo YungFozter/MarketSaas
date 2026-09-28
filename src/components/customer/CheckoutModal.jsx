@@ -36,7 +36,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
     showToast,
     customerPhone: storedCustomerPhone,
     customerName: storedCustomerName,
-    tenantSlug
+    tenantSlug,
+    storeOpenStatus
   } = useStore();
 
   const isOfficialStore = Boolean(
@@ -383,6 +384,21 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
               <Store className="w-3 h-3 text-emerald-700" />
               Tienda Oficial
             </span>
+          </div>
+        )}
+
+        {/* Aviso de Local Cerrado Temporalmente */}
+        {storeOpenStatus && !storeOpenStatus.isOpen && (
+          <div className="bg-amber-500/10 border-b border-amber-300/80 px-4 sm:px-6 py-2.5 flex items-start gap-2.5 text-xs text-amber-950 shrink-0">
+            <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-900 leading-tight">
+                Aviso: La tienda figura cerrada en este momento ({storeOpenStatus.badgeText}).
+              </p>
+              <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                {storeConfig?.scheduleClosedMessage || `Horario de atención: ${storeOpenStatus.summary}. Tu pedido quedará registrado para ser atendido en cuanto el local abra.`}
+              </p>
+            </div>
           </div>
         )}
 

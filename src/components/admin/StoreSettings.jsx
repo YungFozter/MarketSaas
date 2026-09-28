@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -28,11 +28,23 @@ import {
   Check,
   RotateCcw,
   Loader2,
-  Printer
+  Printer,
+  Clock,
+  Calendar,
+  Sun,
+  Moon,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
 import { escapeHtml } from '../../utils/formatters';
+import { 
+  normalizeStoreSchedule, 
+  DEFAULT_WEEKLY_SCHEDULE, 
+  calculateStoreOpenStatus, 
+  formatScheduleSummary 
+} from '../../utils/scheduleUtils';
 import { StorePrintKitModal } from './StorePrintKitModal';
 import './StoreSettings.css';
 
@@ -506,7 +518,7 @@ const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => 
 };
 
 export const StoreSettings = () => {
-  const { storeConfig, setStoreConfig, showToast } = useStore();
+  const { storeConfig, setStoreConfig, showToast, toggleStoreOpenStatus } = useStore();
 
   const isInvalidAddress = (addr) => !addr || 
     addr === 'Direccion según cada Tienda' || 
@@ -540,6 +552,9 @@ export const StoreSettings = () => {
       'Limpieza & Hogar'
     ],
     ...storeConfig,
+    schedule: normalizeStoreSchedule(storeConfig?.schedule),
+    storeOpenMode: storeConfig?.storeOpenMode || 'auto',
+    scheduleClosedMessage: storeConfig?.scheduleClosedMessage || '',
     zone: storeConfig?.zone || storeConfig?.condominium || '',
     reference: storeConfig?.reference || '',
     latitude: initialLat,
@@ -561,6 +576,9 @@ export const StoreSettings = () => {
       setForm(prev => ({
         ...prev,
         ...storeConfig,
+        schedule: normalizeStoreSchedule(storeConfig.schedule),
+        storeOpenMode: storeConfig.storeOpenMode || 'auto',
+        scheduleClosedMessage: storeConfig.scheduleClosedMessage || '',
         coupons: Array.isArray(storeConfig.coupons)
           ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : [],
@@ -576,6 +594,115 @@ export const StoreSettings = () => {
       }));
     }
   }, [storeConfig]);
+
+  // Cálculo en vivo del estado de apertura para previsualización inmediata
+  const liveOpenStatus = useMemo(() => calculateStoreOpenStatus(form), [form]);
+
+  const daysOrder = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+  const handleScheduleDayToggle = (dayKey) => {
+    setForm(prev => {
+      const currentSched = normalizeStoreSchedule(prev.schedule);
+      const isCurrentlyEnabled = currentSched[dayKey]?.enabled !== false;
+      return {
+        ...prev,
+        schedule: {
+          ...currentSched,
+          [dayKey]: {
+            ...currentSched[dayKey],
+            enabled: !isCurrentlyEnabled
+          }
+        }
+      };
+    });
+  };
+
+  const handleScheduleTimeChange = (dayKey, field, val) => {
+    setForm(prev => {
+      const currentSched = normalizeStoreSchedule(prev.schedule);
+      return {
+        ...prev,
+        schedule: {
+          ...currentSched,
+          [dayKey]: {
+            ...currentSched[dayKey],
+            [field]: val
+          }
+        }
+      };
+    });
+  };
+
+  const handleCopyMondayToWeekdays = () => {
+    setForm(prev => {
+      const currentSched = normalizeStoreSchedule(prev.schedule);
+      const mon = currentSched.monday || DEFAULT_WEEKLY_SCHEDULE.monday;
+      return {
+        ...prev,
+        schedule: {
+          ...currentSched,
+          tuesday: { ...currentSched.tuesday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
+          wednesday: { ...currentSched.wednesday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
+          thursday: { ...currentSched.thursday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
+          friday: { ...currentSched.friday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime }
+        }
+      };
+    });
+    showToast('Horario del Lunes copiado a Martes, Miércoles, Jueves y Viernes.', 'info');
+  };
+
+  const handleSetStandardSchedule = () => {
+    setForm(prev => {
+      const currentSched = normalizeStoreSchedule(prev.schedule);
+      const updated = { ...currentSched };
+      ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].forEach(day => {
+        updated[day] = { ...updated[day], enabled: true, openTime: '08:00', closeTime: '22:00' };
+      });
+      updated.sunday = { ...updated.sunday, enabled: true, openTime: '09:00', closeTime: '20:00' };
+      return { ...prev, schedule: updated };
+    });
+    showToast('Horario comercial estándar (08:00 - 22:00) aplicado a la semana.', 'info');
+  };
+
+  const handleToggleSunday = () => {
+    setForm(prev => {
+      const currentSched = normalizeStoreSchedule(prev.schedule);
+      const isSunEnabled = currentSched.sunday?.enabled !== false;
+      return {
+        ...prev,
+        schedule: {
+          ...currentSched,
+          sunday: {
+            ...currentSched.sunday,
+            enabled: !isSunEnabled
+          }
+        }
+      };
+    });
+  };
+
+  const handleSetOperatingMode = async (mode) => {
+    let nextIsOpen = form.isOpen;
+    if (mode === 'manual_open') nextIsOpen = true;
+    if (mode === 'manual_closed') nextIsOpen = false;
+    if (mode === 'auto') {
+      const calc = calculateStoreOpenStatus({ ...form, storeOpenMode: 'auto' });
+      nextIsOpen = calc.isOpen;
+    }
+    setForm(prev => ({
+      ...prev,
+      storeOpenMode: mode,
+      isOpen: nextIsOpen
+    }));
+    if (toggleStoreOpenStatus) {
+      await toggleStoreOpenStatus(mode);
+    }
+  };
+
+  const handleQuickToggleStatus = async () => {
+    const nextMode = liveOpenStatus.isOpen ? 'manual_closed' : 'manual_open';
+    await handleSetOperatingMode(nextMode);
+  };
 
   const headerCardRef = useRef(null);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
@@ -997,22 +1124,30 @@ export const StoreSettings = () => {
               <span>Información Básica & Autenticación de Dueño</span>
             </h3>
 
-        {/* Switch Abierto / Cerrado */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+        {/* Estado en Vivo de la Tienda */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <p className="font-bold text-xs sm:text-sm text-slate-900">Estado de Recepción de Pedidos</p>
-            <p className="text-[11px] text-slate-500">
-              {form.isOpen ? 'Tu catálogo está abierto y recibiendo pedidos de clientes.' : 'Tu tienda figura cerrada temporalmente.'}
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs sm:text-sm text-slate-900">Estado de Recepción de Pedidos</span>
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
+                liveOpenStatus.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+              }`}>
+                {liveOpenStatus.badgeText}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {liveOpenStatus.nextStatusChangeText || (liveOpenStatus.isOpen ? 'Tu catálogo está abierto y recibiendo pedidos.' : 'Tu tienda figura cerrada temporalmente.')}
             </p>
           </div>
           <button
             type="button"
-            onClick={() => setForm(prev => ({ ...prev, isOpen: !prev.isOpen }))}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-              form.isOpen ? 'bg-emerald-600 text-white shadow-md' : 'bg-rose-600 text-white'
+            onClick={handleQuickToggleStatus}
+            className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95 flex items-center justify-center gap-1.5 shrink-0 ${
+              liveOpenStatus.isOpen ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
             }`}
           >
-            {form.isOpen ? '● ABIERTO' : '○ CERRADO'}
+            <Power className="w-3.5 h-3.5" />
+            <span>{liveOpenStatus.isOpen ? '● ABIERTO' : '○ CERRADO'}</span>
           </button>
         </div>
 
@@ -1092,6 +1227,293 @@ export const StoreSettings = () => {
       </div>
     </div>
   </div>
+
+      {/* FILA 2: Horario de Atención Semanal & Control del Local (Ancho Completo) */}
+      <div className="w-full">
+        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-6">
+          {/* Header del Card con Live Status Badge e interruptor rápido */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <Clock className="w-5 h-5 text-emerald-600" />
+                <span>Horario de Atención Semanal & Control del Local</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Define los días y horas que atiendes a tus clientes, o cambia manualmente a ABIERTO / CERRADO con efecto inmediato.
+              </p>
+            </div>
+
+            {/* Live Status Pill & Quick Toggle Button */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-black shadow-2xs ${
+                liveOpenStatus.isOpen
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-rose-50 text-rose-800 border-rose-300'
+              }`}>
+                <span className="relative flex h-2.5 w-2.5">
+                  {liveOpenStatus.isOpen ? (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </>
+                  ) : (
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                  )}
+                </span>
+                <span className="tracking-wide">
+                  {liveOpenStatus.isOpen ? 'TIENDA ABIERTA' : 'TIENDA CERRADA'}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleQuickToggleStatus}
+                className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1.5 ${
+                  liveOpenStatus.isOpen
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                }`}
+                title="Cambiar estado de forma inmediata"
+              >
+                <Power className="w-3.5 h-3.5" />
+                <span>{liveOpenStatus.isOpen ? 'Cerrar Tienda Ahora' : 'Abrir Tienda Ahora'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Selector de Modo de Apertura (3 modos) */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-800 block">
+              Modo de Funcionamiento del Local:
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Opción 1: Automático por Horario */}
+              <button
+                type="button"
+                onClick={() => handleSetOperatingMode('auto')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  (form.storeOpenMode || 'auto') === 'auto'
+                    ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-emerald-600" />
+                    <span>Automático (Programado)</span>
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                    Recomendado
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  La tienda abre y cierra automáticamente según los días y rangos horarios configurados abajo (Hora oficial de Bolivia UTC-4).
+                </p>
+              </button>
+
+              {/* Opción 2: Siempre Abierto (Manual) */}
+              <button
+                type="button"
+                onClick={() => handleSetOperatingMode('manual_open')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  form.storeOpenMode === 'manual_open'
+                    ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Sun className="w-4 h-4 text-amber-500" />
+                    <span>Siempre ABIERTO (Manual)</span>
+                  </span>
+                  {form.storeOpenMode === 'manual_open' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-600 text-white">
+                      Activo
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Fuerza a la tienda a figurar abierta de manera continua hasta que decidas cerrarla manualmente.
+                </p>
+              </button>
+
+              {/* Opción 3: Siempre Cerrado (Manual) */}
+              <button
+                type="button"
+                onClick={() => handleSetOperatingMode('manual_closed')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  form.storeOpenMode === 'manual_closed'
+                    ? 'border-rose-500 bg-rose-50/60 ring-2 ring-rose-500/20 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
+                    <Moon className="w-4 h-4 text-rose-500" />
+                    <span>Siempre CERRADO (Manual)</span>
+                  </span>
+                  {form.storeOpenMode === 'manual_closed' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-600 text-white">
+                      Activo
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Cierra temporalmente la tienda (ideal para feriados, emergencias, reposición o inventario).
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Barra de Atajos Rápidos */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-xs font-bold text-slate-700">Atajos rápidos de configuración:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyMondayToWeekdays}
+                className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                title="Copiar las horas del Lunes a Martes, Miércoles, Jueves y Viernes"
+              >
+                ⚡ Copiar Lunes a Lun-Vie
+              </button>
+              <button
+                type="button"
+                onClick={handleSetStandardSchedule}
+                className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+                title="Establecer 08:00 - 22:00 de Lunes a Sábado"
+              >
+                🕒 Horario Estándar (08:00 - 22:00)
+              </button>
+              <button
+                type="button"
+                onClick={handleToggleSunday}
+                className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+              >
+                {form.schedule?.sunday?.enabled !== false ? '🏖️ Cerrar Domingos' : '✅ Abrir Domingos'}
+              </button>
+            </div>
+          </div>
+
+          {/* Cuadrícula de 7 Días de la Semana */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <label className="text-xs font-bold text-slate-800">
+                Programación Día por Día (Lunes a Domingo):
+              </label>
+              <span className="text-[11px] text-slate-500 font-medium">
+                Hora oficial en Bolivia: <strong className="text-slate-800">{liveOpenStatus.currentBoliviaTime || '--:--'}</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+              {daysOrder.map((dayKey) => {
+                const dayConfig = (form.schedule && form.schedule[dayKey]) || DEFAULT_WEEKLY_SCHEDULE[dayKey];
+                const isEnabled = dayConfig?.enabled !== false;
+                const isToday = liveOpenStatus.currentDayName?.toLowerCase() === dayConfig?.label?.toLowerCase();
+
+                return (
+                  <div
+                    key={dayKey}
+                    className={`p-3 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
+                      isToday
+                        ? 'ring-2 ring-emerald-500/50 bg-emerald-50/40 border-emerald-300 shadow-xs'
+                        : isEnabled
+                        ? 'bg-white border-slate-200 hover:border-slate-300'
+                        : 'bg-slate-50/70 border-slate-200/60 opacity-80'
+                    }`}
+                  >
+                    {/* Header del Día */}
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {dayConfig?.label}
+                        </span>
+                        {isToday && (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded-md bg-emerald-600 text-white">
+                            HOY
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Toggle Switch Día Abierto / Cerrado */}
+                      <button
+                        type="button"
+                        onClick={() => handleScheduleDayToggle(dayKey)}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                          isEnabled
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                        }`}
+                        title={isEnabled ? 'Marcar día como cerrado' : 'Marcar día como abierto'}
+                      >
+                        {isEnabled ? 'ABRE' : 'CERRADO'}
+                      </button>
+                    </div>
+
+                    {/* Inputs de Horas si está abierto */}
+                    {isEnabled ? (
+                      <div className="space-y-1.5">
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Apertura</label>
+                          <input
+                            type="time"
+                            value={dayConfig?.openTime || '08:00'}
+                            onChange={(e) => handleScheduleTimeChange(dayKey, 'openTime', e.target.value)}
+                            className="w-full px-2 py-1 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:outline-hidden focus:border-emerald-500 text-slate-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Cierre</label>
+                          <input
+                            type="time"
+                            value={dayConfig?.closeTime || '22:00'}
+                            onChange={(e) => handleScheduleTimeChange(dayKey, 'closeTime', e.target.value)}
+                            className="w-full px-2 py-1 rounded-xl border border-slate-200 text-xs font-mono font-bold bg-white focus:outline-hidden focus:border-emerald-500 text-slate-800"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center flex flex-col items-center justify-center">
+                        <span className="text-base mb-1">😴</span>
+                        <span className="text-[10px] font-bold text-slate-400">Día de Descanso</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Resumen del Horario y Mensaje de Cierre para Clientes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200/70">
+              <span className="text-xs font-bold text-emerald-950 block mb-1">
+                📋 Resumen que verán los clientes en la tienda:
+              </span>
+              <p className="text-xs font-semibold text-emerald-900 font-mono">
+                {formatScheduleSummary(form.schedule)}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Aviso Opcional para Clientes (Visible cuando la tienda esté cerrada):
+              </label>
+              <input
+                type="text"
+                placeholder="Ej. ¡Volvemos mañana a primera hora! Puedes dejarnos tu pedido programado."
+                value={form.scheduleClosedMessage || ''}
+                onChange={(e) => setForm(prev => ({ ...prev, scheduleClosedMessage: e.target.value }))}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-hidden focus:border-emerald-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* FILA 2: Ubicación Física & Geolocalización en el Mapa (Ancho Completo) */}
       <div className="w-full">

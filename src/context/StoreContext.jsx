@@ -8,6 +8,13 @@ import { getStoreCatalog } from '../data/storeInventories';
 import confetti from 'canvas-confetti';
 import { supabase } from '../services/supabaseClient';
 import { exportSalesToCSV, exportSalesToStyledExcel, exportSalesToPDF } from '../utils/salesExportUtils';
+import { 
+  DEFAULT_WEEKLY_SCHEDULE, 
+  normalizeStoreSchedule, 
+  getBoliviaTime, 
+  calculateStoreOpenStatus, 
+  formatScheduleSummary 
+} from '../utils/scheduleUtils';
 
 const StoreContext = createContext();
 
@@ -1161,9 +1168,7 @@ export const StoreProvider = ({ children }) => {
         if (!parsed.address || parsed.address.includes('Calle Los Sauces')) {
           parsed.address = 'Direccion según cada Tienda';
         }
-        if (!parsed.schedule || parsed.schedule.includes('08:00 AM')) {
-          parsed.schedule = 'Horarios de Atención según cada Tienda';
-        }
+        parsed.schedule = normalizeStoreSchedule(parsed.schedule);
         if (parsed.defaultDeliveryFee === undefined || parsed.defaultDeliveryFee === 5.00) {
           parsed.defaultDeliveryFee = 0.00;
         }
@@ -1181,6 +1186,7 @@ export const StoreProvider = ({ children }) => {
         const cleaned = { 
           ...initialStoreConfig, 
           ...parsed, 
+          schedule: normalizeStoreSchedule(parsed.schedule),
           coupons: parsed.coupons,
           subscription: normalizeSubscription(parsed.subscription)
         };
@@ -1191,12 +1197,14 @@ export const StoreProvider = ({ children }) => {
       } catch (e) {
         return {
           ...initialStoreConfig,
+          schedule: normalizeStoreSchedule(initialStoreConfig.schedule),
           subscription: createDefaultSubscription()
         };
       }
     }
     return {
       ...initialStoreConfig,
+      schedule: normalizeStoreSchedule(initialStoreConfig.schedule),
       subscription: createDefaultSubscription()
     };
   });
@@ -1208,6 +1216,9 @@ export const StoreProvider = ({ children }) => {
       safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     }
     safeConfig.subscription = safeConfig.subscription ? normalizeSubscription(safeConfig.subscription) : (storeConfig?.subscription || createDefaultSubscription());
+    safeConfig.schedule = normalizeStoreSchedule(safeConfig.schedule);
+    const calculatedStatus = calculateStoreOpenStatus(safeConfig);
+    safeConfig.isOpen = calculatedStatus.isOpen;
     setStoreConfigState(safeConfig);
 
     const effectiveTenant = tenantSlug || merchantStore?.id || safeConfig?.id || localStorage.getItem('marketsaas_active_tenant') || 'default';
@@ -1222,36 +1233,38 @@ export const StoreProvider = ({ children }) => {
       console.warn('Aviso guardando store_config en localStorage:', err);
     }
 
-    // Sincronizar INMEDIATAMENTE las coordenadas en la lista de tiendas stores para que el mapa de Vista Vecino se actualice en tiempo real sin desfase
+    // Sincronizar INMEDIATAMENTE las coordenadas y estado en la lista de tiendas stores para que el mapa y directorio se actualicen en tiempo real
     const effectiveLat = safeConfig.latitude !== '' && safeConfig.latitude != null ? parseFloat(safeConfig.latitude) : safeConfig.googleMapsCoordinates?.lat;
     const effectiveLng = safeConfig.longitude !== '' && safeConfig.longitude != null ? parseFloat(safeConfig.longitude) : safeConfig.googleMapsCoordinates?.lng;
     const validCoords = (typeof effectiveLat === 'number' && !isNaN(effectiveLat) && typeof effectiveLng === 'number' && !isNaN(effectiveLng))
       ? { lat: effectiveLat, lng: effectiveLng }
       : null;
 
-    if (validCoords) {
-      setStores(prev => {
-        const targetId = (effectiveTenant && effectiveTenant !== 'default') ? effectiveTenant : merchantStore?.id;
-        if (!targetId) return prev;
-        const next = prev.map(s => {
-          if (s.slug === targetId || s.id === targetId) {
-            return {
-              ...s,
-              name: safeConfig.name || s.name,
-              address: safeConfig.address || s.address,
-              tagline: safeConfig.tagline || s.tagline,
-              googleMapsCoordinates: validCoords,
-              logoUrl: safeConfig.logoUrl || s.logoUrl || null,
-              bannerUrl: safeConfig.bannerUrl || s.bannerUrl || null,
-              imageUrl: safeConfig.bannerUrl || safeConfig.logoUrl || s.imageUrl,
-              isCurrentOwnerStore: true
-            };
-          }
-          return s;
-        });
-        return deduplicateStoreList(next);
+    setStores(prev => {
+      const targetId = (effectiveTenant && effectiveTenant !== 'default') ? effectiveTenant : merchantStore?.id;
+      if (!targetId) return prev;
+      const statusCalc = calculateStoreOpenStatus(safeConfig);
+      const next = prev.map(s => {
+        if (s.slug === targetId || s.id === targetId) {
+          return {
+            ...s,
+            name: safeConfig.name || s.name,
+            address: safeConfig.address || s.address,
+            tagline: safeConfig.tagline || s.tagline,
+            googleMapsCoordinates: validCoords || s.googleMapsCoordinates,
+            logoUrl: safeConfig.logoUrl || s.logoUrl || null,
+            bannerUrl: safeConfig.bannerUrl || s.bannerUrl || null,
+            imageUrl: safeConfig.bannerUrl || safeConfig.logoUrl || s.imageUrl,
+            isOpen: statusCalc.isOpen,
+            statusBadge: statusCalc.statusBadge,
+            schedule: safeConfig.schedule,
+            isCurrentOwnerStore: true
+          };
+        }
+        return s;
       });
-    }
+      return deduplicateStoreList(next);
+    });
 
     if (supabase && effectiveTenant && effectiveTenant !== 'default') {
       try {
@@ -1317,6 +1330,34 @@ export const StoreProvider = ({ children }) => {
       }
     }
     return { success: true, savedLocally: true };
+  };
+
+  // Estado en tiempo real del local (Evaluado según horario o control manual del dueño)
+  const storeOpenStatus = useMemo(() => {
+    return calculateStoreOpenStatus(storeConfig);
+  }, [storeConfig]);
+
+  // Alternador manual inmediato de ABIERTO / CERRADO (Sincroniza en tiempo real)
+  const toggleStoreOpenStatus = async () => {
+    const currentStatus = calculateStoreOpenStatus(storeConfig);
+    const nextIsOpen = !currentStatus.isOpen;
+    const scheduleObj = normalizeStoreSchedule(storeConfig?.schedule);
+    const updatedConfig = {
+      ...storeConfig,
+      isOpen: nextIsOpen,
+      schedule: {
+        ...scheduleObj,
+        mode: nextIsOpen ? 'manual_open' : 'manual_closed'
+      }
+    };
+    await setStoreConfig(updatedConfig);
+    if (typeof showToast === 'function') {
+      showToast(
+        nextIsOpen ? '🟢 Tu tienda ahora figura como ABIERTA al público' : '🔴 Tu tienda ahora figura como CERRADA temporalmente',
+        nextIsOpen ? 'success' : 'info'
+      );
+    }
+    return nextIsOpen;
   };
 
   // 4. Carrito de Compras (En Modo Demostración inicia siempre vacío en cada recarga)
@@ -2321,32 +2362,34 @@ export const StoreProvider = ({ children }) => {
                     lng: -63.18214 - ((idx + 1) * 0.004)
                   })));
 
-              return {
-                id: rs.id || `remote-${idx}`,
-                slug: rs.tenant_id || rs.id,
-                name: effectiveName,
-                tagline: effectiveTagline,
-                address: effectiveAddress,
-                phone: conf.phone || conf.whatsapp || rs.phone || '',
-                whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
-                qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
-                bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
-                condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
-                  ? (storeConfig.zone || storeConfig.condominium)
-                  : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
-                reference: (isCurrentOwner && storeConfig?.reference !== undefined)
-                  ? storeConfig.reference
-                  : (conf.reference || ''),
-                distance: `A ${(idx + 1) * 180}m`,
-                distanceMeters: (idx + 1) * 180,
-                reviewsCount: 24 + idx * 8,
-                ordersCount: 24 + idx * 8,
-                isOpen: (isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? storeConfig.isOpen
-                  : (rs.is_open !== false && conf.isOpen !== false),
-                statusBadge: ((isCurrentOwner && storeConfig?.isOpen !== undefined && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? storeConfig.isOpen
-                  : (rs.is_open !== false && conf.isOpen !== false)) ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+                const targetConf = (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
+                  ? storeConfig
+                  : { ...conf, isOpen: rs.is_open !== false && conf.isOpen !== false };
+                const openStatusCalc = calculateStoreOpenStatus(targetConf);
+                return {
+                  ...s,
+                  id: rs.id || `remote-${idx}`,
+                  slug: rs.tenant_id || rs.id,
+                  name: effectiveName,
+                  tagline: effectiveTagline,
+                  address: effectiveAddress,
+                  phone: conf.phone || conf.whatsapp || rs.phone || '',
+                  whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
+                  qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
+                  bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
+                  condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
+                    ? (storeConfig.zone || storeConfig.condominium)
+                    : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
+                  reference: (isCurrentOwner && storeConfig?.reference !== undefined)
+                    ? storeConfig.reference
+                    : (conf.reference || ''),
+                  distance: `A ${(idx + 1) * 180}m`,
+                  distanceMeters: (idx + 1) * 180,
+                  reviewsCount: 24 + idx * 8,
+                  ordersCount: 24 + idx * 8,
+                  isOpen: openStatusCalc.isOpen,
+                  statusBadge: openStatusCalc.statusBadge,
+                  schedule: targetConf.schedule,
                 logoUrl: (isCurrentOwner && storeConfig?.logoUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig.logoUrl
                   : (conf.logoUrl || rs.logo_url || null),
@@ -2460,8 +2503,9 @@ export const StoreProvider = ({ children }) => {
             address: storeConfig.address || s.address,
             condominium: storeConfig.zone || storeConfig.condominium || s.condominium,
             reference: storeConfig.reference !== undefined ? storeConfig.reference : s.reference,
-            isOpen: storeConfig.isOpen !== false,
-            statusBadge: storeConfig.isOpen !== false ? 'Abierto Ahora' : 'Cerrado Temporalmente',
+            isOpen: calculateStoreOpenStatus(storeConfig).isOpen,
+            statusBadge: calculateStoreOpenStatus(storeConfig).statusBadge,
+            schedule: storeConfig.schedule,
             logoUrl: storeConfig.logoUrl || s.logoUrl || null,
             bannerUrl: storeConfig.bannerUrl || s.bannerUrl || null,
             imageUrl: storeConfig.bannerUrl || storeConfig.logoUrl || s.imageUrl,
@@ -5027,6 +5071,11 @@ export const StoreProvider = ({ children }) => {
         categories,
         storeConfig,
         setStoreConfig,
+        storeOpenStatus,
+        toggleStoreOpenStatus,
+        calculateStoreOpenStatus,
+        normalizeStoreSchedule,
+        formatScheduleSummary,
         cart,
         addToCart,
         updateCartQuantity,
