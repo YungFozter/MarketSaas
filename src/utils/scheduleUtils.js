@@ -3,68 +3,98 @@
 // =============================================================================
 
 export const DEFAULT_WEEKLY_SCHEDULE = [
-  { day: 'monday', label: 'Lunes', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'tuesday', label: 'Martes', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'wednesday', label: 'Miércoles', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'thursday', label: 'Jueves', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'friday', label: 'Viernes', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'saturday', label: 'Sábado', open: true, openTime: '08:00', closeTime: '22:00' },
-  { day: 'sunday', label: 'Domingo', open: true, openTime: '09:00', closeTime: '20:00' }
+  { day: 'monday', label: 'Lunes', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'tuesday', label: 'Martes', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'wednesday', label: 'Miércoles', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'thursday', label: 'Jueves', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'friday', label: 'Viernes', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'saturday', label: 'Sábado', open: true, enabled: true, openTime: '08:00', closeTime: '22:00' },
+  { day: 'sunday', label: 'Domingo', open: true, enabled: true, openTime: '09:00', closeTime: '20:00' }
 ];
+
+// Asignar claves individuales a DEFAULT_WEEKLY_SCHEDULE para compatibilidad de acceso por objeto
+DEFAULT_WEEKLY_SCHEDULE.forEach(item => {
+  DEFAULT_WEEKLY_SCHEDULE[item.day] = item;
+});
 
 const DAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
+const DAY_LABELS = {
+  monday: 'Lunes',
+  tuesday: 'Martes',
+  wednesday: 'Miércoles',
+  thursday: 'Jueves',
+  friday: 'Viernes',
+  saturday: 'Sábado',
+  sunday: 'Domingo'
+};
+
 /**
- * Normaliza cualquier formato previo de schedule (string, objeto parcial, undefined)
- * a una estructura completa y robusta.
+ * Normaliza cualquier formato previo de schedule (string, array, objeto por días o semanal)
+ * a una estructura completa y robusta con acceso tanto por array como por clave de día.
  */
 export const normalizeStoreSchedule = (rawSchedule) => {
+  const result = {
+    mode: 'auto', // 'auto' | 'manual_open' | 'manual_closed'
+    weekly: [],
+    customNote: ''
+  };
+
   if (!rawSchedule) {
-    return {
-      mode: 'auto', // 'auto' | 'manual_open' | 'manual_closed'
-      weekly: DEFAULT_WEEKLY_SCHEDULE.map(d => ({ ...d })),
-      customNote: ''
-    };
+    result.weekly = DEFAULT_WEEKLY_SCHEDULE.map(d => ({ ...d }));
+    DAY_ORDER.forEach((dayKey, i) => {
+      result[dayKey] = result.weekly[i];
+    });
+    return result;
   }
 
   // Si era un string antiguo (ej: "Horarios de Atención según cada Tienda")
   if (typeof rawSchedule === 'string') {
-    return {
-      mode: 'auto',
-      weekly: DEFAULT_WEEKLY_SCHEDULE.map(d => ({ ...d })),
-      customNote: rawSchedule === 'Horarios de Atención según cada Tienda' ? '' : rawSchedule
-    };
+    result.weekly = DEFAULT_WEEKLY_SCHEDULE.map(d => ({ ...d }));
+    result.customNote = rawSchedule === 'Horarios de Atención según cada Tienda' ? '' : rawSchedule;
+    DAY_ORDER.forEach((dayKey, i) => {
+      result[dayKey] = result.weekly[i];
+    });
+    return result;
   }
 
-  const mode = ['auto', 'manual_open', 'manual_closed'].includes(rawSchedule.mode)
+  result.mode = ['auto', 'manual_open', 'manual_closed'].includes(rawSchedule.mode)
     ? rawSchedule.mode
     : 'auto';
 
-  let weekly = [];
-  if (Array.isArray(rawSchedule.weekly) && rawSchedule.weekly.length > 0) {
-    weekly = DAY_ORDER.map(dayKey => {
-      const existing = rawSchedule.weekly.find(w => w.day === dayKey);
-      const defaultDay = DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
-      if (existing) {
-        return {
-          day: dayKey,
-          label: existing.label || defaultDay.label,
-          open: existing.open !== false,
-          openTime: existing.openTime || defaultDay.openTime,
-          closeTime: existing.closeTime || defaultDay.closeTime
-        };
-      }
-      return { ...defaultDay };
-    });
-  } else {
-    weekly = DEFAULT_WEEKLY_SCHEDULE.map(d => ({ ...d }));
-  }
+  result.customNote = typeof rawSchedule.customNote === 'string' 
+    ? rawSchedule.customNote 
+    : (typeof rawSchedule.scheduleClosedMessage === 'string' ? rawSchedule.scheduleClosedMessage : '');
 
-  return {
-    mode,
-    weekly,
-    customNote: typeof rawSchedule.customNote === 'string' ? rawSchedule.customNote : ''
-  };
+  // Extraer días ya sea desde rawSchedule.weekly o desde claves directas (rawSchedule.monday, etc.)
+  result.weekly = DAY_ORDER.map(dayKey => {
+    let dayData = null;
+    if (Array.isArray(rawSchedule.weekly)) {
+      dayData = rawSchedule.weekly.find(w => w && (w.day === dayKey || w.id === dayKey));
+    }
+    if (!dayData && rawSchedule[dayKey]) {
+      dayData = rawSchedule[dayKey];
+    }
+
+    const defaultDay = DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
+    const isOpen = dayData
+      ? (dayData.enabled !== undefined ? dayData.enabled !== false : (dayData.open !== undefined ? dayData.open !== false : true))
+      : defaultDay.open;
+
+    const normalizedDay = {
+      day: dayKey,
+      label: dayData?.label || DAY_LABELS[dayKey] || defaultDay.label,
+      open: isOpen,
+      enabled: isOpen,
+      openTime: dayData?.openTime || defaultDay.openTime,
+      closeTime: dayData?.closeTime || defaultDay.closeTime
+    };
+
+    result[dayKey] = normalizedDay;
+    return normalizedDay;
+  });
+
+  return result;
 };
 
 /**
@@ -121,59 +151,82 @@ export const getBoliviaTime = () => {
  * evaluando los overrides manuales y el horario semanal de atención.
  */
 export const calculateStoreOpenStatus = (storeConfig) => {
+  const bolivia = getBoliviaTime();
+
   if (!storeConfig) {
     return {
       isOpen: true,
       statusBadge: 'Abierto Ahora',
+      badgeText: 'Abierto Ahora',
       statusText: 'Abierto Ahora',
+      nextStatusChangeText: 'Abierto',
       reason: 'default',
-      mode: 'auto'
+      mode: 'auto',
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary: 'Atención según horario habitual'
     };
   }
 
   const schedule = normalizeStoreSchedule(storeConfig.schedule);
   const explicitIsOpen = storeConfig.isOpen;
+  const storeMode = storeConfig.storeOpenMode || schedule.mode || 'auto';
+  const summary = formatScheduleSummary(schedule);
 
   // 1. Overrides manuales forzados
-  if (schedule.mode === 'manual_closed' || explicitIsOpen === false) {
+  if (storeMode === 'manual_closed' || explicitIsOpen === false) {
     return {
       isOpen: false,
       statusBadge: 'Cerrado Temporalmente',
+      badgeText: 'Cerrado Temporalmente',
       statusText: 'Cerrado Manualmente por el Dueño',
+      nextStatusChangeText: 'Cerrado Manualmente',
       reason: 'manual_closed',
-      mode: schedule.mode === 'manual_closed' ? 'manual_closed' : 'manual'
+      mode: 'manual_closed',
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
     };
   }
 
-  if (schedule.mode === 'manual_open') {
+  if (storeMode === 'manual_open') {
     return {
       isOpen: true,
       statusBadge: 'Abierto Ahora',
+      badgeText: 'Abierto Ahora',
       statusText: 'Abierto Manualmente (Atendiendo)',
+      nextStatusChangeText: 'Abierto Continuo (Manual)',
       reason: 'manual_open',
-      mode: 'manual_open'
+      mode: 'manual_open',
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
     };
   }
 
   // 2. Modo automático: Evaluar día y hora en Bolivia
-  const bolivia = getBoliviaTime();
-  const todaySchedule = schedule.weekly.find(d => d.day === bolivia.dayKey);
+  const todaySchedule = schedule.weekly.find(d => d.day === bolivia.dayKey) || schedule[bolivia.dayKey];
 
-  if (!todaySchedule || !todaySchedule.open) {
+  if (!todaySchedule || (todaySchedule.open === false && todaySchedule.enabled === false)) {
     return {
       isOpen: false,
       statusBadge: 'Cerrado Hoy',
-      statusText: `Cerrado hoy (${todaySchedule?.label || 'Día libre'})`,
+      badgeText: 'Cerrado Hoy',
+      statusText: `Cerrado hoy (${todaySchedule?.label || 'Día de descanso'})`,
+      nextStatusChangeText: `Cerrado por descanso (${todaySchedule?.label || 'Hoy'})`,
       reason: 'closed_today',
       mode: 'auto',
-      todaySchedule
+      todaySchedule,
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: todaySchedule?.label || DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
     };
   }
 
   const { openTime, closeTime } = todaySchedule;
   const current = bolivia.timeStr;
 
-  // Soporte para horario estándar y turno extendido tras medianoche (ej. 20:00 a 02:00)
+  // Soporte para horario estándar y turno nocturno extendido (ej. 20:00 a 02:00)
   const isOvernight = closeTime < openTime;
   const isWithinHours = isOvernight
     ? (current >= openTime || current < closeTime)
@@ -183,11 +236,16 @@ export const calculateStoreOpenStatus = (storeConfig) => {
     return {
       isOpen: true,
       statusBadge: 'Abierto Ahora',
+      badgeText: 'Abierto Ahora',
       statusText: `Abierto (Atención hasta las ${closeTime})`,
+      nextStatusChangeText: `Cierra hoy a las ${closeTime}`,
       reason: 'open_schedule',
       mode: 'auto',
       todaySchedule,
-      nextTransition: closeTime
+      nextTransition: closeTime,
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: todaySchedule?.label || DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
     };
   }
 
@@ -195,21 +253,31 @@ export const calculateStoreOpenStatus = (storeConfig) => {
     return {
       isOpen: false,
       statusBadge: 'Cerrado Ahora',
+      badgeText: 'Cerrado Ahora',
       statusText: `Cerrado (Abre hoy a las ${openTime})`,
+      nextStatusChangeText: `Abre hoy a las ${openTime}`,
       reason: 'before_open',
       mode: 'auto',
       todaySchedule,
-      nextTransition: openTime
+      nextTransition: openTime,
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: todaySchedule?.label || DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
     };
   }
 
   return {
     isOpen: false,
     statusBadge: 'Cerrado por Hoy',
+    badgeText: 'Cerrado por Hoy',
     statusText: `Cerrado (Cerró a las ${closeTime})`,
+    nextStatusChangeText: `Cerró hoy a las ${closeTime}`,
     reason: 'after_close',
     mode: 'auto',
-    todaySchedule
+    todaySchedule,
+    currentBoliviaTime: bolivia.timeStr,
+    currentDayName: todaySchedule?.label || DAY_LABELS[bolivia.dayKey] || 'Hoy',
+    summary
   };
 };
 
@@ -220,7 +288,7 @@ export const formatScheduleSummary = (rawSchedule) => {
   const schedule = normalizeStoreSchedule(rawSchedule);
   if (schedule.customNote) return schedule.customNote;
 
-  const openDays = schedule.weekly.filter(d => d.open);
+  const openDays = schedule.weekly.filter(d => d.open !== false && d.enabled !== false);
   if (openDays.length === 0) return 'Cerrado temporalmente';
 
   // Si todos los días abiertos tienen el mismo horario
@@ -243,8 +311,8 @@ export const formatScheduleSummary = (rawSchedule) => {
   const weekdays = schedule.weekly.filter(d => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(d.day));
   const weekend = schedule.weekly.filter(d => ['saturday', 'sunday'].includes(d.day));
 
-  const weekdaysOpen = weekdays.filter(d => d.open);
-  const weekendOpen = weekend.filter(d => d.open);
+  const weekdaysOpen = weekdays.filter(d => d.open !== false && d.enabled !== false);
+  const weekendOpen = weekend.filter(d => d.open !== false && d.enabled !== false);
 
   const parts = [];
   if (weekdaysOpen.length > 0) {
@@ -254,11 +322,13 @@ export const formatScheduleSummary = (rawSchedule) => {
   if (weekendOpen.length > 0) {
     const sat = schedule.weekly.find(d => d.day === 'saturday');
     const sun = schedule.weekly.find(d => d.day === 'sunday');
-    if (sat?.open && sun?.open && sat.openTime === sun.openTime && sat.closeTime === sun.closeTime) {
+    const satOpen = sat?.open !== false && sat?.enabled !== false;
+    const sunOpen = sun?.open !== false && sun?.enabled !== false;
+    if (satOpen && sunOpen && sat.openTime === sun.openTime && sat.closeTime === sun.closeTime) {
       parts.push(`Sáb-Dom: ${sat.openTime}-${sat.closeTime}`);
     } else {
-      if (sat?.open) parts.push(`Sáb: ${sat.openTime}-${sat.closeTime}`);
-      if (sun?.open) parts.push(`Dom: ${sun.openTime}-${sun.closeTime}`);
+      if (satOpen) parts.push(`Sáb: ${sat.openTime}-${sat.closeTime}`);
+      if (sunOpen) parts.push(`Dom: ${sun.openTime}-${sun.closeTime}`);
     }
   }
 

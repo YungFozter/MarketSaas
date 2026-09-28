@@ -2367,7 +2367,6 @@ export const StoreProvider = ({ children }) => {
                   : { ...conf, isOpen: rs.is_open !== false && conf.isOpen !== false };
                 const openStatusCalc = calculateStoreOpenStatus(targetConf);
                 return {
-                  ...s,
                   id: rs.id || `remote-${idx}`,
                   slug: rs.tenant_id || rs.id,
                   name: effectiveName,
