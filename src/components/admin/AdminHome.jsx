@@ -56,6 +56,7 @@ import { SalesHistory } from './SalesHistory';
 import { CreditManager } from './CreditManager';
 import { StorePrintKitModal } from './StorePrintKitModal';
 import { StoreSettings } from './StoreSettings';
+import { StoreScheduleManager } from './StoreScheduleManager';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
 import { SubscriptionManager } from './SubscriptionManager';
 import { SupplierManager } from './SupplierManager';
@@ -107,12 +108,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlTab = params.get('tab');
-      if (urlTab && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(urlTab)) {
+      if (urlTab && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'schedule', 'settings', 'subscription'].includes(urlTab)) {
         return urlTab;
       }
       try {
         const saved = localStorage.getItem(`marketsaas_${tenantSlug}_admin_tab`);
-        if (saved && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'settings', 'subscription'].includes(saved)) {
+        if (saved && ['kanban', 'pos', 'sales', 'credits', 'inventory', 'suppliers', 'analytics', 'requests', 'schedule', 'settings', 'subscription'].includes(saved)) {
           return saved;
         }
       } catch (e) {
@@ -616,6 +617,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     { id: 'inventory', label: 'Inventario', icon: Package, badge: lowStockProducts.length > 0 ? lowStockProducts.length : null },
     { id: 'suppliers', label: 'Proveedores', icon: Truck, badge: suppliersVisitingToday.length > 0 ? 'Hoy' : null },
     { id: 'requests', label: 'Buzón Vecinos', icon: Sparkles, badge: pendingRequests.length > 0 ? pendingRequests.length : null },
+    { id: 'schedule', label: 'Horario', icon: Clock, badge: storeOpenStatus ? (storeOpenStatus.isOpen ? 'Abierto' : 'Cerrado') : null },
     { id: 'subscription', label: 'Mi Suscripción', icon: KeyRound, badge: !isSubscriptionActive ? 'Vencido' : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
   ];
@@ -843,7 +845,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   </div>
                   {item.badge != null && (
                     <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-white text-emerald-800' : 'bg-amber-100 text-amber-800'
+                      isActive 
+                        ? 'bg-white text-emerald-800' 
+                        : item.id === 'schedule'
+                          ? (storeOpenStatus?.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800')
+                          : 'bg-amber-100 text-amber-800'
                     }`}>
                       {item.badge}
                     </span>
@@ -1146,7 +1152,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab('settings')}
+                onClick={() => setActiveTab('schedule')}
                 className="px-2.5 py-1 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
               >
                 Configurar Horarios
@@ -2278,14 +2284,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
           )}
 
-          {/* TAB 6: MI SUSCRIPCIÓN */}
+          {/* TAB: HORARIO DE ATENCIÓN */}
+          {activeTab === 'schedule' && (
+            <div className="animate-fadeIn">
+              <StoreScheduleManager />
+            </div>
+          )}
+
+          {/* TAB 7: MI SUSCRIPCIÓN */}
           {activeTab === 'subscription' && (
             <div className="animate-fadeIn">
               <SubscriptionManager />
             </div>
           )}
 
-          {/* TAB 7: CONFIGURACIÓN */}
+          {/* TAB 8: CONFIGURACIÓN */}
           {activeTab === 'settings' && (
             <div className="animate-fadeIn">
               <StoreSettings />
