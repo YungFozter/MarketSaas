@@ -6,7 +6,7 @@ import { ProductModal } from './ProductModal';
 import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -190,6 +190,18 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
               <span className="sm:hidden">WhatsApp</span>
             </a>
           )}
+
+          {/* Botón PWA para Instalar la App del Minimarket */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+            title="Instalar la aplicación en tu celular o PC"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Instalar App</span>
+            <span className="sm:hidden">App 📲</span>
+          </button>
         </div>
       </div>
 

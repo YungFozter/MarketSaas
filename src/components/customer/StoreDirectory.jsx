@@ -18,8 +18,10 @@ import {
   Truck,
   Clock,
   CreditCard,
-  RotateCcw
+  RotateCcw,
+  Smartphone
 } from 'lucide-react';
+import { PwaInstallBanner } from './PwaInstallBanner';
 import './StoreDirectory.css';
 
 // Punto de referencia inicial: Plaza Metropolitana 24 de Septiembre (Centro de Santa Cruz de la Sierra)
@@ -294,11 +296,22 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       {/* 1. SECCIÓN SUPERIOR: TÍTULO Y SUBTÍTULO */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider border border-emerald-200">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Red Hiperlocal Activa
             </span>
+
+            {/* Botón PWA para Instalar la App */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+              title="Instalar la aplicación en tu celular o PC"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Instalar App 📲</span>
+            </button>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight font-headline">
             Encuentra tu minimarket más cercano en tiempo real
@@ -523,6 +536,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
           <div className="absolute -right-12 -bottom-12 w-48 h-48 rounded-full bg-emerald-400/10 pointer-events-none blur-2xl" />
         </div>
       </section>
+
+      {/* Banner y modal interactivo para instalar PWA */}
+      <PwaInstallBanner storeName="MarketSaaS" />
     </main>
   );
 };

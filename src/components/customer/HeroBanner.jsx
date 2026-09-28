@@ -84,6 +84,16 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
                   </span>
                 </button>
               )}
+
+              {/* Botón PWA Rápido */}
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold shadow-xs border border-emerald-300/30 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-100 backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95"
+                title="Instalar la App en tu celular o PC"
+              >
+                <span>📲 Instalar App</span>
+              </button>
             </div>
 
             {storeConfig?.tagline && (
