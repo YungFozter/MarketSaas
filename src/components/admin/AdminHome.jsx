@@ -48,7 +48,8 @@ import {
   Receipt,
   Lock,
   KeyRound,
-  BookOpen
+  BookOpen,
+  HelpCircle
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
@@ -58,6 +59,7 @@ import { StorePrintKitModal } from './StorePrintKitModal';
 import { StoreSettings } from './StoreSettings';
 import { StoreScheduleManager } from './StoreScheduleManager';
 import { ProductRequestsAdmin } from './ProductRequestsAdmin';
+import { StoreUserGuide } from './StoreUserGuide';
 import { SubscriptionManager } from './SubscriptionManager';
 import { SupplierManager } from './SupplierManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
@@ -613,6 +615,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     { id: 'schedule', label: 'Horario', icon: Clock, badge: storeOpenStatus ? (storeOpenStatus.isOpen ? 'Abierto' : 'Cerrado') : null },
     { id: 'subscription', label: 'Mi Suscripción', icon: KeyRound, badge: !isSubscriptionActive ? 'Vencido' : null },
     { id: 'settings', label: 'Configuración', icon: Settings },
+    { id: 'guide', label: 'Cómo Usar', icon: HelpCircle, badge: 'Ayuda' },
   ];
 
   // Auth Guard: Comprobación de estado de autenticación
@@ -2272,6 +2275,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           {activeTab === 'settings' && (
             <div className="animate-fadeIn">
               <StoreSettings />
+            </div>
+          )}
+
+          {/* TAB: CÓMO USAR (Guía interactiva para el Dueño) */}
+          {activeTab === 'guide' && (
+            <div className="animate-fadeIn">
+              <StoreUserGuide onNavigateTab={(tab) => setActiveTab(tab)} />
             </div>
           )}
 
