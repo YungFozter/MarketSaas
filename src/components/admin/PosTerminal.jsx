@@ -967,9 +967,9 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   // PASO 1: CATÁLOGO Y TICKET DE VENTA (VISTA PRINCIPAL)
   // =========================================================================
   return (
-    <div className="relative pb-16 lg:pb-0 animate-fadeIn">
+    <div className="relative pb-24 lg:pb-0 animate-fadeIn">
       {/* Selector de Pestaña Móvil (Catálogo vs Ticket) */}
-      <div className="flex lg:hidden items-center p-1 bg-white rounded-2xl border border-slate-200 shadow-2xs mb-3">
+      <div className="flex lg:hidden items-center p-1 bg-white rounded-2xl border border-slate-200 shadow-2xs mb-3 sticky top-0 z-20 backdrop-blur-xs">
         <button
           type="button"
           onClick={() => setMobileView('catalog')}
@@ -1023,7 +1023,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             </div>
 
             {/* Chips de Categorías */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none overscroll-x-contain touch-pan-x">
               <button
                 type="button"
                 onClick={() => setSelectedCat('all')}
@@ -1052,8 +1052,8 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             </div>
           </div>
 
-          {/* Cuadrícula de Productos */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 max-h-[62vh] overflow-y-auto p-1 scrollbar-thin">
+          {/* Cuadrícula de Productos (Flujo libre en móvil, scroll en desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 max-h-none overflow-visible lg:max-h-[calc(100vh-270px)] lg:overflow-y-auto p-1 scrollbar-thin overscroll-contain">
             {filteredProducts.length === 0 ? (
               <div className="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-200 space-y-2">
                 <Store className="w-8 h-8 text-slate-300 mx-auto" />
@@ -1143,7 +1143,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
           </div>
 
           {/* Lista de Ítems en el Ticket */}
-          <div className="space-y-2 max-h-[46vh] overflow-y-auto divide-y divide-slate-100 pr-1 scrollbar-thin">
+          <div className="space-y-2 max-h-[46vh] overflow-y-auto divide-y divide-slate-100 pr-1 scrollbar-thin overscroll-contain">
             {posCart.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-400 space-y-1.5">
                 <ShoppingCart className="w-8 h-8 text-slate-300 mx-auto" />
@@ -1225,7 +1225,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
 
       {/* Barra Flotante Inferior en Móvil (Visible si hay ítems y estamos en vista catálogo) */}
       {posCart.length > 0 && mobileView === 'catalog' && (
-        <div className="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-between z-30 shadow-2xl animate-slideUp">
+        <div className="lg:hidden fixed bottom-0 inset-x-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex items-center justify-between z-40 shadow-2xl animate-slideUp">
           <div>
             <span className="text-white font-black text-sm block">
               {currency} {subtotal.toFixed(2)}

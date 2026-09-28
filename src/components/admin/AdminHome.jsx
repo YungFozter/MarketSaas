@@ -207,6 +207,20 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
 
+  // Bloquear scroll de la página de fondo cuando el modal de Venta Rápida (POS) está activo
+  useEffect(() => {
+    if (isPosModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalOverscroll = document.body.style.overscrollBehavior;
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'contain';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.overscrollBehavior = originalOverscroll;
+      };
+    }
+  }, [isPosModalOpen]);
+
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [mobileKanbanTab, setMobileKanbanTab] = useState('all'); // 'all' | 'pending' | 'preparing' | 'on_the_way' | 'delivered'
   const [dismissedBroadcast, setDismissedBroadcast] = useState(false);
@@ -2222,35 +2236,43 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       {/* MODAL DE VENTA RÁPIDA (POS Terminal Directo)                              */}
       {/* ========================================================================= */}
       {isPosModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
-          <div className="relative w-full max-w-6xl h-[94vh] max-h-[94vh] bg-slate-100 rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
-            {/* Header del Panel de Venta Rápida */}
-            <div className="px-4 py-3 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between gap-3 shrink-0 border-b border-slate-800">
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
-                  <Store className="w-5 h-5" />
+        <div 
+          className="fixed inset-0 z-50 flex flex-col sm:items-center sm:justify-center p-0 sm:p-4 md:p-6 bg-slate-950 sm:bg-slate-950/80 sm:backdrop-blur-xs overscroll-contain animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Punto de Venta y Venta Rápida de Mostrador"
+        >
+          <div className="relative w-full h-[100dvh] sm:h-[94vh] sm:max-h-[94vh] sm:max-w-6xl bg-slate-100 sm:rounded-3xl shadow-2xl border-0 sm:border border-slate-200 flex flex-col overflow-hidden overscroll-contain">
+            {/* Header del Panel de Venta Rápida (Sticky superior garantizado en móvil y desktop) */}
+            <header className="px-3 py-2.5 sm:px-6 sm:py-3.5 bg-slate-900 text-white flex items-center justify-between gap-2 sm:gap-3 shrink-0 border-b border-slate-800 sticky top-0 z-30 select-none shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0 shadow-xs">
+                  <Store className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
                   <h3 className="text-sm sm:text-base font-black text-white tracking-tight whitespace-nowrap">
                     Punto de Venta (POS)
                   </h3>
-                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>Venta Rápida de Mostrador</span>
                   </span>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsPosModalOpen(false)}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all cursor-pointer shrink-0"
-                title="Cerrar punto de venta"
+                className="h-9 px-3 sm:px-2.5 sm:h-auto sm:py-1.5 rounded-xl text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all cursor-pointer shrink-0 flex items-center gap-1.5 border border-slate-700/60 shadow-xs"
+                title="Cerrar punto de venta y volver"
+                aria-label="Cerrar terminal de venta rápida"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
+                <span className="text-xs font-bold sm:hidden">Cerrar</span>
               </button>
-            </div>
+            </header>
 
             {/* Contenido interactivo: Punto de Venta */}
-            <div className="p-3 sm:p-5 overflow-y-auto flex-1">
+            <div className="p-2 sm:p-5 overflow-y-auto flex-1 overscroll-contain touch-pan-y">
               <PosTerminal 
                 onClose={() => setIsPosModalOpen(false)} 
               />
