@@ -10,6 +10,8 @@ import {
   Edit3,
   QrCode, 
   DollarSign,
+  Power,
+  Clock,
   Image as ImageIcon,
   Palette,
   AlertTriangle,
@@ -506,7 +508,7 @@ const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => 
 };
 
 export const StoreSettings = () => {
-  const { storeConfig, setStoreConfig, showToast, toggleStoreOpenStatus } = useStore();
+  const { storeConfig, setStoreConfig, showToast, toggleStoreOpenStatus, storeOpenStatus } = useStore();
 
   const isInvalidAddress = (addr) => !addr || 
     addr === 'Direccion según cada Tienda' || 
@@ -1017,24 +1019,25 @@ export const StoreSettings = () => {
             <div className="flex items-center gap-2">
               <span className="font-bold text-xs sm:text-sm text-slate-900">Estado de Recepción de Pedidos</span>
               <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${
-                liveOpenStatus.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                storeOpenStatus?.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
               }`}>
-                {liveOpenStatus.badgeText}
+                {storeOpenStatus?.badgeText || (storeOpenStatus?.isOpen ? 'Abierto' : 'Cerrado')}
               </span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              {liveOpenStatus.nextStatusChangeText || (liveOpenStatus.isOpen ? 'Tu catálogo está abierto y recibiendo pedidos.' : 'Tu tienda figura cerrada temporalmente.')}
+              {storeOpenStatus?.nextStatusChangeText || (storeOpenStatus?.isOpen ? 'Tu catálogo está abierto y recibiendo pedidos.' : 'Tu tienda figura cerrada temporalmente.')}
             </p>
           </div>
           <button
             type="button"
-            onClick={handleQuickToggleStatus}
+            onClick={() => toggleStoreOpenStatus && toggleStoreOpenStatus()}
             className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs active:scale-95 flex items-center justify-center gap-1.5 shrink-0 ${
-              liveOpenStatus.isOpen ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
+              storeOpenStatus?.isOpen ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white'
             }`}
+            title="Alternar estado de apertura de inmediato"
           >
             <Power className="w-3.5 h-3.5" />
-            <span>{liveOpenStatus.isOpen ? '● ABIERTO' : '○ CERRADO'}</span>
+            <span>{storeOpenStatus?.isOpen ? '● ABIERTO' : '○ CERRADO'}</span>
           </button>
         </div>
 
