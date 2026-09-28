@@ -66,20 +66,26 @@ export const normalizeStoreSchedule = (rawSchedule) => {
     ? rawSchedule.customNote 
     : (typeof rawSchedule.scheduleClosedMessage === 'string' ? rawSchedule.scheduleClosedMessage : '');
 
-  // Extraer días ya sea desde rawSchedule.weekly o desde claves directas (rawSchedule.monday, etc.)
+  // CRÍTICO: Primero verificar si rawSchedule tiene claves directas de días (ej: rawSchedule.monday)
+  // porque es la propiedad directa que se modifica en el formulario. Si no, buscar en rawSchedule.weekly.
   result.weekly = DAY_ORDER.map(dayKey => {
     let dayData = null;
-    if (Array.isArray(rawSchedule.weekly)) {
-      dayData = rawSchedule.weekly.find(w => w && (w.day === dayKey || w.id === dayKey));
-    }
-    if (!dayData && rawSchedule[dayKey]) {
+    if (rawSchedule[dayKey] && typeof rawSchedule[dayKey] === 'object') {
       dayData = rawSchedule[dayKey];
+    } else if (Array.isArray(rawSchedule.weekly)) {
+      dayData = rawSchedule.weekly.find(w => w && (w.day === dayKey || w.id === dayKey));
     }
 
     const defaultDay = DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
-    const isOpen = dayData
-      ? (dayData.enabled !== undefined ? dayData.enabled !== false : (dayData.open !== undefined ? dayData.open !== false : true))
-      : defaultDay.open;
+    let isOpen = defaultDay.open;
+
+    if (dayData) {
+      if (dayData.enabled !== undefined) {
+        isOpen = dayData.enabled !== false;
+      } else if (dayData.open !== undefined) {
+        isOpen = dayData.open !== false;
+      }
+    }
 
     const normalizedDay = {
       day: dayKey,

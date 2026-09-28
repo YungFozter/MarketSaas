@@ -565,9 +565,17 @@ export const StoreSettings = () => {
     address: cleanInitialAddress
   });
 
-  // Sincronizar formulario reactivamente cuando storeConfig se cargue desde Supabase o localStorage
+  const initialSyncRef = useRef(false);
+  const lastStoreIdRef = useRef(storeConfig?.id || storeConfig?.tenant_id || null);
+
+  // Sincronizar formulario reactivamente únicamente al inicio o si cambia de tienda legítimamente
   useEffect(() => {
-    if (storeConfig) {
+    if (!storeConfig) return;
+    const currentId = storeConfig.id || storeConfig.tenant_id;
+    if (!initialSyncRef.current || (currentId && currentId !== lastStoreIdRef.current)) {
+      initialSyncRef.current = true;
+      lastStoreIdRef.current = currentId;
+
       const isBadAddr = !storeConfig.address || 
         storeConfig.address === 'Direccion según cada Tienda' || 
         storeConfig.address === 'Av. Principal entre 2do y 3er Anillo' || 
@@ -603,15 +611,26 @@ export const StoreSettings = () => {
   const handleScheduleDayToggle = (dayKey) => {
     setForm(prev => {
       const currentSched = normalizeStoreSchedule(prev.schedule);
-      const isCurrentlyEnabled = currentSched[dayKey]?.enabled !== false;
+      const day = currentSched[dayKey] || currentSched.weekly.find(d => d.day === dayKey) || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
+      const isCurrentlyOpen = day.open !== false && day.enabled !== false;
+      const nextIsOpen = !isCurrentlyOpen;
+
+      const updatedDay = {
+        ...day,
+        open: nextIsOpen,
+        enabled: nextIsOpen
+      };
+
+      const updatedWeekly = currentSched.weekly.map(d =>
+        d.day === dayKey ? updatedDay : { ...d }
+      );
+
       return {
         ...prev,
         schedule: {
           ...currentSched,
-          [dayKey]: {
-            ...currentSched[dayKey],
-            enabled: !isCurrentlyEnabled
-          }
+          [dayKey]: updatedDay,
+          weekly: updatedWeekly
         }
       };
     });
@@ -620,14 +639,22 @@ export const StoreSettings = () => {
   const handleScheduleTimeChange = (dayKey, field, val) => {
     setForm(prev => {
       const currentSched = normalizeStoreSchedule(prev.schedule);
+      const day = currentSched[dayKey] || currentSched.weekly.find(d => d.day === dayKey) || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
+      const updatedDay = {
+        ...day,
+        [field]: val
+      };
+
+      const updatedWeekly = currentSched.weekly.map(d =>
+        d.day === dayKey ? updatedDay : { ...d }
+      );
+
       return {
         ...prev,
         schedule: {
           ...currentSched,
-          [dayKey]: {
-            ...currentSched[dayKey],
-            [field]: val
-          }
+          [dayKey]: updatedDay,
+          weekly: updatedWeekly
         }
       };
     });
@@ -636,17 +663,28 @@ export const StoreSettings = () => {
   const handleCopyMondayToWeekdays = () => {
     setForm(prev => {
       const currentSched = normalizeStoreSchedule(prev.schedule);
-      const mon = currentSched.monday || DEFAULT_WEEKLY_SCHEDULE.monday;
-      return {
-        ...prev,
-        schedule: {
-          ...currentSched,
-          tuesday: { ...currentSched.tuesday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
-          wednesday: { ...currentSched.wednesday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
-          thursday: { ...currentSched.thursday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime },
-          friday: { ...currentSched.friday, enabled: mon.enabled, openTime: mon.openTime, closeTime: mon.closeTime }
+      const mon = currentSched.monday || currentSched.weekly.find(d => d.day === 'monday') || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === 'monday');
+      const monIsOpen = mon.open !== false && mon.enabled !== false;
+      
+      const newSched = { ...currentSched };
+      ['tuesday', 'wednesday', 'thursday', 'friday'].forEach(dKey => {
+        newSched[dKey] = {
+          ...newSched[dKey],
+          open: monIsOpen,
+          enabled: monIsOpen,
+          openTime: mon.openTime,
+          closeTime: mon.closeTime
+        };
+      });
+
+      newSched.weekly = currentSched.weekly.map(d => {
+        if (['tuesday', 'wednesday', 'thursday', 'friday'].includes(d.day)) {
+          return newSched[d.day];
         }
-      };
+        return { ...d };
+      });
+
+      return { ...prev, schedule: newSched };
     });
     showToast('Horario del Lunes copiado a Martes, Miércoles, Jueves y Viernes.', 'info');
   };
@@ -654,12 +692,13 @@ export const StoreSettings = () => {
   const handleSetStandardSchedule = () => {
     setForm(prev => {
       const currentSched = normalizeStoreSchedule(prev.schedule);
-      const updated = { ...currentSched };
+      const newSched = { ...currentSched };
       ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].forEach(day => {
-        updated[day] = { ...updated[day], enabled: true, openTime: '08:00', closeTime: '22:00' };
+        newSched[day] = { ...newSched[day], open: true, enabled: true, openTime: '08:00', closeTime: '22:00' };
       });
-      updated.sunday = { ...updated.sunday, enabled: true, openTime: '09:00', closeTime: '20:00' };
-      return { ...prev, schedule: updated };
+      newSched.sunday = { ...newSched.sunday, open: true, enabled: true, openTime: '09:00', closeTime: '20:00' };
+      newSched.weekly = daysOrder.map(dKey => newSched[dKey]);
+      return { ...prev, schedule: newSched };
     });
     showToast('Horario comercial estándar (08:00 - 22:00) aplicado a la semana.', 'info');
   };
@@ -667,15 +706,22 @@ export const StoreSettings = () => {
   const handleToggleSunday = () => {
     setForm(prev => {
       const currentSched = normalizeStoreSchedule(prev.schedule);
-      const isSunEnabled = currentSched.sunday?.enabled !== false;
+      const isSunEnabled = currentSched.sunday?.enabled !== false && currentSched.sunday?.open !== false;
+      const nextIsOpen = !isSunEnabled;
+      const updatedSun = {
+        ...currentSched.sunday,
+        open: nextIsOpen,
+        enabled: nextIsOpen
+      };
+      const updatedWeekly = currentSched.weekly.map(d =>
+        d.day === 'sunday' ? updatedSun : { ...d }
+      );
       return {
         ...prev,
         schedule: {
           ...currentSched,
-          sunday: {
-            ...currentSched.sunday,
-            enabled: !isSunEnabled
-          }
+          sunday: updatedSun,
+          weekly: updatedWeekly
         }
       };
     });
@@ -1411,8 +1457,8 @@ export const StoreSettings = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
               {daysOrder.map((dayKey) => {
-                const dayConfig = (form.schedule && form.schedule[dayKey]) || DEFAULT_WEEKLY_SCHEDULE[dayKey];
-                const isEnabled = dayConfig?.enabled !== false;
+                const dayConfig = (form.schedule && form.schedule[dayKey]) || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
+                const isEnabled = dayConfig?.enabled !== false && dayConfig?.open !== false;
                 const isToday = liveOpenStatus.currentDayName?.toLowerCase() === dayConfig?.label?.toLowerCase();
 
                 return (
@@ -1423,7 +1469,7 @@ export const StoreSettings = () => {
                         ? 'ring-2 ring-emerald-500/50 bg-emerald-50/40 border-emerald-300 shadow-xs'
                         : isEnabled
                         ? 'bg-white border-slate-200 hover:border-slate-300'
-                        : 'bg-slate-50/70 border-slate-200/60 opacity-80'
+                        : 'bg-slate-50/70 border-slate-200/60 opacity-90'
                     }`}
                   >
                     {/* Header del Día */}
@@ -1443,14 +1489,14 @@ export const StoreSettings = () => {
                       <button
                         type="button"
                         onClick={() => handleScheduleDayToggle(dayKey)}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer shadow-2xs active:scale-95 ${
                           isEnabled
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                            : 'bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-300'
                         }`}
-                        title={isEnabled ? 'Marcar día como cerrado' : 'Marcar día como abierto'}
+                        title={isEnabled ? 'Marcar día como cerrado (descanso)' : 'Marcar día como abierto (atención)'}
                       >
-                        {isEnabled ? 'ABRE' : 'CERRADO'}
+                        {isEnabled ? '● ABRE' : '○ CERRADO'}
                       </button>
                     </div>
 
@@ -1477,9 +1523,16 @@ export const StoreSettings = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="py-4 text-center flex flex-col items-center justify-center">
-                        <span className="text-base mb-1">😴</span>
-                        <span className="text-[10px] font-bold text-slate-400">Día de Descanso</span>
+                      <div 
+                        onClick={() => handleScheduleDayToggle(dayKey)}
+                        className="py-4 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-rose-50/70 rounded-xl transition-all border border-dashed border-rose-200/90 group p-2"
+                        title="Haz clic aquí para abrir este día"
+                      >
+                        <span className="text-base mb-1 group-hover:scale-110 transition-transform">😴</span>
+                        <span className="text-[10px] font-extrabold text-rose-700">Día de Descanso</span>
+                        <span className="text-[9px] font-bold text-slate-500 group-hover:text-emerald-700 group-hover:underline mt-0.5">
+                          Toca para Abrir
+                        </span>
                       </div>
                     )}
                   </div>
