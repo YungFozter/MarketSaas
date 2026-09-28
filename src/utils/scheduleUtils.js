@@ -180,21 +180,6 @@ export const calculateStoreOpenStatus = (storeConfig) => {
   const summary = formatScheduleSummary(schedule);
 
   // 1. Overrides manuales forzados
-  if (storeMode === 'manual_closed' || explicitIsOpen === false) {
-    return {
-      isOpen: false,
-      statusBadge: 'Cerrado Temporalmente',
-      badgeText: 'Cerrado Temporalmente',
-      statusText: 'Cerrado Manualmente por el Dueño',
-      nextStatusChangeText: 'Cerrado Manualmente',
-      reason: 'manual_closed',
-      mode: 'manual_closed',
-      currentBoliviaTime: bolivia.timeStr,
-      currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
-      summary
-    };
-  }
-
   if (storeMode === 'manual_open') {
     return {
       isOpen: true,
@@ -204,6 +189,21 @@ export const calculateStoreOpenStatus = (storeConfig) => {
       nextStatusChangeText: 'Abierto Continuo (Manual)',
       reason: 'manual_open',
       mode: 'manual_open',
+      currentBoliviaTime: bolivia.timeStr,
+      currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
+      summary
+    };
+  }
+
+  if (storeMode === 'manual_closed') {
+    return {
+      isOpen: false,
+      statusBadge: 'Cerrado Temporalmente',
+      badgeText: 'Cerrado Temporalmente',
+      statusText: 'Cerrado Manualmente por el Dueño',
+      nextStatusChangeText: 'Cerrado Manualmente',
+      reason: 'manual_closed',
+      mode: 'manual_closed',
       currentBoliviaTime: bolivia.timeStr,
       currentDayName: DAY_LABELS[bolivia.dayKey] || 'Hoy',
       summary

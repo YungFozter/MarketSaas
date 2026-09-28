@@ -1338,16 +1338,20 @@ export const StoreProvider = ({ children }) => {
   }, [storeConfig]);
 
   // Alternador manual inmediato de ABIERTO / CERRADO (Sincroniza en tiempo real)
-  const toggleStoreOpenStatus = async () => {
+  const toggleStoreOpenStatus = async (explicitMode) => {
     const currentStatus = calculateStoreOpenStatus(storeConfig);
-    const nextIsOpen = !currentStatus.isOpen;
+    const nextIsOpen = explicitMode !== undefined
+      ? (explicitMode === 'manual_open' || explicitMode === true)
+      : !currentStatus.isOpen;
+    const targetMode = nextIsOpen ? 'manual_open' : 'manual_closed';
     const scheduleObj = normalizeStoreSchedule(storeConfig?.schedule);
     const updatedConfig = {
       ...storeConfig,
       isOpen: nextIsOpen,
+      storeOpenMode: targetMode,
       schedule: {
         ...scheduleObj,
-        mode: nextIsOpen ? 'manual_open' : 'manual_closed'
+        mode: targetMode
       }
     };
     await setStoreConfig(updatedConfig);

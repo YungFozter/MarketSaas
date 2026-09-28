@@ -997,169 +997,146 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         )}
 
         {/* Top Workspace Sub-Header Bar */}
-        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Botón de apertura de menú para móviles */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setMobileSidebarOpen(true)}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 lg:hidden cursor-pointer"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 py-2.5 sm:py-3 select-none shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+            
+            {/* Fila 1 en móvil / Lado izquierdo en desktop */}
+            <div className="flex items-center justify-between gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                {/* Botón de apertura de menú para móviles */}
+                <button
+                  onClick={() => setMobileSidebarOpen(true)}
+                  className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 lg:hidden cursor-pointer shrink-0 transition-transform"
+                  aria-label="Abrir menú de navegación"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
 
-            {/* Nombre de la Tienda */}
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </span>
-              <span className="font-extrabold text-xs text-slate-800">
-                {storeConfig.name}
-              </span>
-            </div>
-
-            {/* Chip Dinámico de Suscripción / Cuenta Regresiva UTC-4 */}
-            <button
-              onClick={() => setActiveTab('subscription')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
-                !isSubscriptionActive
-                  ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 animate-pulse'
-                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
-              }`}
-              title="Haz clic para gestionar tu suscripción"
-            >
-              {!isSubscriptionActive ? (
-                <>
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                  <span>Suscripción Vencida</span>
-                </>
-              ) : (
-                <>
-                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="font-mono">
-                    {subscriptionTimeRemaining.days > 0 
-                      ? `${subscriptionTimeRemaining.days}d ${subscriptionTimeRemaining.hours}h` 
-                      : `${String(subscriptionTimeRemaining.minutes).padStart(2, '0')}:${String(subscriptionTimeRemaining.seconds).padStart(2, '0')}`}
+                {/* Nombre de la Tienda */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
-                </>
-              )}
-            </button>
+                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate tracking-tight max-w-[130px] sm:max-w-[200px] md:max-w-none">
+                    {storeConfig.name}
+                  </span>
+                </div>
+              </div>
 
-            {/* Control Rápido de Estado de la Tienda (ABIERTO / CERRADO en Tiempo Real) */}
-            {storeOpenStatus && (
-              <button
-                type="button"
-                onClick={() => toggleStoreOpenStatus()}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-xs font-black transition-all border shadow-2xs cursor-pointer active:scale-95 ${
-                  storeOpenStatus.isOpen
-                    ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-800 border-emerald-300'
-                    : 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-300'
-                }`}
-                title={`Estado actual: ${storeOpenStatus.badgeText}. Clic para alternar Apertura/Cierre inmediato.`}
-              >
-                <span className="relative flex h-2 w-2 shrink-0">
-                  {storeOpenStatus.isOpen ? (
+              {/* Chips de estado: Suscripción y ABIERTO/CERRADO */}
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                {/* Chip Dinámico de Suscripción */}
+                <button
+                  onClick={() => setActiveTab('subscription')}
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer active:scale-95 shrink-0 ${
+                    !isSubscriptionActive
+                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 animate-pulse'
+                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                  }`}
+                  title="Haz clic para gestionar tu suscripción"
+                >
+                  {!isSubscriptionActive ? (
                     <>
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span className="whitespace-nowrap font-extrabold">Vencido</span>
                     </>
                   ) : (
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    <>
+                      <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="font-mono whitespace-nowrap font-extrabold">
+                        {subscriptionTimeRemaining.days > 0 
+                          ? `${subscriptionTimeRemaining.days}d ${subscriptionTimeRemaining.hours}h` 
+                          : `${String(subscriptionTimeRemaining.minutes).padStart(2, '0')}:${String(subscriptionTimeRemaining.seconds).padStart(2, '0')}`}
+                      </span>
+                    </>
                   )}
-                </span>
-                <span className="tracking-tight">
-                  {storeOpenStatus.isOpen ? 'ABIERTO' : 'CERRADO'}
-                </span>
-                {storeOpenStatus.mode !== 'auto' && (
-                  <span className="text-[10px] opacity-70 font-semibold hidden md:inline">
-                    (Manual)
+                </button>
+
+                {/* Control Rápido de Estado de la Tienda (ABIERTO / CERRADO en Tiempo Real) */}
+                {storeOpenStatus && (
+                  <button
+                    type="button"
+                    onClick={() => toggleStoreOpenStatus()}
+                    className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-black transition-all border shadow-2xs cursor-pointer active:scale-95 shrink-0 whitespace-nowrap ${
+                      storeOpenStatus.isOpen
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-emerald-600/25 ring-1 ring-emerald-500/30'
+                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 shadow-rose-500/10'
+                    }`}
+                    title={`Estado actual: ${storeOpenStatus.badgeText}. Toca para alternar inmediato.`}
+                  >
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      {storeOpenStatus.isOpen ? (
+                        <>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-85"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                        </>
+                      ) : (
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                      )}
+                    </span>
+                    <span className="tracking-wide">
+                      {storeOpenStatus.isOpen ? 'ABIERTO' : 'CERRADO'}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Fila 2 en móvil / Lado derecho en desktop: Acciones Principales */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Botón de Venta Rápida Directa (Con bloqueo por suscripción) */}
+              <button
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsPosModalOpen(true);
+                  }
+                }}
+                className={`flex-1 sm:flex-initial h-9 px-3.5 sm:px-4 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-800 hover:bg-slate-900 text-slate-200 shadow-slate-800/20'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25'
+                }`}
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Abrir terminal de Venta Rápida en mostrador"}
+              >
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                ) : (
+                  <Receipt className="w-3.5 h-3.5 text-white shrink-0" />
+                )}
+                <span>Venta Rápida</span>
+                {!isSubscriptionActive && (
+                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-md font-black ml-0.5">
+                    Bloqueado
                   </span>
                 )}
               </button>
-            )}
-          </div>
 
-          {/* Quick Action CTA Buttons */}
-          <div className="flex items-center gap-2">
-            {/* Botón de Venta Rápida Directa (Con bloqueo por suscripción) */}
-            <button
-              onClick={() => {
-                if (!isSubscriptionActive) {
-                  setIsBlockedModalOpen(true);
-                } else {
-                  setIsPosModalOpen(true);
-                }
-              }}
-              className={`h-8 sm:h-9 px-2.5 sm:px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 ${
-                !isSubscriptionActive
-                  ? 'bg-slate-800 hover:bg-slate-900 text-slate-200 shadow-slate-800/20'
-                  : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
-              }`}
-              title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Abrir terminal de Venta Rápida en mostrador"}
-            >
-              {!isSubscriptionActive ? (
-                <Lock className="w-3.5 h-3.5 text-amber-400" />
-              ) : (
-                <Receipt className="w-3.5 h-3.5 text-white" />
-              )}
-              <span>Venta Rápida</span>
-              {!isSubscriptionActive && (
-                <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-md font-black ml-0.5">
-                  Bloqueado
-                </span>
-              )}
-            </button>
+              {/* Botón Cartel QR Mostrador */}
+              <button
+                onClick={() => setIsPrintKitOpen(true)}
+                className="h-9 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                title="Diseñar e imprimir cartel QR para vitrina o carpa de mostrador"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="hidden md:inline whitespace-nowrap">Cartel QR Mostrador</span>
+              </button>
 
+              {/* Botón Exportar Reporte */}
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                title="Descargar o imprimir reporte contable de ventas (PDF, Excel)"
+              >
+                <TrendingUp className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span className="hidden md:inline whitespace-nowrap">Exportar Reporte</span>
+              </button>
+            </div>
 
-            <button
-              onClick={() => setIsPrintKitOpen(true)}
-              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Diseñar e imprimir cartel QR para vitrina o carpa de mostrador"
-            >
-              <Printer className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Cartel QR Mostrador</span>
-            </button>
-
-            <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Descargar o imprimir reporte contable de ventas (PDF, Excel)"
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Exportar Reporte</span>
-            </button>
           </div>
         </header>
-
-        {/* Banner Informativo si el Local está Cerrado */}
-        {storeOpenStatus && !storeOpenStatus.isOpen && (
-          <div className="bg-amber-500/10 border-b border-amber-300/80 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950 animate-fadeIn">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0 animate-pulse"></span>
-              <span className="font-extrabold text-amber-900 shrink-0">Tu tienda figura en estado CERRADO:</span>
-              <span className="text-amber-800 font-medium truncate">
-                {storeOpenStatus.nextStatusChangeText || `Horario configurado: ${storeOpenStatus.summary}`}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => toggleStoreOpenStatus('manual_open')}
-                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] shadow-2xs transition-all cursor-pointer active:scale-95 flex items-center gap-1"
-              >
-                <span>●</span>
-                <span>Abrir Tienda Ahora</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('schedule')}
-                className="px-2.5 py-1 rounded-xl bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-[11px] shadow-2xs transition-all cursor-pointer"
-              >
-                Configurar Horarios
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* ========================================================================= */}
         {/* 3. WORKSPACE CONTAINER (Changes based on activeTab)                      */}
