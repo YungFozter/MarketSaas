@@ -4,6 +4,7 @@ import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
 import { CustomerStoreSchedule } from './CustomerStoreSchedule';
+import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
 import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
@@ -370,6 +371,9 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           onRequestProduct={onOpenRequests}
         />
       )}
+
+      {/* Banner PWA: Instalar en el Celular con 1 Clic */}
+      <PwaInstallBanner storeName={storeConfig?.name || 'tu tienda'} />
     </main>
   );
 };

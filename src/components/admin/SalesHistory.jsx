@@ -20,11 +20,14 @@ import {
   Download, 
   Package,
   User,
-  SlidersHorizontal
+  SlidersHorizontal,
+  MessageCircle
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
+import { CashRegisterModal } from './CashRegisterModal';
+import { WeeklySummaryModal } from './WeeklySummaryModal';
 import './SalesHistory.css';
 
 export const SalesHistory = () => {
@@ -42,6 +45,10 @@ export const SalesHistory = () => {
 
   // Modal de Exportación de Reporte
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // Modales de Cierre de Caja y Resumen Semanal
+  const [isCashRegisterModalOpen, setIsCashRegisterModalOpen] = useState(false);
+  const [isWeeklySummaryModalOpen, setIsWeeklySummaryModalOpen] = useState(false);
 
   // Paginación
   const [itemsPerPage, setItemsPerPage] = useState(10); // 10, 25, 50, 'all'
@@ -365,7 +372,29 @@ export const SalesHistory = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap self-start sm:self-auto">
+          {/* Botón Arqueo y Cierre de Caja */}
+          <button
+            type="button"
+            onClick={() => setIsCashRegisterModalOpen(true)}
+            className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+            title="Arqueo y Cierre de Caja Diario (Control de Efectivo)"
+          >
+            <Banknote className="w-4 h-4 text-white" />
+            <span>Cierre de Caja</span>
+          </button>
+
+          {/* Botón Resumen Semanal para WhatsApp */}
+          <button
+            type="button"
+            onClick={() => setIsWeeklySummaryModalOpen(true)}
+            className="h-9 px-3.5 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-900 border border-slate-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+            title="Ver y enviar resumen semanal de rendimiento a WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-600" />
+            <span>Resumen WhatsApp</span>
+          </button>
+
           {/* Botón Exportar Reporte Filtrado */}
           <button
             type="button"
@@ -1116,6 +1145,18 @@ export const SalesHistory = () => {
         onClose={() => setIsExportModalOpen(false)}
         customOrders={filteredSales}
         titleSuffix={exportTitleSuffix}
+      />
+
+      {/* Modal de Arqueo y Cierre de Caja Diario (Control de Efectivo) */}
+      <CashRegisterModal
+        isOpen={isCashRegisterModalOpen}
+        onClose={() => setIsCashRegisterModalOpen(false)}
+      />
+
+      {/* Modal de Resumen Semanal para WhatsApp */}
+      <WeeklySummaryModal
+        isOpen={isWeeklySummaryModalOpen}
+        onClose={() => setIsWeeklySummaryModalOpen(false)}
       />
     </div>
   );

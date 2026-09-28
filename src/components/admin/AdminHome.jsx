@@ -65,6 +65,8 @@ import { SupplierManager } from './SupplierManager';
 import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { ShareStoreModal } from './ShareStoreModal';
+import { CashRegisterModal } from './CashRegisterModal';
+import { WeeklySummaryModal } from './WeeklySummaryModal';
 import { OrderNotificationBanner } from './OrderNotificationBanner/OrderNotificationBanner';
 import { playOrderNotificationSound, sendOrderNotification } from '../../services/orderNotificationService';
 import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
@@ -192,6 +194,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
+  const [isCashRegisterModalOpen, setIsCashRegisterModalOpen] = useState(false);
+  const [isWeeklySummaryModalOpen, setIsWeeklySummaryModalOpen] = useState(false);
   const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
   const [feedPage, setFeedPage] = useState(1);
   const feedScrollRef = useRef(null);
@@ -1118,6 +1122,26 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               >
                 <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="hidden md:inline whitespace-nowrap">Cartel QR Mostrador</span>
+              </button>
+
+              {/* Botón Cierre de Caja / Arqueo */}
+              <button
+                onClick={() => setIsCashRegisterModalOpen(true)}
+                className="h-9 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                title="Arqueo y Cierre de Caja Diario (Control de Efectivo)"
+              >
+                <Banknote className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="hidden lg:inline whitespace-nowrap">Cierre de Caja</span>
+              </button>
+
+              {/* Botón Resumen Semanal para WhatsApp */}
+              <button
+                onClick={() => setIsWeeklySummaryModalOpen(true)}
+                className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                title="Generar y enviar resumen semanal de rendimiento a WhatsApp"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span className="hidden lg:inline whitespace-nowrap">Resumen WhatsApp</span>
               </button>
 
               {/* Botón Exportar Reporte */}
@@ -2365,6 +2389,18 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       <StorePrintKitModal
         isOpen={isPrintKitOpen}
         onClose={() => setIsPrintKitOpen(false)}
+      />
+
+      {/* Modal de Arqueo y Cierre de Caja Diario (Control de Efectivo) */}
+      <CashRegisterModal
+        isOpen={isCashRegisterModalOpen}
+        onClose={() => setIsCashRegisterModalOpen(false)}
+      />
+
+      {/* Modal de Resumen Semanal para WhatsApp */}
+      <WeeklySummaryModal
+        isOpen={isWeeklySummaryModalOpen}
+        onClose={() => setIsWeeklySummaryModalOpen(false)}
       />
 
       {/* Modal de confirmación para eliminar transacción del Feed */}

@@ -1,0 +1,31 @@
+{
+  "name": "MarketSaaS - Tienda de Barrio",
+  "short_name": "MarketSaaS",
+  "description": "Tu minimarket de barrio y condominio en tu celular. Pedidos directos, entregas rápidas y catálogo en vivo.",
+  "start_url": "/?view=customer",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#020617",
+  "theme_color": "#059669",
+  "scope": "/",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/iconoPestana.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/iconoPestana.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "shopping",
+    "food",
+    "business"
+  ]
+}

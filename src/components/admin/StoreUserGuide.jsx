@@ -228,6 +228,63 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         }
       ],
       tip: 'Si necesitas cerrar antes por un imprevisto sin desconfigurar tus horas semanales, usa el modo "Siempre Cerrado (Manual)".'
+    },
+    {
+      id: 'cierre-caja',
+      title: '¿Cómo hacer el arqueo y cierre de caja al terminar mi turno o día?',
+      badge: 'Control de Efectivo',
+      badgeColor: 'emerald',
+      icon: DollarSign,
+      targetTab: 'sales',
+      steps: [
+        {
+          step: 1,
+          action: 'Presiona el botón "Cierre de Caja" en la barra superior o en Historial',
+          desc: 'Se abrirá la ventana de Arqueo y Cierre de Caja con todos los cálculos automáticos del día.'
+        },
+        {
+          step: 2,
+          action: 'Revisa las ventas en efectivo y registra si hubo salidas',
+          desc: 'El sistema calcula el Efectivo Esperado sumando el fondo inicial y las ventas en efectivo, y restando las salidas de dinero (ej. compra de hielo o pan).'
+        },
+        {
+          step: 3,
+          action: 'Ingresa el dinero físico contado en tu cajón',
+          desc: 'Escribe el monto total o usa la calculadora de billetes bolivianos (Bs. 200, 100, 50, 20, 10). El sistema te indicará si la caja está cuadrada, o si hay sobrante o faltante.'
+        },
+        {
+          step: 4,
+          action: 'Presiona "Realizar Cierre de Turno e Imprimir"',
+          desc: 'Guarda el cierre en tu historial e imprime el comprobante térmico oficial para graparlo a los billetes.'
+        }
+      ],
+      tip: 'Puedes consultar los cierres de días pasados en la pestaña "Historial de Cierres" dentro de la misma ventana.'
+    },
+    {
+      id: 'resumen-whatsapp',
+      title: '¿Cómo generar y enviar el reporte semanal a mi WhatsApp?',
+      badge: 'Reporte Inteligente',
+      badgeColor: 'sky',
+      icon: MessageCircle,
+      targetTab: 'sales',
+      steps: [
+        {
+          step: 1,
+          action: 'Haz clic en el botón "Resumen WhatsApp"',
+          desc: 'Lo encuentras en la barra superior del panel o en la sección de Historial de Ventas.'
+        },
+        {
+          step: 2,
+          action: 'Visualiza tus métricas de los últimos 7 días',
+          desc: 'Verás tu facturación total en bolivianos, desglose en efectivo vs QR, cantidad de compras atendidas, tu producto más vendido y el día más fuerte.'
+        },
+        {
+          step: 3,
+          action: 'Presiona el botón verde "Enviar a mi WhatsApp"',
+          desc: 'Abrirá WhatsApp con un mensaje elegante con emojis listo para enviarte a ti mismo o a tus socios.'
+        }
+      ],
+      tip: 'También puedes usar el botón "Imprimir" para tener tu balance semanal en papel térmico de 58mm u 80mm.'
     }
   ];
 
