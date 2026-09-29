@@ -797,7 +797,8 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                       return (
                         <div
                           key={c.id}
-                          onClick={() => setSelectedCreditCustomerId(c.id)}
+                          onClick={() => setSelectedCreditCustomerId(prev => prev === c.id ? '' : c.id)}
+                          title={isSelected ? 'Toca nuevamente para deseleccionar a este deudor' : 'Toca para seleccionar a este deudor'}
                           className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2 select-none ${
                             isSelected
                               ? 'bg-indigo-50 border-indigo-500 shadow-2xs ring-1 ring-indigo-500/30'
@@ -853,7 +854,21 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                       <div className={`p-3 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/70 border-indigo-100'}`}>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-600 font-medium">Deudor seleccionado:</span>
-                          <span className="font-extrabold text-indigo-950">{cust.name} {cust.apartment ? `(${cust.apartment})` : ''}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-indigo-950">{cust.name} {cust.apartment ? `(${cust.apartment})` : ''}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCreditCustomerId('');
+                              }}
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-200/80 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-[10px] font-bold transition-colors cursor-pointer"
+                              title="Deseleccionar / Quitar deudor"
+                            >
+                              <X className="w-3 h-3" />
+                              <span>Quitar</span>
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-600 font-medium">Saldo actual del deudor:</span>
