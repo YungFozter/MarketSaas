@@ -17,7 +17,9 @@ import {
   ArrowRight,
   TrendingDown,
   TrendingUp,
-  Receipt
+  Receipt,
+  Pencil,
+  Check
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { getBoliviaTime } from '../../utils/scheduleUtils';
@@ -30,6 +32,8 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
 
   const [activeTab, setActiveTab] = useState('current'); // 'current' | 'history'
   const [openingCash, setOpeningCash] = useState(100);
+  const [isEditingOpeningCash, setIsEditingOpeningCash] = useState(false);
+  const [tempOpeningCash, setTempOpeningCash] = useState('100');
   const [isRegisterOpen, setIsRegisterOpen] = useState(true);
   const [registerOpenedAt, setRegisterOpenedAt] = useState(() => new Date().toISOString());
   const [expenses, setExpenses] = useState([]);
@@ -181,6 +185,22 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
       openedAt: registerOpenedAt,
       expenses: nextExpenses
     });
+  };
+
+  // Modificar fondo inicial manualmente durante el turno activo
+  const handleSaveOpeningCash = () => {
+    const val = Math.max(0, parseFloat(tempOpeningCash) || 0);
+    setOpeningCash(val);
+    setIsEditingOpeningCash(false);
+    saveRegisterState({
+      isOpen: isRegisterOpen,
+      openingCash: val,
+      openedAt: registerOpenedAt,
+      expenses
+    });
+    if (typeof showToast === 'function') {
+      showToast(`Fondo inicial actualizado a ${currency} ${val.toFixed(2)}`, 'success');
+    }
   };
 
   // Abrir la caja con fondo inicial
@@ -449,12 +469,77 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
               <div className="space-y-6">
                 {/* 1. Bento Resumen de Efectivo Teórico */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1">
-                    <span className="text-[11px] font-bold text-slate-500 block">Fondo Inicial</span>
-                    <span className="font-mono text-base sm:text-lg font-black text-slate-900 block">
-                      {currency} {Number(openingCash).toFixed(2)}
-                    </span>
-                  </div>
+                  {/* Tarjeta de Fondo Inicial (Modificable en caliente) */}
+                  {isEditingOpeningCash ? (
+                    <div className="bg-white p-3 rounded-2xl border-2 border-emerald-500 shadow-sm flex flex-col justify-between">
+                      <div>
+                        <span className="text-[11px] font-black text-emerald-800 block mb-1">
+                          Nuevo Fondo Inicial
+                        </span>
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                            {currency}
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            autoFocus
+                            value={tempOpeningCash}
+                            onChange={(e) => setTempOpeningCash(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveOpeningCash();
+                              if (e.key === 'Escape') setIsEditingOpeningCash(false);
+                            }}
+                            className="w-full pl-8 pr-2 py-1 text-xs sm:text-sm font-mono font-black rounded-lg border border-slate-300 bg-slate-50 focus:bg-white focus:outline-none focus:border-emerald-600 text-slate-900"
+                            placeholder="100.00"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-1.5 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingOpeningCash(false)}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveOpeningCash}
+                          className="px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black cursor-pointer shadow-2xs"
+                        >
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col justify-between group">
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-[11px] font-bold text-slate-500 block">Fondo Inicial</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTempOpeningCash(openingCash.toString());
+                              setIsEditingOpeningCash(true);
+                            }}
+                            className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900 cursor-pointer hover:underline"
+                            title="Haz clic para modificar el fondo inicial de la caja"
+                          >
+                            <Pencil className="w-2.5 h-2.5" />
+                            <span>Editar</span>
+                          </button>
+                        </div>
+                        <span className="font-mono text-base sm:text-lg font-black text-slate-900 block">
+                          {currency} {Number(openingCash).toFixed(2)}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium block mt-1">
+                        Caja de cambio / vuelto
+                      </span>
+                    </div>
+                  )}
 
                   <div className="bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 space-y-1">
                     <span className="text-[11px] font-bold text-emerald-800 block">(+) Ventas Efectivo</span>
