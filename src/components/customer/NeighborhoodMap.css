@@ -1,5 +1,10 @@
 /* ==============================================================================
-   Estilos del Contenedor de Mapa Hiperlocal - Optimizado para 60 FPS en Móvil
+   Estilos del Contenedor de Mapa Hiperlocal - Optimizado para Móvil
+   ------------------------------------------------------------------------------
+   Nota de rendimiento: NO forzar `will-change` / `translate3d` en teselas o panes.
+   Leaflet ya posiciona sus capas con transform; forzar capas de composición en
+   cada tesela agota la memoria GPU de teléfonos de gama media y provoca
+   parpadeos y tirones al arrastrar el mapa.
    ============================================================================== */
 
 .google-map-component-container {
@@ -13,51 +18,21 @@
   contain: layout paint;
 }
 
-/* Reset y aceleración táctil del contenedor Leaflet */
+/* Reset del contenedor Leaflet (touch-action lo gestiona Leaflet con sus propias clases) */
 .leaflet-container {
   width: 100%;
   height: 100%;
   background-color: #f1f5f9;
   font-family: inherit;
   isolation: isolate;
-  touch-action: pan-x pan-y pinch-zoom;
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Aceleración por hardware (GPU Compositing) para todas las capas internas de Leaflet */
-.leaflet-pane,
-.leaflet-tile-pane,
-.leaflet-marker-pane,
-.leaflet-shadow-pane,
-.leaflet-overlay-pane,
-.leaflet-tile-container,
-.leaflet-map-pane canvas,
-.leaflet-map-pane svg {
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-.leaflet-tile {
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  image-rendering: -webkit-optimize-contrast;
-  will-change: transform, opacity;
-}
-
-/* Marcadores de tiendas con aceleración de GPU */
+/* Marcadores de tiendas */
 .custom-leaflet-pin-wrapper {
   background: transparent !important;
   border: none !important;
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
 .custom-leaflet-pin {
@@ -70,9 +45,11 @@
   transform-origin: 18px 44px;
 }
 
-.custom-leaflet-pin:hover {
-  transform: scale(1.12);
-  z-index: 999 !important;
+@media (hover: hover) {
+  .custom-leaflet-pin:hover {
+    transform: scale(1.12);
+    z-index: 999 !important;
+  }
 }
 
 .custom-leaflet-pin.is-active {
@@ -80,51 +57,42 @@
   z-index: 1000 !important;
 }
 
-/* Marcadores de Tiendas Cerradas */
+/* Marcadores de Tiendas Cerradas (opacidad simple, sin filtros costosos) */
 .custom-leaflet-pin.is-closed {
-  opacity: 0.90;
-  filter: saturate(0.85);
+  opacity: 0.9;
 }
 
 .custom-leaflet-pin.is-closed:hover {
   opacity: 1;
-  filter: saturate(1);
 }
 
 /* ==============================================================================
-   Animaciones de Pulso Optimizadas en GPU
+   Animaciones de Pulso (solo transform/opacity, que el navegador compone en GPU)
    ============================================================================== */
 
-.registered-pulse-ring {
-  position: absolute;
-  top: 16.5px;
-  left: 18px;
-  transform: translate3d(-50%, -50%, 0);
-  -webkit-transform: translate3d(-50%, -50%, 0);
-  width: 46px;
-  height: 46px;
-  border-radius: 9999px;
-  background-color: rgba(16, 185, 129, 0.25);
-  animation: marker-pulse 2.2s infinite ease-out;
-  pointer-events: none;
-  will-change: transform, opacity;
-  contain: layout paint;
-}
-
+.registered-pulse-ring,
 .owner-pulse-ring {
   position: absolute;
   top: 16.5px;
   left: 18px;
   transform: translate3d(-50%, -50%, 0);
-  -webkit-transform: translate3d(-50%, -50%, 0);
+  border-radius: 9999px;
+  pointer-events: none;
+  contain: strict;
+}
+
+.registered-pulse-ring {
+  width: 46px;
+  height: 46px;
+  background-color: rgba(16, 185, 129, 0.25);
+  animation: marker-pulse 2.2s infinite ease-out;
+}
+
+.owner-pulse-ring {
   width: 52px;
   height: 52px;
-  border-radius: 9999px;
   background-color: rgba(245, 158, 11, 0.3);
   animation: marker-pulse 2s infinite ease-out;
-  pointer-events: none;
-  will-change: transform, opacity;
-  contain: layout paint;
 }
 
 @keyframes marker-pulse {
@@ -143,13 +111,21 @@
 }
 
 /* ==============================================================================
-   Pausa Dinámica durante el Deslizamiento Táctil: 
-   Libera el 100% de los frames y CPU/GPU al mover el dedo sobre el mapa
+   Pausa Dinámica durante el Deslizamiento: libera frames al mover el dedo
    ============================================================================== */
 .is-panning .registered-pulse-ring,
 .is-panning .owner-pulse-ring,
 .is-panning .user-gps-beacon::after {
   animation-play-state: paused !important;
+}
+
+/* ==============================================================================
+   Nivel de detalle según zoom: con zoom lejano se ocultan rótulos y pulsos
+   secundarios (menos DOM pintado y sin solapamiento de etiquetas)
+   ============================================================================== */
+.map-labels-hidden .pin-label,
+.map-labels-hidden .registered-pulse-ring {
+  display: none;
 }
 
 /* Marcador GPS de Usuario */
@@ -161,8 +137,6 @@
   border: 3px solid #ffffff;
   box-shadow: 0 0 12px rgba(2, 132, 199, 0.6);
   position: relative;
-  transform: translate3d(0, 0, 0);
-  -webkit-transform: translate3d(0, 0, 0);
 }
 
 .user-gps-beacon::after {
@@ -172,12 +146,21 @@
   border-radius: 9999px;
   background: rgba(2, 132, 199, 0.35);
   animation: user-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-  will-change: transform, opacity;
 }
 
 @keyframes user-ping {
   75%, 100% {
     transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Accesibilidad + ahorro de batería: sin animaciones infinitas si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  .registered-pulse-ring,
+  .owner-pulse-ring,
+  .user-gps-beacon::after {
+    animation: none;
     opacity: 0;
   }
 }

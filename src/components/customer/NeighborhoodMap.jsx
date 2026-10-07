@@ -63,6 +63,8 @@ export const NeighborhoodMap = ({
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
   const markersLayerRef = useRef(null);
+  const markersMapRef = useRef(new Map());
+  const syncVisibleMarkersRef = useRef(null);
   const userMarkerRef = useRef(null);
 
   // masterStores garantiza acceso al catálogo completo incluso si se aplican filtros de búsqueda
@@ -107,7 +109,7 @@ export const NeighborhoodMap = ({
     });
   }, [masterStores, activeFilters]);
 
-  // Crear DivIcon HTML personalizado para cada tienda (con punta de aguja de precisión milimétrica 1:1)
+  // Crear DivIcon HTML personalizado para cada tienda (ultra-ligero, sin backdrop-filter para 60 FPS en móvil)
   const createStoreDivIcon = (store, isSelected) => {
     const isRegistered = Boolean(store.isRegisteredStore);
     const isOwner = Boolean(store.isCurrentOwnerStore);
@@ -170,9 +172,9 @@ export const NeighborhoodMap = ({
       <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''} ${!isOpen ? 'is-closed' : ''}">
         ${ringClass ? `<div class="${ringClass}"></div>` : ''}
 
-        <!-- Rótulo flotante superior (desacoplado de la altura de la aguja para no desfasar el anclaje) -->
-        <div style="position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <div style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(4px); padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); font-size: 10px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis;">
+        <!-- Rótulo flotante superior (sin backdrop-filter, clase pin-label para ocultarse en zoom alejado) -->
+        <div class="pin-label" style="position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <div style="background: #0f172a; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.25); font-size: 10px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis;">
             ${dotHtml}
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(store.name)}</span>
             ${statusPillHtml}
@@ -243,20 +245,19 @@ export const NeighborhoodMap = ({
       zoom: 15,
       zoomControl: false,
       attributionControl: true,
-      preferCanvas: true, // Renderizado acelerado por Canvas para máxima fluidez en móvil
-      tap: false, // Deshabilita la emulación de tap heredada que generaba latencia táctil en teléfonos
+      preferCanvas: true,
+      tap: false,
       touchZoom: true,
-      bounceAtZoomLimits: false, // Elimina el rebote que causaba tirones en los límites de zoom
+      bounceAtZoomLimits: false,
       zoomAnimation: true,
       zoomAnimationThreshold: 4,
       fadeAnimation: true,
       markerZoomAnimation: true,
-      // Configuración de inercia y física de deslizamiento natural idéntica a Google Maps
       inertia: true,
-      inertiaDeceleration: isTouchDevice ? 1900 : 2500, // Menor fricción = deslizamiento fluido y suave al soltar el dedo
+      inertiaDeceleration: isTouchDevice ? 2000 : 2500,
       inertiaMaxSpeed: 2800,
-      easeLinearity: 0.08, // Curva de deceleración exponencial ultra-fluida
-      wheelDebounceTime: 30,
+      easeLinearity: 0.1,
+      wheelDebounceTime: 40,
       wheelPxPerZoomLevel: 100
     });
 
@@ -264,15 +265,15 @@ export const NeighborhoodMap = ({
       attribution: STREET_MAP_ATTRIBUTION,
       maxNativeZoom: 18,
       maxZoom: 19,
-      updateWhenIdle: false, // Carga continua de teselas mientras se desliza con el dedo (sin cuadros grises)
+      updateWhenIdle: isTouchDevice, // En móvil no descarga mientras se desliza para no competir por la CPU
       updateWhenZooming: false,
-      keepBuffer: isTouchDevice ? 8 : 4, // Mantiene teselas adyacentes en caché DOM para movimiento instantáneo
+      keepBuffer: 2, // Buffer óptimo y ligero (evita saturar la memoria GPU)
       crossOrigin: true
     }).addTo(map);
 
     tileLayerRef.current = streetLayer;
 
-    // Pausar animaciones pesadas durante el deslizamiento táctil para asignar el 100% de la GPU al movimiento
+    // Pausar animaciones pesadas durante el deslizamiento táctil
     const handleMoveStart = () => {
       if (mapContainerRef.current) {
         mapContainerRef.current.classList.add('is-panning');
@@ -282,25 +283,33 @@ export const NeighborhoodMap = ({
       if (mapContainerRef.current) {
         mapContainerRef.current.classList.remove('is-panning');
       }
+      syncVisibleMarkersRef.current?.();
     };
 
     map.on('movestart', handleMoveStart);
     map.on('moveend', handleMoveEnd);
+    map.on('zoomend', () => {
+      syncVisibleMarkersRef.current?.();
+    });
 
     const markersLayer = L.layerGroup().addTo(map);
     markersLayerRef.current = markersLayer;
 
     mapInstanceRef.current = map;
 
+    // Ejecutar primera sincronización de visibilidad una vez cargado el mapa
     setTimeout(() => {
       map.invalidateSize();
+      syncVisibleMarkersRef.current?.();
     }, 150);
 
+    const markersMap = markersMapRef.current;
     return () => {
       map.off('movestart', handleMoveStart);
       map.off('moveend', handleMoveEnd);
       map.remove();
       mapInstanceRef.current = null;
+      markersMap.clear();
     };
   }, []);
 
@@ -320,9 +329,9 @@ export const NeighborhoodMap = ({
         attribution: SATELLITE_ATTRIBUTION,
         maxNativeZoom: 18,
         maxZoom: 19,
-        updateWhenIdle: false,
+        updateWhenIdle: isTouchDevice,
         updateWhenZooming: false,
-        keepBuffer: isTouchDevice ? 8 : 4,
+        keepBuffer: 2,
         crossOrigin: true
       }).addTo(map);
     } else {
@@ -330,46 +339,13 @@ export const NeighborhoodMap = ({
         attribution: STREET_MAP_ATTRIBUTION,
         maxNativeZoom: 18,
         maxZoom: 19,
-        updateWhenIdle: false,
+        updateWhenIdle: isTouchDevice,
         updateWhenZooming: false,
-        keepBuffer: isTouchDevice ? 8 : 4,
+        keepBuffer: 2,
         crossOrigin: true
       }).addTo(map);
     }
   }, [mapType]);
-
-  // 3. DIBUJAR Y ACTUALIZAR TODOS LOS MARCADORES DE TIENDAS EN EL MAPA
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const markersLayer = markersLayerRef.current;
-    if (!map || !markersLayer) return;
-
-    markersLayer.clearLayers();
-
-    const validLatLngs = [];
-
-    storesToPlot.forEach((store) => {
-      const coords = store.googleMapsCoordinates;
-      if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
-      if (isNaN(coords.lat) || isNaN(coords.lng)) return;
-
-      const isSelected = activeStore?.slug === store.slug;
-      const icon = createStoreDivIcon(store, isSelected);
-
-      const marker = L.marker([coords.lat, coords.lng], { icon });
-
-      marker.on('click', () => {
-        if (onSelectStore) {
-          onSelectStore(store.slug);
-        }
-        safeFlyOrPanTo(map, coords.lat, coords.lng, Math.max(map.getZoom(), 15));
-        showFeedback(`📍 Seleccionado: ${store.name}`);
-      });
-
-      marker.addTo(markersLayer);
-      validLatLngs.push([coords.lat, coords.lng]);
-    });
-  }, [storesToPlot, selectedStore]);
 
   // Movimiento seguro que evita el bug de división por cero / NaN de flyTo en distancias cortas
   const safeFlyOrPanTo = (map, targetLat, targetLng, targetZoom = 15) => {
@@ -402,13 +378,98 @@ export const NeighborhoodMap = ({
         if (mapInstanceRef.current) {
           mapInstanceRef.current.invalidateSize();
         }
-      }, 850);
+      }, 600);
     } catch (err) {
       console.warn('Error en animación de mapa, fallback a setView:', err);
       map.setView([targetLat, targetLng], targetZoom);
       map.invalidateSize();
     }
   };
+
+  // 3. SINCRONIZACIÓN INTELIGENTE DE MARCADORES SEGÚN EL ÁREA VISIBLE (VIEWPORT CULLING)
+  // Oculta/destruye marcadores fuera del encuadre para no sobrecargar el DOM ni la GPU en móviles
+  const syncVisibleMarkers = () => {
+    const map = mapInstanceRef.current;
+    const markersLayer = markersLayerRef.current;
+    if (!map || !markersLayer) return;
+
+    // Con zoom lejano (< 14), ocultar rótulos pesados mediante clase CSS
+    const currentZoom = map.getZoom();
+    if (mapContainerRef.current) {
+      if (currentZoom < 14) {
+        mapContainerRef.current.classList.add('map-labels-hidden');
+      } else {
+        mapContainerRef.current.classList.remove('map-labels-hidden');
+      }
+    }
+
+    // Calcular encuadre visible con un 15% de margen de seguridad (pad)
+    // para que los marcadores no aparezcan/desaparezcan abruptamente en los bordes
+    const bounds = map.getBounds().pad(0.15);
+    const visibleSlugs = new Set();
+
+    storesToPlot.forEach((store) => {
+      const coords = store.googleMapsCoordinates;
+      if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
+      if (isNaN(coords.lat) || isNaN(coords.lng)) return;
+
+      const isSelected = activeStore?.slug === store.slug;
+      const isInside = bounds.contains([coords.lat, coords.lng]);
+
+      // Si no está en el área visible y tampoco es la tienda seleccionada, ignorar
+      if (!isInside && !isSelected) {
+        return;
+      }
+
+      visibleSlugs.add(store.slug);
+      const existing = markersMapRef.current.get(store.slug);
+
+      if (existing) {
+        // Marcador ya en pantalla: actualizar únicamente si cambió su estado (ej. seleccionado o cerrado)
+        if (existing.isSelected !== isSelected || existing.isOpen !== store.isOpen) {
+          const newIcon = createStoreDivIcon(store, isSelected);
+          existing.marker.setIcon(newIcon);
+          existing.isSelected = isSelected;
+          existing.isOpen = store.isOpen;
+        }
+      } else {
+        // Marcador entra a la zona visible: crear y montar en la capa
+        const icon = createStoreDivIcon(store, isSelected);
+        const marker = L.marker([coords.lat, coords.lng], { icon });
+
+        marker.on('click', () => {
+          if (onSelectStore) {
+            onSelectStore(store.slug);
+          }
+          safeFlyOrPanTo(map, coords.lat, coords.lng, Math.max(map.getZoom(), 15));
+          showFeedback(`📍 Seleccionado: ${store.name}`);
+        });
+
+        marker.addTo(markersLayer);
+        markersMapRef.current.set(store.slug, {
+          marker,
+          isSelected,
+          isOpen: store.isOpen
+        });
+      }
+    });
+
+    // Eliminar del mapa y de memoria los marcadores que quedaron fuera de la zona visible (Culling)
+    markersMapRef.current.forEach((item, slug) => {
+      if (!visibleSlugs.has(slug)) {
+        markersLayer.removeLayer(item.marker);
+        markersMapRef.current.delete(slug);
+      }
+    });
+  };
+
+  // Mantener la referencia actualizada para los listeners de Leaflet y ejecutar sincronización
+  useEffect(() => {
+    syncVisibleMarkersRef.current = syncVisibleMarkers;
+    syncVisibleMarkers();
+  }, [storesToPlot, activeStore]);
+
+
 
   // 4. CENTRAR CUANDO CAMBIE LA TIENDA SELECCIONADA ESPECÍFICA
   useEffect(() => {
@@ -591,12 +652,12 @@ export const NeighborhoodMap = ({
           type="button"
           onClick={handleGetUserLocation}
           disabled={isLocating}
-          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md backdrop-blur-md transition-all cursor-pointer border ${
+          className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer border ${
             isLocating
               ? 'bg-blue-600 text-white border-blue-500 ring-2 ring-blue-400/50 shadow-blue-600/25'
               : hasUserGps
-                ? 'bg-white/95 hover:bg-white text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30'
-                : 'bg-white/95 hover:bg-white text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg'
+                ? 'bg-white hover:bg-slate-50 text-blue-900 border-blue-300 hover:shadow-lg ring-1 ring-blue-400/30'
+                : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/90 hover:border-blue-400 hover:shadow-lg'
           }`}
           title="Detectar mi ubicación GPS actual y centrar el mapa"
         >
@@ -613,7 +674,7 @@ export const NeighborhoodMap = ({
       {/* 3. CARD FLOTANTE INTERACTIVA DE LA TIENDA SELECCIONADA */}
       {activeStore && (
         <div className="absolute left-3 sm:left-4 bottom-14 sm:bottom-16 z-[1001] map-floating-control max-w-[280px] sm:max-w-[320px] w-full pointer-events-auto">
-          <div className="bg-white/95 backdrop-blur-xl p-3.5 rounded-2xl shadow-xl border border-slate-200/90 flex flex-col gap-2 transition-all transform hover:scale-[1.02]">
+          <div className="bg-white p-3.5 rounded-2xl shadow-xl border border-slate-200 flex flex-col gap-2 transition-transform hover:scale-[1.01]">
             
             {/* Cabecera de la Tienda */}
             <div className="flex items-start justify-between gap-2">
@@ -740,7 +801,7 @@ export const NeighborhoodMap = ({
           <button
             type="button"
             onClick={() => setIsGpsCardCollapsed(false)}
-            className="bg-slate-900/95 hover:bg-slate-900 active:scale-95 backdrop-blur-md text-white pl-2.5 pr-2 py-1.5 rounded-xl border border-slate-700/80 shadow-lg flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer group"
+            className="bg-slate-900 hover:bg-slate-950 active:scale-95 text-white pl-2.5 pr-2 py-1.5 rounded-xl border border-slate-700 shadow-lg flex items-center gap-1.5 text-[11px] font-bold transition-all cursor-pointer group"
             title="Revelar información de tu ubicación GPS (>)"
             aria-label="Revelar tarjeta de GPS"
           >
@@ -759,7 +820,7 @@ export const NeighborhoodMap = ({
       {/* 3.1 CARD FLOTANTE INTERACTIVA: UBICACIÓN GPS DEL USUARIO (EXPANDIDA) */}
       {activeLocationType === 'user' && !activeStore && !isGpsCardCollapsed && (
         <div className="absolute left-3 sm:left-4 bottom-12 sm:bottom-14 z-[1001] map-floating-control max-w-[245px] xs:max-w-[270px] sm:max-w-[310px] w-full pointer-events-auto transition-all animate-fade-in">
-          <div className="bg-slate-900/95 backdrop-blur-xl p-2.5 sm:p-3 rounded-2xl shadow-xl border border-slate-700/80 text-white flex flex-col gap-2 transition-all">
+          <div className="bg-slate-900 p-2.5 sm:p-3 rounded-2xl shadow-xl border border-slate-700 text-white flex flex-col gap-2 transition-all">
             {/* Cabecera compacta con Toggle >/< y Cerrar */}
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-2 min-w-0">
@@ -831,7 +892,7 @@ export const NeighborhoodMap = ({
       {/* Lado Derecho: Toggle Satélite y Zoom */}
       <div className="absolute bottom-3 right-3 sm:right-4 z-[1001] map-floating-control flex items-center gap-2 pointer-events-auto">
         {/* Toggle Mapa / Satélite */}
-        <div className="flex items-center bg-white/95 backdrop-blur-md p-0.5 rounded-xl shadow-md border border-slate-200">
+        <div className="flex items-center bg-white p-0.5 rounded-xl shadow-md border border-slate-200">
           <button 
             type="button"
             onClick={() => setMapType('map')}
@@ -853,7 +914,7 @@ export const NeighborhoodMap = ({
         </div>
 
         {/* Controles de Zoom */}
-        <div className="flex flex-col bg-white/95 backdrop-blur-md rounded-xl shadow-md overflow-hidden border border-slate-200">
+        <div className="flex flex-col bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
           <button 
             type="button"
             onClick={handleZoomIn}
