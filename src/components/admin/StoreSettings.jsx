@@ -13,7 +13,6 @@ import {
   Power,
   Clock,
   Image as ImageIcon,
-  Palette,
   AlertTriangle,
   Lock,
   ShieldCheck,
@@ -652,14 +651,7 @@ export const StoreSettings = () => {
     setNewCouponCode(`${prefix}-${randomNum}`);
   };
 
-  const colorThemes = [
-    { id: 'emerald', name: 'Verde Esmeralda', bg: 'bg-emerald-600', ring: 'ring-emerald-500' },
-    { id: 'teal', name: 'Azul Turquesa', bg: 'bg-teal-600', ring: 'ring-teal-500' },
-    { id: 'indigo', name: 'Índigo Marino', bg: 'bg-indigo-600', ring: 'ring-indigo-500' },
-    { id: 'rose', name: 'Rosa Pasión', bg: 'bg-rose-600', ring: 'ring-rose-500' },
-    { id: 'amber', name: 'Dorado Ámbar', bg: 'bg-amber-500', ring: 'ring-amber-500' },
-    { id: 'purple', name: 'Púrpura Real', bg: 'bg-purple-600', ring: 'ring-purple-500' }
-  ];
+
 
   const [savingConfig, setSavingConfig] = useState(false);
 
@@ -934,31 +926,6 @@ export const StoreSettings = () => {
                 className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white font-medium"
               />
             </div>
-          </div>
-        </div>
-
-        {/* Selector de Tema de Color */}
-        <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
-          <label className="text-xs font-bold text-slate-800 block flex items-center gap-1.5">
-            <Palette className="w-4 h-4 text-emerald-600" />
-            <span>Color de Tema del Negocio</span>
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
-            {colorThemes.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setForm(prev => ({ ...prev, themeColor: t.id }))}
-                className={`p-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition-all ${
-                  form.themeColor === t.id
-                    ? 'border-slate-800 bg-white ring-2 ring-slate-800/20 shadow-xs'
-                    : 'border-slate-200 bg-white/70 hover:bg-white'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full ${t.bg} shrink-0`} />
-                <span className="truncate text-[11px] text-slate-800">{t.name}</span>
-              </button>
-            ))}
           </div>
         </div>
 
