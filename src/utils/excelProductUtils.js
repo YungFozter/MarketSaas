@@ -1,4 +1,10 @@
-import XLSX from 'xlsx-js-style';
+let xlsxModulePromise = null;
+const getXLSX = async () => {
+  if (!xlsxModulePromise) {
+    xlsxModulePromise = import('xlsx-js-style').then((m) => m.default || m);
+  }
+  return xlsxModulePromise;
+};
 
 /**
  * Limpia y normaliza cadenas de moneda o números con comas/puntos de forma robusta
@@ -79,6 +85,7 @@ const findColumnValue = (row, patterns) => {
  * Procesa un archivo Excel (.xlsx / .xls) o .csv cargado en el navegador
  */
 export const parseProductExcel = async (file) => {
+  const XLSX = await getXLSX();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -260,7 +267,8 @@ export const parseProductExcel = async (file) => {
  * Genera y descarga automáticamente la plantilla oficial de Excel con diseño corporativo elegante,
  * tipografía estilizada, espaciados generosos y 1 solo producto referencial claramente marcado como muestra.
  */
-export const downloadProductTemplate = () => {
+export const downloadProductTemplate = async () => {
+  const XLSX = await getXLSX();
   const headers = [
     'Nombre del Producto',
     'Categoría',

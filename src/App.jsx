@@ -5,8 +5,6 @@ import { Toast } from './components/common/Toast';
 import { SpectatorHome } from './components/spectator/SpectatorHome';
 import { StoreDirectory } from './components/customer/StoreDirectory';
 import { CustomerHome } from './components/customer/CustomerHome';
-import { AdminHome } from './components/admin/AdminHome';
-import { SuperAdminHome } from './components/superadmin/SuperAdminHome';
 import { CartDrawer } from './components/customer/CartDrawer';
 import { CheckoutModal } from './components/customer/CheckoutModal';
 import { OrderTrackingModal } from './components/customer/OrderTrackingModal';
@@ -17,6 +15,14 @@ import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { AuthModal } from './components/auth/AuthModal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './App.css';
+
+// Lazy loading de módulos pesados administrativos para reducir el bundle inicial de clientes vecinos
+const AdminHome = React.lazy(() =>
+  import('./components/admin/AdminHome').then((m) => ({ default: m.AdminHome }))
+);
+const SuperAdminHome = React.lazy(() =>
+  import('./components/superadmin/SuperAdminHome').then((m) => ({ default: m.SuperAdminHome }))
+);
 
 const AppContent = () => {
   const { 
@@ -134,31 +140,40 @@ const AppContent = () => {
 
       {/* Contenido Principal según el Modo Activo */}
       <div className="flex-1">
-        {viewMode === 'superadmin' ? (
-          <SuperAdminHome />
-        ) : viewMode === 'spectator' ? (
-          <SpectatorHome
-            onExploreStore={() => setViewMode('customer')}
-            onOpenAuthModal={handleOpenAuthModal}
-            activeShowcaseTab={spectatorShowcaseTab}
-            onSelectShowcaseTab={setSpectatorShowcaseTab}
-          />
-        ) : viewMode === 'customer' ? (
-          customerSubView === 'directory' ? (
-            <StoreDirectory
-              onSelectStore={goToStore}
+        <React.Suspense
+          fallback={
+            <div className="w-full min-h-[50vh] flex flex-col items-center justify-center p-8 text-slate-500">
+              <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="text-xs font-semibold text-slate-600">Cargando panel...</p>
+            </div>
+          }
+        >
+          {viewMode === 'superadmin' ? (
+            <SuperAdminHome />
+          ) : viewMode === 'spectator' ? (
+            <SpectatorHome
+              onExploreStore={() => setViewMode('customer')}
               onOpenAuthModal={handleOpenAuthModal}
+              activeShowcaseTab={spectatorShowcaseTab}
+              onSelectShowcaseTab={setSpectatorShowcaseTab}
             />
+          ) : viewMode === 'customer' ? (
+            customerSubView === 'directory' ? (
+              <StoreDirectory
+                onSelectStore={goToStore}
+                onOpenAuthModal={handleOpenAuthModal}
+              />
+            ) : (
+              <CustomerHome
+                onOpenCart={() => setIsCartOpen(true)}
+                onOpenRequests={handleOpenRequests}
+                onOpenLocationModal={() => setIsLocationOpen(true)}
+              />
+            )
           ) : (
-            <CustomerHome
-              onOpenCart={() => setIsCartOpen(true)}
-              onOpenRequests={handleOpenRequests}
-              onOpenLocationModal={() => setIsLocationOpen(true)}
-            />
-          )
-        ) : (
-          <AdminHome onOpenAuthModal={handleOpenAuthModal} />
-        )}
+            <AdminHome onOpenAuthModal={handleOpenAuthModal} />
+          )}
+        </React.Suspense>
       </div>
 
       {/* Footer según la vista activa */}

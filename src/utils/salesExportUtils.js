@@ -1,5 +1,3 @@
-import * as XLSX from 'xlsx';
-
 /**
  * Normaliza y formatea las órdenes para reportes contables
  */
@@ -119,7 +117,8 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
 /**
  * Exporta a Excel (.XLSX) con soporte para columnas separadas y autoajuste de ancho
  */
-export const exportSalesToXLSX = (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
+export const exportSalesToXLSX = async (orders, storeConfig, formatBoliviaDateTime, titleSuffix = '') => {
+  const XLSX = await import('xlsx');
   const { rows, summary } = prepareSalesData(orders, formatBoliviaDateTime);
   const storeName = storeConfig?.name || 'Mi Tienda';
   const currency = storeConfig?.currencySymbol || 'Bs.';

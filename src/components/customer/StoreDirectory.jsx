@@ -58,7 +58,13 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
   });
   const [sortBy, setSortBy] = useState('nearest'); // 'nearest' | 'fastest'
   const [selectedStoreSlug, setSelectedStoreSlug] = useState(null);
-  const [visibleStoresCount, setVisibleStoresCount] = useState(5);
+  const INITIAL_PAGE_SIZE = 8;
+  const [visibleStoresCount, setVisibleStoresCount] = useState(INITIAL_PAGE_SIZE);
+
+  // Reiniciar la paginación al cambiar filtros, búsqueda u ordenación
+  useEffect(() => {
+    setVisibleStoresCount(INITIAL_PAGE_SIZE);
+  }, [searchQuery, activeFilters, sortBy]);
 
   // Solicitar ubicación GPS real del usuario
   const requestUserLocation = useCallback(() => {
@@ -252,6 +258,11 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
     }
     return list;
   }, [filteredStores, sortBy, selectedStoreSlug]);
+
+  // Lista recortada para renderizado progresivo de alto rendimiento en el DOM
+  const displayedStores = useMemo(() => {
+    return sortedStores.slice(0, visibleStoresCount);
+  }, [sortedStores, visibleStoresCount]);
 
   const handleStoreNavigation = (slug) => {
     if (onSelectStore) {
@@ -451,9 +462,9 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
             </button>
           </div>
         ) : (
-          /* LISTA COMPLETA DE MINIMARKETS A ANCHO COMPLETO */
+          /* LISTA DE MINIMARKETS CON PAGINACIÓN PROGRESIVA */
           <div className="flex flex-col gap-6 mt-6 w-full min-w-0">
-            {sortedStores.map((store, index) => {
+            {displayedStores.map((store, index) => {
               const isFirst = index === 0;
               const isSelected = selectedStoreSlug && store.slug === selectedStoreSlug;
               return (
@@ -500,6 +511,20 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
                 </div>
               );
             })}
+
+            {/* Botón para cargar progresivamente más minimarkets sin saturar el DOM */}
+            {visibleStoresCount < sortedStores.length && (
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 pb-4">
+                <button
+                  type="button"
+                  onClick={() => setVisibleStoresCount((prev) => prev + INITIAL_PAGE_SIZE)}
+                  className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl shadow-sm border border-slate-200/90 transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                >
+                  <span>Cargar más minimarkets ({sortedStores.length - visibleStoresCount} restantes)</span>
+                  <ChevronDown className="w-4 h-4 text-emerald-600 group-hover:translate-y-0.5 transition-transform" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>

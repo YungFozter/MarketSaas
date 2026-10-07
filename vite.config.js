@@ -17,6 +17,7 @@ export default defineConfig({
             if (id.includes('react')) return 'vendor-react';
             if (id.includes('supabase')) return 'vendor-supabase';
             if (id.includes('lucide-react')) return 'vendor-icons';
+            if (id.includes('xlsx')) return 'vendor-excel';
             return 'vendor';
           }
         }
