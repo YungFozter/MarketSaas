@@ -68,6 +68,7 @@ import { ShareStoreModal } from './ShareStoreModal';
 import { CashRegisterModal } from './CashRegisterModal';
 import { WeeklySummaryModal } from './WeeklySummaryModal';
 import { OrderNotificationBanner } from './OrderNotificationBanner/OrderNotificationBanner';
+import { AdminDeliveryRatesModal } from './AdminDeliveryRatesModal';
 import { playOrderNotificationSound, sendOrderNotification } from '../../services/orderNotificationService';
 import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
@@ -143,6 +144,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
 
   // Filtro de Horario / Período del Tablero Kanban y KPIs:
   // 'today' = Estrictamente pedidos/ventas del día calendario actual (desde 00:00:00 de hoy)
@@ -1105,6 +1107,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     Bloqueado
                   </span>
                 )}
+              </button>
+
+              {/* Botón Indicador Visual Tarifario Delivery */}
+              <button
+                onClick={() => setIsRatesModalOpen(true)}
+                className="h-9 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
+                title="Consultar Tarifario Oficial de Motodelivery por Distancia (0 a 18 Km)"
+              >
+                <Bike className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span className="hidden sm:inline whitespace-nowrap">Tarifario Delivery</span>
               </button>
 
               {/* Botón Cartel QR Mostrador */}
@@ -2454,6 +2466,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           </div>
         </div>
       )}
+      {/* Modal Visual Tarifario de Delivery para Dueño */}
+      <AdminDeliveryRatesModal
+        isOpen={isRatesModalOpen}
+        onClose={() => setIsRatesModalOpen(false)}
+        storeConfig={storeConfig}
+      />
     </div>
   );
 };

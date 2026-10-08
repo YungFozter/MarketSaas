@@ -33,7 +33,9 @@ import {
   Bike,
   Info,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Eye,
+  Calculator
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
@@ -41,6 +43,7 @@ import { escapeHtml } from '../../utils/formatters';
 import { normalizeStoreSchedule } from '../../utils/scheduleUtils';
 import { DELIVERY_RATES, MAX_DELIVERY_DISTANCE_KM, RAIN_SURCHARGE_BS } from '../../utils/deliveryFeeUtils';
 import { StorePrintKitModal } from './StorePrintKitModal';
+import { AdminDeliveryRatesModal } from './AdminDeliveryRatesModal';
 import './StoreSettings.css';
 
 // Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
@@ -563,6 +566,7 @@ export const StoreSettings = () => {
   });
 
   const [showRatesModal, setShowRatesModal] = useState(false);
+  const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
   const initialSyncRef = useRef(false);
   const lastStoreIdRef = useRef(storeConfig?.id || storeConfig?.tenant_id || null);
 
@@ -1118,19 +1122,67 @@ export const StoreSettings = () => {
               </div>
             </div>
 
-            {/* Botón para Ver Tarifario Oficial de Motos */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => setShowRatesModal(!showRatesModal)}
-                className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-[11px] font-bold flex items-center justify-between transition-colors cursor-pointer border border-slate-200/80"
-              >
-                <span className="flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Ver escala oficial de tarifas de motodelivery (0 a 18 Km)</span>
+            {/* Indicador Visual Destacado: Tarifario Oficial de Delivery */}
+            <div className="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50/60 to-white rounded-xl border border-emerald-200 shadow-2xs space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                    <Bike className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-xs sm:text-sm text-slate-900 leading-tight">
+                        Tarifario Oficial de Motodelivery
+                      </span>
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        0 a 18 Km
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-medium block mt-0.5">
+                      Tarifas escalonadas por GPS • 14 tramos desde Bs. 10.00
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsRatesModalOpen(true)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs transition-all cursor-pointer active:scale-95"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Abrir Tarifario Completo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRatesModal(!showRatesModal)}
+                    className="p-2 rounded-xl bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition-colors cursor-pointer"
+                    title={showRatesModal ? "Ocultar tabla rápida" : "Ver tabla rápida aquí"}
+                  >
+                    {showRatesModal ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Chips de vista previa rápida de tarifas frecuentes */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[11px]">
+                <span className="text-[10px] font-black uppercase text-slate-400 shrink-0">Tramos:</span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200/90 text-emerald-950 shrink-0 shadow-2xs font-semibold">
+                  Hasta 1 km: <strong className="text-emerald-700 font-extrabold">Bs. 10.00</strong>
                 </span>
-                {showRatesModal ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
-              </button>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200/90 text-emerald-950 shrink-0 shadow-2xs font-semibold">
+                  1 a 3 km: <strong className="text-emerald-700 font-extrabold">Bs. 13.00</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200/90 text-emerald-950 shrink-0 shadow-2xs font-semibold">
+                  3 a 4 km: <strong className="text-emerald-700 font-extrabold">Bs. 15.00</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-emerald-200/90 text-emerald-950 shrink-0 shadow-2xs font-semibold">
+                  4 a 5 km: <strong className="text-emerald-700 font-extrabold">Bs. 18.00</strong>
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white border border-purple-200 text-purple-950 shrink-0 shadow-2xs font-semibold">
+                  Tope: <strong className="text-purple-700 font-extrabold">18.0 Km</strong>
+                </span>
+              </div>
 
               {showRatesModal && (
                 <div className="mt-2 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 animate-fadeIn">
@@ -1701,6 +1753,13 @@ export const StoreSettings = () => {
     <StorePrintKitModal
       isOpen={isPrintKitOpen}
       onClose={() => setIsPrintKitOpen(false)}
+    />
+
+    {/* Modal Visual Tarifario de Delivery para Dueño */}
+    <AdminDeliveryRatesModal
+      isOpen={isRatesModalOpen}
+      onClose={() => setIsRatesModalOpen(false)}
+      storeConfig={form}
     />
 </form>
   );
