@@ -110,7 +110,7 @@ export const AdminDeliveryRatesModal = ({
         </div>
 
         {/* Resumen de Estado de la Tienda */}
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs shrink-0">
+        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200/80 grid grid-cols-3 gap-2 text-center text-xs shrink-0">
           <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
             <span className="text-[10px] font-bold text-slate-400 block uppercase">Servicio Delivery</span>
             <span className={`font-black text-xs ${isDeliveryEnabled ? 'text-emerald-700' : 'text-slate-500'}`}>
@@ -129,13 +129,6 @@ export const AdminDeliveryRatesModal = ({
             <span className="text-[10px] font-bold text-slate-400 block uppercase">Modo Lluvia</span>
             <span className={`font-black text-xs ${isRainActive ? 'text-blue-700' : 'text-slate-600'}`}>
               {isRainActive ? '🌧️ +Bs. 5 Activo' : '☀️ Tarifa Normal'}
-            </span>
-          </div>
-
-          <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
-            <span className="text-[10px] font-bold text-slate-400 block uppercase">Retiro en Local</span>
-            <span className="font-black text-xs text-emerald-800">
-              🏪 Bs. 0.00
             </span>
           </div>
         </div>
