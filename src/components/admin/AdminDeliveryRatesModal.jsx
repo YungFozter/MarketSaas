@@ -28,43 +28,55 @@ export const AdminDeliveryRatesModal = ({
 }) => {
   const [testKm, setTestKm] = useState('2.5');
 
+  // Bloqueo estricto del scroll del fondo (html y body) mientras el modal esté abierto
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose();
       }
     };
 
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
 
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     window.addEventListener('keydown', handleKeyDown);
+
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const numericTestKm = parseFloat(testKm) || 0;
   const isRainActive = Boolean(storeConfig?.isRainActive);
   const minDeliveryOrder = storeConfig?.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : 20.0;
   const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
 
-  const simResult = calculateDeliveryFee(numericTestKm, { isRainActive });
+  const trimmedKm = String(testKm ?? '').trim();
+  const numericTestKm = trimmedKm === '' ? null : parseFloat(trimmedKm);
+  const isValidNumber = numericTestKm !== null && !isNaN(numericTestKm) && numericTestKm >= 0;
+
+  // Cálculo en vivo según las opciones del negocio
+  const simResult = isValidNumber
+    ? calculateDeliveryFee(numericTestKm, { isRaining: isRainActive })
+    : null;
 
   return createPortal(
     <div
-      className="admin-rates-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
+      className="admin-rates-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overscroll-contain select-none"
       onClick={onClose}
+      onWheel={(e) => e.stopPropagation()}
     >
       <div
-        className="admin-rates-modal-card relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col my-auto text-left"
+        className="admin-rates-modal-card relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col my-auto text-left overscroll-contain select-auto"
         onClick={(e) => e.stopPropagation()}
+        onWheel={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-700 via-teal-800 to-slate-900 text-white flex items-center justify-between shrink-0">
@@ -98,7 +110,7 @@ export const AdminDeliveryRatesModal = ({
         </div>
 
         {/* Resumen de Estado de la Tienda */}
-        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs shrink-0">
           <div className="p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
             <span className="text-[10px] font-bold text-slate-400 block uppercase">Servicio Delivery</span>
             <span className={`font-black text-xs ${isDeliveryEnabled ? 'text-emerald-700' : 'text-slate-500'}`}>
@@ -128,50 +140,65 @@ export const AdminDeliveryRatesModal = ({
           </div>
         </div>
 
-        {/* Contenido con Scroll */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-slate-700 text-xs sm:text-sm">
+        {/* Contenido con Scroll Aislado */}
+        <div className="admin-rates-modal-body p-4 sm:p-5 overflow-y-auto space-y-4 text-slate-700 text-xs sm:text-sm flex-1 overscroll-contain">
           {/* Simulador Interactivo Rápido */}
-          <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-2">
+          <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="font-extrabold text-xs text-emerald-950 flex items-center gap-1.5 uppercase tracking-wide">
                 <Calculator className="w-4 h-4 text-emerald-600" />
                 <span>Simulador de Cotización Rápida</span>
               </span>
               <span className="text-[10px] font-bold text-emerald-800">
-                Ingresa los Km para cotizar
+                Ingresa una distancia en Km para calcular
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="relative flex-1">
                 <input
                   type="number"
                   min="0"
-                  max="30"
-                  step="0.5"
+                  max="50"
+                  step="0.1"
                   value={testKm}
                   onChange={(e) => setTestKm(e.target.value)}
-                  placeholder="Ej. 3.5"
-                  className="w-full pl-3 pr-10 py-2 rounded-xl border border-emerald-200 bg-white text-xs font-bold text-slate-900 focus:outline-emerald-600 shadow-2xs"
+                  placeholder="Ej. 2.5 o 7.0"
+                  className="w-full pl-3 pr-12 py-2.5 rounded-xl border border-emerald-300 bg-white text-sm font-bold text-slate-900 focus:outline-emerald-600 focus:ring-2 focus:ring-emerald-500/20 shadow-2xs"
                 />
-                <span className="absolute right-3 top-2.5 text-xs font-black text-slate-400">Km</span>
+                <span className="absolute right-3 top-3 text-xs font-black text-slate-400">Km</span>
               </div>
 
-              <div className="px-4 py-2 bg-white rounded-xl border border-emerald-200 flex items-center gap-3 shadow-2xs shrink-0">
+              <div className="px-4 py-2 bg-white rounded-xl border border-emerald-200 flex items-center justify-between sm:justify-start gap-3 shadow-2xs shrink-0 min-h-[50px]">
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 block uppercase">Tarifa Calculada:</span>
-                  {simResult.isWithinLimit ? (
-                    <span className="text-sm font-black text-emerald-700">
-                      Bs. {simResult.fee.toFixed(2)}
+                  {!isValidNumber ? (
+                    <span className="text-xs font-semibold text-slate-400 italic">
+                      Ingresa una distancia
                     </span>
+                  ) : simResult?.isWithinRange ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-base font-black text-emerald-700">
+                        Bs. {simResult.fee.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500">
+                        ({simResult.label})
+                      </span>
+                    </div>
                   ) : (
-                    <span className="text-xs font-bold text-rose-600">
-                      Fuera de cobertura (&gt; 18 Km)
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-rose-600">
+                        Fuera de cobertura (&gt; {MAX_DELIVERY_DISTANCE_KM} Km)
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400">
+                        Solo Retiro en Tienda (Bs. 0.00)
+                      </span>
+                    </div>
                   )}
                 </div>
-                {isRainActive && simResult.isWithinLimit && (
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+
+                {isRainActive && simResult?.isWithinRange && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 shrink-0">
                     +Bs. 5 Lluvia inc.
                   </span>
                 )}
@@ -190,7 +217,7 @@ export const AdminDeliveryRatesModal = ({
               </span>
             </div>
 
-            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-2xs divide-y divide-slate-100 max-h-64 overflow-y-auto">
+            <div className="admin-rates-modal-table border border-slate-200 rounded-2xl overflow-hidden shadow-2xs divide-y divide-slate-100 max-h-64 overflow-y-auto overscroll-contain">
               <div className="grid grid-cols-4 bg-slate-100 px-3 py-2 text-[11px] font-black text-slate-700 sticky top-0 z-10 shadow-xs">
                 <span>Distancia (Km)</span>
                 <span className="text-center">Tarifa Normal</span>
@@ -199,39 +226,61 @@ export const AdminDeliveryRatesModal = ({
               </div>
 
               {DELIVERY_RATES.map((rate, idx) => {
-                const isSelected = numericTestKm >= rate.min && numericTestKm <= rate.max;
+                const isSelected =
+                  isValidNumber &&
+                  simResult?.isWithinRange &&
+                  numericTestKm >= rate.minKm &&
+                  numericTestKm <= rate.maxKm;
+
+                const estimatedTime =
+                  rate.maxKm <= 3
+                    ? '10-15 min'
+                    : rate.maxKm <= 7
+                    ? '15-25 min'
+                    : rate.maxKm <= 12
+                    ? '25-35 min'
+                    : '35-45 min';
+
                 return (
                   <div
                     key={idx}
                     className={`grid grid-cols-4 px-3 py-2 text-xs font-semibold items-center transition-colors ${
                       isSelected
-                        ? 'bg-emerald-50/90 font-bold border-l-4 border-l-emerald-600'
+                        ? 'bg-emerald-100/90 font-black border-l-4 border-l-emerald-600 shadow-2xs'
                         : idx % 2 === 0
                         ? 'bg-white'
-                        : 'bg-slate-50/50'
+                        : 'bg-slate-50/60'
                     }`}
                   >
-                    <span className="text-slate-800">
-                      {rate.min === 0 ? 'Hasta 1 km' : `${rate.min} a ${rate.max} km`}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isSelected && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0 animate-ping"></span>
+                      )}
+                      <span className={`${isSelected ? 'text-emerald-950 font-black' : 'text-slate-800'}`}>
+                        {rate.label}
+                      </span>
+                    </div>
+
                     <span className="text-center font-extrabold text-emerald-700">
                       Bs. {rate.fee.toFixed(2)}
                     </span>
+
                     <span className="text-center font-extrabold text-blue-700">
                       Bs. {(rate.fee + RAIN_SURCHARGE_BS).toFixed(2)}
                     </span>
+
                     <span className="text-right text-[11px] text-slate-500 font-normal">
-                      {rate.max <= 3 ? '10-15 min' : rate.max <= 7 ? '15-25 min' : rate.max <= 12 ? '25-35 min' : '35-45 min'}
+                      {estimatedTime}
                     </span>
                   </div>
                 );
               })}
             </div>
 
-            <p className="text-[10px] text-slate-500 italic mt-1.5 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+            <p className="text-[10px] text-slate-500 italic mt-2 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               <span>
-                Para distancias mayores a 18.0 Km, el sistema rechaza automáticamente el envío a domicilio y solicita al cliente pasar a retirar por la tienda física.
+                Para distancias mayores a 18.0 Km, el sistema rechaza automáticamente el envío a domicilio y solicita al cliente pasar a retirar por la tienda física (Bs. 0.00).
               </span>
             </p>
           </div>
@@ -245,7 +294,7 @@ export const AdminDeliveryRatesModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer shadow-xs"
+            className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all cursor-pointer shadow-xs active:scale-95"
           >
             Entendido
           </button>

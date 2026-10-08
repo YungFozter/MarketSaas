@@ -4,10 +4,20 @@
 
 .admin-rates-modal-overlay {
   animation: adminRatesFadeIn 0.2s ease-out forwards;
+  overscroll-behavior: contain;
 }
 
 .admin-rates-modal-card {
   animation: adminRatesSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overscroll-behavior: contain;
+}
+
+.admin-rates-modal-body {
+  overscroll-behavior: contain;
+}
+
+.admin-rates-modal-table {
+  overscroll-behavior: contain;
 }
 
 @keyframes adminRatesFadeIn {
