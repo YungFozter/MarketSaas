@@ -268,14 +268,14 @@ export const Navbar = ({
                   <MapPin className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  {storeConfig.enableDelivery !== false && storeConfig.condominiums?.length > 0 ? (
+                  {storeConfig.enableDelivery !== false ? (
                     <>
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block leading-none">
                         Entrega en:
                       </span>
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
-                        {selectedLocation.condominium} - {selectedLocation.tower}
-                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1 max-w-[160px] truncate">
+                        {selectedLocation?.address || 'Fijar dirección'}
+                        <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
                       </span>
                     </>
                   ) : (

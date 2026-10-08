@@ -271,7 +271,7 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
             {/* Footer con opción de consulta directa */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-slate-500">
               <span className="font-medium">
-                ¿Tienes alguna consulta sobre pedidos especiales o entregas en tu condominio?
+                ¿Tienes alguna consulta sobre pedidos especiales o envíos a domicilio?
               </span>
 
               {(storeConfig?.whatsapp || storeConfig?.phone) && (

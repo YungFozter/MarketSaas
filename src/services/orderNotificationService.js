@@ -154,16 +154,15 @@ export const sendOrderNotification = async (order, storeConfig = {}) => {
   if (Notification.permission !== 'granted') return false;
 
   const storeName = storeConfig?.name || 'Mi Tienda';
-  const orderId = order?.id || 'Nuevo';
-  const customerName = order?.customer?.name || 'Vecino';
+  const customerName = order?.customer?.name || 'Cliente';
   const deliveryTypeStr = (order?.deliveryType === 'delivery' || order?.delivery_type === 'delivery')
     ? 'Delivery a Domicilio'
     : 'Retiro en Tienda';
   const totalStr = Number(order?.total || 0).toFixed(2);
-  const condoStr = order?.customer?.condominium || order?.customer?.apartment ? ` • ${order.customer.condominium || ''} ${order.customer.apartment || ''}` : '';
+  const addrStr = order?.customer?.address ? ` • ${order.customer.address}` : '';
 
   const title = `🔔 ¡Nuevo Pedido #${orderId}! - ${storeName}`;
-  const body = `${customerName} (${deliveryTypeStr}${condoStr})\nTotal: Bs. ${totalStr} • Toca para abrir y despachar.`;
+  const body = `${customerName} (${deliveryTypeStr}${addrStr})\nTotal: Bs. ${totalStr} • Toca para abrir y despachar.`;
   const icon = '/iconoPestana.png';
   const targetUrl = typeof window !== 'undefined'
     ? `${window.location.origin}${window.location.pathname}?view=admin`
@@ -243,8 +242,8 @@ export const testDeviceOrderAlert = async (storeConfig = {}) => {
       const mockOrder = {
         id: 'DEMO-' + Math.floor(1000 + Math.random() * 9000),
         customer: {
-          name: 'Vecino de Prueba',
-          condominium: 'Torre A - Depto 402'
+          name: 'Cliente de Prueba',
+          address: 'Av. San Martín #450'
         },
         deliveryType: 'delivery',
         total: 45.50

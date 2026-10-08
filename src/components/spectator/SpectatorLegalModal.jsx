@@ -4,13 +4,13 @@ import { ShieldCheck, CheckCircle2, MessageCircle, X } from 'lucide-react';
 import './SpectatorLegalModal.css';
 
 export const LEGAL_TOPICS = {
-  conserjeria: {
-    title: 'Canal de Conserjería & Enlace Comunitario',
-    desc: 'Protocolo de asistencia y enlace directo para personal de recepción, porterías y conserjerías de condominios conectados a MarketSaaS.',
+  cobertura: {
+    title: 'Políticas de Envío & Cobertura',
+    desc: 'Protocolo de cálculo de tarifas, radios de entrega y servicio de motodelivery conectado a MarketSaaS.',
     points: [
-      'Identificación clara de paquetes con Torre, Bloque y Departamento del residente.',
-      'Atención y canal directo de enlace para resolver dudas sobre entregas en conserjería.',
-      'Avisos de despacho para que el residente retire a tiempo sin desorden en mesón.'
+      'Cálculo de tarifas según distancia real por GPS hasta 18 Km con tabla transparente.',
+      'Opción de Retiro en Tienda sin costo para clientes que desean pasar por el mostrador.',
+      'Control de pedido mínimo establecido de forma independiente por cada tienda.'
     ]
   },
   comunidad: {
@@ -18,16 +18,16 @@ export const LEGAL_TOPICS = {
     desc: 'Normas y compromisos de convivencia entre vecinos y comercios asociados a la red MarketSaaS.',
     points: [
       'Entregas prioritarias gestionadas por personal de minimarkets conocidos de la zona.',
-      'Respeto a los reglamentos internos y horarios de ingreso de cada copropiedad.',
+      'Respeto a los horarios y pautas de convivencia de cada vecindario.',
       'Canal abierto y receptivo para sugerencias vecinales y mejoras comunitarias.'
     ]
   },
   privacidad: {
-    title: 'Privacidad de Edificios & Protección de Datos',
-    desc: 'Compromiso de protección de información personal para residentes y administraciones.',
+    title: 'Privacidad & Protección de Datos',
+    desc: 'Compromiso de protección de información personal para clientes y comercios.',
     points: [
       'Los datos de entrega se utilizan exclusivamente para coordinar el pedido en curso.',
-      'Los repartidores nunca tienen acceso a números privados ni códigos de citófono.',
+      'Los repartidores nunca tienen acceso a datos bancarios ni contraseñas privadas.',
       'Infraestructura protegida con respaldo en bases de datos aisladas.'
     ]
   },

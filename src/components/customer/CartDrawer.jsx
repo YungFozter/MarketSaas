@@ -29,16 +29,19 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
     applyCouponCode,
     removeCoupon,
     storeConfig,
-    selectedLocation 
+    selectedLocation,
+    minDeliveryOrder,
+    isBelowMinDeliveryOrder,
+    missingToMinDeliveryOrder
   } = useStore();
 
   const [couponInput, setCouponInput] = useState('');
 
   if (!isOpen) return null;
 
-  const freeDeliveryThreshold = storeConfig.freeDeliveryThreshold;
-  const progressPercent = Math.min(100, (cartSubtotal / freeDeliveryThreshold) * 100);
-  const remainingForFree = Math.max(0, freeDeliveryThreshold - cartSubtotal);
+  const freeDeliveryThreshold = storeConfig?.freeDeliveryThreshold || 0;
+  const progressPercent = freeDeliveryThreshold > 0 ? Math.min(100, (cartSubtotal / freeDeliveryThreshold) * 100) : 0;
+  const remainingForFree = freeDeliveryThreshold > 0 ? Math.max(0, freeDeliveryThreshold - cartSubtotal) : 0;
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
@@ -233,18 +236,26 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
                 </div>
 
                 {storeConfig?.enableDelivery ? (
-                  <div className="flex justify-between items-center">
-                    <span className="flex items-center gap-1">
-                      <span>Envío a {selectedLocation.condominium}</span>
-                    </span>
-                    <span className="font-semibold text-slate-800">
-                      {isFreeDelivery || actualDeliveryFee === 0 ? (
-                        <span className="text-emerald-600 font-bold">GRATIS</span>
-                      ) : (
-                        `+${currency} ${actualDeliveryFee.toFixed(2)}`
-                      )}
-                    </span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1">
+                        <span>Envío a Domicilio</span>
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {isFreeDelivery || actualDeliveryFee === 0 ? (
+                          <span className="text-emerald-600 font-bold">GRATIS</span>
+                        ) : (
+                          `+${currency} ${actualDeliveryFee.toFixed(2)}`
+                        )}
+                      </span>
+                    </div>
+                    {isBelowMinDeliveryOrder && (
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] font-medium flex items-center justify-between">
+                        <span>Mínimo delivery: <strong>{currency} {minDeliveryOrder.toFixed(2)}</strong></span>
+                        <span className="text-amber-700 font-bold">Faltan {currency} {missingToMinDeliveryOrder.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="flex justify-between items-center text-slate-500">
                     <span>Modalidad</span>

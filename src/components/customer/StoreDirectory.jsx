@@ -216,7 +216,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
         const storeContent = [
           store.name,
           store.address,
-          store.condominium,
+          store.zone,
           store.category,
           ...(store.featuredProducts?.map((p) => p.name) || []),
           ...(store.perks?.map((p) => p.text) || [])

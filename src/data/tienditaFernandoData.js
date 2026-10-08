@@ -1,5 +1,5 @@
 // Datos representativos, realistas y coherentes para "Tiendita Fernando"
-// Ubicación: Condominio Icaraí, Calle 3 - Casa 43 (Radial 17 y medio al 5to Anillo, Santa Cruz)
+// Ubicación: Zona Icaraí, Calle 3 - Casa 43 (Radial 17 y medio al 5to Anillo, Santa Cruz)
 // Diseñado para demostración comercial completa a dueños de tiendas de barrio y minimarkets.
 
 export const FERNANDO_TENANT_ID = 'minimarket-ian';
@@ -75,8 +75,8 @@ export const fernandoCreditCustomers = [
     id: 'cred-fernando-1',
     name: 'Don Rolando Justiniano',
     phone: '77019842',
-    apartment: 'Condominio Icaraí - Casa 14',
-    notes: 'Vecino fundador del condominio. Paga sagradamente cada quincena. Muy buena paga.',
+    address: 'Calle 3 #14 (Zona Icaraí)', reference: 'Casa 14',
+    notes: 'Vecino fundador del barrio. Paga sagradamente cada quincena. Muy buena paga.',
     balance: 145.00,
     creditLimit: 350.00,
     createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -158,7 +158,7 @@ export const fernandoCreditCustomers = [
     id: 'cred-fernando-3',
     name: 'Ing. Gary Suárez',
     phone: '78055419',
-    apartment: 'Condominio Icaraí - Casa 8',
+    address: 'Calle 3 #8 (Zona Icaraí)', reference: 'Casa 8',
     notes: 'Vecino del frente. Paga por transferencia QR cada vez que llega a Bs. 200.',
     balance: 210.00,
     creditLimit: 400.00,
@@ -247,9 +247,7 @@ export const getFernandoOrders = () => {
       customer: {
         name: 'Cliente Mostrador (Venta Rápida)',
         phone: '',
-        condominium: 'Mostrador Físico',
-        tower: '-',
-        apartment: 'Mostrador'
+        address: 'Retiro en Tienda', reference: 'Mostrador'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola 2 Litros', price: 13, quantity: 1 },
@@ -270,9 +268,7 @@ export const getFernandoOrders = () => {
       customer: {
         name: 'Cliente Mostrador (Venta Rápida)',
         phone: '',
-        condominium: 'Mostrador Físico',
-        tower: '-',
-        apartment: 'Mostrador'
+        address: 'Retiro en Tienda', reference: 'Mostrador'
       },
       items: [
         { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
@@ -294,9 +290,7 @@ export const getFernandoOrders = () => {
         name: 'Andrea Claros',
         notes: 'Timbrar al Depto 204, por favor.',
         phone: '+591 76045122',
-        tower: 'Torre B',
-        apartment: 'Depto 204',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre B - Depto 204'
       },
       items: [
         { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
@@ -323,9 +317,7 @@ export const getFernandoOrders = () => {
         name: 'Rodrigo Banegas',
         notes: 'Paso a recoger en mostrador en 10 min.',
         phone: '+591 71089234',
-        tower: 'Manzana 3',
-        apartment: 'Casa 12',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 3 - Casa 12'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 1 },
@@ -350,9 +342,7 @@ export const getFernandoOrders = () => {
         name: 'Patricia Vaca',
         notes: 'Dejar en la reja delantera si el timbre no suena.',
         phone: '+591 77312450',
-        tower: 'Calle 2',
-        apartment: 'Casa 27',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Calle 2 - Casa 27'
       },
       items: [
         { id: 'minimarket-ian-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 13.5, quantity: 1 },
@@ -380,9 +370,7 @@ export const getFernandoOrders = () => {
         name: 'Diego Morales',
         notes: 'Por favor las sodas bien frías.',
         phone: '+591 78566120',
-        tower: 'Torre A',
-        apartment: 'Depto 502',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre A - Depto 502'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },
@@ -407,9 +395,7 @@ export const getFernandoOrders = () => {
         name: 'Lic. Fernando Gutiérrez',
         notes: 'Paso a recoger en mostrador, ya voy en camino.',
         phone: '+591 72199840',
-        tower: 'Manzana 4',
-        apartment: 'Casa 35',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 4 - Casa 35'
       },
       items: [
         { id: 'minimarket-ian-prod-13', name: 'Maple de Huevos Frescos (30 unidades)', price: 28, quantity: 1 },
@@ -435,9 +421,7 @@ export const getFernandoOrders = () => {
         name: 'Dra. Gabriela Soliz',
         notes: 'Entregado en portería',
         phone: '+591 71349012',
-        tower: 'Torre A',
-        apartment: 'Depto 301',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre A - Depto 301'
       },
       items: [
         { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
@@ -463,9 +447,7 @@ export const getFernandoOrders = () => {
         name: 'Carlos Andrés Pinto',
         notes: 'Pagado por QR Simple',
         phone: '+591 77011492',
-        tower: 'Manzana 2',
-        apartment: 'Casa 8',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 2 - Casa 8'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 3 },
@@ -490,9 +472,7 @@ export const getFernandoOrders = () => {
         name: 'Mariana Céspedes',
         notes: 'Pedido de merienda entregado',
         phone: '+591 76322981',
-        tower: 'Torre B',
-        apartment: 'Depto 103',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre B - Depto 103'
       },
       items: [
         { id: 'minimarket-ian-prod-16', name: 'Yogurt Bebible Frutilla Pil 1L', price: 14, quantity: 2 },
@@ -518,9 +498,7 @@ export const getFernandoOrders = () => {
         name: 'Mauricio Paz',
         notes: 'Retiro en mostrador matutino',
         phone: '+591 75098112',
-        tower: 'Calle 1',
-        apartment: 'Casa 19',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Calle 1 - Casa 19'
       },
       items: [
         { id: 'minimarket-ian-prod-24', name: 'Avena Tradicional en Hojuelas Quaker 400g', price: 9, quantity: 1 },
@@ -546,9 +524,7 @@ export const getFernandoOrders = () => {
         name: 'Sra. Elena Cuéllar',
         notes: 'Desayuno familiar pagado en efectivo exacto',
         phone: '+591 72033481',
-        tower: 'Torre B',
-        apartment: 'Depto 402',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre B - Depto 402'
       },
       items: [
         { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 2 },
@@ -574,9 +550,7 @@ export const getFernandoOrders = () => {
         name: 'Lic. Javier Antelo',
         notes: 'Venta de ayer por la noche',
         phone: '+591 78512033',
-        tower: 'Calle 3',
-        apartment: 'Casa 40',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Calle 3 - Casa 40'
       },
       items: [
         { id: 'minimarket-ian-prod-25', name: 'Vino Tinto Campos de Solana Malbec 750ml', price: 42, quantity: 1 },
@@ -601,9 +575,7 @@ export const getFernandoOrders = () => {
         name: 'Lorena Mercado',
         notes: 'Abarrotes y limpieza entregados',
         phone: '+591 76098741',
-        tower: 'Torre A',
-        apartment: 'Depto 205',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre A - Depto 205'
       },
       items: [
         { id: 'minimarket-ian-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 13.5, quantity: 1 },
@@ -630,9 +602,7 @@ export const getFernandoOrders = () => {
         name: 'Hernán Justiniano',
         notes: 'Transferencia QR confirmada',
         phone: '+591 77088912',
-        tower: 'Manzana 1',
-        apartment: 'Casa 5',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 1 - Casa 5'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },
@@ -659,7 +629,7 @@ export const getFernandoOrders = () => {
         phone: '+591 76012499',
         tower: '',
         apartment: 'Mostrador',
-        condominium: 'Retiro en Tienda'
+        address: 'Retiro en Tienda', reference: 'Mostrador'
       },
       items: [
         { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 2 },
@@ -685,9 +655,7 @@ export const getFernandoOrders = () => {
         name: 'Sra. Silvia Justiniano',
         notes: 'Pedido de víveres a domicilio',
         phone: '+591 71309822',
-        tower: 'Torre B',
-        apartment: 'Depto 102',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre B - Depto 102'
       },
       items: [
         { id: 'minimarket-ian-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 8.5, quantity: 2 },
@@ -713,9 +681,7 @@ export const getFernandoOrders = () => {
         name: 'Ing. Marcelo Claure',
         notes: 'Retiro en mostrador pagado por QR',
         phone: '+591 77341029',
-        tower: 'Manzana 3',
-        apartment: 'Casa 18',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 3 - Casa 18'
       },
       items: [
         { id: 'minimarket-ian-prod-15', name: 'Paceña Cerveza Pilsener Lata 473ml', price: 14, quantity: 3 },
@@ -738,11 +704,9 @@ export const getFernandoOrders = () => {
       tenant_id: 'minimarket-ian',
       customer: {
         name: 'Andrea Banegas',
-        notes: 'Entregar en portería del condominio',
+        notes: 'Entregar en portería del barrio',
         phone: '+591 78099124',
-        tower: 'Manzana 2',
-        apartment: 'Casa 15',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Manzana 2 - Casa 15'
       },
       items: [
         { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 3 },
@@ -767,9 +731,7 @@ export const getFernandoOrders = () => {
         name: 'Prof. Carmen Roca',
         notes: 'Pasa temprano antes del colegio',
         phone: '+591 75022190',
-        tower: 'Calle 1',
-        apartment: 'Casa 9',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Calle 1 - Casa 9'
       },
       items: [
         { id: 'minimarket-ian-prod-4', name: 'Pan Marraqueta Tradicional (x5 unidades)', price: 5, quantity: 2 },
@@ -794,9 +756,7 @@ export const getFernandoOrders = () => {
         name: 'Dr. Hugo Banzer',
         notes: 'Víveres y refrescos fin de semana',
         phone: '+591 72100983',
-        tower: 'Torre A',
-        apartment: 'Depto 404',
-        condominium: 'Condominio Icaraí'
+        address: 'Zona Icaraí', reference: 'Torre A - Depto 404'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },
@@ -824,7 +784,7 @@ export const getFernandoOrders = () => {
         phone: '+591 76391044',
         tower: '',
         apartment: 'Mostrador',
-        condominium: 'Retiro en Tienda'
+        address: 'Retiro en Tienda', reference: 'Mostrador'
       },
       items: [
         { id: 'minimarket-ian-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.5, quantity: 2 },

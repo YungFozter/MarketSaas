@@ -147,12 +147,12 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         {
           step: 1,
           action: 'En el menú lateral izquierdo, haz clic en "Libreta de Deudas"',
-          desc: 'Tiene un ícono de libro azul. Aquí se guardan todas las cuentas fiadas de tu condominio o barrio.'
+          desc: 'Tiene un ícono de libro azul. Aquí se guardan todas las cuentas fiadas de tus clientes o vecinos del barrio.'
         },
         {
           step: 2,
           action: 'Si el cliente es nuevo, presiona "Nuevo Cliente Deudor"',
-          desc: 'Escribe el nombre del vecino (ej. "Don Carlos"), su torre/departamento y su teléfono de WhatsApp.'
+          desc: 'Escribe el nombre del vecino (ej. "Don Carlos"), su dirección/referencia y su teléfono de WhatsApp.'
         },
         {
           step: 3,
@@ -480,7 +480,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         },
         {
           name: 'Botón [+ Nuevo Cliente Deudor]',
-          desc: 'Registra a un vecino con su nombre completo, condominio/torre/casa, celular de WhatsApp y límite de crédito autorizado.'
+          desc: 'Registra a un vecino con su nombre completo, dirección/casa, celular de WhatsApp y límite de crédito autorizado.'
         },
         {
           name: 'Ficha Individual de Cada Vecino',
@@ -639,8 +639,8 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
           desc: 'Nombre oficial del minimarket, eslogan llamativo y teléfonos de contacto para llamadas y WhatsApp de pedidos.'
         },
         {
-          name: 'Ubicación y Condominios Asignados',
-          desc: 'Dirección física del local, zona de cobertura, condominios autorizados para entregas y coordenadas en el mapa.'
+          name: 'Ubicación y Parámetros de Envío',
+          desc: 'Dirección física del local, zona de cobertura, pedido mínimo para delivery, recargo de lluvia y coordenadas en el mapa.'
         },
         {
           name: 'Métodos de Pago & Subida de Código QR',

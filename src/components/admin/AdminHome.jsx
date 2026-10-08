@@ -143,7 +143,6 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [selectedCondoFilter, setSelectedCondoFilter] = useState('all');
 
   // Filtro de Horario / Período del Tablero Kanban y KPIs:
   // 'today' = Estrictamente pedidos/ventas del día calendario actual (desde 00:00:00 de hoy)
@@ -314,9 +313,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     if (dType === 'pickup') return true;
     const cName = order.customer?.name || '';
     if (cName.includes('Presencial') || cName.includes('Mostrador') || cName.includes('Cliente Mostrador')) return true;
-    const condo = order.customer?.condominium || '';
-    const apt = order.customer?.apartment || '';
-    if (condo === 'Retiro en Tienda' || condo === 'En Tienda' || apt === 'Mostrador') return true;
+    const address = order.customer?.address || '';
+    const ref = order.customer?.reference || '';
+    if (address === 'Retiro en Tienda' || address === 'En Tienda' || ref === 'Mostrador') return true;
     if (dType === 'delivery') return false;
     return false;
   };
@@ -364,28 +363,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
 
-  // Filtrado de pedidos según condominio seleccionado
-  const allCondoOrders = (orders || []).filter(o => {
-    if (!o) return false;
-    if (selectedCondoFilter === 'all') return true;
-    return o.customer?.condominium === selectedCondoFilter;
-  });
-
   // Pedidos activos (Pendientes, En Preparación, En Camino):
   // NUNCA deben ocultarse por filtros de fecha, pues representan trabajo en curso y atención prioritaria inmediata.
-  const activeOrders = allCondoOrders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way');
-  const pendingOrders = allCondoOrders.filter(o => o.status === 'pending');
-  const preparingOrders = allCondoOrders.filter(o => o.status === 'preparing');
-  const onTheWayOrders = allCondoOrders.filter(o => o.status === 'on_the_way');
+  const activeOrders = (orders || []).filter(o => o && (o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way'));
+  const pendingOrders = activeOrders.filter(o => o.status === 'pending');
+  const preparingOrders = activeOrders.filter(o => o.status === 'preparing');
+  const onTheWayOrders = activeOrders.filter(o => o.status === 'on_the_way');
 
   // Pedidos entregados / completados: sí responden al filtro temporal ('today', '24h', 'all')
-  const deliveredOrders = allCondoOrders.filter(o => {
-    if (o.status !== 'delivered') return false;
+  const deliveredOrders = (orders || []).filter(o => {
+    if (!o || o.status !== 'delivered') return false;
     return matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange);
   });
 
   // Lista consolidada de pedidos visibles en el Kanban (para contadores de pestañas y vista global)
-  const condoFilteredOrders = [...activeOrders, ...deliveredOrders];
+  const visibleKanbanOrders = [...activeOrders, ...deliveredOrders];
 
   // Identificar pedidos activos anteriores al período temporal seleccionado (para alerta visual preventiva)
   const allActiveOrders = (orders || []).filter(o => 
@@ -509,8 +501,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <p style="margin:2px 0;"><strong>Cliente:</strong> ${escapeHtml(order.customer?.name || 'Vecino')}</p>
               <p style="margin:2px 0;"><strong>Modalidad:</strong> ${order.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda / Mostrador'}</p>
               ${order.deliveryType === 'delivery' ? `
-                <p style="margin:2px 0;"><strong>Destino:</strong> ${escapeHtml(order.customer?.condominium || '')}</p>
-                <p style="margin:2px 0;">${escapeHtml([order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' - '))}</p>
+                <p style="margin:2px 0;"><strong>Destino:</strong> ${escapeHtml(order.customer?.address || 'A Domicilio')}</p>
+                ${order.customer?.reference ? `<p style="margin:2px 0;"><strong>Referencia:</strong> ${escapeHtml(order.customer.reference)}</p>` : ''}
+                ${order.distanceKm ? `<p style="margin:2px 0;"><strong>Distancia:</strong> ~${order.distanceKm} km</p>` : ''}
               ` : ''}
               <p style="margin:2px 0;"><strong>Tel:</strong> ${escapeHtml(order.customer?.phone || '')}</p>
             </div>
@@ -556,9 +549,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       if (order.status === 'pending') {
         text = `¡Hola ${order.customer.name}! Hemos recibido tu pedido #${order.id} en ${storeConfig.name}. Ya comenzamos a prepararlo. Total: ${currency} ${order.total.toFixed(2)}.`;
       } else if (order.status === 'preparing') {
-        text = `¡Hola ${order.customer.name}! Tu pedido #${order.id} ya está casi listo en el mostrador de ${storeConfig.name} y saldrá en breve hacia ${order.customer.condominium}.`;
+        text = `¡Hola ${order.customer.name}! Tu pedido #${order.id} ya está casi listo en el mostrador de ${storeConfig.name} y saldrá en breve hacia ${order.customer.address || 'tu domicilio'}.`;
       } else if (order.status === 'on_the_way') {
-        text = `¡Hola ${order.customer.name}! 🛵 Tu pedido #${order.id} ya va en camino hacia ${order.customer.tower}, ${order.customer.apartment}. ¡Por favor atento al citófono o timbre!`;
+        text = `¡Hola ${order.customer.name}! 🛵 Tu pedido #${order.id} ya va en camino hacia ${order.customer.address || 'tu ubicación'}. ${order.customer.reference ? `(Ref: ${order.customer.reference})` : ''} ¡Por favor atento!`;
       } else {
         text = `¡Hola ${order.customer.name}! Tu pedido #${order.id} ha sido entregado exitosamente. ¡Muchas gracias por apoyar a tu tienda de barrio!`;
       }
@@ -1386,7 +1379,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                       mobileKanbanTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
                     }`}>
-                      {condoFilteredOrders.length}
+                      {visibleKanbanOrders.length}
                     </span>
                   </button>
 
@@ -1496,10 +1489,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               {order.deliveryType === 'delivery' ? (
                                 <>
                                   <p className="text-xs font-semibold text-slate-900 mt-1">
-                                    🏢 {[order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                                    🛵 {order.customer?.address || 'A Domicilio'}
                                   </p>
-                                  {order.customer?.condominium && (
-                                    <p className="text-[11px] text-slate-400">{order.customer.condominium}</p>
+                                  {order.customer?.reference && (
+                                    <p className="text-[11px] text-slate-400">Ref: {order.customer.reference}</p>
                                   )}
                                 </>
                               ) : (
@@ -2019,7 +2012,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     recentTransactions.map((tx) => {
                       const idStr = String(tx.id || '');
                       const isPos = idStr.includes('POS-') || tx.customer?.name?.includes('Presencial') || tx.customer?.name?.includes('Mostrador') || tx.customer?.name?.includes('Cliente Mostrador');
-                      const isPickup = tx.deliveryType === 'pickup' || tx.delivery_type === 'pickup' || tx.customer?.condominium === 'Retiro en Tienda' || tx.customer?.condominium === 'En Tienda' || tx.customer?.apartment === 'Mostrador';
+                      const isPickup = tx.deliveryType === 'pickup' || tx.delivery_type === 'pickup' || tx.customer?.address === 'Retiro en Tienda' || tx.customer?.address === 'En Tienda' || tx.customer?.reference === 'Mostrador';
                       const payMethod = tx.paymentMethod || tx.payment_method || 'cash';
                       const txTime = tx.createdAt || tx.created_at;
                       const displayId = getDisplayOrderId(tx.id);
@@ -2054,13 +2047,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                   {isPos ? (
                                     '🏪 Venta Rápida de Mostrador'
                                   ) : isPickup ? (
-                                    `🛍️ ${tx.customer?.name || 'Vecino'} • Retiro en Tienda`
+                                    `🛍️ ${tx.customer?.name || 'Cliente'} • Retiro en Tienda`
                                   ) : (
-                                    `🛵 ${tx.customer?.name ? `${tx.customer.name} • ` : ''}${tx.customer?.condominium || 'Domicilio'}`
+                                    `🛵 ${tx.customer?.name ? `${tx.customer.name} • ` : ''}${tx.customer?.address || 'Domicilio'}`
                                   )}
-                                  {!isPos && !isPickup && (tx.customer?.tower || tx.customer?.apartment) && (
+                                  {!isPos && !isPickup && tx.customer?.reference && (
                                     <span className="font-semibold text-slate-600 ml-1">
-                                      ({[tx.customer?.tower, tx.customer?.apartment].filter(Boolean).join(' - ')})
+                                      ({tx.customer.reference})
                                     </span>
                                   )}
                                 </span>

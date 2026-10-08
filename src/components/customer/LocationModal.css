@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LocationModal.css - Estilos específicos para selección de condominio y depto
+   LocationModal.css - Estilos específicos para selección de dirección y GPS
    ========================================================================== */
 
 .location-modal-overlay {
@@ -9,6 +9,6 @@
   backdrop-filter: blur(6px);
 }
 
-.location-condo-option {
+.location-address-option {
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }

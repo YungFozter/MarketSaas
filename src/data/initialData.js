@@ -257,12 +257,6 @@ export const initialStoreConfig = {
   logoUrl: '',
   bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
   qrImageUrl: '',
-  condominiums: [
-    { id: 'c1', name: 'Condominio Las Palmas', towers: ['Torre A', 'Torre B', 'Torre C', 'Casas 1-50'], deliveryFee: 0.00, estTime: '10-15 min' },
-    { id: 'c2', name: 'Condominio Altos del Valle', towers: ['Torre 1', 'Torre 2', 'Torre 3'], deliveryFee: 0.00, estTime: '12-18 min' },
-    { id: 'c3', name: 'Edificio Vista Sol', towers: ['Piso 1-12'], deliveryFee: 0.00, estTime: '8-12 min' },
-    { id: 'c4', name: 'Barrio Central (Casas)', towers: ['Sector Norte', 'Sector Sur'], deliveryFee: 0.00, estTime: '15-20 min' }
-  ],
   categories: [
     'Lácteos & Huevos',
     'Panadería & Desayuno',
@@ -273,13 +267,15 @@ export const initialStoreConfig = {
     'Limpieza & Hogar'
   ],
   coupons: [],
-  defaultDeliveryFee: 0.00,
-  freeDeliveryThreshold: 80.00,
+  minDeliveryOrder: 20.00,
+  maxDeliveryRadiusKm: 18.0,
+  isRainActive: false,
+  freeDeliveryThreshold: 0,
   phone: '+591 72125280',
   whatsapp: '59172125280',
   schedule: 'Horarios de Atención según cada Tienda',
   isOpen: true,
-  enableDelivery: false,
+  enableDelivery: true,
   paymentMethods: [
     { id: 'cash', name: 'Efectivo contra entrega', desc: 'Indica con cuánto pagarás para tu vuelto', icon: 'Banknote', enabled: true },
     { id: 'qr', name: 'Transferencia / QR Digital', desc: 'Pago rápido directo al código QR de la tienda', icon: 'QrCode', enabled: true },
@@ -294,10 +290,9 @@ export const initialOrders = [
     customer: {
       name: 'Camila Rojas',
       phone: '+591 71234567',
-      condominium: 'Condominio Las Palmas',
-      tower: 'Torre B',
-      apartment: 'Depto 402',
-      notes: 'Tocar el timbre 402, el ascensor está operativo.'
+      address: 'Av. Las Palmas #240',
+      reference: 'Portón negro frente al parque',
+      notes: 'Tocar el timbre, portón eléctrico operativo.'
     },
     items: [
       { id: 'prod-1', name: 'Pil Leche Fresca Natural 946 ml', quantity: 2, price: 8.00 },
@@ -305,9 +300,10 @@ export const initialOrders = [
       { id: 'prod-2', name: 'Huevos de 2da (Medio Maple 15u)', quantity: 1, price: 15.00 }
     ],
     subtotal: 36.00,
-    deliveryFee: 0.00,
+    deliveryFee: 13.00,
+    distanceKm: 2.4,
     discount: 0.00,
-    total: 36.00,
+    total: 49.00,
     deliveryType: 'delivery', // 'delivery' | 'pickup'
     paymentMethod: 'cash',
     cashChangeFor: 50.00,
@@ -319,19 +315,19 @@ export const initialOrders = [
     customer: {
       name: 'Ignacio Fuentes',
       phone: '+591 76543219',
-      condominium: 'Condominio Las Palmas',
-      tower: 'Torre A',
-      apartment: 'Depto 701',
-      notes: 'Dejar en conserjería si no contesto el citófono.'
+      address: 'Calle Los Sauces #18',
+      reference: 'Casa de dos pisos reja blanca',
+      notes: 'Llamar al llegar.'
     },
     items: [
       { id: 'prod-11', name: 'Soda Coca-Cola 2 L', quantity: 2, price: 13.00 },
       { id: 'prod-12', name: 'Papas Lays Clásicas Bolsa Pequeña 70g', quantity: 2, price: 5.50 }
     ],
     subtotal: 37.00,
-    deliveryFee: 0.00,
+    deliveryFee: 15.00,
+    distanceKm: 3.8,
     discount: 0.00,
-    total: 37.00,
+    total: 52.00,
     deliveryType: 'delivery',
     paymentMethod: 'qr',
     status: 'on_the_way',
@@ -342,9 +338,8 @@ export const initialOrders = [
     customer: {
       name: 'Matías Silva',
       phone: '+591 78877665',
-      condominium: 'Edificio Vista Sol',
-      tower: 'Piso 1-12',
-      apartment: 'Depto 305',
+      address: 'Paso a recoger en persona',
+      reference: 'Mostrador',
       notes: 'Paso a retirar en 5 minutos'
     },
     items: [
@@ -352,6 +347,7 @@ export const initialOrders = [
     ],
     subtotal: 90.00,
     deliveryFee: 0.00,
+    distanceKm: 0,
     discount: 0.00,
     total: 90.00,
     deliveryType: 'pickup',
@@ -364,7 +360,7 @@ export const initialOrders = [
 export const initialProductRequests = [
   {
     id: 'REQ-101',
-    customerName: 'Valeria Soto (Torre C - Depto 102)',
+    customerName: 'Valeria Soto (Barrio Sirari)',
     productName: 'Leche de Almendras Sin Azúcar',
     notes: 'Por favor si pueden traer marca Silk o Nature Heart.',
     votes: 8,
@@ -373,7 +369,7 @@ export const initialProductRequests = [
   },
   {
     id: 'REQ-102',
-    customerName: 'Felipe Correa (Torre A - Depto 504)',
+    customerName: 'Felipe Correa (Av. Bush)',
     productName: 'Alimento Premium para Gatos Adultos (1.5 kg)',
     notes: 'Nos salvaría la vida cuando se acaba el fin de semana.',
     votes: 14,

@@ -28,12 +28,18 @@ import {
   Check,
   RotateCcw,
   Loader2,
-  Printer
+  Printer,
+  CloudRain,
+  Bike,
+  Info,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
 import { escapeHtml } from '../../utils/formatters';
 import { normalizeStoreSchedule } from '../../utils/scheduleUtils';
+import { DELIVERY_RATES, MAX_DELIVERY_DISTANCE_KM, RAIN_SURCHARGE_BS } from '../../utils/deliveryFeeUtils';
 import { StorePrintKitModal } from './StorePrintKitModal';
 import './StoreSettings.css';
 
@@ -544,7 +550,9 @@ export const StoreSettings = () => {
     schedule: normalizeStoreSchedule(storeConfig?.schedule),
     storeOpenMode: storeConfig?.storeOpenMode || 'auto',
     scheduleClosedMessage: storeConfig?.scheduleClosedMessage || '',
-    zone: storeConfig?.zone || storeConfig?.condominium || '',
+    minDeliveryOrder: storeConfig?.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig?.minOrder || 20.00),
+    isRainActive: Boolean(storeConfig?.isRainActive),
+    zone: storeConfig?.zone || '',
     reference: storeConfig?.reference || '',
     latitude: initialLat,
     longitude: initialLng,
@@ -554,6 +562,7 @@ export const StoreSettings = () => {
     address: cleanInitialAddress
   });
 
+  const [showRatesModal, setShowRatesModal] = useState(false);
   const initialSyncRef = useRef(false);
   const lastStoreIdRef = useRef(storeConfig?.id || storeConfig?.tenant_id || null);
 
@@ -576,11 +585,13 @@ export const StoreSettings = () => {
         schedule: normalizeStoreSchedule(storeConfig.schedule),
         storeOpenMode: storeConfig.storeOpenMode || 'auto',
         scheduleClosedMessage: storeConfig.scheduleClosedMessage || '',
+        minDeliveryOrder: storeConfig.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig.minOrder || 20.00),
+        isRainActive: Boolean(storeConfig.isRainActive),
         coupons: Array.isArray(storeConfig.coupons)
           ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : [],
         address: isBadAddr ? '' : storeConfig.address,
-        zone: storeConfig.zone || storeConfig.condominium || '',
+        zone: storeConfig.zone || '',
         reference: storeConfig.reference || '',
         latitude: (storeConfig.latitude !== undefined && storeConfig.latitude !== null && storeConfig.latitude !== '')
           ? storeConfig.latitude
@@ -1008,23 +1019,138 @@ export const StoreSettings = () => {
           </button>
         </div>
 
-        {/* Switch Servicio de Delivery a Domicilio */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-          <div>
-            <p className="font-bold text-xs sm:text-sm text-slate-900">Servicio de Envíos a Domicilio (Delivery)</p>
-            <p className="text-[11px] text-slate-500">
-              {form.enableDelivery !== false ? 'Tu tienda ofrece envíos a domicilio y muestra el banner promocional a los clientes.' : 'Tu tienda atiende únicamente para Retiro en Tienda (Delivery desactivado).' }
-            </p>
+        {/* Sección: Servicio de Delivery a Domicilio, Pedido Mínimo y Modo Lluvia */}
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-1.5">
+                <Bike className="w-4 h-4 text-emerald-600" />
+                <span>Servicio de Envíos a Domicilio (Motodelivery)</span>
+              </p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                {form.enableDelivery !== false
+                  ? 'Tu tienda ofrece envíos calculando la distancia real por GPS (0 a 18 Km según escala de motos).'
+                  : 'Tu tienda atiende únicamente para Retiro en Tienda física (Delivery desactivado).' }
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, enableDelivery: prev.enableDelivery === false ? true : false }))}
+              className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shrink-0 ${
+                form.enableDelivery !== false ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-300 text-slate-700'
+              }`}
+            >
+              {form.enableDelivery !== false ? '🛵 ACTIVADO' : '🛍️ DESACTIVADO'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setForm(prev => ({ ...prev, enableDelivery: prev.enableDelivery === false ? true : false }))}
-            className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-              form.enableDelivery !== false ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-300 text-slate-700'
-            }`}
-          >
-            {form.enableDelivery !== false ? '🛵 ACTIVADO' : '🛍️ DESACTIVADO'}
-          </button>
+
+          {form.enableDelivery !== false && (
+            <div className="pt-3 border-t border-slate-200/90 space-y-3 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Monto Mínimo Requerido para Delivery */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Pedido Mínimo para Delivery</span>
+                    </label>
+                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      Bs. {parseFloat(form.minDeliveryOrder || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Compra mínima en productos requerida para habilitar la opción de envío a domicilio.
+                  </p>
+                  <div className="relative pt-1">
+                    <span className="absolute left-3 top-3.5 text-xs font-black text-slate-400">Bs.</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="Ej. 20.00"
+                      value={form.minDeliveryOrder ?? ''}
+                      onChange={(e) => setForm(prev => ({ ...prev, minDeliveryOrder: e.target.value === '' ? '' : parseFloat(e.target.value) }))}
+                      className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-xs font-bold text-slate-900 bg-white focus:outline-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Switch Modo Lluvia */}
+                <div className="p-3 bg-white rounded-xl border border-slate-200 flex flex-col justify-between shadow-2xs">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                        <CloudRain className={`w-3.5 h-3.5 ${form.isRainActive ? 'text-blue-600 animate-pulse' : 'text-slate-400'}`} />
+                        <span>Modo Lluvia (+Bs. 5.00)</span>
+                      </label>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        form.isRainActive ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'
+                      }`}>
+                        {form.isRainActive ? '+Bs. 5 ACTIVO' : 'NORMAL'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Aplica el recargo de lluvia de las motos (+Bs. 5 a la carrera) mientras dure el mal clima.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-slate-600">
+                      {form.isRainActive ? '🌧️ Recargo climático encendido' : '☀️ Tarifa normal por Km'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, isRainActive: !prev.isRainActive }))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                        form.isRainActive 
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs' 
+                          : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                      }`}
+                    >
+                      {form.isRainActive ? '● LLUVIA ACTIVADA' : '○ DESACTIVADO'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón para Ver Tarifario Oficial de Motos */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowRatesModal(!showRatesModal)}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-[11px] font-bold flex items-center justify-between transition-colors cursor-pointer border border-slate-200/80"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Ver escala oficial de tarifas de motodelivery (0 a 18 Km)</span>
+                  </span>
+                  {showRatesModal ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                </button>
+
+                {showRatesModal && (
+                  <div className="mt-2 p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 animate-fadeIn">
+                    <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-slate-100 font-bold text-slate-700">
+                      <span>Rango de Distancia</span>
+                      <span>Tarifa Moto Base</span>
+                      <span>Con Lluvia (+Bs. 5)</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 max-h-48 overflow-y-auto pr-1 text-[11px] text-slate-600 font-mono">
+                      {DELIVERY_RATES.map((rate, idx) => (
+                        <div key={idx} className="flex items-center justify-between py-0.5 border-b border-slate-50">
+                          <span className="font-sans font-medium text-slate-800">{rate.label}</span>
+                          <span className="font-bold text-emerald-700">Bs. {rate.fee.toFixed(2)}</span>
+                          <span className="text-blue-700 font-semibold">Bs. {(rate.fee + RAIN_SURCHARGE_BS).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400 italic pt-1">
+                      * Cobertura máxima para motos: {MAX_DELIVERY_DISTANCE_KM} Km. Si el cliente está a más de 18 Km, el sistema le solicitará retirar en tienda.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1131,11 +1257,11 @@ export const StoreSettings = () => {
 
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">
-              Zona, Barrio o Condominio *
+              Zona o Barrio *
             </label>
             <input
               type="text"
-              placeholder="Ej. Barrio Las Palmas / Equipetrol / Condominio Vista Sol"
+              placeholder="Ej. Barrio Las Palmas / Equipetrol / Zona Norte"
               value={form.zone || ''}
               onChange={(e) => setForm(prev => ({ ...prev, zone: e.target.value }))}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:border-emerald-500 focus:outline-none"
@@ -1144,7 +1270,7 @@ export const StoreSettings = () => {
 
           <div>
             <label className="text-xs font-bold text-slate-700 block mb-1">
-              Punto de Referencia para el Vecino
+              Punto de Referencia para la Entrega
             </label>
             <input
               type="text"

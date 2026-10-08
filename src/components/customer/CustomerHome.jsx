@@ -132,7 +132,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           ? `Empacando tus productos para entrega en mostrador`
           : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
       : activeOrder.status === 'on_the_way'
-        ? `El repartidor va rumbo a ${activeOrder.customer?.condominium || activeOrder.customer?.apartment || selectedLocation?.condominium || 'tu dirección'}`
+        ? `El repartidor va rumbo a ${activeOrder.customer?.address || selectedLocation?.address || 'tu dirección'}`
         : activeOrder.status === 'preparing'
           ? `Empacando tus productos frescos para el despacho`
           : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`

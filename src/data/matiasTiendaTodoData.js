@@ -1,6 +1,6 @@
 // Datos representativos, realistas y coherentes para "Matías TiendaTodo"
 // Ubicación: Av. Las Palmas, Radial 17 y medio (entre 4to y 5to Anillo, Santa Cruz)
-// Condominio: Condominio Las Palmas
+// Zona: Zona Las Palmas / Barrio Central
 
 export const MATIAS_TENANT_ID = 'matias-tiendatodo';
 
@@ -71,9 +71,9 @@ export const matiasCreditCustomers = [
     tenant_id: 'matias-tiendatodo',
     name: 'Ing. Carlos Mendoza',
     phone: '77215480',
-    apartment: 'Torre B - Depto 402',
-    condominium: 'Condominio Las Palmas',
-    notes: 'Vecino de confianza de la Torre B. Paga puntualmente a fin de mes.',
+    address: 'Av. Las Palmas #240',
+    reference: 'Casa portón café',
+    notes: 'Vecino de confianza. Paga puntualmente a fin de mes.',
     balance: 62.50,
     creditLimit: 300.00,
     credit_limit: 300.00,
@@ -112,9 +112,9 @@ export const matiasCreditCustomers = [
     tenant_id: 'matias-tiendatodo',
     name: 'Sra. Carmen Villarroel',
     phone: '71049211',
-    apartment: 'Torre A - Depto 105',
-    condominium: 'Condominio Las Palmas',
-    notes: 'Vecina de planta baja. Mandó a su sobrino por el desayuno.',
+    address: 'Calle Los Sauces #45',
+    reference: 'Frente al parque',
+    notes: 'Vecina de confianza. Mandó a su sobrino por el desayuno.',
     balance: 21.00,
     creditLimit: 150.00,
     credit_limit: 150.00,
@@ -140,8 +140,8 @@ export const matiasCreditCustomers = [
     tenant_id: 'matias-tiendatodo',
     name: 'Diego Flores',
     phone: '78500129',
-    apartment: 'Depto 201',
-    condominium: 'Edificio Vista Sol',
+    address: 'Av. Mutualista #312',
+    reference: 'Al lado de la farmacia',
     notes: 'Abona por QR Simple semanalmente.',
     balance: 45.00,
     creditLimit: 200.00,
@@ -158,7 +158,7 @@ export const matiasCreditCustomers = [
         balanceAfter: 45.00,
         items: [
           { name: 'Coca-Cola 2L', quantity: 2, price: 13.50 },
-          { name: 'Papas Lays Clásicas', quantity: 2, price: 9.00 }
+          { name: 'Papas Fritas Lays Clásicas', quantity: 2, price: 9.00 }
         ]
       }
     ]
@@ -169,7 +169,7 @@ export const matiasProductRequests = [
   {
     id: 'REQ-101',
     tenant_id: 'matias-tiendatodo',
-    customerName: 'Valeria Soto (Torre C - Depto 102)',
+    customerName: 'Valeria Soto (Av. Las Palmas)',
     productName: 'Leche de Almendras Sin Azúcar (Silk)',
     notes: 'Por favor si pueden traer marca Silk o Nature Heart.',
     votes: 8,
@@ -179,7 +179,7 @@ export const matiasProductRequests = [
   {
     id: 'REQ-102',
     tenant_id: 'matias-tiendatodo',
-    customerName: 'Felipe Correa (Torre A - Depto 504)',
+    customerName: 'Felipe Correa (Calle Los Sauces)',
     productName: 'Alimento Premium para Gatos Adultos (1.5 kg)',
     notes: 'Nos salvaría la vida cuando se acaba el fin de semana.',
     votes: 14,
@@ -189,7 +189,7 @@ export const matiasProductRequests = [
   {
     id: 'REQ-103',
     tenant_id: 'matias-tiendatodo',
-    customerName: 'Sra. Carmen Villarroel (Torre A - Depto 105)',
+    customerName: 'Sra. Carmen Villarroel (Barrio Central)',
     productName: 'Café Instantáneo Descafeinado Nescafé',
     notes: 'Para las personas mayores que no podemos tomar cafeína por la noche.',
     votes: 6,
@@ -198,8 +198,7 @@ export const matiasProductRequests = [
   }
 ];
 
-// Generador de órdenes dinámicas en tiempo real para Matías TiendaTodo
-export const getMatiasOrders = () => {
+export const createMatiasHistoricalOrders = () => {
   const now = Date.now();
   const mins = (m) => new Date(now - m * 60 * 1000).toISOString();
   const hours = (h) => new Date(now - h * 60 * 60 * 1000).toISOString();
@@ -212,9 +211,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Cliente Mostrador (Venta Rápida)',
         phone: '',
-        condominium: 'Mostrador Físico',
-        tower: '-',
-        apartment: 'Mostrador'
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
       },
       items: [
         { id: 'matias-tiendatodo-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.0, quantity: 1 },
@@ -224,6 +222,7 @@ export const getMatiasOrders = () => {
       total: 20.5,
       discount: 0,
       delivery_fee: 0,
+      deliveryFee: 0,
       deliveryType: 'pickup',
       status: 'delivered',
       payment_method: 'cash',
@@ -237,9 +236,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Cliente Mostrador (Venta Rápida)',
         phone: '',
-        condominium: 'Mostrador Físico',
-        tower: '-',
-        apartment: 'Mostrador'
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
       },
       items: [
         { id: 'matias-tiendatodo-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
@@ -250,6 +248,7 @@ export const getMatiasOrders = () => {
       total: 28.0,
       discount: 0,
       delivery_fee: 0,
+      deliveryFee: 0,
       deliveryType: 'pickup',
       status: 'delivered',
       payment_method: 'qr',
@@ -263,9 +262,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Cliente Mostrador (Venta Rápida)',
         phone: '',
-        condominium: 'Mostrador Físico',
-        tower: '-',
-        apartment: 'Mostrador'
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
       },
       items: [
         { id: 'matias-tiendatodo-prod-25', name: 'Vino Tinto Campos de Solana Malbec 750ml', price: 42.0, quantity: 1 },
@@ -275,6 +273,7 @@ export const getMatiasOrders = () => {
       total: 50.0,
       discount: 0,
       delivery_fee: 0,
+      deliveryFee: 0,
       deliveryType: 'pickup',
       status: 'delivered',
       payment_method: 'card',
@@ -288,9 +287,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Ing. Carlos Mendoza',
         phone: '77215480',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre B',
-        apartment: 'Depto 402'
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
       },
       items: [
         { id: 'matias-tiendatodo-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 8.5, quantity: 2 },
@@ -300,6 +298,7 @@ export const getMatiasOrders = () => {
       total: 30.5,
       discount: 0,
       delivery_fee: 0,
+      deliveryFee: 0,
       deliveryType: 'pickup',
       status: 'delivered',
       payment_method: 'credit',
@@ -313,19 +312,20 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Valeria Soto',
         phone: '+591 76045122',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre C',
-        apartment: 'Depto 102',
-        notes: 'Timbre Torre C, pagaré con billete de Bs. 100'
+        address: 'Av. Las Palmas #320',
+        reference: 'Casa de 2 pisos reja blanca',
+        notes: 'Pagaré con billete de Bs. 100'
       },
       items: [
         { id: 'matias-tiendatodo-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.0, quantity: 2 },
         { id: 'matias-tiendatodo-prod-12', name: 'Papas Fritas Lays Clásicas', price: 7.5, quantity: 3 }
       ],
       subtotal: 48.5,
-      total: 48.5,
+      distanceKm: 2.2,
+      delivery_fee: 13.0,
+      deliveryFee: 13.0,
+      total: 61.5,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       status: 'pending',
@@ -342,9 +342,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Felipe Correa',
         phone: '+591 71089234',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre A',
-        apartment: 'Depto 504',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
         notes: 'Paso a recoger en mostrador'
       },
       items: [
@@ -353,9 +352,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-3', name: 'Huevos Frescos de Granja (Docena)', price: 12.0, quantity: 1 }
       ],
       subtotal: 30.0,
+      distanceKm: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
       total: 30.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'pickup',
       deliveryType: 'pickup',
       status: 'pending',
@@ -370,10 +371,9 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Camila Rojas',
         phone: '+591 71234567',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre B',
-        apartment: 'Depto 402',
-        notes: 'Tocar el timbre 402, el ascensor está operativo.'
+        address: 'Calle 3 Oeste #55',
+        reference: 'Portón negro',
+        notes: 'Tocar el timbre por favor'
       },
       items: [
         { id: 'matias-tiendatodo-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
@@ -381,9 +381,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-3', name: 'Huevos Frescos de Granja (Docena)', price: 12.0, quantity: 1 }
       ],
       subtotal: 35.0,
-      total: 35.0,
+      distanceKm: 3.5,
+      delivery_fee: 15.0,
+      deliveryFee: 15.0,
+      total: 50.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       payment_method: 'cash',
@@ -400,9 +402,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Ing. Carlos Mendoza',
         phone: '+591 77215480',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre B',
-        apartment: 'Depto 402',
+        address: 'Av. Las Palmas #240',
+        reference: 'Casa portón café',
         notes: 'Por favor entregar con empaque sellado'
       },
       items: [
@@ -411,9 +412,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 1 }
       ],
       subtotal: 42.5,
-      total: 42.5,
+      distanceKm: 1.8,
+      delivery_fee: 13.0,
+      deliveryFee: 13.0,
+      total: 55.5,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       status: 'preparing',
@@ -428,19 +431,20 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Ignacio Fuentes',
         phone: '+591 76543219',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre A',
-        apartment: 'Depto 701',
-        notes: 'Dejar en conserjería si no contesto el citófono.'
+        address: 'Av. Piraí y 4to Anillo #180',
+        reference: 'Frente a la farmacia',
+        notes: 'Llamar al llegar'
       },
       items: [
         { id: 'matias-tiendatodo-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.0, quantity: 2 },
         { id: 'matias-tiendatodo-prod-12', name: 'Papas Fritas Lays Clásicas', price: 7.5, quantity: 2 }
       ],
       subtotal: 41.0,
-      total: 41.0,
+      distanceKm: 4.2,
+      delivery_fee: 18.0,
+      deliveryFee: 18.0,
+      total: 59.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       payment_method: 'qr',
@@ -455,9 +459,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Matías Silva',
         phone: '+591 78877665',
-        condominium: 'Edificio Vista Sol',
-        tower: 'Piso 1-12',
-        apartment: 'Depto 305',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
         notes: 'Retiro presencial en mostrador'
       },
       items: [
@@ -466,9 +469,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-13', name: 'Maple de Huevos Frescos (30 unidades)', price: 28.0, quantity: 1 }
       ],
       subtotal: 83.0,
+      distanceKm: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
       total: 83.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'pickup',
       deliveryType: 'pickup',
       payment_method: 'card',
@@ -483,9 +488,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Sra. Carmen Villarroel',
         phone: '+591 71049211',
-        condominium: 'Condominio Las Palmas',
-        tower: 'Torre A',
-        apartment: 'Depto 105',
+        address: 'Calle Los Sauces #45',
+        reference: 'Frente al parque',
         notes: 'Desayuno entregado a su sobrino'
       },
       items: [
@@ -493,9 +497,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 10.0, quantity: 1 }
       ],
       subtotal: 24.0,
-      total: 24.0,
+      distanceKm: 0.8,
+      delivery_fee: 10.0,
+      deliveryFee: 10.0,
+      total: 34.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       status: 'delivered',
@@ -510,9 +516,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Andrés Suárez',
         phone: '+591 78512033',
-        condominium: 'Barrio Central',
-        tower: 'Sector Norte',
-        apartment: 'Casa 14',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
         notes: 'Pago QR simple verificado'
       },
       items: [
@@ -520,9 +525,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-7', name: 'Azúcar Blanca Refinada Guabirá 1kg', price: 6.5, quantity: 2 }
       ],
       subtotal: 26.5,
+      distanceKm: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
       total: 26.5,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'pickup',
       deliveryType: 'pickup',
       status: 'delivered',
@@ -537,9 +544,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Fabiola Paz',
         phone: '+591 75098112',
-        condominium: 'Condominio Altos del Valle',
-        tower: 'Torre 2',
-        apartment: 'Depto 301',
+        address: 'Av. Busch y 3er Anillo #88',
+        reference: 'Cerca a la rotonda',
         notes: 'Abarrotes para la semana'
       },
       items: [
@@ -548,9 +554,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 13.5, quantity: 1 }
       ],
       subtotal: 54.0,
-      total: 54.0,
+      distanceKm: 5.5,
+      delivery_fee: 18.0,
+      deliveryFee: 18.0,
+      total: 72.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'delivery',
       deliveryType: 'delivery',
       status: 'delivered',
@@ -565,9 +573,8 @@ export const getMatiasOrders = () => {
       customer: {
         name: 'Diego Flores',
         phone: '+591 78500129',
-        condominium: 'Edificio Vista Sol',
-        tower: 'Piso 1-12',
-        apartment: 'Depto 201',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
         notes: 'Transferencia confirmada'
       },
       items: [
@@ -575,9 +582,11 @@ export const getMatiasOrders = () => {
         { id: 'matias-tiendatodo-prod-9', name: 'Galletas Mabel’s Cremositas Vainilla', price: 4.0, quantity: 3 }
       ],
       subtotal: 38.0,
+      distanceKm: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
       total: 38.0,
       discount: 0,
-      delivery_fee: 0,
       delivery_type: 'pickup',
       deliveryType: 'pickup',
       status: 'delivered',
@@ -588,3 +597,5 @@ export const getMatiasOrders = () => {
     }
   ];
 };
+
+export const getMatiasOrders = createMatiasHistoricalOrders;

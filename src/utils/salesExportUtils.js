@@ -22,30 +22,30 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
     const isPos = String(o.id || '').includes('POS') || o.deliveryType === 'pos' || o.source === 'pos';
     const isCredit = o.paymentMethod === 'credit' || (typeof o.paymentMethod === 'object' && o.paymentMethod?.method === 'credit');
 
-    let customerName = 'Vecino';
+    let customerName = 'Cliente';
     let phone = '—';
-    let condo = 'En Tienda';
-    let apt = '—';
+    let address = 'En Tienda';
+    let details = '—';
     let deliveryType = 'Retiro en Tienda';
 
     if (isPos) {
       if (isCredit && o.customer?.name) {
         customerName = `${o.customer.name} (A Cuenta / Fiao)`;
         phone = o.customer?.phone && o.customer.phone !== 'Presencial' ? o.customer.phone : '—';
-        condo = o.customer?.condominium && o.customer.condominium !== 'En Tienda' ? o.customer.condominium : 'Vecino Registrado';
-        apt = o.customer?.apartment && o.customer.apartment !== '-' && o.customer.apartment !== 'Mostrador' ? o.customer.apartment : '—';
+        address = o.customer?.address || 'Cliente Registrado';
+        details = o.customer?.reference || 'Libreta de Créditos';
       } else {
         customerName = 'Venta Rápida (Cliente Mostrador)';
         phone = '—';
-        condo = 'Mostrador Físico';
-        apt = '—';
+        address = 'Mostrador Físico';
+        details = '—';
       }
       deliveryType = 'Venta de Mostrador (POS)';
     } else {
-      customerName = o.customer?.name || 'Vecino Online';
+      customerName = o.customer?.name || 'Cliente';
       phone = o.customer?.phone || '—';
-      condo = o.customer?.condominium || 'En Tienda';
-      apt = [o.customer?.tower, o.customer?.apartment].filter(Boolean).join(' - ') || '—';
+      address = o.customer?.address || 'Retiro en Tienda';
+      details = o.customer?.reference || '—';
       deliveryType = o.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda';
     }
 
@@ -70,8 +70,8 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       date: formatDateTime(o.createdAt || o.created_at),
       customer: customerName,
       phone,
-      location: condo,
-      details: apt,
+      location: address,
+      details: details,
       deliveryType,
       paymentMethod: paymentMethodLabel,
       total: totalVal,
@@ -131,7 +131,7 @@ export const exportSalesToXLSX = async (orders, storeConfig, formatBoliviaDateTi
     [reportTitle],
     [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total: ${currency} ${summary.totalAmountFormatted} (Mostrador: ${currency} ${summary.posTotalFormatted} [${summary.posCount}] | Online: ${currency} ${summary.onlineTotalFormatted} [${summary.onlineCount}])`],
     [], // Fila en blanco
-    ['#', 'ID Pedido', 'Fecha y Hora', 'Cliente', 'Teléfono', 'Ubicación / Condominio', 'Torre / Depto', 'Modalidad', 'Método de Pago', `Total (${currency})`, 'Estado']
+    ['#', 'ID Pedido', 'Fecha y Hora', 'Cliente', 'Teléfono', 'Dirección de Entrega', 'Punto de Referencia', 'Modalidad', 'Método de Pago', `Total (${currency})`, 'Estado']
   ];
 
   rows.forEach(r => {
@@ -163,8 +163,8 @@ export const exportSalesToXLSX = async (orders, storeConfig, formatBoliviaDateTi
     { wch: 20 },  // Fecha
     { wch: 28 },  // Cliente
     { wch: 16 },  // Teléfono
-    { wch: 24 },  // Condominio
-    { wch: 16 },  // Torre/Depto
+    { wch: 24 },  // Dirección
+    { wch: 16 },  // Referencia
     { wch: 20 },  // Modalidad
     { wch: 20 },  // Método
     { wch: 14 },  // Total
@@ -253,8 +253,8 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
               <th style="width: 150px;">Fecha y Hora</th>
               <th style="width: 200px;">Cliente</th>
               <th style="width: 120px;">Teléfono</th>
-              <th style="width: 160px;">Ubicación / Condominio</th>
-              <th style="width: 120px;">Torre / Depto</th>
+              <th style="width: 160px;">Dirección de Entrega</th>
+              <th style="width: 120px;">Punto de Referencia</th>
               <th style="width: 140px;">Modalidad</th>
               <th style="width: 140px;">Método de Pago</th>
               <th style="width: 110px;">Total (${currency})</th>
@@ -302,8 +302,8 @@ export const exportSalesToCSV = (orders, storeConfig, formatBoliviaDateTime, tit
     "Fecha y Hora",
     "Cliente",
     "Telefono",
-    "Ubicacion / Condominio",
-    "Torre / Depto",
+    "Direccion de Entrega",
+    "Punto de Referencia",
     "Modalidad",
     "Metodo Pago",
     `Total (${currency})`,

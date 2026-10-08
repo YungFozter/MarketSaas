@@ -311,7 +311,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                     <span>WhatsApp Pedidos: <strong>{storePhone}</strong></span>
                   </div>
                 ) : (
-                  <span>Atención rápida a todo el condominio</span>
+                  <span>Atención rápida y envíos a tu zona</span>
                 )}
 
                 {storeAddress ? (

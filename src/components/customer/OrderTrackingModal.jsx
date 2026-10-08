@@ -368,7 +368,7 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                       {isPickup ? (
                         <span>🏪 Retiro en Mostrador ({storeConfig?.name || 'Local'})</span>
                       ) : (
-                        <span>Destino: {[order.customer?.condominium, order.customer?.tower, order.customer?.apartment].filter(Boolean).join(' • ') || 'Entrega a Domicilio'}</span>
+                        <span>Destino: {[order.customer?.address, order.customer?.reference].filter(Boolean).join(' • ') || 'Entrega a Domicilio'}</span>
                       )}
                     </p>
                   </div>

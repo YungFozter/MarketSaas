@@ -34,10 +34,13 @@ import {
   Users,
   X,
   MessageCircle,
-  RotateCcw
+  RotateCcw,
+  Bike,
+  Navigation,
+  CloudRain
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
-import { SpectatorCondoModal } from './SpectatorCondoModal';
+import { SpectatorDeliveryModal } from './SpectatorDeliveryModal';
 import './SpectatorShowcase.css';
 
 const INITIAL_DEMO_ORDERS = [
@@ -93,7 +96,7 @@ export const SpectatorShowcase = ({
 }) => {
   const { storeConfig, showToast } = useStore();
   const [internalTab, setInternalTab] = useState('residents'); // 'residents' | 'merchants' | 'condos'
-  const [isCondoModalOpen, setIsCondoModalOpen] = useState(false);
+  const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const activeTab = controlledTab !== undefined ? controlledTab : internalTab;
 
   const whatsappNumber = storeConfig?.whatsapp ? storeConfig.whatsapp.replace(/[^0-9]/g, '') : '59172125280';
@@ -214,12 +217,12 @@ export const SpectatorShowcase = ({
             </button>
 
             <button
-              onClick={() => handleTabChange('condos')}
-              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === 'condos' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
+              onClick={() => handleTabChange('delivery')}
+              className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${activeTab === 'delivery' ? 'spectator-tab-active' : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
-              <span>🏢</span>
-              <span>Para Condominios</span>
+              <span>🛵</span>
+              <span>Tarifas y Envíos</span>
             </button>
           </div>
         </div>
@@ -729,60 +732,60 @@ export const SpectatorShowcase = ({
       )}
 
       {/* =========================================================================
-          3. PERSPECTIVA: PARA CONDOMINIOS (Hub Inteligente de Conserjería)
+          3. PERSPECTIVA: LOGÍSTICA & TARIFAS DE DELIVERY (0 a 18 Km)
           ========================================================================= */}
-      {activeTab === 'condos' && (
+      {activeTab === 'delivery' && (
         <div className="spectator-showcase-panel flex flex-col lg:flex-row items-center gap-8 lg:gap-12 p-6 sm:p-10 lg:p-12 rounded-3xl animate-fade-in-up">
 
-          {/* Columna Izquierda: Seguridad y Beneficios para el Edificio */}
+          {/* Columna Izquierda: Logística Justa y Tarifas Claras */}
           <div className="w-full lg:w-1/2 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 text-emerald-700 text-xs sm:text-sm font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              <Building2 className="w-4 h-4 text-emerald-600" />
-              <span>Conectividad & Beneficios para Condominios</span>
+              <Bike className="w-4 h-4 text-emerald-600" />
+              <span>Logística Hiperlocal & Tarifas por Distancia</span>
             </div>
 
             <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Organización, comodidad y entregas eficientes para tu Condominio
+              Cálculo preciso por GPS, tarifas justas y control para tu negocio
             </h3>
 
             <p className="text-xs sm:text-sm lg:text-base text-slate-600 leading-relaxed">
-              Conecta tu edificio o condominio con las tiendas y minimarkets de tu zona. Facilita que los residentes reciban sus pedidos de forma ágil, coordinada y ordenada, optimizando los tiempos de entrega y mejorando la convivencia comunitaria.
+              Conecta tu tienda con un sistema de entregas profesional y transparente. El sistema calcula la distancia exacta en kilómetros desde el local hasta el cliente, aplicando la tabla oficial de motodelivery (hasta 18 Km), con pedido mínimo configurable y modo lluvia.
             </p>
 
-            {/* 3 Pilares Residenciales */}
+            {/* 3 Pilares del Delivery */}
             <div className="space-y-3.5">
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
                 <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 font-bold text-xs">
+                  <Navigation className="w-4 h-4" />
+                </div>
+                <div>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Distancia Real por GPS (0 a 18 Km):</strong>
+                  <span className="text-slate-500 text-xs sm:text-sm leading-snug">
+                    Tarifa escalonada oficial según la distancia real en ruta. El cliente conoce el costo exacto antes de confirmar.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 flex items-center justify-center text-purple-700 shrink-0 font-bold text-xs">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Coordinación y Entregas Claras:</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Pedido Mínimo Configurable:</strong>
                   <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    Cada pedido incluye los datos exactos del vecino (torre, bloque y departamento) para un ingreso y entrega ágil, transparente y sin confusiones.
+                    El comerciante decide el monto mínimo de compra requerido para habilitar envíos a domicilio, evitando despachos no rentables.
                   </span>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-teal-100 flex items-center justify-center text-teal-700 shrink-0 font-bold text-xs">
-                  <PackageCheck className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-blue-700 shrink-0 font-bold text-xs">
+                  <Store className="w-4 h-4" />
                 </div>
                 <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Recepción Ordenada en Conserjería:</strong>
+                  <strong className="text-slate-900 text-xs sm:text-sm block">Retiro en Mostrador Siempre Bs. 0:</strong>
                   <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    Facilita la labor de recepción en portería gracias a paquetes claramente identificados y avisos directos para que los residentes retiren sin demoras.
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 shrink-0 font-bold text-xs">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <strong className="text-slate-900 text-xs sm:text-sm block">Conexión con el Comercio Cercano:</strong>
-                  <span className="text-slate-500 text-xs sm:text-sm leading-snug">
-                    Acceso instantáneo a los catálogos de tiendas del entorno, facilitando compras rápidas de despensa sin salir del condominio y potenciando el abastecimiento diario.
+                    Los clientes pueden elegir recoger personalmente sus pedidos en tienda sin ningún costo de envío.
                   </span>
                 </div>
               </div>
@@ -791,118 +794,118 @@ export const SpectatorShowcase = ({
             <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
               <button
                 type="button"
-                onClick={() => setIsCondoModalOpen(true)}
+                onClick={() => setIsDeliveryModalOpen(true)}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all cursor-pointer"
               >
-                <span>Conoce los Beneficios para tu Edificio</span>
+                <span>Ver Tarifario Completo (0 a 18 Km)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Columna Derecha: Conserjería Digital Hub & Auditoría */}
+          {/* Columna Derecha: Simulador Visual de Tarifas */}
           <div className="w-full lg:w-1/2">
             <div className="spectator-kanban-frame w-full rounded-2xl shadow-xl overflow-hidden border border-slate-200 text-left bg-slate-50">
 
-              {/* Header Conserjería Central */}
+              {/* Header Simulador */}
               <div className="px-4 py-3 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
-                    <Building className="w-4 h-4" />
+                    <Bike className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs font-extrabold text-white block">Conserjería Central - Condominio Las Lilas</span>
-                    <span className="text-[10px] text-slate-400">Torres A, B y C • 148 Departamentos Conectados</span>
+                    <span className="text-xs font-extrabold text-white block">Simulador de Tarifas Oficiales</span>
+                    <span className="text-[10px] text-slate-400">Escala de Motodelivery Santa Cruz</span>
                   </div>
                 </div>
 
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-lg border border-emerald-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Turno Activo
+                  Tarifas Activas
                 </span>
               </div>
 
-              {/* 3 KPI Cards de Impacto Residencial */}
+              {/* 3 KPI Cards de Logística */}
               <div className="p-3.5 grid grid-cols-3 gap-2 bg-slate-100/80 border-b border-slate-200 text-center">
                 <div className="p-2.5 rounded-xl bg-white border border-emerald-200 shadow-2xs">
-                  <div className="text-lg sm:text-2xl font-black text-emerald-700">-68%</div>
-                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Tráfico Foráneo</div>
+                  <div className="text-lg sm:text-2xl font-black text-emerald-700">18 Km</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Radio Máximo</div>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-white border border-teal-200 shadow-2xs">
-                  <div className="text-lg sm:text-2xl font-black text-teal-700">14 min</div>
-                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Entrega Promedio</div>
+                  <div className="text-lg sm:text-2xl font-black text-teal-700">Bs. 0</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Retiro en Tienda</div>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white border border-amber-200 shadow-2xs">
-                  <div className="text-lg sm:text-2xl font-black text-amber-600">99%</div>
-                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Entregas Efectivas</div>
+                <div className="p-2.5 rounded-xl bg-white border border-blue-200 shadow-2xs">
+                  <div className="text-lg sm:text-2xl font-black text-blue-600">+Bs. 5</div>
+                  <div className="text-[10px] font-bold text-slate-600 leading-tight mt-0.5">Modo Lluvia</div>
                 </div>
               </div>
 
-              {/* Registro en Tiempo Real de Encomiendas en Recepción */}
+              {/* Ejemplos de cálculo por tramos */}
               <div className="p-3.5 space-y-2.5">
                 <div className="text-xs font-extrabold text-slate-800 flex items-center justify-between">
-                  <span>Recepción Digital de Encomiendas</span>
+                  <span>Ejemplos de Cálculo por GPS</span>
                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Registro Seguro QR
+                    Cálculo Automático
                   </span>
                 </div>
 
-                {/* Paquete 1 */}
+                {/* Tramo 1 */}
                 <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
-                      <PackageCheck className="w-4 h-4" />
+                      <Bike className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Torre A • Depto 704</div>
-                      <div className="text-[10px] text-slate-500">Minimarket San Jorge (3 bolsas) • Recibido en mesón</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">Tramo Corto (~1.5 km)</div>
+                      <div className="text-[10px] text-slate-500">Radio barrial • Tiempo est. 10-15 min</div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-[10px] font-black border border-emerald-200 shrink-0">
-                    Casillero A-12
+                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-black border border-emerald-200 shrink-0">
+                    Bs. 13.00
                   </span>
                 </div>
 
-                {/* Paquete 2 */}
+                {/* Tramo 2 */}
                 <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700 shrink-0">
-                      <CheckCircle2 className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-700 shrink-0">
+                      <Bike className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Torre B • Depto 302</div>
-                      <div className="text-[10px] text-slate-500">Almacén Vecinal • Entregado en mano a residente</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">Tramo Medio (~3.5 km)</div>
+                      <div className="text-[10px] text-slate-500">Segundo a tercer anillo • 15-20 min</div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 text-[10px] font-black border border-blue-200 shrink-0">
-                    Entregado OK
+                  <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 text-xs font-black border border-teal-200 shrink-0">
+                    Bs. 15.00
                   </span>
                 </div>
 
-                {/* Paquete 3 */}
+                {/* Tramo 3 */}
                 <div className="p-3 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 shrink-0">
-                      <Truck className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center text-purple-700 shrink-0">
+                      <Bike className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 truncate">Torre C • Depto 1105</div>
-                      <div className="text-[10px] text-slate-500">Botillería & Market La Esquina (a 120m)</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">Tramo Extendido (~6.0 km)</div>
+                      <div className="text-[10px] text-slate-500">Zona perimetral • 20-30 min</div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 text-[10px] font-black border border-amber-200 shrink-0">
-                    En Camino (3 min)
+                  <span className="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 text-xs font-black border border-purple-200 shrink-0">
+                    Bs. 20.00
                   </span>
                 </div>
               </div>
 
-              {/* Garantía de Privacidad y Cero Vulnerabilidad */}
+              {/* Límite y Regla de Negocio */}
               <div className="px-4 py-2.5 bg-slate-900 text-slate-300 text-[11px] flex items-center gap-2 border-t border-slate-800">
-                <Lock className="w-4 h-4 text-emerald-400 shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="leading-tight">
-                  <strong className="text-white font-bold">Privacidad 100% Protegida:</strong> Los repartidores nunca tienen acceso a teléfonos personales ni códigos de citófono.
+                  <strong className="text-white font-bold">Cobertura hasta 18 Km:</strong> Los pedidos que excedan los 18 km se derivan automáticamente a retiro personal en tienda.
                 </span>
               </div>
 
@@ -912,10 +915,10 @@ export const SpectatorShowcase = ({
         </div>
       )}
 
-      {/* Modal: Beneficios para Condominios & Edificios */}
-      <SpectatorCondoModal
-        isOpen={isCondoModalOpen}
-        onClose={() => setIsCondoModalOpen(false)}
+      {/* Modal: Tarifario Oficial de Delivery & Distancia */}
+      <SpectatorDeliveryModal
+        isOpen={isDeliveryModalOpen}
+        onClose={() => setIsDeliveryModalOpen(false)}
         whatsappNumber={whatsappNumber}
       />
 

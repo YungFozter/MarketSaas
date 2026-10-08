@@ -139,8 +139,7 @@ export const SalesHistory = () => {
           : '';
 
         const customerName = order.customer?.name || '';
-        const customerPhone = order.customer?.phone || '';
-        const customerAddress = `${order.customer?.tower || ''} ${order.customer?.apartment || ''} ${order.customer?.condominium || ''}`;
+        const customerAddress = `${order.customer?.address || ''} ${order.customer?.reference || ''}`;
 
         return (
           normalizeSearchText(order.id).includes(cleanQuery) ||
@@ -307,10 +306,10 @@ export const SalesHistory = () => {
           
           <div style="margin-bottom:6px;">
             <p style="margin:2px 0; font-size:11px;"><strong>Cliente:</strong> ${escapeHtml(sale.customer?.name || 'Cliente Presencial')}</p>
-            ${sale.customer?.condominium && sale.customer.condominium !== 'En Tienda' ? `
-              <p style="margin:2px 0; font-size:11px;"><strong>Destino:</strong> ${escapeHtml(sale.customer.tower || '')} • ${escapeHtml(sale.customer.apartment || '')}</p>
+            ${sale.deliveryType === 'delivery' && sale.customer?.address ? `
+              <p style="margin:2px 0; font-size:11px;"><strong>Destino:</strong> ${escapeHtml(sale.customer.address)}${sale.customer.reference ? ` (${escapeHtml(sale.customer.reference)})` : ''}</p>
             ` : ''}
-            <p style="margin:2px 0; font-size:11px;"><strong>Tipo:</strong> ${sale.deliveryType === 'delivery' ? 'Delivery Vecino' : 'Venta Mostrador'}</p>
+            <p style="margin:2px 0; font-size:11px;"><strong>Tipo:</strong> ${sale.deliveryType === 'delivery' ? 'Envío a Domicilio' : 'Venta Mostrador'}</p>
           </div>
           
           <div class="divider"></div>
@@ -1048,14 +1047,14 @@ export const SalesHistory = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Destino:</span>
                     <span className="font-semibold text-slate-700">
-                      {[selectedSale.customer?.condominium, selectedSale.customer?.tower, selectedSale.customer?.apartment].filter(Boolean).join(' • ') || 'A Domicilio'}
+                      {[selectedSale.customer?.address, selectedSale.customer?.reference].filter(Boolean).join(' • ') || 'A Domicilio'}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200">
                   <span className="text-slate-400">Tipo de Entrega:</span>
                   <span className="font-bold text-emerald-800">
-                    {selectedSale.deliveryType === 'delivery' ? '🛵 Delivery Vecino' : '🏪 Retiro en Tienda / Mostrador'}
+                    {selectedSale.deliveryType === 'delivery' ? '🛵 Envío a Domicilio' : '🏪 Retiro en Tienda / Mostrador'}
                   </span>
                 </div>
               </div>

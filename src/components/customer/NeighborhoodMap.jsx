@@ -30,9 +30,9 @@ const DEFAULT_CITY_CENTER_COORDS = {
 };
 
 const ZONE_COORDINATES = {
-  'Condominio Las Palmas': { lat: -17.7942, lng: -63.2031, name: 'Condominio Las Palmas' },
-  'Condominio Altos del Valle': { lat: -17.7885, lng: -63.1978, name: 'Condominio Altos del Valle' },
-  'Barrio Central (Casas)': { lat: -17.7995, lng: -63.2085, name: 'Barrio Central' },
+  'Zona Las Palmas': { lat: -17.7942, lng: -63.2031, name: 'Zona Las Palmas' },
+  'Zona Equipetrol': { lat: -17.7885, lng: -63.1978, name: 'Zona Equipetrol' },
+  'Barrio Central': { lat: -17.7995, lng: -63.2085, name: 'Barrio Central' },
   'all': DEFAULT_CITY_CENTER_COORDS
 };
 

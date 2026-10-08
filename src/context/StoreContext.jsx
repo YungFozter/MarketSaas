@@ -15,6 +15,14 @@ import {
   calculateStoreOpenStatus, 
   formatScheduleSummary 
 } from '../utils/scheduleUtils';
+import { 
+  calculateDistanceKm, 
+  calculateDeliveryFee, 
+  validateDeliveryEligibility,
+  DELIVERY_RATES,
+  MAX_DELIVERY_DISTANCE_KM,
+  RAIN_SURCHARGE_BS
+} from '../utils/deliveryFeeUtils';
 
 const StoreContext = createContext();
 
@@ -711,15 +719,27 @@ export const normalizeOrder = (o) => {
 
   const dType = o.delivery_type || o.deliveryType || 'pickup';
   const dFee = o.delivery_fee != null ? Number(o.delivery_fee) : (o.deliveryFee != null ? Number(o.deliveryFee) : 0);
+  const dDist = o.distance_km != null ? Number(o.distance_km) : (o.distanceKm != null ? Number(o.distanceKm) : null);
+  const isRain = Boolean(o.is_rain_surcharge ?? o.isRainSurcharge);
   const created = o.created_at || o.createdAt || new Date().toISOString();
   const cCode = o.coupon_code || o.couponCode || null;
+
+  const rawCust = o.customer || {};
+  const normalizedCustomer = {
+    name: rawCust.name || 'Cliente',
+    phone: rawCust.phone || '',
+    address: rawCust.address || '',
+    reference: rawCust.reference || '',
+    coordinates: rawCust.coordinates || null,
+    notes: rawCust.notes || ''
+  };
 
   return {
     ...o,
     id: String(o.id),
     tenant_id: o.tenant_id || 'default',
     owner_id: o.owner_id || null,
-    customer: o.customer || { name: 'Vecino', phone: '' },
+    customer: normalizedCustomer,
     items: Array.isArray(o.items) ? o.items : [],
     subtotal: Number(o.subtotal || 0),
     total: Number(o.total || 0),
@@ -730,6 +750,10 @@ export const normalizeOrder = (o) => {
     deliveryType: dType,
     delivery_fee: dFee,
     deliveryFee: dFee,
+    distance_km: dDist,
+    distanceKm: dDist,
+    is_rain_surcharge: isRain,
+    isRainSurcharge: isRain,
     payment_method: payMethod,
     paymentMethod: payMethod,
     cashChangeFor: cashChange || o.cashChangeFor || o.cash_change_for || null,
@@ -1169,15 +1193,13 @@ export const StoreProvider = ({ children }) => {
           parsed.address = 'Direccion según cada Tienda';
         }
         parsed.schedule = normalizeStoreSchedule(parsed.schedule);
-        if (parsed.defaultDeliveryFee === undefined || parsed.defaultDeliveryFee === 5.00) {
-          parsed.defaultDeliveryFee = 0.00;
+        if (parsed.minDeliveryOrder === undefined) {
+          parsed.minDeliveryOrder = 20.00;
         }
-        if (Array.isArray(parsed.condominiums)) {
-          parsed.condominiums = parsed.condominiums.map(c => ({
-            ...c,
-            deliveryFee: c.deliveryFee === 5.00 || c.deliveryFee === 7.00 || c.deliveryFee === 8.00 ? 0.00 : c.deliveryFee
-          }));
+        if (parsed.isRainActive === undefined) {
+          parsed.isRainActive = false;
         }
+        delete parsed.condominiums;
         if (Array.isArray(parsed.coupons)) {
           parsed.coupons = parsed.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
         } else {
@@ -1397,13 +1419,28 @@ export const StoreProvider = ({ children }) => {
   // 4. Carrito de Compras (En Modo Demostración inicia siempre vacío en cada recarga)
   const [cart, setCart] = useState([]);
 
-  // 5. Ubicación seleccionada por el cliente
+  // 5. Ubicación seleccionada por el cliente (Dirección de entrega y coordenadas)
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_location`);
-    return saved ? JSON.parse(saved) : {
-      condominium: initialStoreConfig.condominiums[0].name,
-      tower: initialStoreConfig.condominiums[0].towers[0],
-      apartment: '',
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_location`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          address: parsed.address || '',
+          reference: parsed.reference || '',
+          latitude: parsed.latitude != null ? parseFloat(parsed.latitude) : null,
+          longitude: parsed.longitude != null ? parseFloat(parsed.longitude) : null,
+          distanceKm: parsed.distanceKm != null ? parseFloat(parsed.distanceKm) : null,
+          notes: parsed.notes || ''
+        };
+      }
+    } catch (e) {}
+    return {
+      address: '',
+      reference: '',
+      latitude: null,
+      longitude: null,
+      distanceKm: null,
       notes: ''
     };
   });
@@ -2410,9 +2447,9 @@ export const StoreProvider = ({ children }) => {
                   whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
                   qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
                   bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
-                  condominium: (isCurrentOwner && (storeConfig?.zone || storeConfig?.condominium))
-                    ? (storeConfig.zone || storeConfig.condominium)
-                    : (conf.zone || conf.condominium || conf.condominiums?.[0]?.name || 'Santa Cruz'),
+                  zone: (isCurrentOwner && storeConfig?.zone)
+                    ? storeConfig.zone
+                    : (conf.zone || 'Santa Cruz'),
                   reference: (isCurrentOwner && storeConfig?.reference !== undefined)
                     ? storeConfig.reference
                     : (conf.reference || ''),
@@ -2534,7 +2571,7 @@ export const StoreProvider = ({ children }) => {
             name: storeConfig.name,
             tagline: storeConfig.tagline || s.tagline,
             address: storeConfig.address || s.address,
-            condominium: storeConfig.zone || storeConfig.condominium || s.condominium,
+            zone: storeConfig.zone || s.zone || 'Santa Cruz',
             reference: storeConfig.reference !== undefined ? storeConfig.reference : s.reference,
             isOpen: calculateStoreOpenStatus(storeConfig).isOpen,
             statusBadge: calculateStoreOpenStatus(storeConfig).statusBadge,
@@ -3251,14 +3288,51 @@ export const StoreProvider = ({ children }) => {
     return acc;
   }, 0);
 
-  // Tarifa de delivery calculada según el condominio seleccionado
+  // Tarifa de delivery calculada por distancia (motodelivery) y condición climática (lluvia)
   const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
-  const currentCondo = Array.isArray(storeConfig?.condominiums)
-    ? storeConfig.condominiums.find(c => c.name === selectedLocation?.condominium)
-    : null;
-  const deliveryFeeBase = isDeliveryEnabled ? (currentCondo ? (currentCondo.deliveryFee ?? storeConfig?.deliveryFee ?? storeConfig?.defaultDeliveryFee ?? 0) : (storeConfig?.deliveryFee ?? storeConfig?.defaultDeliveryFee ?? 0)) : 0;
+
+  // Coordenadas geográficas de la tienda
+  const storeLat = (storeConfig?.latitude !== '' && storeConfig?.latitude != null)
+    ? parseFloat(storeConfig.latitude)
+    : (storeConfig?.googleMapsCoordinates?.lat != null ? parseFloat(storeConfig.googleMapsCoordinates.lat) : null);
+  const storeLng = (storeConfig?.longitude !== '' && storeConfig?.longitude != null)
+    ? parseFloat(storeConfig.longitude)
+    : (storeConfig?.googleMapsCoordinates?.lng != null ? parseFloat(storeConfig.googleMapsCoordinates.lng) : null);
+
+  // Coordenadas geográficas del cliente (desde GPS o marcador en mapa)
+  const clientLat = selectedLocation?.latitude != null ? parseFloat(selectedLocation.latitude) : null;
+  const clientLng = selectedLocation?.longitude != null ? parseFloat(selectedLocation.longitude) : null;
+
+  // Distancia calculada en kilómetros (Haversine)
+  const currentDistanceKm = useMemo(() => {
+    if (storeLat != null && storeLng != null && clientLat != null && clientLng != null) {
+      return calculateDistanceKm(storeLat, storeLng, clientLat, clientLng);
+    }
+    if (selectedLocation?.distanceKm != null) {
+      return parseFloat(selectedLocation.distanceKm);
+    }
+    return null;
+  }, [storeLat, storeLng, clientLat, clientLng, selectedLocation?.distanceKm]);
+
+  // Cotización detallada de tarifa según kilometraje y lluvia
+  const deliveryCalculation = useMemo(() => {
+    return calculateDeliveryFee(currentDistanceKm, {
+      isRaining: Boolean(storeConfig?.isRainActive)
+    });
+  }, [currentDistanceKm, storeConfig?.isRainActive]);
+
+  // Monto mínimo requerido de pedido para delivery fijado por el comerciante
+  const minDeliveryOrder = parseFloat(storeConfig?.minDeliveryOrder ?? storeConfig?.minOrder ?? 0) || 0;
+  const isBelowMinDeliveryOrder = isDeliveryEnabled && minDeliveryOrder > 0 && cartSubtotal < minDeliveryOrder;
+  const missingToMinDeliveryOrder = Math.max(0, Math.round((minDeliveryOrder - cartSubtotal) * 100) / 100);
+
+  // Verificación de envío gratuito por umbral de compra si la tienda lo activa
   const isFreeDelivery = !isDeliveryEnabled || (storeConfig?.freeDeliveryThreshold > 0 && cartSubtotal >= storeConfig.freeDeliveryThreshold);
-  const actualDeliveryFee = (!isDeliveryEnabled || isFreeDelivery) ? 0 : deliveryFeeBase;
+
+  // Tarifa final efectiva aplicada al pedido
+  const actualDeliveryFee = (!isDeliveryEnabled || isFreeDelivery || !deliveryCalculation.isWithinRange)
+    ? 0
+    : deliveryCalculation.fee;
 
   // Total final
   const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;
@@ -3358,11 +3432,11 @@ export const StoreProvider = ({ children }) => {
       tenant_id: tenantSlug,
       owner_id: storeConfig?.owner_id || null,
       customer: {
-        name: orderData.name || 'Vecino',
+        name: orderData.name || 'Cliente',
         phone: orderData.phone || '',
-        condominium: orderData.condominium || '',
-        tower: orderData.tower || '',
-        apartment: orderData.apartment || '',
+        address: orderData.address || '',
+        reference: orderData.reference || '',
+        coordinates: orderData.coordinates || (orderData.latitude && orderData.longitude ? { lat: orderData.latitude, lng: orderData.longitude } : null),
         notes: orderData.notes || ''
       },
       items: cart.map(item => ({
@@ -3373,9 +3447,13 @@ export const StoreProvider = ({ children }) => {
       })),
       subtotal: cartSubtotal,
       discount: discountAmount,
-      delivery_fee: orderData.deliveryType === 'delivery' ? actualDeliveryFee : 0,
+      delivery_fee: orderData.deliveryType === 'delivery' ? (orderData.deliveryFee != null ? Number(orderData.deliveryFee) : actualDeliveryFee) : 0,
       delivery_type: orderData.deliveryType || 'pickup',
-      total: orderData.deliveryType === 'delivery' ? cartTotal : Math.max(0, cartSubtotal - discountAmount),
+      distance_km: orderData.deliveryType === 'delivery' ? (orderData.distanceKm != null ? Number(orderData.distanceKm) : currentDistanceKm) : 0,
+      is_rain_surcharge: orderData.deliveryType === 'delivery' ? Boolean(storeConfig?.isRainActive) : false,
+      total: orderData.deliveryType === 'delivery' 
+        ? Math.max(0, cartSubtotal + (orderData.deliveryFee != null ? Number(orderData.deliveryFee) : actualDeliveryFee) - discountAmount) 
+        : Math.max(0, cartSubtotal - discountAmount),
       status: 'pending',
       payment_method: orderData.cashChangeFor 
         ? { method: orderData.paymentMethod, cashChangeFor: orderData.cashChangeFor }
@@ -4000,17 +4078,17 @@ export const StoreProvider = ({ children }) => {
     // 2. Si el cobro es "A Cuenta / Fiao", registrar el cargo al cliente en su libreta
     const isCredit = paymentType === 'credit';
     const customerInfo = isCredit && creditOptions?.customerId ? {
-      name: creditOptions.customerName || 'Vecino a Cuenta',
+      name: creditOptions.customerName || 'Cliente a Cuenta',
       phone: creditOptions.customerPhone || '',
-      condominium: creditOptions.customerApartment || 'En Tienda',
-      tower: '-',
-      apartment: creditOptions.customerApartment || '-'
+      address: creditOptions.customerAddress || 'En Tienda (POS)',
+      reference: 'Cuenta Corriente',
+      notes: ''
     } : {
       name: 'Cliente Mostrador (Venta Rápida)',
       phone: '',
-      condominium: 'En Tienda',
-      tower: '-',
-      apartment: 'Mostrador'
+      address: 'En Tienda (POS)',
+      reference: 'Mostrador',
+      notes: ''
     };
 
     if (isCredit && creditOptions?.customerId) {
@@ -4891,15 +4969,6 @@ export const StoreProvider = ({ children }) => {
       }
 
       const { adminPassword, admin_pin, ...baseConfig } = initialStoreConfig;
-      const defaultCondos = [
-        {
-          id: `c-${cleanSlug}-1`,
-          name: 'Condominio Central',
-          towers: ['Torre A', 'Torre B'],
-          deliveryFee: 0,
-          estTime: '10-15 min'
-        }
-      ];
       const defaultSubscription = createDefaultSubscription(TRIAL_DURATION_MINUTES);
       const newConfig = {
         ...baseConfig,
@@ -4912,7 +4981,10 @@ export const StoreProvider = ({ children }) => {
         address: '',
         zone: '',
         reference: '',
-        condominiums: defaultCondos,
+        minDeliveryOrder: 20.00,
+        maxDeliveryRadiusKm: 18.0,
+        isRainActive: false,
+        enableDelivery: true,
         subscription: defaultSubscription
       };
 
@@ -4925,7 +4997,6 @@ export const StoreProvider = ({ children }) => {
         currency_symbol: 'Bs.',
         is_open: true,
         address: '',
-        condominiums: defaultCondos,
         coupons: [],
         categories: initialStoreConfig.categories,
         payment_methods: initialStoreConfig.paymentMethods,
@@ -5119,6 +5190,11 @@ export const StoreProvider = ({ children }) => {
         cartTotal,
         actualDeliveryFee,
         isFreeDelivery,
+        deliveryCalculation,
+        currentDistanceKm,
+        minDeliveryOrder,
+        isBelowMinDeliveryOrder,
+        missingToMinDeliveryOrder,
         appliedCoupon,
         applyCouponCode,
         removeCoupon,

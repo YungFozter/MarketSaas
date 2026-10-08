@@ -101,11 +101,11 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth }) => {
               <li>
                 <button
                   type="button"
-                  onClick={() => setActiveTopic('conserjeria')}
+                  onClick={() => setActiveTopic('cobertura')}
                   className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer text-left w-full group"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span>Canal de Conserjería & Enlace</span>
+                  <span>Políticas de Envío & Cobertura</span>
                 </button>
               </li>
               <li>
@@ -125,7 +125,7 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth }) => {
                   className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer text-left w-full group"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
-                  <span>Privacidad de Edificios & Datos</span>
+                  <span>Privacidad & Protección de Datos</span>
                 </button>
               </li>
               <li>
@@ -146,7 +146,7 @@ export const SpectatorFooter = ({ onExploreStore, onScrollToAuth }) => {
         {/* Fila Inferior */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-center sm:text-left">
           <p className="text-slate-400">
-            © {new Date().getFullYear()} <strong className="text-slate-200 font-semibold">MarketSaaS Inc.</strong> Plataforma SaaS Hiperlocal para Barrios y Condominios.
+            © {new Date().getFullYear()} <strong className="text-slate-200 font-semibold">MarketSaaS Inc.</strong> Plataforma SaaS de Comercio Hiperlocal y Envíos a Domicilio.
           </p>
         </div>
 
