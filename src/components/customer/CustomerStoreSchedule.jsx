@@ -10,13 +10,15 @@ import {
   MessageCircle, 
   Info, 
   Store,
-  MapPin
+  MapPin,
+  Bike
 } from 'lucide-react';
 import { 
   normalizeStoreSchedule, 
   calculateStoreOpenStatus, 
   getBoliviaTime, 
-  formatScheduleSummary 
+  formatScheduleSummary,
+  calculateDeliveryScheduleStatus
 } from '../../utils/scheduleUtils';
 
 export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id = "store-schedule-section" }) => {
@@ -47,6 +49,10 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
   const isTodayOpen = todayItem ? (todayItem.open !== false && todayItem.enabled !== false) : true;
   const storeName = storeConfig?.name || 'Tienda';
   const customMessage = storeConfig?.scheduleClosedMessage || schedule.customNote || '';
+
+  const deliveryStatus = useMemo(() => {
+    return calculateDeliveryScheduleStatus(storeConfig?.deliverySchedule, storeConfig);
+  }, [storeConfig]);
 
   return (
     <section 
@@ -252,6 +258,33 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
                 );
               })}
             </div>
+            
+            {/* Sección de Horarios de Delivery & Envíos si está activo */}
+            {storeConfig?.enableDelivery !== false && (
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Bike className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-slate-900 block leading-tight">
+                      Horarios de Envíos a Domicilio (Motodelivery):
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {deliveryStatus.daysText} • {deliveryStatus.timeText}
+                    </span>
+                  </div>
+                </div>
+
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide shrink-0 border self-start sm:self-center ${
+                  deliveryStatus.isCurrentlyDelivering 
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                    : 'bg-amber-100 text-amber-800 border-amber-300'
+                }`}>
+                  {deliveryStatus.badgeText}
+                </span>
+              </div>
+            )}
 
             {/* Nota o Mensaje Especial de la Tienda si existe */}
             {customMessage && (

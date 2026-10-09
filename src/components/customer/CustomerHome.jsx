@@ -4,6 +4,7 @@ import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
 import { ProductModal } from './ProductModal';
 import { CustomerStoreSchedule } from './CustomerStoreSchedule';
+import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
 import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone } from 'lucide-react';
@@ -210,6 +211,14 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         storeConfig={storeConfig} 
         initialExpanded={storeOpenStatus ? !storeOpenStatus.isOpen : false} 
       />
+
+      {/* Card / Banner de Horario de Envíos a Domicilio (Motodelivery) */}
+      {storeConfig?.enableDelivery !== false && (
+        <CustomerDeliveryScheduleCard 
+          storeConfig={storeConfig} 
+          variant="card" 
+        />
+      )}
 
       {/* Banner Superior Principal */}
       <HeroBanner 

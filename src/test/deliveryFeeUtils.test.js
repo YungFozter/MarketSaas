@@ -8,6 +8,10 @@ import {
   MAX_DELIVERY_DISTANCE_KM,
   RAIN_SURCHARGE_BS
 } from '../utils/deliveryFeeUtils.js';
+import {
+  normalizeDeliverySchedule,
+  calculateDeliveryScheduleStatus
+} from '../utils/scheduleUtils.js';
 
 test('calculateDistanceKm calcula correctamente distancias reales con Haversine', () => {
   // Plaza 24 de Septiembre (-17.7833, -63.1821) a Ventura Mall (-17.7554, -63.1979) ~ 3.5 km
@@ -148,4 +152,38 @@ test('validateDeliveryEligibility valida pedido mínimo y cobertura', () => {
   });
   assert.equal(valid.allowed, true);
   assert.equal(valid.missingAmount, 0);
+});
+
+test('normalizeDeliverySchedule y calculateDeliveryScheduleStatus gestionan turnos de entrega correctamente', () => {
+  // Configuración predeterminada
+  const defaultSched = normalizeDeliverySchedule(null);
+  assert.equal(defaultSched.enabled, true);
+  assert.equal(defaultSched.daysText, 'Lunes a Sábado');
+  assert.equal(defaultSched.slot1Start, '11:30');
+  assert.equal(defaultSched.slot1End, '14:00');
+
+  // Configuración personalizada con dos turnos
+  const customSched = normalizeDeliverySchedule({
+    daysText: 'Lunes a Viernes',
+    slot1Start: '12:00',
+    slot1End: '15:00',
+    hasSecondSlot: true,
+    slot2Start: '19:00',
+    slot2End: '23:00',
+    timeText: '12:00 - 15:00 y 19:00 - 23:00'
+  });
+  assert.equal(customSched.daysText, 'Lunes a Viernes');
+  assert.equal(customSched.timeText, '12:00 - 15:00 y 19:00 - 23:00');
+
+  // Cálculo de estado con delivery activo
+  const statusActive = calculateDeliveryScheduleStatus(customSched, { enableDelivery: true });
+  assert.equal(statusActive.isDeliveryActive, true);
+  assert.ok(statusActive.badgeText.length > 0);
+  assert.ok(statusActive.summaryText.includes('12:00 - 15:00'));
+
+  // Cálculo de estado cuando el delivery general está desactivado
+  const statusPaused = calculateDeliveryScheduleStatus(customSched, { enableDelivery: false });
+  assert.equal(statusPaused.isDeliveryActive, false);
+  assert.equal(statusPaused.isCurrentlyDelivering, false);
+  assert.equal(statusPaused.badgeText, 'Delivery Pausado');
 });

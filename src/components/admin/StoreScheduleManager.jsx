@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   Loader2,
   Check,
-  Store
+  Store,
+  Bike
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { 
@@ -525,6 +526,23 @@ export const StoreScheduleManager = () => {
             ) : (
               <span>Opcional. Si lo dejas en blanco, se mostrará el horario habitual.</span>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Banner Informativo sobre Horarios de Delivery */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-50 via-teal-50/50 to-white border border-emerald-200/90 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Bike className="w-5 h-5" />
+          </div>
+          <div>
+            <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm">
+              ¿Manejas turnos específicos para Envíos a Domicilio (Motodelivery)?
+            </h4>
+            <p className="text-[11px] text-slate-600 mt-0.5 font-medium">
+              Puedes fijar las horas de salida de tus repartidores en <strong>Configuración de la Tienda → Servicio de Envíos a Domicilio</strong>.
+            </p>
           </div>
         </div>
       </div>

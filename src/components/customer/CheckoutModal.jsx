@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { calculateDistanceKm, calculateDeliveryFee, MAX_DELIVERY_DISTANCE_KM, RAIN_SURCHARGE_BS } from '../../utils/deliveryFeeUtils';
+import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import './CheckoutModal.css';
 
 export const CheckoutModal = ({ isOpen, onClose }) => {
@@ -588,14 +589,20 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Si es ENVÍO A DOMICILIO: Dirección exacta y GPS */}
+              {/* Si es ENVÍO A DOMICILIO: Horario Oficial de Despachos y Dirección */}
               {effectiveDeliveryType === 'delivery' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800">
-                      <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Dirección de Entrega a Domicilio</span>
-                    </div>
+                <>
+                  <CustomerDeliveryScheduleCard 
+                    storeConfig={storeConfig} 
+                    variant="checkout" 
+                  />
+
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-xs font-extrabold text-slate-800">
+                        <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Dirección de Entrega a Domicilio</span>
+                      </div>
 
                     <button
                       type="button"
@@ -696,7 +703,8 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     )}
                   </div>
                 </div>
-              )}
+              </>
+            )}
 
               {/* Advertencia de Pedido Mínimo para Delivery */}
               {isBelowMinOrder && (

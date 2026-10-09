@@ -40,10 +40,11 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { presetBanners } from '../../data/initialData';
 import { escapeHtml } from '../../utils/formatters';
-import { normalizeStoreSchedule } from '../../utils/scheduleUtils';
+import { normalizeStoreSchedule, normalizeDeliverySchedule, calculateDeliveryScheduleStatus, formatScheduleSummary } from '../../utils/scheduleUtils';
 import { DELIVERY_RATES, MAX_DELIVERY_DISTANCE_KM, RAIN_SURCHARGE_BS } from '../../utils/deliveryFeeUtils';
 import { StorePrintKitModal } from './StorePrintKitModal';
 import { AdminDeliveryRatesModal } from './AdminDeliveryRatesModal';
+import { CustomerDeliveryScheduleCard } from '../customer/CustomerDeliveryScheduleCard';
 import './StoreSettings.css';
 
 // Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
@@ -551,6 +552,7 @@ export const StoreSettings = () => {
     ],
     ...storeConfig,
     schedule: normalizeStoreSchedule(storeConfig?.schedule),
+    deliverySchedule: normalizeDeliverySchedule(storeConfig?.deliverySchedule, storeConfig),
     storeOpenMode: storeConfig?.storeOpenMode || 'auto',
     scheduleClosedMessage: storeConfig?.scheduleClosedMessage || '',
     minDeliveryOrder: storeConfig?.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig?.minOrder || 20.00),
@@ -587,6 +589,7 @@ export const StoreSettings = () => {
         ...prev,
         ...storeConfig,
         schedule: normalizeStoreSchedule(storeConfig.schedule),
+        deliverySchedule: normalizeDeliverySchedule(storeConfig.deliverySchedule, storeConfig),
         storeOpenMode: storeConfig.storeOpenMode || 'auto',
         scheduleClosedMessage: storeConfig.scheduleClosedMessage || '',
         minDeliveryOrder: storeConfig.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig.minOrder || 20.00),
@@ -687,6 +690,7 @@ export const StoreSettings = () => {
       const configToSave = {
         ...safeConfig,
         coupons: cleanCoupons,
+        deliverySchedule: normalizeDeliverySchedule(form.deliverySchedule, form),
         address: form.address || '',
         zone: form.zone || '',
         reference: form.reference || '',
@@ -1205,6 +1209,373 @@ export const StoreSettings = () => {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Configuración de Horario Oficial de Envíos y Despachos (Delivery) */}
+            <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
+                      Horario Oficial de Envíos (Delivery)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Tus clientes verán este horario en una tarjeta en tu tienda y al elegir Delivery en el carrito.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Selector de Modo */}
+                <div className="flex items-center bg-slate-100 p-1 rounded-xl self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({
+                      ...prev,
+                      deliverySchedule: {
+                        ...normalizeDeliverySchedule(prev.deliverySchedule, prev),
+                        mode: 'custom'
+                      }
+                    }))}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      form.deliverySchedule?.mode !== 'same_as_store'
+                        ? 'bg-white text-emerald-800 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🕐 Turnos Específicos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({
+                      ...prev,
+                      deliverySchedule: {
+                        ...normalizeDeliverySchedule(prev.deliverySchedule, prev),
+                        mode: 'same_as_store'
+                      }
+                    }))}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                      form.deliverySchedule?.mode === 'same_as_store'
+                        ? 'bg-white text-emerald-800 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🏪 Mismo Horario de Tienda
+                  </button>
+                </div>
+              </div>
+
+              {form.deliverySchedule?.mode === 'same_as_store' ? (
+                <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200 text-emerald-950 text-xs flex items-center gap-2">
+                  <Info className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>
+                    Tus envíos a domicilio operan en sincronía automática con el horario de apertura de tu local (<strong>{formatScheduleSummary(form.schedule)}</strong>).
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  {/* Presets Rápidos */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400 block tracking-wider">
+                      ⚡ Atajos Rápidos de Horario:
+                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            deliverySchedule: {
+                              ...prev.deliverySchedule,
+                              daysText: 'Lunes a Sábado',
+                              slot1Start: '11:30',
+                              slot1End: '14:00',
+                              hasSecondSlot: true,
+                              slot2Start: '18:30',
+                              slot2End: '22:00',
+                              timeText: '11:30 - 14:00 y 18:30 - 22:00'
+                            }
+                          }));
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 border border-slate-200/80 font-bold transition-colors cursor-pointer"
+                      >
+                        Almuerzo & Cena (11:30-14:00 / 18:30-22:00)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            deliverySchedule: {
+                              ...prev.deliverySchedule,
+                              daysText: 'Lunes a Sábado',
+                              slot1Start: '15:00',
+                              slot1End: '22:30',
+                              hasSecondSlot: false,
+                              timeText: '15:00 - 22:30'
+                            }
+                          }));
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 border border-slate-200/80 font-bold transition-colors cursor-pointer"
+                      >
+                        Tarde & Noche (15:00 - 22:30)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm(prev => ({
+                            ...prev,
+                            deliverySchedule: {
+                              ...prev.deliverySchedule,
+                              daysText: 'Todos los días',
+                              slot1Start: '09:00',
+                              slot1End: '21:00',
+                              hasSecondSlot: false,
+                              timeText: '09:00 - 21:00'
+                            }
+                          }));
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 border border-slate-200/80 font-bold transition-colors cursor-pointer"
+                      >
+                        Continuo Todo el Día (09:00 - 21:00)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    {/* Días de Reparto */}
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Días en que realizas envíos a domicilio *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Lunes a Sábado / Todos los días / Lun, Mié y Vie"
+                        value={form.deliverySchedule?.daysText || ''}
+                        onChange={(e) => setForm(prev => ({
+                          ...prev,
+                          deliverySchedule: { ...prev.deliverySchedule, daysText: e.target.value }
+                        }))}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 bg-white focus:outline-emerald-500"
+                      />
+                      <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-400">
+                        <span>Sugerencias:</span>
+                        {['Lunes a Sábado', 'Todos los días', 'Lunes a Viernes'].map(d => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setForm(prev => ({
+                              ...prev,
+                              deliverySchedule: { ...prev.deliverySchedule, daysText: d }
+                            }))}
+                            className="text-emerald-700 hover:underline font-semibold cursor-pointer"
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Turno 1 */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">
+                          Primer Turno de Envíos (Mañana / Día)
+                        </span>
+                        <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                          Principal
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-[10px] text-slate-500 block mb-0.5">Desde las</span>
+                          <input
+                            type="time"
+                            value={form.deliverySchedule?.slot1Start || '11:30'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setForm(prev => {
+                                const ds = prev.deliverySchedule || {};
+                                const end = ds.slot1End || '14:00';
+                                const s2 = ds.hasSecondSlot ? ` y ${ds.slot2Start || '18:30'} - ${ds.slot2End || '22:00'}` : '';
+                                return {
+                                  ...prev,
+                                  deliverySchedule: {
+                                    ...ds,
+                                    slot1Start: val,
+                                    timeText: `${val} - ${end}${s2}`
+                                  }
+                                };
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white"
+                          />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-500 block mb-0.5">Hasta las</span>
+                          <input
+                            type="time"
+                            value={form.deliverySchedule?.slot1End || '14:00'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setForm(prev => {
+                                const start = ds.slot1Start || '11:30';
+                                const s2 = ds.hasSecondSlot ? ` y ${ds.slot2Start || '18:30'} - ${ds.slot2End || '22:00'}` : '';
+                                return {
+                                  ...prev,
+                                  deliverySchedule: {
+                                    ...ds,
+                                    slot1End: val,
+                                    timeText: `${start} - ${val}${s2}`
+                                  }
+                                };
+                              });
+                            }}
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Turno 2 (Opcional) */}
+                    <div className={`p-3 rounded-xl border space-y-2 transition-all ${
+                      form.deliverySchedule?.hasSecondSlot !== false ? 'bg-slate-50 border-slate-200' : 'bg-slate-50/50 border-slate-200/60 opacity-80'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800">
+                          Segundo Turno (Tarde / Noche)
+                        </span>
+                        <label className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={form.deliverySchedule?.hasSecondSlot !== false}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setForm(prev => {
+                                const ds = prev.deliverySchedule || {};
+                                const s1 = `${ds.slot1Start || '11:30'} - ${ds.slot1End || '14:00'}`;
+                                const s2 = checked ? ` y ${ds.slot2Start || '18:30'} - ${ds.slot2End || '22:00'}` : '';
+                                return {
+                                  ...prev,
+                                  deliverySchedule: {
+                                    ...ds,
+                                    hasSecondSlot: checked,
+                                    timeText: `${s1}${s2}`
+                                  }
+                                };
+                              });
+                            }}
+                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <span>Habilitar</span>
+                        </label>
+                      </div>
+
+                      {form.deliverySchedule?.hasSecondSlot !== false ? (
+                        <div className="grid grid-cols-2 gap-2 animate-fadeIn">
+                          <div>
+                            <span className="text-[10px] text-slate-500 block mb-0.5">Desde las</span>
+                            <input
+                              type="time"
+                              value={form.deliverySchedule?.slot2Start || '18:30'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setForm(prev => {
+                                  const ds = prev.deliverySchedule || {};
+                                  const s1 = `${ds.slot1Start || '11:30'} - ${ds.slot1End || '14:00'}`;
+                                  return {
+                                    ...prev,
+                                    deliverySchedule: {
+                                      ...ds,
+                                      slot2Start: val,
+                                      timeText: `${s1} y ${val} - ${ds.slot2End || '22:00'}`
+                                    }
+                                  };
+                                });
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 block mb-0.5">Hasta las</span>
+                            <input
+                              type="time"
+                              value={form.deliverySchedule?.slot2End || '22:00'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setForm(prev => {
+                                  const ds = prev.deliverySchedule || {};
+                                  const s1 = `${ds.slot1Start || '11:30'} - ${ds.slot1End || '14:00'}`;
+                                  return {
+                                    ...prev,
+                                    deliverySchedule: {
+                                      ...ds,
+                                      slot2End: val,
+                                      timeText: `${s1} y ${ds.slot2Start || '18:30'} - ${val}`
+                                    }
+                                  };
+                                });
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic pt-1">
+                          Desactivado (los envíos se realizan únicamente en el primer turno).
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Texto Resumen visible al cliente */}
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Texto Resumen de Horarios (Visible al vecino) *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. 11:30 - 14:00 y 18:30 - 22:00"
+                        value={form.deliverySchedule?.timeText || ''}
+                        onChange={(e) => setForm(prev => ({
+                          ...prev,
+                          deliverySchedule: { ...prev.deliverySchedule, timeText: e.target.value }
+                        }))}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-emerald-800 bg-white focus:outline-emerald-500"
+                      />
+                    </div>
+
+                    {/* Nota / Aclaración */}
+                    <div className="sm:col-span-2">
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Nota o Aclaración para el Cliente (Opcional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej. Los pedidos fuera de horario se programarán para el siguiente turno de entrega."
+                        value={form.deliverySchedule?.note ?? ''}
+                        onChange={(e) => setForm(prev => ({
+                          ...prev,
+                          deliverySchedule: { ...prev.deliverySchedule, note: e.target.value }
+                        }))}
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 bg-white focus:outline-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Vista Previa en Vivo de la Tarjeta */}
+              <div className="pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-black uppercase text-slate-400 block mb-2 tracking-wider">
+                  👁️ Vista Previa en Vivo (Así lo verá tu cliente en la tienda y checkout):
+                </span>
+                <CustomerDeliveryScheduleCard 
+                  storeConfig={form} 
+                  variant="checkout" 
+                />
+              </div>
             </div>
           </div>
         </div>

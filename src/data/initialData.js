@@ -276,6 +276,18 @@ export const initialStoreConfig = {
   schedule: 'Horarios de Atención según cada Tienda',
   isOpen: true,
   enableDelivery: true,
+  deliverySchedule: {
+    enabled: true,
+    mode: 'custom',
+    daysText: 'Lunes a Sábado',
+    timeText: '11:30 - 14:00 y 18:30 - 22:00',
+    slot1Start: '11:30',
+    slot1End: '14:00',
+    hasSecondSlot: true,
+    slot2Start: '18:30',
+    slot2End: '22:00',
+    note: 'Los pedidos fuera de horario se programarán para el siguiente turno de entrega.'
+  },
   paymentMethods: [
     { id: 'cash', name: 'Efectivo contra entrega', desc: 'Indica con cuánto pagarás para tu vuelto', icon: 'Banknote', enabled: true },
     { id: 'qr', name: 'Transferencia / QR Digital', desc: 'Pago rápido directo al código QR de la tienda', icon: 'QrCode', enabled: true },

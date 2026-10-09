@@ -340,3 +340,139 @@ export const formatScheduleSummary = (rawSchedule) => {
 
   return parts.join(' | ') || 'Consultar horario en tienda';
 };
+
+// =============================================================================
+// GESTIÓN DE HORARIOS ESPECÍFICOS DE DESPACHO Y ENVÍOS (DELIVERY)
+// =============================================================================
+
+export const DEFAULT_DELIVERY_SCHEDULE = {
+  enabled: true,
+  mode: 'custom', // 'custom' | 'same_as_store'
+  daysText: 'Lunes a Sábado',
+  timeText: '11:30 - 14:00 y 18:30 - 22:00',
+  slot1Start: '11:30',
+  slot1End: '14:00',
+  hasSecondSlot: true,
+  slot2Start: '18:30',
+  slot2End: '22:00',
+  note: 'Los pedidos fuera de horario se programarán para el siguiente turno de entrega.'
+};
+
+/**
+ * Normaliza la configuración de horario de delivery de la tienda
+ */
+export const normalizeDeliverySchedule = (raw, storeConfig = null) => {
+  if (!raw || typeof raw !== 'object') {
+    if (storeConfig?.deliveryHours || storeConfig?.deliveryTimeText) {
+      return {
+        ...DEFAULT_DELIVERY_SCHEDULE,
+        timeText: storeConfig.deliveryHours || storeConfig.deliveryTimeText,
+        daysText: storeConfig.deliveryDaysText || DEFAULT_DELIVERY_SCHEDULE.daysText,
+        note: storeConfig.deliveryScheduleNote || DEFAULT_DELIVERY_SCHEDULE.note
+      };
+    }
+    return { ...DEFAULT_DELIVERY_SCHEDULE };
+  }
+
+  const mode = raw.mode || 'custom';
+  let timeText = raw.timeText || DEFAULT_DELIVERY_SCHEDULE.timeText;
+  let daysText = raw.daysText || DEFAULT_DELIVERY_SCHEDULE.daysText;
+
+  if (mode === 'same_as_store' && storeConfig?.schedule) {
+    timeText = formatScheduleSummary(storeConfig.schedule);
+    daysText = 'Mismo horario de atención';
+  }
+
+  return {
+    enabled: raw.enabled !== false,
+    mode,
+    timeText,
+    daysText,
+    slot1Start: raw.slot1Start || '11:30',
+    slot1End: raw.slot1End || '14:00',
+    hasSecondSlot: raw.hasSecondSlot !== false,
+    slot2Start: raw.slot2Start || '18:30',
+    slot2End: raw.slot2End || '22:00',
+    note: raw.note !== undefined ? raw.note : DEFAULT_DELIVERY_SCHEDULE.note
+  };
+};
+
+/**
+ * Calcula en tiempo real (UTC-4 Bolivia) el estado operativo del servicio de envíos
+ */
+export const calculateDeliveryScheduleStatus = (rawDeliverySchedule, storeConfig = null) => {
+  const isDeliveryGloballyEnabled = storeConfig ? storeConfig.enableDelivery !== false : true;
+  const schedule = normalizeDeliverySchedule(rawDeliverySchedule, storeConfig);
+
+  if (!isDeliveryGloballyEnabled || !schedule.enabled) {
+    return {
+      isDeliveryActive: false,
+      isCurrentlyDelivering: false,
+      badgeText: 'Delivery Pausado',
+      badgeColor: 'slate',
+      timeText: schedule.timeText,
+      daysText: schedule.daysText,
+      note: 'Servicio de entrega a domicilio no disponible actualmente (solo retiro en tienda).',
+      summaryText: 'Solo retiro en local'
+    };
+  }
+
+  const bolivia = getBoliviaTime();
+  const currentMinutes = bolivia.totalMinutes;
+
+  const toMins = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+
+  const s1Start = toMins(schedule.slot1Start);
+  const s1End = toMins(schedule.slot1End);
+  const s2Start = schedule.hasSecondSlot ? toMins(schedule.slot2Start) : null;
+  const s2End = schedule.hasSecondSlot ? toMins(schedule.slot2End) : null;
+
+  const isSunday = bolivia.dayKey === 'sunday';
+  const lowerDays = (schedule.daysText || '').toLowerCase();
+  const excludesSunday = (lowerDays.includes('sábado') || lowerDays.includes('sabado') || lowerDays.includes('viernes')) && 
+    !lowerDays.includes('domingo') && 
+    !lowerDays.includes('todos') && 
+    !lowerDays.includes('diario');
+  const isTodayDeliveryDay = !(isSunday && excludesSunday);
+
+  let isCurrentlyDelivering = false;
+  let nextDeliveryHint = '';
+
+  if (schedule.mode === 'same_as_store') {
+    const storeStatus = calculateStoreOpenStatus(storeConfig);
+    isCurrentlyDelivering = storeStatus.isOpen;
+    nextDeliveryHint = storeStatus.isOpen ? 'Envíos en curso' : storeStatus.nextStatusChangeText;
+  } else if (isTodayDeliveryDay) {
+    if (currentMinutes >= s1Start && currentMinutes <= s1End) {
+      isCurrentlyDelivering = true;
+      nextDeliveryHint = `Envíos en curso hasta las ${schedule.slot1End}`;
+    } else if (schedule.hasSecondSlot && s2Start !== null && s2End !== null && currentMinutes >= s2Start && currentMinutes <= s2End) {
+      isCurrentlyDelivering = true;
+      nextDeliveryHint = `Envíos en curso hasta las ${schedule.slot2End}`;
+    } else if (currentMinutes < s1Start) {
+      nextDeliveryHint = `Primer turno de envíos inicia hoy a las ${schedule.slot1Start}`;
+    } else if (schedule.hasSecondSlot && s2Start !== null && currentMinutes < s2Start) {
+      nextDeliveryHint = `Segundo turno de envíos inicia hoy a las ${schedule.slot2Start}`;
+    } else {
+      nextDeliveryHint = `Envíos de hoy concluidos • Próximo turno mañana a las ${schedule.slot1Start}`;
+    }
+  } else {
+    nextDeliveryHint = `Hoy no hay despacho a domicilio • Próximo turno inicia el lunes a las ${schedule.slot1Start}`;
+  }
+
+  return {
+    isDeliveryActive: true,
+    isCurrentlyDelivering,
+    badgeText: isCurrentlyDelivering ? '● Despachos en curso' : '⏳ Despacho programado',
+    badgeColor: isCurrentlyDelivering ? 'emerald' : 'amber',
+    nextDeliveryHint,
+    timeText: schedule.timeText,
+    daysText: schedule.daysText,
+    note: schedule.note,
+    summaryText: `${schedule.daysText}: ${schedule.timeText}`
+  };
+};

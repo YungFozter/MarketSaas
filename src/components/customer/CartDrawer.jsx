@@ -12,6 +12,7 @@ import {
   ShieldCheck 
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import './CartDrawer.css';
 
 export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
@@ -255,6 +256,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
                         <span className="text-amber-700 font-bold">Faltan {currency} {missingToMinDeliveryOrder.toFixed(2)}</span>
                       </div>
                     )}
+                    <CustomerDeliveryScheduleCard storeConfig={storeConfig} variant="compact" />
                   </>
                 ) : (
                   <div className="flex justify-between items-center text-slate-500">
