@@ -190,6 +190,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   });
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [blockedFeatureName, setBlockedFeatureName] = useState('');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
@@ -1082,6 +1083,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <button
                 onClick={() => {
                   if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Venta Rápida');
                     setIsBlockedModalOpen(true);
                   } else {
                     setIsPosModalOpen(true);
@@ -1117,14 +1119,34 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 <span className="hidden md:inline whitespace-nowrap">Cartel QR Mostrador</span>
               </button>
 
-              {/* Botón Cierre de Caja / Arqueo */}
+              {/* Botón Cierre de Caja / Arqueo (Con bloqueo por suscripción) */}
               <button
-                onClick={() => setIsCashRegisterModalOpen(true)}
-                className="h-9 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
-                title="Arqueo y Cierre de Caja Diario (Control de Efectivo)"
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Cierre de Caja y Arqueo Diario');
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsCashRegisterModalOpen(true);
+                  }
+                }}
+                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-500 border-slate-200'
+                    : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                }`}
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Arqueo y Cierre de Caja Diario (Control de Efectivo)"}
               >
-                <Banknote className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <Banknote className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                )}
                 <span className="hidden lg:inline whitespace-nowrap">Cierre de Caja</span>
+                {!isSubscriptionActive && (
+                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">
+                    🔒
+                  </span>
+                )}
               </button>
 
               {/* Botón Resumen Semanal para WhatsApp */}
@@ -1137,14 +1159,34 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 <span className="hidden lg:inline whitespace-nowrap">Resumen WhatsApp</span>
               </button>
 
-              {/* Botón Exportar Reporte */}
+              {/* Botón Exportar Reporte (Con bloqueo por suscripción) */}
               <button
-                onClick={() => setIsExportModalOpen(true)}
-                className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
-                title="Descargar o imprimir reporte contable de ventas (PDF, Excel)"
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Exportación de Reportes Financieros');
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsExportModalOpen(true);
+                  }
+                }}
+                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-500 border-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60'
+                }`}
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Descargar o imprimir reporte contable de ventas (PDF, Excel)"}
               >
-                <TrendingUp className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <TrendingUp className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                )}
                 <span className="hidden md:inline whitespace-nowrap">Exportar Reporte</span>
+                {!isSubscriptionActive && (
+                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">
+                    🔒
+                  </span>
+                )}
               </button>
             </div>
 
@@ -2364,6 +2406,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           setIsBlockedModalOpen(false);
           setActiveTab('subscription');
         }}
+        featureName={blockedFeatureName}
       />
 
       {/* Modal de Exportación de Reporte de Ventas (PDF, Excel, CSV) */}

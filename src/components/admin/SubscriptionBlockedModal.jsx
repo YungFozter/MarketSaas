@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Lock, ShieldAlert, KeyRound, MessageCircle, X, CheckCircle2, ArrowRight } from 'lucide-react';
 
-export const SubscriptionBlockedModal = ({ isOpen, onClose, onNavigateToSubscription }) => {
+export const SubscriptionBlockedModal = ({ isOpen, onClose, onNavigateToSubscription, featureName = '' }) => {
   const { redeemSubscriptionCode, storeConfig } = useStore();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +71,15 @@ export const SubscriptionBlockedModal = ({ isOpen, onClose, onNavigateToSubscrip
             Período de Prueba Vencido
           </h3>
           <p className="text-sm text-slate-500 mt-2 max-w-sm">
-            Las funciones de <strong className="text-slate-800 font-bold">Venta Rápida</strong> y <strong className="text-slate-800 font-bold">Punto de Venta (POS)</strong> se encuentran pausadas hasta la activación de una licencia.
+            {featureName ? (
+              <>
+                La función de <strong className="text-slate-800 font-bold">{featureName}</strong> se encuentra pausada debido a que la suscripción de tu tienda ha expirado.
+              </>
+            ) : (
+              <>
+                Las funciones avanzadas de <strong className="text-slate-800 font-bold">Punto de Venta (POS)</strong>, <strong className="text-slate-800 font-bold">Venta Rápida</strong>, <strong className="text-slate-800 font-bold">Cierre de Caja</strong>, <strong className="text-slate-800 font-bold">Exportación Contable</strong> y <strong className="text-slate-800 font-bold">Edición de Inventario</strong> se encuentran pausadas hasta la activación de una licencia.
+              </>
+            )}
           </p>
         </div>
 

@@ -26,7 +26,7 @@ import { getBoliviaTime } from '../../utils/scheduleUtils';
 import { escapeHtml } from '../../utils/formatters';
 
 export const CashRegisterModal = ({ isOpen, onClose }) => {
-  const { orders = [], storeConfig, tenantSlug, currentUser, showToast } = useStore();
+  const { orders = [], storeConfig, tenantSlug, currentUser, showToast, isSubscriptionActive } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const tenantKey = tenantSlug || storeConfig?.id || 'default';
 
@@ -406,8 +406,35 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Contenido con scroll */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
-          {activeTab === 'current' ? (
+        {!isSubscriptionActive ? (
+          <div className="p-6 sm:p-10 text-center space-y-4 my-auto">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+              <Lock className="w-8 h-8 animate-pulse" />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-700 mb-2">
+                🔒 Módulo Bloqueado
+              </span>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Cierre de Caja y Arqueo Diario
+              </h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto mt-2 leading-relaxed">
+                El control de efectivo, arqueo diario y registro de gastos se encuentran pausados porque la suscripción de la tienda ha expirado. Activa tu plan para reanudar el cuadre de caja.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+            {activeTab === 'current' ? (
             !isRegisterOpen ? (
               /* ESTADO 1: CAJA CERRADA -> ABRIR TURNO */
               <div className="space-y-5 py-4 text-center max-w-md mx-auto">
@@ -842,6 +869,7 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

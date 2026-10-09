@@ -13,7 +13,8 @@ import {
   BookOpen,
   Store,
   ShoppingBag,
-  Filter
+  Filter,
+  Lock
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { 
@@ -23,7 +24,7 @@ import {
 } from '../../utils/salesExportUtils';
 
 export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, titleSuffix = '' }) => {
-  const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast } = useStore();
+  const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast, isSubscriptionActive } = useStore();
 
   // Estados de filtrado interactivo
   const [periodFilter, setPeriodFilter] = useState('all'); // 'today' | 'yesterday' | '7days' | 'month' | 'all'
@@ -227,7 +228,34 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
         </div>
 
         {/* Contenido scrolleable con filtros interactivos */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
+        {!isSubscriptionActive ? (
+          <div className="p-6 sm:p-10 text-center space-y-4 my-auto">
+            <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+              <Lock className="w-8 h-8 animate-pulse" />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-700 mb-2">
+                🔒 Módulo Bloqueado
+              </span>
+              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                Exportación de Reportes Financieros
+              </h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto mt-2 leading-relaxed">
+                La descarga consolidada de ventas en formato Excel y PDF se encuentra pausada debido a que el período de prueba de tu tienda ha expirado. Activa tu suscripción para desbloquear reportes contables ilimitados.
+              </p>
+            </div>
+            <div className="pt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
           
           {/* ========================================================================= */}
           {/* 1. FILTRO: MÉTODO DE PAGO (ARQUEO DE CAJA / CUADRE BANCARIO)             */}
@@ -509,6 +537,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
           </div>
 
         </div>
+        )}
 
         {/* Pie de modal */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 shrink-0">

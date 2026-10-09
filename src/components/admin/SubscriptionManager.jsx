@@ -267,10 +267,10 @@ export const SubscriptionManager = () => {
       <div className="bg-white border border-slate-200/90 p-6 rounded-3xl shadow-xs">
         <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
           <Zap className="w-4 h-4 text-emerald-600" />
-          Disponibilidad de Módulos
+          Disponibilidad de Módulos del Sistema
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Módulo 1: Catálogo Digital */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -279,7 +279,7 @@ export const SubscriptionManager = () => {
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-900">Catálogo & Pedidos Web</h4>
-                <p className="text-[11px] text-slate-500">Recepción de compras de vecinos</p>
+                <p className="text-[11px] text-slate-500">Tus clientes siempre pueden ver productos y comprar</p>
               </div>
             </div>
             <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-lg shrink-0">
@@ -287,33 +287,7 @@ export const SubscriptionManager = () => {
             </span>
           </div>
 
-          {/* Módulo 2: Venta Rápida */}
-          <div className={`p-4 rounded-2xl border transition-all flex items-start justify-between ${
-            isSubscriptionActive 
-              ? 'bg-slate-50 border-slate-200/80' 
-              : 'bg-rose-50/50 border-rose-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                isSubscriptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
-              }`}>
-                {isSubscriptionActive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">Venta Rápida de Mostrador</h4>
-                <p className="text-[11px] text-slate-500">Cobro express para clientes en local</p>
-              </div>
-            </div>
-            <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border ${
-              isSubscriptionActive 
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
-                : 'bg-rose-100 text-rose-700 border-rose-200'
-            }`}>
-              {isSubscriptionActive ? '✅ Habilitado' : '🔒 Bloqueado'}
-            </span>
-          </div>
-
-          {/* Módulo 3: Punto de Venta POS */}
+          {/* Módulo 2: Venta Rápida y POS */}
           <div className={`p-4 rounded-2xl border transition-all flex items-start justify-between ${
             isSubscriptionActive 
               ? 'bg-slate-50 border-slate-200/80' 
@@ -326,8 +300,8 @@ export const SubscriptionManager = () => {
                 <Store className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-900">Terminal POS & Caja</h4>
-                <p className="text-[11px] text-slate-500">Emisión de recibos y arqueo diario</p>
+                <h4 className="text-xs font-bold text-slate-900">Venta Rápida & POS</h4>
+                <p className="text-[11px] text-slate-500">Cobro express de mostrador para clientes físicos</p>
               </div>
             </div>
             <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border ${
@@ -336,6 +310,88 @@ export const SubscriptionManager = () => {
                 : 'bg-rose-100 text-rose-700 border-rose-200'
             }`}>
               {isSubscriptionActive ? '✅ Habilitado' : '🔒 Bloqueado'}
+            </span>
+          </div>
+
+          {/* Módulo 3: Cierre de Caja y Arqueo */}
+          <div className={`p-4 rounded-2xl border transition-all flex items-start justify-between ${
+            isSubscriptionActive 
+              ? 'bg-slate-50 border-slate-200/80' 
+              : 'bg-rose-50/50 border-rose-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                isSubscriptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
+              }`}>
+                {isSubscriptionActive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Cierre de Caja & Arqueo</h4>
+                <p className="text-[11px] text-slate-500">Cuadre ciego, balance Z y control de efectivo</p>
+              </div>
+            </div>
+            <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border ${
+              isSubscriptionActive 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                : 'bg-rose-100 text-rose-700 border-rose-200'
+            }`}>
+              {isSubscriptionActive ? '✅ Habilitado' : '🔒 Bloqueado'}
+            </span>
+          </div>
+
+          {/* Módulo 4: Exportación de Reportes Financieros */}
+          <div className={`p-4 rounded-2xl border transition-all flex items-start justify-between ${
+            isSubscriptionActive 
+              ? 'bg-slate-50 border-slate-200/80' 
+              : 'bg-rose-50/50 border-rose-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                isSubscriptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-600'
+              }`}>
+                {isSubscriptionActive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Reportes Financieros (Excel/PDF)</h4>
+                <p className="text-[11px] text-slate-500">Descarga y auditoría contable completa de ventas</p>
+              </div>
+            </div>
+            <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border ${
+              isSubscriptionActive 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                : 'bg-rose-100 text-rose-700 border-rose-200'
+            }`}>
+              {isSubscriptionActive ? '✅ Habilitado' : '🔒 Bloqueado'}
+            </span>
+          </div>
+
+          {/* Módulo 5: Gestión de Inventario */}
+          <div className={`p-4 rounded-2xl border transition-all flex items-start justify-between sm:col-span-2 lg:col-span-1 ${
+            isSubscriptionActive 
+              ? 'bg-slate-50 border-slate-200/80' 
+              : 'bg-amber-50/60 border-amber-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                isSubscriptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+              }`}>
+                {isSubscriptionActive ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">Inventario y Catálogo</h4>
+                <p className="text-[11px] text-slate-500">
+                  {isSubscriptionActive 
+                    ? 'Crear, editar, importar y eliminar productos' 
+                    : 'Modo solo lectura: consulta de stock sin edición ni altas'}
+                </p>
+              </div>
+            </div>
+            <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg shrink-0 border ${
+              isSubscriptionActive 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                : 'bg-amber-100 text-amber-800 border-amber-200'
+            }`}>
+              {isSubscriptionActive ? '✅ Modo Completo' : '🔒 Solo Lectura'}
             </span>
           </div>
         </div>

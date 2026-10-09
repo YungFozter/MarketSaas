@@ -21,17 +21,19 @@ import {
   Package,
   User,
   SlidersHorizontal,
-  MessageCircle
+  MessageCircle,
+  Lock
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { CashRegisterModal } from './CashRegisterModal';
 import { WeeklySummaryModal } from './WeeklySummaryModal';
+import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import './SalesHistory.css';
 
 export const SalesHistory = () => {
-  const { orders = [], storeConfig, currentUser } = useStore();
+  const { orders = [], storeConfig, currentUser, isSubscriptionActive } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   // Filtros de búsqueda y estado
@@ -49,6 +51,8 @@ export const SalesHistory = () => {
   // Modales de Cierre de Caja y Resumen Semanal
   const [isCashRegisterModalOpen, setIsCashRegisterModalOpen] = useState(false);
   const [isWeeklySummaryModalOpen, setIsWeeklySummaryModalOpen] = useState(false);
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState('');
 
   // Paginación
   const [itemsPerPage, setItemsPerPage] = useState(10); // 10, 25, 50, 'all'
@@ -372,15 +376,29 @@ export const SalesHistory = () => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap self-start sm:self-auto">
-          {/* Botón Arqueo y Cierre de Caja */}
+          {/* Botón Arqueo y Cierre de Caja (Con bloqueo por suscripción) */}
           <button
             type="button"
-            onClick={() => setIsCashRegisterModalOpen(true)}
-            className="h-9 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-            title="Arqueo y Cierre de Caja Diario (Control de Efectivo)"
+            onClick={() => {
+              if (!isSubscriptionActive) {
+                setBlockedFeature('Cierre de Caja y Arqueo Diario');
+                setIsBlockedModalOpen(true);
+              } else {
+                setIsCashRegisterModalOpen(true);
+              }
+            }}
+            className={`h-9 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 ${
+              !isSubscriptionActive
+                ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Arqueo y Cierre de Caja Diario (Control de Efectivo)"}
           >
-            <Banknote className="w-4 h-4 text-white" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500" /> : <Banknote className="w-4 h-4 text-white" />}
             <span>Cierre de Caja</span>
+            {!isSubscriptionActive && (
+              <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>
+            )}
           </button>
 
           {/* Botón Resumen Semanal para WhatsApp */}
@@ -394,19 +412,34 @@ export const SalesHistory = () => {
             <span>Resumen WhatsApp</span>
           </button>
 
-          {/* Botón Exportar Reporte Filtrado */}
+          {/* Botón Exportar Reporte Filtrado (Con bloqueo por suscripción) */}
           <button
             type="button"
-            onClick={() => setIsExportModalOpen(true)}
-            className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95"
-            title="Exportar reporte contable de ventas con los filtros actuales (PDF, Excel)"
+            onClick={() => {
+              if (!isSubscriptionActive) {
+                setBlockedFeature('Exportación de Reportes Financieros');
+                setIsBlockedModalOpen(true);
+              } else {
+                setIsExportModalOpen(true);
+              }
+            }}
+            className={`h-9 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-95 ${
+              !isSubscriptionActive
+                ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-white'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Exportar reporte contable de ventas con los filtros actuales (PDF, Excel)"}
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500" /> : <Download className="w-4 h-4 text-emerald-400" />}
             <span>Exportar Reporte</span>
-            {selectedPaymentMethod !== 'all' && (
-              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
-                {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
-              </span>
+            {!isSubscriptionActive ? (
+              <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>
+            ) : (
+              selectedPaymentMethod !== 'all' && (
+                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                  {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
+                </span>
+              )
             )}
           </button>
 
@@ -1156,6 +1189,13 @@ export const SalesHistory = () => {
       <WeeklySummaryModal
         isOpen={isWeeklySummaryModalOpen}
         onClose={() => setIsWeeklySummaryModalOpen(false)}
+      />
+
+      {/* Modal de Bloqueo de Suscripción */}
+      <SubscriptionBlockedModal
+        isOpen={isBlockedModalOpen}
+        onClose={() => setIsBlockedModalOpen(false)}
+        featureName={blockedFeature}
       />
     </div>
   );

@@ -27,16 +27,18 @@ import {
   Upload,
   TrendingUp,
   Truck,
-  Phone
+  Phone,
+  Lock
 } from 'lucide-react';
 import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
 import { SUPPLIER_CATEGORIES } from '../../data/supplierInitialData';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
-import { normalizeSearchText } from '../../utils/formatters';
+import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import { compressImage } from '../../utils/imageUtils';
 import { SeedCatalogModal } from './SeedCatalogModal/SeedCatalogModal';
 import { ProductCameraModal } from './ProductCameraModal';
 import { ProductPerformanceModal } from './ProductPerformanceModal';
+import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import './InventoryManager.css';
 
 export const InventoryManager = () => {
@@ -53,9 +55,13 @@ export const InventoryManager = () => {
     suppliers = [],
     addSupplier,
     updateSupplier,
-    deleteSupplier
+    deleteSupplier,
+    isSubscriptionActive
   } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
+
+  const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState('');
 
   const activeSuppliers = useMemo(() => {
     return filterOutDemoSuppliers(suppliers || []).filter(Boolean);
@@ -420,6 +426,11 @@ export const InventoryManager = () => {
   };
 
   const handleOpenNew = () => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Creación de Nuevos Productos');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     setIsNew(true);
     setEditingProduct({
       name: '',
@@ -441,6 +452,11 @@ export const InventoryManager = () => {
   };
 
   const handleOpenEdit = (product) => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Edición de Productos y Precios');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     setIsNew(false);
     const resolvedCost = (() => {
       const candidates = [product.cost_price, product.costPrice, product.costprice];
@@ -468,6 +484,12 @@ export const InventoryManager = () => {
 
   const handleSaveForm = async (e) => {
     e.preventDefault();
+    if (!isSubscriptionActive) {
+      showToast('Inventario en Modo Solo Lectura. Activa tu suscripción para guardar cambios.', 'error');
+      setBlockedFeature('Edición y Guardado de Productos');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (!editingProduct.name.trim()) {
       showToast('Ingresa el nombre del producto', 'warning');
       return;
@@ -522,6 +544,11 @@ export const InventoryManager = () => {
   };
 
   const handleConfirmBulkDelete = async () => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Eliminación de Productos');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (selectedProductIds.length === 0) return;
     try {
       setIsDeletingBatch(true);
@@ -541,6 +568,11 @@ export const InventoryManager = () => {
   const [isDeletingSingle, setIsDeletingSingle] = useState(false);
 
   const handleConfirmDeleteSingle = async () => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Eliminación de Productos');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (!productToDelete) return;
     try {
       setIsDeletingSingle(true);
@@ -605,6 +637,40 @@ export const InventoryManager = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+      {/* Banner de Modo Solo Lectura por Suscripción Vencida */}
+      {!isSubscriptionActive && (
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-amber-50/90 border border-amber-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-950 shadow-2xs animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs sm:text-sm font-black text-amber-900 uppercase tracking-wide">
+                  Inventario en Modo Solo Lectura
+                </h4>
+                <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-black uppercase">
+                  Suscripción Vencida
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Tu período de prueba ha expirado. Puedes consultar tus existencias y precios, pero no podrás agregar nuevos productos, editar catálogo ni importar listas hasta activar tu suscripción.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setBlockedFeature('Edición y Gestión de Inventario');
+              setIsBlockedModalOpen(true);
+            }}
+            className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap self-end sm:self-auto active:scale-95"
+          >
+            Activar Licencia
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -633,43 +699,83 @@ export const InventoryManager = () => {
           <button
             type="button"
             onClick={() => {
-              setImportPreview(null);
-              setIsImportModalOpen(true);
+              if (!isSubscriptionActive) {
+                setBlockedFeature('Importación Masiva de Excel');
+                setIsBlockedModalOpen(true);
+              } else {
+                setImportPreview(null);
+                setIsImportModalOpen(true);
+              }
             }}
-            className="px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-            title="Cargar archivo Excel o CSV con tus productos"
+            className={`px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+              !isSubscriptionActive
+                ? 'bg-slate-100 text-slate-500 border-slate-200'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Cargar archivo Excel o CSV con tus productos"}
           >
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500 shrink-0" /> : <FileSpreadsheet className="w-4 h-4 text-emerald-600 shrink-0" />}
             <span>Importar Excel</span>
+            {!isSubscriptionActive && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>}
           </button>
 
           {/* Botón Pack Inicial de Barrio (50 Productos con 1 Clic) */}
           <button
             type="button"
-            onClick={() => setIsSeedModalOpen(true)}
-            className="px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
-            title="Cargar pack inicial de los 50 productos más vendidos de barrio en 1 clic"
+            onClick={() => {
+              if (!isSubscriptionActive) {
+                setBlockedFeature('Importación de Catálogo Semilla');
+                setIsBlockedModalOpen(true);
+              } else {
+                setIsSeedModalOpen(true);
+              }
+            }}
+            className={`px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+              !isSubscriptionActive
+                ? 'bg-slate-200 text-slate-600 border border-slate-300'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/20'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Cargar pack inicial de los 50 productos más vendidos de barrio en 1 clic"}
           >
-            <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500 shrink-0" /> : <Sparkles className="w-4 h-4 text-amber-300 shrink-0 animate-pulse" />}
             <span>Pack Inicial (50 Productos)</span>
+            {!isSubscriptionActive && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>}
           </button>
 
           <button
             type="button"
-            onClick={() => setIsCategoryModalOpen(true)}
-            className="px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 shadow-2xs"
-            title="Administrar categorías de productos"
+            onClick={() => {
+              if (!isSubscriptionActive) {
+                setBlockedFeature('Gestión de Categorías');
+                setIsBlockedModalOpen(true);
+              } else {
+                setIsCategoryModalOpen(true);
+              }
+            }}
+            className={`px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 shadow-2xs ${
+              !isSubscriptionActive
+                ? 'bg-slate-100 text-slate-500'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Administrar categorías de productos"}
           >
-            <Tag className="w-4 h-4 text-emerald-600 shrink-0" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500 shrink-0" /> : <Tag className="w-4 h-4 text-emerald-600 shrink-0" />}
             <span>Categorías ({activeCategories.length})</span>
+            {!isSubscriptionActive && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>}
           </button>
 
           <button
             onClick={handleOpenNew}
-            className="px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className={`px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
+              !isSubscriptionActive
+                ? 'bg-slate-200 text-slate-600 border border-slate-300'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+            }`}
+            title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Crear nuevo producto"}
           >
-            <Plus className="w-4 h-4 shrink-0" />
+            {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500 shrink-0" /> : <Plus className="w-4 h-4 shrink-0" />}
             <span>Nuevo Producto</span>
+            {!isSubscriptionActive && <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>}
           </button>
         </div>
       </div>
@@ -1025,16 +1131,34 @@ export const InventoryManager = () => {
                           <TrendingUp className="w-4 h-4 text-indigo-600" />
                         </button>
                         <button
-                          onClick={() => handleOpenEdit(prod)}
-                          className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
-                          title="Editar producto"
+                          onClick={() => {
+                            if (!isSubscriptionActive) {
+                              setBlockedFeature('Edición de Productos y Precios');
+                              setIsBlockedModalOpen(true);
+                            } else {
+                              handleOpenEdit(prod);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            !isSubscriptionActive 
+                              ? 'text-slate-400 hover:text-slate-600 hover:bg-slate-100' 
+                              : 'text-slate-600 hover:text-emerald-700 hover:bg-emerald-50'
+                          }`}
+                          title={!isSubscriptionActive ? "Edición bloqueada por suscripción vencida" : "Editar producto"}
                         >
-                          <Edit3 className="w-4 h-4" />
+                          {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500" /> : <Edit3 className="w-4 h-4" />}
                         </button>
                         <button
-                          onClick={() => setProductToDelete(prod)}
+                          onClick={() => {
+                            if (!isSubscriptionActive) {
+                              setBlockedFeature('Eliminación de Productos');
+                              setIsBlockedModalOpen(true);
+                            } else {
+                              setProductToDelete(prod);
+                            }
+                          }}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Eliminar producto"
+                          title={!isSubscriptionActive ? "Eliminación bloqueada por suscripción vencida" : "Eliminar producto"}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -2512,6 +2636,13 @@ export const InventoryManager = () => {
           }}
         />
       )}
+
+      {/* Modal de Bloqueo de Suscripción */}
+      <SubscriptionBlockedModal
+        isOpen={isBlockedModalOpen}
+        onClose={() => setIsBlockedModalOpen(false)}
+        featureName={blockedFeature}
+      />
     </div>
   );
 };
