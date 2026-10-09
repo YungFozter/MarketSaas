@@ -43,6 +43,18 @@ CREATE TABLE IF NOT EXISTS public.store_config (
     {"id": "qr", "name": "Transferencia / QR Digital", "desc": "Simple QR Banco de Preferencia", "enabled": true},
     {"id": "card", "name": "Tarjeta (POS Móvil)", "desc": "Lector inalámbrico en mostrador o puerta", "enabled": true}
   ]'::jsonb,
+  delivery_schedule JSONB DEFAULT '{
+    "enabled": true,
+    "mode": "custom",
+    "daysText": "Lunes a Sábado",
+    "timeText": "11:30 - 14:00 y 18:30 - 22:00",
+    "slot1Start": "11:30",
+    "slot1End": "14:00",
+    "hasSecondSlot": true,
+    "slot2Start": "18:30",
+    "slot2End": "22:00",
+    "note": "Los pedidos fuera de horario se programarán para el siguiente turno de entrega."
+  }'::jsonb,
   config JSONB DEFAULT '{}'::jsonb,
   owner_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -59,6 +71,7 @@ ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS enable_points BOOLEAN D
 ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS points_ratio NUMERIC DEFAULT 10;
 ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS qr_image_url TEXT;
 ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS owner_id UUID;
+ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS delivery_schedule JSONB DEFAULT '{"enabled": true, "mode": "custom", "daysText": "Lunes a Sábado", "timeText": "11:30 - 14:00 y 18:30 - 22:00"}'::jsonb;
 ALTER TABLE public.store_config ADD COLUMN IF NOT EXISTS config JSONB DEFAULT '{}'::jsonb;
 
 -- 3. TABLA: PRODUCTOS E INVENTARIO (products)

@@ -2022,6 +2022,7 @@ export const StoreProvider = ({ children }) => {
             qrImageUrl: effectiveQr,
             ...(loadedCategories ? { categories: loadedCategories } : {}),
             coupons: loadedCoupons,
+            deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || data.delivery_schedule || prev?.deliverySchedule),
             name: data.name || configData.name
           };
         });
