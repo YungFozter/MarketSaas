@@ -9,7 +9,8 @@ import {
   Sparkles,
   ShoppingBag,
   Award,
-  CheckCircle2
+  CheckCircle2,
+  Crown
 } from 'lucide-react';
 import './StoreCard.css';
 
@@ -95,6 +96,12 @@ export const StoreCard = React.memo(({
                       {(isNearest || store.isNearest) && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs shrink-0">
                           📍 Más Cercana a Ti
+                        </span>
+                      )}
+                      {store.isProStore && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded-md border border-amber-300 shadow-2xs shrink-0">
+                          <Crown className="w-3 h-3 text-amber-600 fill-amber-400 shrink-0" />
+                          <span>Tienda PRO</span>
                         </span>
                       )}
                       {store.isRegisteredStore && (
@@ -228,6 +235,12 @@ export const StoreCard = React.memo(({
             <h4 className="text-sm font-bold text-slate-900 truncate leading-snug">
               {store.name}
             </h4>
+            {store.isProStore && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-1 py-0.5 rounded shadow-2xs shrink-0" title="Tienda con Plan PRO">
+                <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-400 shrink-0" />
+                <span>PRO</span>
+              </span>
+            )}
             {store.isRegisteredStore ? (
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="Tienda Registrada" />
             ) : store.isVerified ? (

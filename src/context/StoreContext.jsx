@@ -1287,7 +1287,9 @@ export const StoreProvider = ({ children }) => {
             isOpen: statusCalc.isOpen,
             statusBadge: statusCalc.statusBadge,
             schedule: safeConfig.schedule,
-            isCurrentOwnerStore: true
+            isCurrentOwnerStore: true,
+            isProStore: Boolean(isProPlan || String(safeConfig.subscription?.plan || '').toLowerCase().includes('pro')),
+            plan: safeConfig.subscription?.plan || (isProPlan ? 'pro' : 'basic')
           };
         }
         return s;
@@ -2486,6 +2488,10 @@ export const StoreProvider = ({ children }) => {
                 isRegisteredStore: true,
                 isVerified: true,
                 isCurrentOwnerStore: Boolean(isCurrentOwner),
+                isProStore: isCurrentOwner 
+                  ? Boolean(isProPlan || String(storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'))
+                  : Boolean(String(conf.subscription?.plan || rs.subscription?.plan || '').toLowerCase().includes('pro')),
+                plan: isCurrentOwner ? (storeConfig?.subscription?.plan || (isProPlan ? 'pro' : 'basic')) : (conf.subscription?.plan || rs.subscription?.plan || 'basic'),
                 subscription: (isCurrentOwner && storeConfig?.subscription) ? storeConfig.subscription : normalizeSubscription(conf.subscription || rs.subscription, rs.created_at),
                 owner_id: rs.owner_id || conf.owner_id || null,
                 totalStockItems: 120,

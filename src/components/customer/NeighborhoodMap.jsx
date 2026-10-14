@@ -561,9 +561,16 @@ export const NeighborhoodMap = ({
                   </div>
                 )}
                 <div className="min-w-0">
-                  <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
-                    {activeStore.name}
-                  </h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 leading-tight truncate">
+                      {activeStore.name}
+                    </h4>
+                    {activeStore.isProStore && (
+                      <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded shadow-2xs">
+                        👑 PRO
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium mt-0.5">
                     <span>
                       {activeStore.isOpen !== false ? (activeStore.deliveryTime || '10-15 min') : 'Cerrado temporalmente'}

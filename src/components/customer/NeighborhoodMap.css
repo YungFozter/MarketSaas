@@ -129,8 +129,15 @@
 }
 
 .pin-label__dot--closed { color: #ef4444; }
+.pin-label__dot--pro_owner,
+.pin-label__dot--pro { color: #f59e0b; }
 .pin-label__dot--owner { color: #f59e0b; }
 .pin-label__dot--official { color: #059669; }
+
+.pin-label__chip--pro {
+  border-color: rgba(245, 158, 11, 0.7) !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4), 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
 
 .pin-label__status {
   font-size: 8px;
@@ -151,6 +158,16 @@
   border-radius: 9999px;
   border: 0.5px solid transparent;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.pin-label__badge--pro_owner,
+.pin-label__badge--pro {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border-color: #f59e0b;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
 }
 
 .pin-label__badge--owner {
@@ -178,7 +195,8 @@
    ============================================================================== */
 
 .registered-pulse-ring,
-.owner-pulse-ring {
+.owner-pulse-ring,
+.pro-pulse-ring {
   position: absolute;
   top: 16.5px;
   left: 18px;
@@ -186,6 +204,14 @@
   border-radius: 9999px;
   pointer-events: none;
   contain: strict;
+}
+
+.pro-pulse-ring {
+  width: 58px;
+  height: 58px;
+  background-color: rgba(245, 158, 11, 0.38);
+  border: 1.5px solid rgba(245, 158, 11, 0.6);
+  animation: marker-pulse 1.8s infinite ease-out;
 }
 
 .registered-pulse-ring {

@@ -39,17 +39,38 @@ export const hasValidCoords = (store) => {
 
 /**
  * Resuelve la variante visual de una tienda (compartida por pin DOM y punto canvas).
- * @returns {{ variant: 'closed'|'owner'|'official'|'default', isOpen: boolean, pinColor: string, strokeColor: string }}
+ * @returns {{ variant: 'closed'|'pro_owner'|'pro'|'owner'|'official'|'default', isOpen: boolean, pinColor: string, strokeColor: string, isPro: boolean }}
  */
 export const getStoreVisual = (store) => {
   const isOpen = store.isOpen !== false;
-  if (!isOpen) return { variant: 'closed', isOpen, pinColor: '#475569', strokeColor: '#334155' };
-  if (store.isCurrentOwnerStore) return { variant: 'owner', isOpen, pinColor: '#059669', strokeColor: '#047857' };
-  if (store.isRegisteredStore) return { variant: 'official', isOpen, pinColor: '#059669', strokeColor: '#047857' };
-  return { variant: 'default', isOpen, pinColor: '#334155', strokeColor: '#1e293b' };
+  const isPro = Boolean(store.isProStore || String(store.plan || store.subscription?.plan || '').toLowerCase().includes('pro'));
+
+  if (!isOpen) {
+    return { variant: 'closed', isOpen, pinColor: '#475569', strokeColor: '#334155', isPro };
+  }
+  
+  if (store.isCurrentOwnerStore && isPro) {
+    return { variant: 'pro_owner', isOpen, pinColor: '#d97706', strokeColor: '#b45309', isPro: true };
+  }
+  
+  if (isPro) {
+    return { variant: 'pro', isOpen, pinColor: '#d97706', strokeColor: '#b45309', isPro: true };
+  }
+
+  if (store.isCurrentOwnerStore) {
+    return { variant: 'owner', isOpen, pinColor: '#059669', strokeColor: '#047857', isPro: false };
+  }
+
+  if (store.isRegisteredStore) {
+    return { variant: 'official', isOpen, pinColor: '#059669', strokeColor: '#047857', isPro: false };
+  }
+
+  return { variant: 'default', isOpen, pinColor: '#334155', strokeColor: '#1e293b', isPro: false };
 };
 
 const BADGE_TEXT = {
+  pro_owner: '👑 Tu Tienda PRO',
+  pro: '⭐ Tienda PRO',
   owner: '⭐ Tu Tienda',
   official: 'Oficial'
 };
@@ -58,12 +79,14 @@ const BADGE_TEXT = {
 export const createStorePinIcon = (store, isSelected) => {
   const { variant, isOpen, pinColor, strokeColor } = getStoreVisual(store);
 
-  // Anillo de pulso dinámico (SOLO para tiendas abiertas oficiales / del dueño)
-  const ringHtml = variant === 'owner'
-    ? '<div class="owner-pulse-ring"></div>'
-    : variant === 'official'
-      ? '<div class="registered-pulse-ring"></div>'
-      : '';
+  // Anillo de pulso dinámico (SOLO para tiendas abiertas oficiales / pro / del dueño)
+  const ringHtml = (variant === 'pro_owner' || variant === 'pro')
+    ? '<div class="pro-pulse-ring"></div>'
+    : variant === 'owner'
+      ? '<div class="owner-pulse-ring"></div>'
+      : variant === 'official'
+        ? '<div class="registered-pulse-ring"></div>'
+        : '';
 
   const dotHtml = variant !== 'default' ? `<span class="pin-label__dot pin-label__dot--${variant}">●</span>` : '';
   const statusHtml = !isOpen ? '<span class="pin-label__status">CERRADO</span>' : '';
@@ -71,11 +94,24 @@ export const createStorePinIcon = (store, isSelected) => {
     ? `<span class="pin-label__badge pin-label__badge--${variant}">${BADGE_TEXT[variant]}</span>`
     : '';
 
+  const isProVariant = variant === 'pro' || variant === 'pro_owner';
+  const crownSvg = isProVariant ? `
+    <div class="pin-crown" style="position: absolute; top: -11px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 5;">
+      <svg width="18" height="13" viewBox="0 0 24 18" fill="#f59e0b" stroke="#b45309" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));">
+        <path d="M2 15l2-9 5 5 3-7 3 7 5-5 2 9H2z"></path>
+        <circle cx="2" cy="6" r="1.5" fill="#fef3c7"></circle>
+        <circle cx="12" cy="4" r="1.5" fill="#fef3c7"></circle>
+        <circle cx="22" cy="6" r="1.5" fill="#fef3c7"></circle>
+      </svg>
+    </div>
+  ` : '';
+
   const html = `
-    <div class="custom-leaflet-pin${isSelected ? ' is-active' : ''}${!isOpen ? ' is-closed' : ''}">
+    <div class="custom-leaflet-pin${isSelected ? ' is-active' : ''}${!isOpen ? ' is-closed' : ''}${isProVariant ? ' is-pro' : ''}">
       ${ringHtml}
+      ${crownSvg}
       <div class="pin-label">
-        <div class="pin-label__chip">
+        <div class="pin-label__chip${isProVariant ? ' pin-label__chip--pro' : ''}">
           ${dotHtml}
           <span class="pin-label__name">${escapeHtml(store.name)}</span>
           ${statusHtml}
@@ -86,7 +122,7 @@ export const createStorePinIcon = (store, isSelected) => {
         <ellipse cx="18" cy="44" rx="6" ry="2.2" fill="rgba(15, 23, 42, 0.45)"/>
         <circle cx="18" cy="44" r="2.2" fill="${strokeColor}"/>
         <circle cx="18" cy="44" r="0.9" fill="#ffffff"/>
-        <path d="M18 43.5C18 43.5 32 28 32 16.5C32 8.5 25.7 2 18 2C10.3 2 4 8.5 4 16.5C4 28 18 43.5 18 43.5Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="1.8"/>
+        <path d="M18 43.5C18 43.5 32 28 32 16.5C32 8.5 25.7 2 18 2C10.3 2 4 8.5 4 16.5C4 28 18 43.5 18 43.5Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="${isProVariant ? '2.4' : '1.8'}"/>
         <circle cx="18" cy="16.5" r="10" fill="#FFFFFF"/>
       </svg>
       <div class="pin-icon">${isOpen ? STORE_ICON_SVG(pinColor) : LOCK_ICON_SVG(pinColor)}</div>
@@ -102,12 +138,12 @@ export const createStorePinIcon = (store, isSelected) => {
 
 /** Estilo del punto canvas para zoom lejano (sin DOM por tienda). */
 export const getStoreDotStyle = (store, isSelected) => {
-  const { variant, isOpen, pinColor } = getStoreVisual(store);
-  const isOwner = variant === 'owner';
+  const { variant, isOpen, pinColor, isPro } = getStoreVisual(store);
+  const isOwner = variant === 'owner' || variant === 'pro_owner';
   return {
-    radius: isSelected ? 9 : variant === 'default' || !isOpen ? 5.5 : 7,
-    color: isOwner ? '#f59e0b' : '#ffffff',
-    weight: isOwner ? 3 : 2,
+    radius: isSelected ? 9.5 : isPro ? 8 : (variant === 'default' || !isOpen) ? 5.5 : 7,
+    color: isPro ? '#f59e0b' : isOwner ? '#f59e0b' : '#ffffff',
+    weight: isPro ? 3.5 : isOwner ? 3 : 2,
     fillColor: pinColor,
     fillOpacity: isOpen ? 1 : 0.75,
     bubblingMouseEvents: false
