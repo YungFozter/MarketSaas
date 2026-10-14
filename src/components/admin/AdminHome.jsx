@@ -43,6 +43,7 @@ import {
   ShieldAlert,
   MessageCircle,
   Bell,
+  Crown,
   CheckSquare,
   Square,
   Receipt,
@@ -97,6 +98,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     showToast,
     exportSalesCSV,
     isSubscriptionActive,
+    isProPlan,
+    activePlanType,
     subscriptionTimeRemaining,
     formatBoliviaDateTime,
     creditCustomers = [],
@@ -1023,12 +1026,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 {/* Chip Dinámico de Suscripción */}
                 <button
                   onClick={() => setActiveTab('subscription')}
-                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer active:scale-95 shrink-0 ${
+                  className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer active:scale-95 shrink-0 ${
                     !isSubscriptionActive
                       ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200 animate-pulse'
-                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                      : isProPlan
+                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 border-amber-300 shadow-xs'
+                        : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
                   }`}
-                  title="Haz clic para gestionar tu suscripción"
+                  title={isProPlan ? 'Membresía Plan PRO Activa' : 'Haz clic para gestionar tu suscripción'}
                 >
                   {!isSubscriptionActive ? (
                     <>
@@ -1037,11 +1042,18 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     </>
                   ) : (
                     <>
-                      <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="font-mono whitespace-nowrap font-extrabold">
-                        {subscriptionTimeRemaining.days > 0 
-                          ? `${subscriptionTimeRemaining.days}d ${subscriptionTimeRemaining.hours}h` 
-                          : `${String(subscriptionTimeRemaining.minutes).padStart(2, '0')}:${String(subscriptionTimeRemaining.seconds).padStart(2, '0')}`}
+                      {isProPlan ? (
+                        <Crown className="w-3.5 h-3.5 text-slate-950 fill-slate-950 shrink-0" />
+                      ) : (
+                        <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      )}
+                      <span className="font-mono whitespace-nowrap font-extrabold flex items-center gap-1">
+                        {isProPlan && <span className="font-black tracking-tight text-[10px] bg-slate-950/20 px-1 rounded-sm">PRO</span>}
+                        <span>
+                          {subscriptionTimeRemaining.days > 0 
+                            ? `${subscriptionTimeRemaining.days}d ${subscriptionTimeRemaining.hours}h` 
+                            : `${String(subscriptionTimeRemaining.minutes).padStart(2, '0')}:${String(subscriptionTimeRemaining.seconds).padStart(2, '0')}`}
+                        </span>
                       </span>
                     </>
                   )}

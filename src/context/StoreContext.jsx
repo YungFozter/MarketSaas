@@ -2806,6 +2806,30 @@ export const StoreProvider = ({ children }) => {
     return new Date(expiresAt).getTime() > currentTick;
   }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt, currentTick]);
 
+  // Tipo de plan activo: 'trial' | 'basic' | 'pro' | 'expired'
+  const activePlanType = useMemo(() => {
+    if (!isSubscriptionActive) return 'expired';
+    const rawPlan = String(storeConfig?.subscription?.plan || '').toLowerCase();
+    if (rawPlan.includes('pro')) return 'pro';
+    if (rawPlan === 'trial_free' || (!storeConfig?.subscription?.plan && !storeConfig?.subscription?.subscriptionExpiresAt)) {
+      return 'trial';
+    }
+    return 'basic';
+  }, [isSubscriptionActive, storeConfig?.subscription?.plan, storeConfig?.subscription?.subscriptionExpiresAt]);
+
+  // Flag booleano de alta conveniencia para componentes
+  const isProPlan = useMemo(() => {
+    return isSubscriptionActive && activePlanType === 'pro';
+  }, [isSubscriptionActive, activePlanType]);
+
+  // Nombre legible del plan activo
+  const activePlanName = useMemo(() => {
+    if (!isSubscriptionActive) return 'Suscripción Vencida';
+    if (activePlanType === 'pro') return 'Plan Pro (Bs. 129)';
+    if (activePlanType === 'trial') return 'Prueba Gratuita';
+    return 'Plan Básico (Bs. 75)';
+  }, [isSubscriptionActive, activePlanType]);
+
   // Tiempo restante de la suscripción (días, horas, minutos, segundos)
   const subscriptionTimeRemaining = useMemo(() => {
     const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
@@ -5257,6 +5281,9 @@ export const StoreProvider = ({ children }) => {
         setIsRecoveryMode,
         subscriptionCodes,
         isSubscriptionActive,
+        isProPlan,
+        activePlanType,
+        activePlanName,
         subscriptionTimeRemaining,
         generateSubscriptionCodes,
         deleteSubscriptionCode,

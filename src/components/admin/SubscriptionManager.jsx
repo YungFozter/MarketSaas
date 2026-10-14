@@ -28,6 +28,9 @@ export const SubscriptionManager = () => {
   const { 
     storeConfig, 
     isSubscriptionActive, 
+    isProPlan,
+    activePlanType,
+    activePlanName,
     subscriptionTimeRemaining, 
     redeemSubscriptionCode, 
     formatBoliviaDateTime,
@@ -40,7 +43,7 @@ export const SubscriptionManager = () => {
   const [redeemSuccess, setRedeemSuccess] = useState('');
 
   const sub = storeConfig?.subscription || {};
-  const isTrial = sub.plan === 'trial_free' || (!sub.plan && isSubscriptionActive);
+  const isTrial = activePlanType === 'trial';
   const history = Array.isArray(sub.history) ? sub.history : [];
 
   const handleRedeemSubmit = async (e) => {
@@ -69,9 +72,9 @@ export const SubscriptionManager = () => {
     }
   };
 
-  const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '59178901234';
+  const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '59172125280';
   const cleanPhone = String(storePhone).replace(/\D/g, '');
-  const supportWhatsappUrl = `https://wa.me/${cleanPhone || '59178901234'}?text=${encodeURIComponent(
+  const supportWhatsappUrl = `https://wa.me/${cleanPhone || '59172125280'}?text=${encodeURIComponent(
     `Hola, deseo adquirir o renovar una licencia para mi tienda "${storeConfig?.name || 'Mi Tienda'}" en MarketSaaS.`
   )}`;
 
@@ -83,12 +86,16 @@ export const SubscriptionManager = () => {
           <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs ${
             !isSubscriptionActive 
               ? 'bg-rose-50 border-rose-200 text-rose-600' 
-              : isTrial 
-                ? 'bg-amber-50 border-amber-200 text-amber-600' 
-                : 'bg-emerald-50 border-emerald-200 text-emerald-600'
+              : isProPlan 
+                ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 border-amber-300 shadow-md shadow-amber-500/20'
+                : isTrial 
+                  ? 'bg-amber-50 border-amber-200 text-amber-600' 
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-600'
           }`}>
             {!isSubscriptionActive ? (
               <ShieldAlert className="w-8 h-8 animate-pulse" />
+            ) : isProPlan ? (
+              <Crown className="w-8 h-8 fill-slate-950" />
             ) : isTrial ? (
               <Clock className="w-8 h-8" />
             ) : (
@@ -100,22 +107,29 @@ export const SubscriptionManager = () => {
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
                 Estado de Mi Suscripción
               </h2>
-              <span className={`px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider border ${
+              <span className={`px-3 py-0.5 rounded-full text-xs font-black uppercase tracking-wider border flex items-center gap-1.5 ${
                 !isSubscriptionActive 
                   ? 'bg-rose-50 text-rose-700 border-rose-200' 
-                  : isTrial 
-                    ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : isProPlan
+                    ? 'bg-amber-100 text-amber-900 border-amber-300 shadow-xs'
+                    : isTrial 
+                      ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
               }`}>
-                {!isSubscriptionActive 
-                  ? 'Expirada / Vencida' 
-                  : isTrial 
-                    ? 'Período de Prueba' 
-                    : 'Licencia Activa (Premium)'}
+                {isProPlan && <Crown className="w-3 h-3 fill-amber-700 text-amber-700" />}
+                <span>
+                  {!isSubscriptionActive 
+                    ? 'Expirada / Vencida' 
+                    : isProPlan
+                      ? 'Plan PRO Activo ⭐'
+                      : isTrial 
+                        ? 'Período de Prueba' 
+                        : 'Plan Básico Activo (Bs. 75)'}
+                </span>
               </span>
             </div>
             <p className="text-xs sm:text-sm text-slate-500">
-              Control de vigencia y activación de funcionalidades para <strong className="text-slate-800 font-bold">{storeConfig?.name || 'Mi Tienda'}</strong>
+              Control de vigencia y beneficios activos para <strong className="text-slate-800 font-bold">{storeConfig?.name || 'Mi Tienda'}</strong>
             </p>
           </div>
         </div>
