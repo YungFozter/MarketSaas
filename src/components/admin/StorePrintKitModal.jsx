@@ -13,7 +13,10 @@ import {
   Copy,
   Store,
   MapPin,
-  Phone
+  Phone,
+  Clock,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './StorePrintKitModal.css';
@@ -215,112 +218,145 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
           {selectedFormat === 'poster_a4' && (
             <div 
               ref={printAreaRef}
-              className="print-page print-poster-a4 bg-white w-full max-w-[600px] aspect-auto sm:aspect-[1/1.38] rounded-2xl shadow-xl border border-slate-200/90 p-4 sm:p-8 flex flex-col justify-between text-center relative"
+              className="print-page print-poster-a4 bg-white w-full max-w-[680px] aspect-auto sm:aspect-[1/1.41] rounded-2xl shadow-xl border border-slate-200/90 p-5 sm:p-9 print:p-0 flex flex-col justify-between text-center relative"
             >
               {/* Marco de diseño elegante superior */}
-              <div className="space-y-2.5 sm:space-y-3.5 print:space-y-2">
-                {/* Logo o Icono de la Tienda */}
-                <div className="flex items-center justify-center gap-2.5 sm:gap-3 print:gap-2.5">
-                  {storeLogo ? (
-                    <img 
-                      src={storeLogo} 
-                      alt={storeName} 
-                      className="w-12 h-12 sm:w-16 sm:h-16 print:w-12 print:h-12 object-contain rounded-2xl border border-slate-100 p-1 shadow-xs" 
-                    />
-                  ) : (
-                    <div className="w-11 h-11 sm:w-14 sm:h-14 print:w-12 print:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
-                      <Store className="w-6 h-6 sm:w-8 sm:h-8 print:w-7 print:h-7" />
+              <div className="space-y-3 sm:space-y-4 print:space-y-2">
+                {/* Logo o Icono de la Tienda + Badge de Barrio */}
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 print:pb-1.5">
+                  <div className="flex items-center gap-3 print:gap-2.5">
+                    {storeLogo ? (
+                      <img 
+                        src={storeLogo} 
+                        alt={storeName} 
+                        className="w-12 h-12 sm:w-16 sm:h-16 print:w-14 print:h-14 object-contain rounded-2xl border border-slate-100 p-1 shadow-xs" 
+                      />
+                    ) : (
+                      <div className="w-12 h-12 sm:w-15 sm:h-15 print:w-13 print:h-13 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md">
+                        <Store className="w-7 h-7 sm:w-8 sm:h-8 print:w-7 print:h-7" />
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <span className="text-[10px] sm:text-[11px] print:text-[10px] font-black uppercase tracking-widest text-emerald-600 block">
+                        Catálogo Online & Delivery
+                      </span>
+                      <h1 className="text-xl sm:text-3xl print:text-2xl font-black text-slate-900 tracking-tight leading-none">
+                        {storeName}
+                      </h1>
                     </div>
-                  )}
-                  <div className="text-left">
-                    <span className="text-[10px] sm:text-[11px] print:text-[10px] font-black uppercase tracking-widest text-emerald-600 block">
-                      Catálogo Online & Delivery
+                  </div>
+
+                  <div className="hidden sm:flex print:flex flex-col items-end">
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] sm:text-xs font-black uppercase tracking-wider flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
+                      Tu Vecino Digital
                     </span>
-                    <h1 className="text-xl sm:text-3xl print:text-2xl font-black text-slate-900 tracking-tight leading-none">
-                      {storeName}
-                    </h1>
+                    <span className="text-[10px] text-slate-400 font-bold mt-0.5">Sin descargar apps</span>
                   </div>
                 </div>
 
                 {/* Frase Gancho / Titular */}
-                <div className="bg-slate-900 text-white py-2 sm:py-3 print:py-2 px-4 sm:px-6 print:px-4 rounded-2xl shadow-md">
-                  <p className="text-sm sm:text-xl print:text-base font-black tracking-tight leading-snug">
+                <div className="bg-slate-900 text-white py-2.5 sm:py-3.5 print:py-2.5 px-4 sm:px-6 print:px-4 rounded-2xl shadow-md">
+                  <p className="text-base sm:text-xl print:text-base font-black tracking-tight leading-snug">
                     {activeTagline}
                   </p>
-                  <p className="text-[11px] sm:text-xs print:text-[10px] text-emerald-400 font-extrabold mt-0.5">
-                    ¡Abre la cámara de tu celular y escanea este código!
+                  <p className="text-xs sm:text-sm print:text-xs text-emerald-400 font-black mt-0.5 tracking-wide">
+                    ¡Abre la cámara de tu celular, apunta al código y pide directo a tu casa!
                   </p>
                 </div>
               </div>
 
-              {/* Bloque Central: QR Protagonista Ampliado + Pasos 1, 2, 3 Distribuidos Equitativamente */}
-              <div className="flex-1 flex flex-col items-center justify-evenly py-3 sm:py-5 print:py-2 w-full min-h-0">
-                {/* Código QR Central con Marco Nítido */}
+              {/* Bloque Central: QR Protagonista Ampliado + Beneficios Rápidos */}
+              <div className="flex-1 flex flex-col items-center justify-evenly py-4 sm:py-6 print:py-2 w-full min-h-0">
+                {/* Código QR Central con Marco Nítido y badges */}
                 <div className="flex flex-col items-center justify-center my-auto">
-                  <div className="p-3 sm:p-4 print:p-3 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
+                  <div className="p-4 sm:p-5 print:p-3.5 bg-white rounded-3xl border-[5px] border-emerald-600 shadow-2xl relative">
                     <img 
                       src={qrCodeUrl} 
                       alt={`QR de ${storeName}`} 
-                      className="w-48 h-48 sm:w-56 sm:h-56 print-poster-qr-img object-contain"
+                      className="w-56 h-56 sm:w-64 sm:h-64 print-poster-qr-img object-contain"
                     />
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs print:text-[10px] font-black uppercase tracking-wider px-3.5 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
-                      ESCANEA CON TU CELULAR
+                    <div className="absolute -bottom-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs sm:text-sm print:text-xs font-black uppercase tracking-wider px-4 py-1 rounded-full shadow-lg whitespace-nowrap flex items-center gap-1.5">
+                      <Smartphone className="w-3.5 h-3.5" />
+                      ESCANEA CON TU CÁMARA
                     </div>
+                  </div>
+                  <p className="text-xs sm:text-sm print:text-[11px] font-extrabold text-slate-600 mt-5 print:mt-4">
+                    Compatible con cualquier celular • Android & iPhone
+                  </p>
+                </div>
+
+                {/* 3 Beneficios Clave del Servicio Vecinal */}
+                <div className="w-full grid grid-cols-3 gap-2 sm:gap-3 print:gap-2 my-2 print:my-1 text-center">
+                  <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2 sm:p-2.5 print:p-1.5 flex flex-col items-center justify-center">
+                    <Zap className="w-4 h-4 text-emerald-600 mb-0.5" />
+                    <span className="text-[11px] sm:text-xs print:text-[10px] font-black text-slate-900 leading-tight">Delivery Express</span>
+                    <span className="text-[9px] sm:text-[10px] print:text-[8.5px] text-slate-500 font-semibold">A pasos de tu puerta</span>
+                  </div>
+                  <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2 sm:p-2.5 print:p-1.5 flex flex-col items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 mb-0.5" />
+                    <span className="text-[11px] sm:text-xs print:text-[10px] font-black text-slate-900 leading-tight">Precios de Tienda</span>
+                    <span className="text-[9px] sm:text-[10px] print:text-[8.5px] text-slate-500 font-semibold">Sin comisiones infladas</span>
+                  </div>
+                  <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2 sm:p-2.5 print:p-1.5 flex flex-col items-center justify-center">
+                    <QrCode className="w-4 h-4 text-emerald-600 mb-0.5" />
+                    <span className="text-[11px] sm:text-xs print:text-[10px] font-black text-slate-900 leading-tight">Pago Fácil con QR</span>
+                    <span className="text-[9px] sm:text-[10px] print:text-[8.5px] text-slate-500 font-semibold">O efectivo al recibir</span>
                   </div>
                 </div>
 
-                {/* 3 Pasos Rápidos para el Vecino (Distancia equilibrada y armónica) */}
-                <div className="w-full grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-2.5 print:gap-2 pt-2 text-left">
-                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                {/* 3 Pasos Rápidos para el Vecino */}
+                <div className="w-full grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-2.5 print:gap-2 text-left">
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2 shadow-xs">
                     <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                       1
                     </span>
                     <div>
                       <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Apunta tu cámara</strong>
-                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Sin apps, abre en el navegador.</span>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Sin instalar nada, abre en tu navegador.</span>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2 shadow-xs">
                     <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                       2
                     </span>
                     <div>
-                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Elige tus cosas</strong>
-                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Leche, pan, bebidas, abarrotes y snacks.</span>
+                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">Elige lo que gustes</strong>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Bebidas, lácteos, abarrotes, pan y snacks.</span>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
+                  <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2 shadow-xs">
                     <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                       3
                     </span>
                     <div>
-                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">¡Listo!</strong>
-                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Orden lista para recoger o delivery.</span>
+                      <strong className="text-xs print:text-[11px] font-black text-slate-900 block leading-tight">¡Recibe en casa!</strong>
+                      <span className="text-[10px] print:text-[9px] text-slate-500 leading-tight block">Tu pedido te llega directo o retira al paso.</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Pie de Página con Datos del Local */}
-              <div className="border-t border-slate-200/80 pt-2 sm:pt-3 print:pt-2 mt-1 print:mt-1 flex flex-col sm:flex-row print:flex-row items-center justify-between gap-1.5 text-xs print:text-[10px] text-slate-600 font-semibold">
+              <div className="border-t border-slate-200/80 pt-2.5 sm:pt-3.5 print:pt-2 mt-1 print:mt-1 flex flex-col sm:flex-row print:flex-row items-center justify-between gap-1.5 text-xs print:text-[10.5px] text-slate-600 font-semibold">
                 {storePhone ? (
                   <div className="flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 print:w-3 print:h-3 text-emerald-600 shrink-0" />
-                    <span>WhatsApp Pedidos: <strong>{storePhone}</strong></span>
+                    <span>WhatsApp Pedidos: <strong className="text-slate-900">{storePhone}</strong></span>
                   </div>
                 ) : (
-                  <span>Atención rápida y envíos a tu zona</span>
+                  <span>Atención rápida y envíos directos a tu zona</span>
                 )}
 
                 {storeAddress ? (
-                  <div className="flex items-center gap-1.5 truncate max-w-[280px]">
+                  <div className="flex items-center gap-1.5 truncate max-w-[320px]">
                     <MapPin className="w-3.5 h-3.5 print:w-3 print:h-3 text-emerald-600 shrink-0" />
-                    <span className="truncate">{storeAddress}</span>
+                    <span className="truncate text-slate-800">{storeAddress}</span>
                   </div>
                 ) : (
-                  <span>Tu minimarket de confianza</span>
+                  <span>Tu minimarket de confianza en el barrio</span>
                 )}
               </div>
             </div>

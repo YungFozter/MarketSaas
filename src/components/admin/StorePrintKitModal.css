@@ -114,12 +114,12 @@
 
   .print-poster-a4 {
     width: 100% !important;
-    max-width: 185mm !important;
-    height: 255mm !important;
-    max-height: 258mm !important;
-    padding: 6mm 8mm !important;
-    border: 2px solid #059669 !important;
-    border-radius: 14px !important;
+    max-width: 200mm !important;
+    height: 275mm !important;
+    max-height: 278mm !important;
+    padding: 7mm 9mm !important;
+    border: 2.5px solid #059669 !important;
+    border-radius: 16px !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
@@ -127,10 +127,10 @@
   }
 
   .print-poster-qr-img {
-    width: 72mm !important;
-    height: 72mm !important;
-    max-width: 72mm !important;
-    max-height: 72mm !important;
+    width: 82mm !important;
+    height: 82mm !important;
+    max-width: 82mm !important;
+    max-height: 82mm !important;
   }
 
   .print-counter-tent {
