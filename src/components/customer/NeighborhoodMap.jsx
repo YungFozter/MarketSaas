@@ -14,27 +14,26 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './NeighborhoodMap.css';
-import { escapeHtml } from '../../utils/formatters';
+import {
+  DEFAULT_CITY_CENTER_COORDS,
+  DEFAULT_ZOOM,
+  MAP_LOD,
+  MAP_OPTIONS,
+  DOTS_RENDERER_OPTIONS,
+  VIEWPORT_CULLING_PAD,
+  buildTileLayerOptions,
+  getTileUrl
+} from './NeighborhoodMap.config';
+import {
+  hasValidCoords,
+  createStorePinIcon,
+  getStoreDotStyle,
+  createUserGpsIcon,
+  reconcileMarkerLayer,
+  clearMarkerLayer
+} from './NeighborhoodMap.markers';
 
-// Proveedor de mapas de alta fidelidad sin marcas de agua (Esri World Street Map & Esri Satellite)
-const STREET_MAP_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
-const STREET_MAP_ATTRIBUTION = '&copy; Esri &mdash; Street Map';
-const SATELLITE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-const SATELLITE_ATTRIBUTION = '&copy; Esri World Imagery';
-
-// Coordenadas fijas y precisas: Plaza Metropolitana 24 de Septiembre (Centro de la Ciudad, Santa Cruz de la Sierra)
-const DEFAULT_CITY_CENTER_COORDS = {
-  lat: -17.78335,
-  lng: -63.18214,
-  name: 'Plaza Metropolitana 24 de Septiembre'
-};
-
-const ZONE_COORDINATES = {
-  'Zona Las Palmas': { lat: -17.7942, lng: -63.2031, name: 'Zona Las Palmas' },
-  'Zona Equipetrol': { lat: -17.7885, lng: -63.1978, name: 'Zona Equipetrol' },
-  'Barrio Central': { lat: -17.7995, lng: -63.2085, name: 'Barrio Central' },
-  'all': DEFAULT_CITY_CENTER_COORDS
-};
+const SELECTED_PIN_Z_OFFSET = 1000;
 
 export const NeighborhoodMap = ({
   allStores = [],
@@ -62,10 +61,18 @@ export const NeighborhoodMap = ({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
-  const markersLayerRef = useRef(null);
-  const markersMapRef = useRef(new Map());
-  const syncVisibleMarkersRef = useRef(null);
   const userMarkerRef = useRef(null);
+
+  // Capas de marcadores por Nivel de Detalle (LOD)
+  const pinsLayerRef = useRef(null);       // Pines DOM (zoom cercano)
+  const dotsLayerRef = useRef(null);       // Puntos canvas (zoom lejano)
+  const dotsRendererRef = useRef(null);    // Único <canvas> compartido por todos los puntos
+  const pinsRegistryRef = useRef(new Map());
+  const dotsRegistryRef = useRef(new Map());
+
+  // Referencias "siempre actuales" para los listeners de Leaflet (evita closures obsoletos)
+  const syncMarkersRef = useRef(null);
+  const markerClickRef = useRef(null);
 
   // masterStores garantiza acceso al catálogo completo incluso si se aplican filtros de búsqueda
   const masterStores = useMemo(() => {
@@ -86,13 +93,16 @@ export const NeighborhoodMap = ({
   }, [masterStores]);
 
   const [mapType, setMapType] = useState('map'); // 'map' | 'satellite'
-  const [zoomLevel, setZoomLevel] = useState(15);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_ZOOM);
   const [isLocating, setIsLocating] = useState(false);
   const [isGpsCardCollapsed, setIsGpsCardCollapsed] = useState(false);
 
-  // Tiendas que se deben graficar con marcadores según los filtros activos
+  // Tiendas que se deben graficar según los filtros activos (solo con coordenadas válidas)
   const storesToPlot = useMemo(() => {
     return masterStores.filter((store) => {
+      if (!hasValidCoords(store)) {
+        return false;
+      }
       // 1. Filtro "Abiertas Ahora": Si está activado, ocultar tiendas cerradas
       if (activeFilters?.openNow && store.isOpen === false) {
         return false;
@@ -108,107 +118,6 @@ export const NeighborhoodMap = ({
       return true;
     });
   }, [masterStores, activeFilters]);
-
-  // Crear DivIcon HTML personalizado para cada tienda (ultra-ligero, sin backdrop-filter para 60 FPS en móvil)
-  const createStoreDivIcon = (store, isSelected) => {
-    const isRegistered = Boolean(store.isRegisteredStore);
-    const isOwner = Boolean(store.isCurrentOwnerStore);
-    const isOpen = store.isOpen !== false;
-
-    // Anillo de pulso dinámico (SOLO para tiendas abiertas)
-    const ringClass = isOpen
-      ? (isOwner ? 'owner-pulse-ring' : isRegistered ? 'registered-pulse-ring' : '')
-      : '';
-
-    let pinColor;
-    let strokeColor;
-    let badgeText = '';
-    let badgeBg = '';
-    let badgeColor = '';
-    let badgeBorder = '';
-    let dotHtml = '';
-    let statusPillHtml = '';
-
-    if (!isOpen) {
-      pinColor = '#475569';
-      strokeColor = '#334155';
-      dotHtml = '<span style="color:#ef4444; font-size: 8px;">●</span>';
-      statusPillHtml = '<span style="font-size: 8px; font-weight: 900; background: #fee2e2; color: #b91c1c; padding: 0.5px 4px; border-radius: 4px; margin-left: 3px; border: 0.5px solid #fca5a5;">CERRADO</span>';
-    } else if (isOwner) {
-      pinColor = '#059669';
-      strokeColor = '#047857';
-      badgeText = '⭐ Tu Tienda';
-      badgeBg = '#fef3c7';
-      badgeColor = '#92400e';
-      badgeBorder = '#fde68a';
-      dotHtml = '<span style="color:#f59e0b; font-size: 8px;">●</span>';
-    } else if (isRegistered) {
-      pinColor = '#059669';
-      strokeColor = '#047857';
-      badgeText = 'Oficial';
-      badgeBg = '#d1fae5';
-      badgeColor = '#065f46';
-      badgeBorder = '#a7f3d0';
-      dotHtml = '<span style="color:#059669; font-size: 8px;">●</span>';
-    } else {
-      pinColor = '#334155';
-      strokeColor = '#1e293b';
-    }
-
-    // Icono SVG: Candado si está cerrada, casita de tienda si está abierta
-    const iconSvg = !isOpen ? `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${pinColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-      </svg>
-    ` : `
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="${pinColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-      </svg>
-    `;
-
-    const html = `
-      <div class="custom-leaflet-pin ${isSelected ? 'is-active' : ''} ${!isOpen ? 'is-closed' : ''}">
-        ${ringClass ? `<div class="${ringClass}"></div>` : ''}
-
-        <!-- Rótulo flotante superior (sin backdrop-filter, clase pin-label para ocultarse en zoom alejado) -->
-        <div class="pin-label" style="position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%); white-space: nowrap; pointer-events: none; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 2px;">
-          <div style="background: #0f172a; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 2px 6px rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.25); font-size: 10px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis;">
-            ${dotHtml}
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(store.name)}</span>
-            ${statusPillHtml}
-          </div>
-          ${badgeText ? `<span style="font-size: 8px; font-weight: 900; text-transform: uppercase; background: ${badgeBg}; color: ${badgeColor}; padding: 0.5px 6px; border-radius: 9999px; border: 0.5px solid ${badgeBorder}; box-shadow: 0 1px 4px rgba(0,0,0,0.15);">${badgeText}</span>` : ''}
-        </div>
-
-        <!-- SVG Pin de alta fidelidad con punta de contacto exactamente en (18, 44) -->
-        <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; overflow: visible;">
-          <!-- Sombra de contacto en el suelo centrada en (18, 44) -->
-          <ellipse cx="18" cy="44" rx="6" ry="2.2" fill="rgba(15, 23, 42, 0.45)"/>
-          <!-- Diana de precisión en el suelo (18, 44) -->
-          <circle cx="18" cy="44" r="2.2" fill="${strokeColor}"/>
-          <circle cx="18" cy="44" r="0.9" fill="#ffffff"/>
-          <!-- Aguja cónica que apunta exactamente al suelo (18, 43.5) -->
-          <path d="M18 43.5C18 43.5 32 28 32 16.5C32 8.5 25.7 2 18 2C10.3 2 4 8.5 4 16.5C4 28 18 43.5 18 43.5Z" fill="${pinColor}" stroke="${strokeColor}" stroke-width="1.8"/>
-          <!-- Centro blanco -->
-          <circle cx="18" cy="16.5" r="10" fill="#FFFFFF"/>
-        </svg>
-
-        <!-- Icono dentro del centro del pin -->
-        <div style="position: absolute; top: 8.5px; left: 10.5px; width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 3;">
-          ${iconSvg}
-        </div>
-      </div>
-    `;
-
-    return L.divIcon({
-      className: 'custom-leaflet-pin-wrapper',
-      html,
-      iconSize: [36, 44],
-      iconAnchor: [18, 44]
-    });
-  };
 
   // La tienda activa: solo si el usuario seleccionó una tienda específica
   const activeStore = useMemo(() => {
@@ -230,86 +139,60 @@ export const NeighborhoodMap = ({
     }
   }, []);
 
-  // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ CON ACELERACIÓN MÓVIL A 60 FPS
+  // 1. INICIALIZAR EL MAPA LEAFLET UNA SOLA VEZ
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     // En PANTALLA VECINO el mapa SIEMPRE debe iniciar centrado en la Plaza 24 de Septiembre (sin marcador)
-    const initialLat = DEFAULT_CITY_CENTER_COORDS.lat;
-    const initialLng = DEFAULT_CITY_CENTER_COORDS.lng;
-
-    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator.maxTouchPoints > 0));
-
     const map = L.map(mapContainerRef.current, {
-      center: [initialLat, initialLng],
-      zoom: 15,
-      zoomControl: false,
-      attributionControl: true,
-      preferCanvas: true,
-      tap: false,
-      touchZoom: true,
-      bounceAtZoomLimits: false,
-      zoomAnimation: true,
-      zoomAnimationThreshold: 4,
-      fadeAnimation: true,
-      markerZoomAnimation: true,
-      inertia: true,
-      inertiaDeceleration: isTouchDevice ? 2000 : 2500,
-      inertiaMaxSpeed: 2800,
-      easeLinearity: 0.1,
-      wheelDebounceTime: 40,
-      wheelPxPerZoomLevel: 100
+      ...MAP_OPTIONS,
+      center: [DEFAULT_CITY_CENTER_COORDS.lat, DEFAULT_CITY_CENTER_COORDS.lng]
     });
 
-    const streetLayer = L.tileLayer(STREET_MAP_URL, {
-      attribution: STREET_MAP_ATTRIBUTION,
-      maxNativeZoom: 18,
-      maxZoom: 19,
-      updateWhenIdle: isTouchDevice, // En móvil no descarga mientras se desliza para no competir por la CPU
-      updateWhenZooming: false,
-      keepBuffer: 2, // Buffer óptimo y ligero (evita saturar la memoria GPU)
-      crossOrigin: true
-    }).addTo(map);
+    // La capa de teselas la monta el efecto de "tipo de mapa" (evita crearla dos veces)
 
-    tileLayerRef.current = streetLayer;
+    // Capas LOD: los puntos canvas van al overlayPane y los pines DOM al markerPane (siempre encima)
+    dotsRendererRef.current = L.canvas(DOTS_RENDERER_OPTIONS);
+    dotsLayerRef.current = L.layerGroup().addTo(map);
+    pinsLayerRef.current = L.layerGroup().addTo(map);
 
-    // Pausar animaciones pesadas durante el deslizamiento táctil
+    // Pausar animaciones de pulso durante el deslizamiento táctil
+    const container = map.getContainer();
     const handleMoveStart = () => {
-      if (mapContainerRef.current) {
-        mapContainerRef.current.classList.add('is-panning');
-      }
+      container.classList.add('is-panning');
     };
+    // `moveend` también se dispara al terminar un zoom: un único punto de sincronización
     const handleMoveEnd = () => {
-      if (mapContainerRef.current) {
-        mapContainerRef.current.classList.remove('is-panning');
-      }
-      syncVisibleMarkersRef.current?.();
+      container.classList.remove('is-panning');
+      syncMarkersRef.current?.();
     };
 
     map.on('movestart', handleMoveStart);
     map.on('moveend', handleMoveEnd);
-    map.on('zoomend', () => {
-      syncVisibleMarkersRef.current?.();
-    });
-
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
 
     mapInstanceRef.current = map;
 
     // Ejecutar primera sincronización de visibilidad una vez cargado el mapa
-    setTimeout(() => {
+    const initTimer = setTimeout(() => {
       map.invalidateSize();
-      syncVisibleMarkersRef.current?.();
+      syncMarkersRef.current?.();
     }, 150);
 
-    const markersMap = markersMapRef.current;
+    const pinsRegistry = pinsRegistryRef.current;
+    const dotsRegistry = dotsRegistryRef.current;
     return () => {
+      clearTimeout(initTimer);
       map.off('movestart', handleMoveStart);
       map.off('moveend', handleMoveEnd);
       map.remove();
       mapInstanceRef.current = null;
-      markersMap.clear();
+      tileLayerRef.current = null;
+      userMarkerRef.current = null;
+      pinsLayerRef.current = null;
+      dotsLayerRef.current = null;
+      dotsRendererRef.current = null;
+      pinsRegistry.clear();
+      dotsRegistry.clear();
     };
   }, []);
 
@@ -322,29 +205,7 @@ export const NeighborhoodMap = ({
       map.removeLayer(tileLayerRef.current);
     }
 
-    const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator.maxTouchPoints > 0));
-
-    if (mapType === 'satellite') {
-      tileLayerRef.current = L.tileLayer(SATELLITE_URL, {
-        attribution: SATELLITE_ATTRIBUTION,
-        maxNativeZoom: 18,
-        maxZoom: 19,
-        updateWhenIdle: isTouchDevice,
-        updateWhenZooming: false,
-        keepBuffer: 2,
-        crossOrigin: true
-      }).addTo(map);
-    } else {
-      tileLayerRef.current = L.tileLayer(STREET_MAP_URL, {
-        attribution: STREET_MAP_ATTRIBUTION,
-        maxNativeZoom: 18,
-        maxZoom: 19,
-        updateWhenIdle: isTouchDevice,
-        updateWhenZooming: false,
-        keepBuffer: 2,
-        crossOrigin: true
-      }).addTo(map);
-    }
+    tileLayerRef.current = L.tileLayer(getTileUrl(mapType), buildTileLayerOptions(mapType)).addTo(map);
   }, [mapType]);
 
   // Movimiento seguro que evita el bug de división por cero / NaN de flyTo en distancias cortas
@@ -386,90 +247,100 @@ export const NeighborhoodMap = ({
     }
   };
 
-  // 3. SINCRONIZACIÓN INTELIGENTE DE MARCADORES SEGÚN EL ÁREA VISIBLE (VIEWPORT CULLING)
-  // Oculta/destruye marcadores fuera del encuadre para no sobrecargar el DOM ni la GPU en móviles
-  const syncVisibleMarkers = () => {
-    const map = mapInstanceRef.current;
-    const markersLayer = markersLayerRef.current;
-    if (!map || !markersLayer) return;
-
-    // Con zoom lejano (< 14), ocultar rótulos pesados mediante clase CSS
-    const currentZoom = map.getZoom();
-    if (mapContainerRef.current) {
-      if (currentZoom < 14) {
-        mapContainerRef.current.classList.add('map-labels-hidden');
-      } else {
-        mapContainerRef.current.classList.remove('map-labels-hidden');
+  // Clic en cualquier marcador (pin o punto): siempre usa los callbacks más recientes
+  useEffect(() => {
+    markerClickRef.current = (store) => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      const { lat, lng } = store.googleMapsCoordinates;
+      if (onSelectStore) {
+        onSelectStore(store.slug);
       }
+      safeFlyOrPanTo(map, lat, lng, Math.max(map.getZoom(), DEFAULT_ZOOM));
+      showFeedback(`📍 Seleccionado: ${store.name}`);
+    };
+  });
+
+  // Fábricas estables de marcadores para el reconciliador
+  const pinFactory = useMemo(() => ({
+    create: (store, isSelected) => {
+      const { lat, lng } = store.googleMapsCoordinates;
+      return L.marker([lat, lng], {
+        icon: createStorePinIcon(store, isSelected),
+        zIndexOffset: isSelected ? SELECTED_PIN_Z_OFFSET : 0
+      }).on('click', () => markerClickRef.current?.(store));
+    },
+    update: (marker, store, isSelected) => {
+      marker.setIcon(createStorePinIcon(store, isSelected));
+      marker.setZIndexOffset(isSelected ? SELECTED_PIN_Z_OFFSET : 0);
+    }
+  }), []);
+
+  const dotFactory = useMemo(() => ({
+    create: (store, isSelected) => {
+      const { lat, lng } = store.googleMapsCoordinates;
+      return L.circleMarker([lat, lng], {
+        ...getStoreDotStyle(store, isSelected),
+        renderer: dotsRendererRef.current
+      }).on('click', () => markerClickRef.current?.(store));
+    },
+    update: (dot, store, isSelected) => {
+      const style = getStoreDotStyle(store, isSelected);
+      dot.setStyle(style);
+      dot.setRadius(style.radius);
+    }
+  }), []);
+
+  // 3. SINCRONIZACIÓN DE MARCADORES POR NIVEL DE DETALLE (LOD) + VIEWPORT CULLING
+  //    - Zoom cercano: pines DOM solo dentro del encuadre visible.
+  //    - Zoom lejano: todas las tiendas como puntos en un único <canvas> (costo de GPU constante),
+  //      la tienda seleccionada conserva su pin DOM para destacar.
+  const syncMarkers = () => {
+    const map = mapInstanceRef.current;
+    const pinsLayer = pinsLayerRef.current;
+    const dotsLayer = dotsLayerRef.current;
+    if (!map || !pinsLayer || !dotsLayer) return;
+
+    const zoom = map.getZoom();
+    const selectedSlug = activeStore?.slug ?? null;
+
+    // Con zoom intermedio se ocultan rótulos y pulsos secundarios mediante clase CSS
+    map.getContainer().classList.toggle('map-labels-hidden', zoom < MAP_LOD.labelMinZoom);
+
+    if (zoom >= MAP_LOD.pinMinZoom) {
+      // Margen de seguridad (pad) para que los pines no aparezcan/desaparezcan abruptamente en los bordes
+      const bounds = map.getBounds().pad(VIEWPORT_CULLING_PAD);
+      const pinEntries = storesToPlot
+        .filter((store) => {
+          const { lat, lng } = store.googleMapsCoordinates;
+          return store.slug === selectedSlug || bounds.contains([lat, lng]);
+        })
+        .map((store) => ({ store, isSelected: store.slug === selectedSlug }));
+
+      clearMarkerLayer(dotsRegistryRef.current, dotsLayer);
+      reconcileMarkerLayer(pinsRegistryRef.current, pinsLayer, pinEntries, pinFactory);
+      return;
     }
 
-    // Calcular encuadre visible con un 15% de margen de seguridad (pad)
-    // para que los marcadores no aparezcan/desaparezcan abruptamente en los bordes
-    const bounds = map.getBounds().pad(0.15);
-    const visibleSlugs = new Set();
-
+    const dotEntries = [];
+    const pinEntries = [];
     storesToPlot.forEach((store) => {
-      const coords = store.googleMapsCoordinates;
-      if (!coords || typeof coords.lat !== 'number' || typeof coords.lng !== 'number') return;
-      if (isNaN(coords.lat) || isNaN(coords.lng)) return;
-
-      const isSelected = activeStore?.slug === store.slug;
-      const isInside = bounds.contains([coords.lat, coords.lng]);
-
-      // Si no está en el área visible y tampoco es la tienda seleccionada, ignorar
-      if (!isInside && !isSelected) {
-        return;
-      }
-
-      visibleSlugs.add(store.slug);
-      const existing = markersMapRef.current.get(store.slug);
-
-      if (existing) {
-        // Marcador ya en pantalla: actualizar únicamente si cambió su estado (ej. seleccionado o cerrado)
-        if (existing.isSelected !== isSelected || existing.isOpen !== store.isOpen) {
-          const newIcon = createStoreDivIcon(store, isSelected);
-          existing.marker.setIcon(newIcon);
-          existing.isSelected = isSelected;
-          existing.isOpen = store.isOpen;
-        }
+      if (store.slug === selectedSlug) {
+        pinEntries.push({ store, isSelected: true });
       } else {
-        // Marcador entra a la zona visible: crear y montar en la capa
-        const icon = createStoreDivIcon(store, isSelected);
-        const marker = L.marker([coords.lat, coords.lng], { icon });
-
-        marker.on('click', () => {
-          if (onSelectStore) {
-            onSelectStore(store.slug);
-          }
-          safeFlyOrPanTo(map, coords.lat, coords.lng, Math.max(map.getZoom(), 15));
-          showFeedback(`📍 Seleccionado: ${store.name}`);
-        });
-
-        marker.addTo(markersLayer);
-        markersMapRef.current.set(store.slug, {
-          marker,
-          isSelected,
-          isOpen: store.isOpen
-        });
+        dotEntries.push({ store, isSelected: false });
       }
     });
 
-    // Eliminar del mapa y de memoria los marcadores que quedaron fuera de la zona visible (Culling)
-    markersMapRef.current.forEach((item, slug) => {
-      if (!visibleSlugs.has(slug)) {
-        markersLayer.removeLayer(item.marker);
-        markersMapRef.current.delete(slug);
-      }
-    });
+    reconcileMarkerLayer(dotsRegistryRef.current, dotsLayer, dotEntries, dotFactory);
+    reconcileMarkerLayer(pinsRegistryRef.current, pinsLayer, pinEntries, pinFactory);
   };
 
   // Mantener la referencia actualizada para los listeners de Leaflet y ejecutar sincronización
   useEffect(() => {
-    syncVisibleMarkersRef.current = syncVisibleMarkers;
-    syncVisibleMarkers();
+    syncMarkersRef.current = syncMarkers;
+    syncMarkers();
   }, [storesToPlot, activeStore]);
-
-
 
   // 4. CENTRAR CUANDO CAMBIE LA TIENDA SELECCIONADA ESPECÍFICA
   useEffect(() => {
@@ -479,20 +350,19 @@ export const NeighborhoodMap = ({
     safeFlyOrPanTo(map, lat, lng, 16);
   }, [selectedStore]);
 
+  // Coloca (o reemplaza) el marcador GPS del usuario en el mapa
+  const placeUserMarker = (map, lat, lng) => {
+    if (userMarkerRef.current) {
+      map.removeLayer(userMarkerRef.current);
+    }
+    userMarkerRef.current = L.marker([lat, lng], { icon: createUserGpsIcon() }).addTo(map);
+  };
+
   // 4.1 SINCRONIZAR MARCADOR GPS DEL USUARIO Y VOLAR A SU UBICACIÓN
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !userCoordinates || !hasUserGps) return;
-    if (userMarkerRef.current) {
-      map.removeLayer(userMarkerRef.current);
-    }
-    const userIcon = L.divIcon({
-      className: 'custom-leaflet-pin-wrapper',
-      html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11]
-    });
-    userMarkerRef.current = L.marker([userCoordinates.lat, userCoordinates.lng], { icon: userIcon }).addTo(map);
+    placeUserMarker(map, userCoordinates.lat, userCoordinates.lng);
     safeFlyOrPanTo(map, userCoordinates.lat, userCoordinates.lng, 15);
   }, [userCoordinates, hasUserGps]);
 
@@ -553,18 +423,7 @@ export const NeighborhoodMap = ({
 
       const map = mapInstanceRef.current;
       if (map) {
-        if (userMarkerRef.current) {
-          map.removeLayer(userMarkerRef.current);
-        }
-
-        const userIcon = L.divIcon({
-          className: 'custom-leaflet-pin-wrapper',
-          html: '<div class="user-gps-beacon" title="Tu Ubicación GPS"></div>',
-          iconSize: [22, 22],
-          iconAnchor: [11, 11]
-        });
-
-        userMarkerRef.current = L.marker([latitude, longitude], { icon: userIcon }).addTo(map);
+        placeUserMarker(map, latitude, longitude);
         safeFlyOrPanTo(map, latitude, longitude, 15);
       }
 
