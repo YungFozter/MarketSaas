@@ -253,15 +253,15 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Bloque Central: QR Protagonista Ampliado + Pasos 1, 2, 3 Agrupados Armónicamente */}
-              <div className="flex-1 flex flex-col items-center justify-center my-auto py-2 sm:py-3 print:py-1 w-full">
+              {/* Bloque Central: QR Protagonista Ampliado + Pasos 1, 2, 3 Distribuidos Equitativamente */}
+              <div className="flex-1 flex flex-col items-center justify-evenly py-3 sm:py-5 print:py-2 w-full min-h-0">
                 {/* Código QR Central con Marco Nítido */}
-                <div className="flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center my-auto">
                   <div className="p-3 sm:p-4 print:p-3 bg-white rounded-3xl border-4 border-emerald-600 shadow-xl relative">
                     <img 
                       src={qrCodeUrl} 
                       alt={`QR de ${storeName}`} 
-                      className="w-48 h-48 sm:w-60 sm:h-60 print-poster-qr-img object-contain"
+                      className="w-48 h-48 sm:w-56 sm:h-56 print-poster-qr-img object-contain"
                     />
                     <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-[10px] sm:text-xs print:text-[10px] font-black uppercase tracking-wider px-3.5 py-0.5 sm:py-1 rounded-full shadow-md whitespace-nowrap">
                       ESCANEA CON TU CELULAR
@@ -269,8 +269,8 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                {/* 3 Pasos Rápidos para el Vecino (Distancia reducida y armónica respecto al QR) */}
-                <div className="w-full grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-2.5 print:gap-2 mt-5 sm:mt-6 print:mt-3.5 text-left">
+                {/* 3 Pasos Rápidos para el Vecino (Distancia equilibrada y armónica) */}
+                <div className="w-full grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 gap-2 sm:gap-2.5 print:gap-2 pt-2 text-left">
                   <div className="bg-slate-50 p-2 sm:p-2.5 print:p-2 rounded-2xl border border-slate-100 flex items-start gap-2">
                     <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0">
                       1
