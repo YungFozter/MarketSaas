@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   Share2, 
@@ -11,16 +11,22 @@ import {
   MessageCircle, 
   Send, 
   Sparkles,
-  Navigation
+  Navigation,
+  Crown,
+  Flame,
+  Zap,
+  Coffee,
+  Package,
+  Megaphone
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
 export const ShareStoreModal = ({ isOpen, onClose }) => {
-  const { storeConfig, tenantSlug, showToast } = useStore();
+  const { storeConfig, tenantSlug, showToast, isProPlan } = useStore();
+  const [selectedTemplate, setSelectedTemplate] = useState('weekend');
+  const [customPromo, setCustomPromo] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
-
-  if (!isOpen) return null;
 
   const storeName = storeConfig?.name || 'Mi Minimarket';
   const tenant = tenantSlug || 'default';
@@ -33,7 +39,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   // 2. Ubicación en texto
   const addressText = storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Dirección de la tienda';
 
-  // 3. Enlace oficial de Google Maps (coordenadas exactas o consulta de dirección)
+  // 3. Enlace oficial de Google Maps
   const lat = storeConfig?.latitude !== '' && storeConfig?.latitude != null 
     ? storeConfig.latitude 
     : storeConfig?.googleMapsCoordinates?.lat;
@@ -45,17 +51,102 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([storeName, addressText, 'Bolivia'].filter(Boolean).join(', '))}`;
 
-  // 4. Mensaje formateado completo
-  const shareTitle = `¡Conoce ${storeName}!`;
-  const shareMessage = `🏪 *${storeName}*\n\n🛒 Haz tus pedidos en línea desde nuestro catálogo virtual:\n${storeUrl}\n\n📍 *Ubicación:* ${addressText}\n🗺️ *Cómo llegar (Google Maps):*\n${mapsUrl}\n\n¡Te esperamos! ✨`;
+  // 4. Catálogo de Plantillas de Marketing Vecinal
+  const templates = useMemo(() => [
+    {
+      id: 'weekend',
+      title: 'Fin de Semana',
+      icon: Flame,
+      badge: 'PRO',
+      description: 'Ofertas para estados y grupos vecinales (viernes a domingo)',
+      buildText: (promo) => 
+        `🔥 *¡FIN DE SEMANA EN ${storeName.toUpperCase()}!* 🎉\n\n` +
+        `Vecinos, prepárense para el fin de semana con las mejores ofertas en bebidas, snacks, carnes frías y abarrotes.\n` +
+        (promo ? `\n⭐ *OFERTA ESPECIAL:* ${promo}\n` : '') +
+        `\n📲 Haz tu pedido en línea desde el catálogo virtual:\n👉 ${storeUrl}\n\n` +
+        `🛵 *¡Delivery vecinal rápido o retiro listo en mostrador!*\n` +
+        `📍 *Ubicación:* ${addressText}\n` +
+        `🗺️ *Cómo llegar:* ${mapsUrl}\n\n` +
+        `¡Los esperamos con la mejor atención! ✨`
+    },
+    {
+      id: 'stock',
+      title: 'Nuevo Stock',
+      icon: Package,
+      badge: 'PRO',
+      description: 'Aviso de llegada de productos frescos o reposición',
+      buildText: (promo) => 
+        `📦 *¡ACABAMOS DE RENOVAR STOCK EN ${storeName.toUpperCase()}!* 🥦🥛\n\n` +
+        `¡Ya llegaron productos frescos, lácteos, bebidas bien frías y todo para tu hogar!\n` +
+        (promo ? `\n✨ *Destacado de hoy:* ${promo}\n` : '') +
+        `\n👀 Revisa los precios y novedades disponibles ahora mismo:\n👉 ${storeUrl}\n\n` +
+        `⚡ Haz tu pedido en línea y te lo tenemos listo para recoger sin filas.\n` +
+        `📍 ${addressText}\n\n` +
+        `¡Siempre a pasos de tu puerta!`
+    },
+    {
+      id: 'express',
+      title: 'Sin Filas & Delivery',
+      icon: Zap,
+      badge: 'PRO',
+      description: 'Enfocado en comodidad, ahorro de tiempo y entregas',
+      buildText: (promo) => 
+        `⚡ *¿Cansado de hacer filas? Pide en ${storeName} desde tu teléfono* 📱🛵\n\n` +
+        `1️⃣ Abre nuestro catálogo: ${storeUrl}\n` +
+        `2️⃣ Elige lo que necesitas con un toque.\n` +
+        `3️⃣ ¡Te lo llevamos a casa o lo recoges listo en mostrador!\n` +
+        (promo ? `\n💡 *Nota:* ${promo}\n` : '') +
+        `\n💳 Pagos fáciles por QR o efectivo al recibir.\n` +
+        `📍 *Dirección:* ${addressText}`
+    },
+    {
+      id: 'morning',
+      title: 'Buenos Días',
+      icon: Coffee,
+      badge: 'PRO',
+      description: 'Mensaje matutino para estados de WhatsApp (pan fresco y desayuno)',
+      buildText: (promo) => 
+        `☀️ *¡Muy buenos días, queridos vecinos!* ☕🥖\n\n` +
+        `En *${storeName}* ya tenemos todo listo para tu desayuno: pan fresco, leche, café y los abarrotes para el día.\n` +
+        (promo ? `\n🥐 *Especial de la mañana:* ${promo}\n` : '') +
+        `\n🛒 Haz tu pedido matutino aquí:\n👉 ${storeUrl}\n\n` +
+        `📍 Te esperamos en ${addressText}\n` +
+        `¡Que tengas un excelente y bendecido día! 🌟`
+    },
+    {
+      id: 'general',
+      title: 'Presentación',
+      icon: Store,
+      badge: null,
+      description: 'Mensaje institucional estándar para nuevos clientes',
+      buildText: (promo) => 
+        `🏪 *${storeName}*\n\n` +
+        `🛒 Haz tus pedidos en línea desde nuestro catálogo virtual:\n${storeUrl}\n` +
+        (promo ? `\n⭐ ${promo}\n` : '') +
+        `\n📍 *Ubicación:* ${addressText}\n` +
+        `🗺️ *Cómo llegar (Google Maps):*\n${mapsUrl}\n\n` +
+        `¡Te esperamos con los brazos abiertos! ✨`
+    }
+  ], [storeName, storeUrl, addressText, mapsUrl]);
 
-  // Manejador del Web Share API (Elegir aplicación nativa del dispositivo: WhatsApp, Telegram, Gmail, etc.)
+  const activeTemplate = useMemo(() => {
+    return templates.find(t => t.id === selectedTemplate) || templates[0];
+  }, [templates, selectedTemplate]);
+
+  // Mensaje actual generado
+  const currentShareMessage = useMemo(() => {
+    return activeTemplate.buildText(customPromo.trim());
+  }, [activeTemplate, customPromo]);
+
+  if (!isOpen) return null;
+
+  // Manejador del Web Share API
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: shareTitle,
-          text: shareMessage,
+          title: `¡Visita ${storeName}!`,
+          text: currentShareMessage,
           url: storeUrl
         });
         showToast('¡Compartido con éxito!', 'success');
@@ -66,18 +157,18 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
       }
     } else {
       handleCopyFullMessage();
-      showToast('Tu navegador no admite menú nativo. Mensaje copiado al portapapeles para pegar en tu app.', 'info');
+      showToast('Mensaje copiado al portapapeles para pegar en tu app.', 'info');
     }
   };
 
   // Manejador Copiar Mensaje Completo
   const handleCopyFullMessage = () => {
     try {
-      navigator.clipboard.writeText(shareMessage);
+      navigator.clipboard.writeText(currentShareMessage);
       setCopiedMessage(true);
-      showToast('¡Mensaje completo copiado al portapapeles!', 'success');
+      showToast('¡Mensaje copiado listo para WhatsApp!', 'success');
       setTimeout(() => setCopiedMessage(false), 2500);
-    } catch (e) {
+    } catch {
       showToast('No se pudo copiar el mensaje.', 'error');
     }
   };
@@ -89,47 +180,54 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
       setCopiedUrl(true);
       showToast('¡Enlace de la tienda copiado!', 'success');
       setTimeout(() => setCopiedUrl(false), 2500);
-    } catch (e) {
+    } catch {
       showToast('No se pudo copiar el enlace.', 'error');
     }
   };
 
   // Compartir en WhatsApp
   const handleShareWhatsApp = () => {
-    const encoded = encodeURIComponent(shareMessage);
+    const encoded = encodeURIComponent(currentShareMessage);
     window.open(`https://api.whatsapp.com/send?text=${encoded}`, '_blank');
   };
 
   // Compartir en Telegram
   const handleShareTelegram = () => {
-    const encodedText = encodeURIComponent(shareMessage);
+    const encodedText = encodeURIComponent(currentShareMessage);
     window.open(`https://t.me/share/url?url=${encodeURIComponent(storeUrl)}&text=${encodedText}`, '_blank');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
       <div 
-        className="relative w-full max-w-lg bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden p-4 sm:p-6 text-slate-900 animate-scale-up max-h-[92vh] sm:max-h-[88vh] flex flex-col"
+        className="relative w-full max-w-2xl bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden p-4 sm:p-6 text-slate-900 animate-scale-up max-h-[94vh] sm:max-h-[90vh] flex flex-col"
         role="dialog"
         aria-modal="true"
       >
         {/* Encabezado con Botón Cerrar */}
-        <div className="flex items-center justify-between gap-3 mb-3.5 shrink-0">
+        <div className="flex items-center justify-between gap-3 mb-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-xs shrink-0">
-              <Share2 className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-linear-to-br from-amber-500 to-amber-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 shrink-0">
+              <Megaphone className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
-                  Compartir Tienda
+                <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                  Marketing & Difusión Vecinal
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
-                  Difusión
-                </span>
+                {isProPlan ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">
+                    <Crown className="w-3 h-3 text-amber-600 fill-amber-400" />
+                    <span>Pack PRO Activo</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
+                    Difusión
+                  </span>
+                )}
               </div>
               <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">
-                Elige el medio o aplicación para enviar los datos de <strong className="text-slate-800 font-bold">{storeName}</strong>
+                Plantillas optimizadas para compartir en estados y grupos de WhatsApp de <strong className="text-slate-800 font-bold">{storeName}</strong>
               </p>
             </div>
           </div>
@@ -143,25 +241,90 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Contenedor con Scroll para contenidos */}
+        {/* Contenedor con Scroll */}
         <div className="overflow-y-auto space-y-3.5 pr-0.5 sm:pr-1 flex-1">
-          {/* Botón Principal: Abrir Selector Nativo del Dispositivo */}
-          <button
-            type="button"
-            onClick={handleNativeShare}
-            className="w-full p-3 sm:p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer"
-          >
-            <Smartphone className="w-4 h-4 shrink-0" />
-            <span>Elegir Medio / Aplicación del Dispositivo</span>
-          </button>
+          {/* Selector de Plantillas / Campañas */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-0.5 mb-1.5">
+              1. Selecciona la Campaña o Plantilla:
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+              {templates.map((tpl) => {
+                const IconComponent = tpl.icon;
+                const isSelected = selectedTemplate === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => setSelectedTemplate(tpl.id)}
+                    className={`relative p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                      isSelected 
+                        ? 'border-amber-500 bg-linear-to-b from-amber-50/80 to-amber-100/40 shadow-xs ring-2 ring-amber-400/30' 
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                        isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      {tpl.badge && (
+                        <span className="text-[8px] font-black px-1.5 py-0.2 rounded-md bg-amber-200/90 text-amber-900 border border-amber-300/80">
+                          {tpl.badge}
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-[11px] font-black truncate block ${
+                      isSelected ? 'text-amber-950' : 'text-slate-700'
+                    }`}>
+                      {tpl.title}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Campo Opcional: Detalle de Oferta / Destacado */}
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-2.5 sm:p-3">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label htmlFor="customPromoInput" className="text-[11px] font-extrabold text-slate-700 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Agregar Oferta o Nota Especial (Opcional):</span>
+              </label>
+              {customPromo && (
+                <button
+                  type="button"
+                  onClick={() => setCustomPromo('')}
+                  className="text-[10px] text-slate-400 hover:text-rose-600 font-semibold cursor-pointer"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+            <input
+              id="customPromoInput"
+              type="text"
+              value={customPromo}
+              onChange={(e) => setCustomPromo(e.target.value)}
+              placeholder="Ej: Coca-Cola 2L a Bs. 12 / Pan caliente a las 5pm / Envío gratis hoy"
+              className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all"
+            />
+          </div>
 
           {/* Tarjeta de Previsualización del Mensaje */}
-          <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3.5 sm:p-4 relative space-y-2.5">
+          <div className="rounded-2xl border border-slate-200/90 bg-slate-50/70 p-3 sm:p-4 relative space-y-2.5">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Mensaje a Compartir
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  Previsualización de WhatsApp
+                </span>
+                <span className="text-[10px] text-slate-400 hidden sm:inline">
+                  • {activeTemplate.description}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={handleCopyFullMessage}
@@ -175,141 +338,57 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copiar Todo</span>
+                    <span>Copiar Texto</span>
                   </>
                 )}
               </button>
             </div>
 
-            <div className="text-xs text-slate-700 space-y-2 font-sans bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <div className="flex items-center gap-2.5 sm:gap-3">
-                {storeConfig?.logoUrl ? (
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs shrink-0 flex items-center justify-center p-0.5">
-                    <img 
-                      src={storeConfig.logoUrl} 
-                      alt={storeName} 
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
-                    <Store className="w-5 h-5" />
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <span className="font-extrabold text-slate-900 text-xs sm:text-sm block truncate">{storeName}</span>
-                  {storeConfig?.tagline && (
-                    <span className="text-[10px] sm:text-[11px] text-slate-500 block truncate">{storeConfig.tagline}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 pt-1 border-t border-slate-100">
-                <span className="text-slate-400 shrink-0 text-xs">🛒</span>
-                <div className="min-w-0 flex-1">
-                  <span className="font-bold text-slate-800 block text-[11px]">Catálogo y Pedidos:</span>
-                  <a 
-                    href={storeUrl} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-emerald-700 hover:underline break-all block text-[11px] font-mono font-semibold mt-0.5"
-                  >
-                    {storeUrl}
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 pt-1 border-t border-slate-100">
-                <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <span className="font-bold text-slate-800 block text-[11px]">Ubicación:</span>
-                  <span className="text-slate-600 block text-[11px] leading-relaxed">{addressText}</span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2 pt-1 border-t border-slate-100">
-                <Navigation className="w-3.5 h-3.5 text-blue-500 shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <span className="font-bold text-slate-800 block text-[11px]">Ver en Google Maps:</span>
-                  <a 
-                    href={mapsUrl} 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="text-blue-600 hover:underline inline-flex items-center gap-1 text-[11px] font-semibold mt-0.5"
-                  >
-                    <span>Abrir Ubicación en Maps</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              <div className="pt-1.5 text-center text-emerald-800 font-extrabold text-xs">
-                ✨ ¡Te esperamos! ✨
-              </div>
+            <div className="bg-emerald-950/5 border border-emerald-900/10 p-3 sm:p-3.5 rounded-xl font-mono text-[11px] sm:text-xs text-slate-800 whitespace-pre-line leading-relaxed max-h-48 overflow-y-auto selection:bg-emerald-200">
+              {currentShareMessage}
             </div>
           </div>
 
-          {/* Opciones Rápidas de Aplicación */}
-          <div className="space-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-1">
-              O elige un canal directo
-            </span>
+          {/* Botones de Envío Rápido */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="w-full p-3 sm:p-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer"
+            >
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+              <span>Enviar a WhatsApp (Grupos o Estados)</span>
+            </button>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {/* WhatsApp */}
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={handleShareWhatsApp}
-                className="p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 bg-white hover:border-emerald-500 hover:bg-emerald-50/40 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group shadow-2xs"
-                title="Compartir por WhatsApp"
+                onClick={handleNativeShare}
+                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                title="Abrir menú nativo del celular para compartir en otras apps"
               >
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <MessageCircle className="w-4 h-4" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-700">WhatsApp</span>
+                <Smartphone className="w-3.5 h-3.5 text-slate-600" />
+                <span className="truncate">Otras Apps</span>
               </button>
 
-              {/* Telegram */}
               <button
                 type="button"
                 onClick={handleShareTelegram}
-                className="p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 bg-white hover:border-blue-500 hover:bg-blue-50/40 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group shadow-2xs"
+                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                 title="Compartir por Telegram"
               >
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Send className="w-4 h-4" />
-                </div>
-                <span className="text-[11px] font-bold text-slate-700">Telegram</span>
+                <Send className="w-3.5 h-3.5 text-blue-500" />
+                <span>Telegram</span>
               </button>
 
-              {/* Copiar Texto */}
-              <button
-                type="button"
-                onClick={handleCopyFullMessage}
-                className="p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-400 hover:bg-slate-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group shadow-2xs"
-                title="Copiar texto completo"
-              >
-                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {copiedMessage ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                </div>
-                <span className="text-[11px] font-bold text-slate-700">
-                  {copiedMessage ? '¡Copiado!' : 'Copiar Texto'}
-                </span>
-              </button>
-
-              {/* Copiar Enlace */}
               <button
                 type="button"
                 onClick={handleCopyUrlOnly}
-                className="p-2.5 sm:p-3 rounded-2xl border border-slate-200/90 bg-white hover:border-slate-400 hover:bg-slate-50 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 text-center cursor-pointer group shadow-2xs"
-                title="Copiar solo el enlace web"
+                className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                title="Copiar únicamente el enlace de la tienda"
               >
-                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {copiedUrl ? <Check className="w-4 h-4 text-emerald-600" /> : <ExternalLink className="w-4 h-4" />}
-                </div>
-                <span className="text-[11px] font-bold text-slate-700">
-                  {copiedUrl ? '¡Copiado!' : 'Solo Enlace'}
-                </span>
+                {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <ExternalLink className="w-3.5 h-3.5 text-slate-600" />}
+                <span className="truncate">{copiedUrl ? '¡Copiado!' : 'Solo Link'}</span>
               </button>
             </div>
           </div>
@@ -318,7 +397,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
         {/* Pie de modal */}
         <div className="flex items-center justify-between pt-3 mt-2.5 border-t border-slate-100 text-xs text-slate-400 shrink-0">
           <span className="text-[10px] sm:text-[11px] text-slate-400 truncate pr-2">
-            Tus clientes abrirán el catálogo directamente en su navegador.
+            💡 Tip: Publica la plantilla en tu estado de WhatsApp cada mañana para activar ventas.
           </span>
           <button
             type="button"

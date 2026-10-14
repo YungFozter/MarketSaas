@@ -50,7 +50,8 @@ import {
   Lock,
   KeyRound,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Megaphone
 } from 'lucide-react';
 import { InventoryManager } from './InventoryManager';
 import { PosTerminal } from './PosTerminal';
@@ -859,14 +860,27 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
         {/* Bottom Store Info & User Profile */}
         <div className="p-3 border-t border-slate-100 space-y-2">
-          {/* Botón Compartir Tienda */}
+          {/* Botón Difusión y Marketing Vecinal */}
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs transition-all cursor-pointer shadow-2xs group"
-            title="Compartir enlace y ubicación de tu tienda por diferentes aplicaciones"
+            className={`flex items-center justify-between w-full py-2.5 px-3 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
+              isProPlan 
+                ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
+            }`}
+            title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
           >
-            <Share2 className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-            <span>Compartir Tienda</span>
+            <div className="flex items-center gap-2">
+              <Megaphone className={`w-4 h-4 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+              <span>Marketing & Difusión</span>
+            </div>
+            {isProPlan ? (
+              <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
+                PRO
+              </span>
+            ) : (
+              <Share2 className="w-3.5 h-3.5 text-emerald-600/70" />
+            )}
           </button>
 
           {/* Vista Vecino Shortcut */}
@@ -1129,6 +1143,25 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               >
                 <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="hidden md:inline whitespace-nowrap">Cartel QR Mostrador</span>
+              </button>
+
+              {/* Botón Campañas de Marketing & Difusión */}
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
+                  isProPlan
+                    ? 'bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-amber-300'
+                    : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                }`}
+                title="Plantillas de marketing vecinal para WhatsApp y estados"
+              >
+                <Megaphone className={`w-3.5 h-3.5 shrink-0 ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                <span className="hidden xl:inline whitespace-nowrap">Marketing Vecinal</span>
+                {isProPlan && (
+                  <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-1 py-0.2 rounded-md">
+                    PRO
+                  </span>
+                )}
               </button>
 
               {/* Botón Cierre de Caja / Arqueo (Con bloqueo por suscripción) */}
