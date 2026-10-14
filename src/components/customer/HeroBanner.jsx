@@ -1,11 +1,12 @@
 import React from 'react';
-import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin, Clock } from 'lucide-react';
+import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin, Clock, Crown } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './HeroBanner.css';
 
 export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal }) => {
-  const { storeConfig, selectedLocation, cartSavings, storeOpenStatus } = useStore();
+  const { storeConfig, selectedLocation, cartSavings, storeOpenStatus, isProPlan } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
+  const isProStore = Boolean(storeConfig?.isProStore || isProPlan || String(storeConfig?.plan || storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'));
 
   return (
     <div 
@@ -21,6 +22,14 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
       {/* Decorative background blobs */}
       <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 left-1/3 -mb-20 w-72 h-72 rounded-full bg-amber-400/15 blur-3xl pointer-events-none"></div>
+
+      {/* Badge de Comercio Oficial PRO en la esquina superior */}
+      {isProStore && (
+        <div className="absolute top-3 right-3 sm:top-5 sm:right-5 flex items-center gap-1.5 px-3 py-1 rounded-full hero-banner-pro-chip text-amber-300 text-[10px] sm:text-xs font-black shadow-lg z-20">
+          <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <span className="tracking-wide">TIENDA PRO</span>
+        </div>
+      )}
 
       <div className="relative z-10 max-w-3xl">
         {/* Identidad de Marca: Logotipo y Pill Promocional */}
@@ -42,6 +51,13 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
                   🛍️ Catálogo Oficial • {storeConfig?.name || 'Tienda de Barrio'}
                 </span>
               </div>
+
+              {isProStore && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full hero-banner-pro-badge font-black text-[11px] sm:text-xs shadow-md border border-amber-300/80">
+                  <Crown className="w-3.5 h-3.5 text-amber-950 fill-amber-300" />
+                  <span>Comercio Oficial PRO</span>
+                </div>
+              )}
 
               {storeOpenStatus && (
                 <button

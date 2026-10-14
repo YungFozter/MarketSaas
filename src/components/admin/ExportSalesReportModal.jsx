@@ -14,7 +14,8 @@ import {
   Store,
   ShoppingBag,
   Filter,
-  Lock
+  Lock,
+  Crown
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { 
@@ -24,7 +25,7 @@ import {
 } from '../../utils/salesExportUtils';
 
 export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, titleSuffix = '' }) => {
-  const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast, isSubscriptionActive } = useStore();
+  const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast, isSubscriptionActive, isProPlan } = useStore();
 
   // Estados de filtrado interactivo
   const [periodFilter, setPeriodFilter] = useState('all'); // 'today' | 'yesterday' | '7days' | 'month' | 'all'
@@ -214,6 +215,12 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                 <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-snug">
                   Exportar Reporte de Ventas
                 </h3>
+                {isProPlan && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs shrink-0">
+                    <Crown className="w-3 h-3 text-amber-600 fill-amber-400" />
+                    <span>Analítica PRO Ilimitada</span>
+                  </span>
+                )}
                 {effectiveTitleSuffix && (
                   <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200/80 shrink-0">
                     {effectiveTitleSuffix}
@@ -491,6 +498,9 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-bold text-slate-900">Documento PDF Oficial</h4>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">Imprimible</span>
+                    {isProPlan && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⭐ PRO</span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Membrete formal, KPIs de arqueo y tabla formateada listo para imprimir o archivar.
@@ -518,6 +528,9 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                   <div className="flex items-center gap-2">
                     <h4 className="text-sm font-bold text-slate-900">Planilla Excel con Diseño (.XLS)</h4>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Recomendado</span>
+                    {isProPlan && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">⭐ PRO</span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Columnas separadas, encabezados esmeralda, bordes y formatos de moneda contable.

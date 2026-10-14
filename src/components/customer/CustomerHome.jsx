@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -23,8 +23,11 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     goToDirectory, 
     storeConfig,
     tenantSlug,
-    storeOpenStatus
+    storeOpenStatus,
+    isProPlan
   } = useStore();
+
+  const isProStore = Boolean(storeConfig?.isProStore || isProPlan || String(storeConfig?.plan || storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'));
 
   const [selectedCategory, setSelectedCategoryState] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -177,6 +180,12 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
             )}
             <span className="truncate max-w-[140px] sm:max-w-[200px]">{storeConfig.name}</span>
+            {isProStore && (
+              <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-amber-900 bg-amber-200/90 border border-amber-400 px-1.5 py-0.2 rounded-md shadow-2xs ml-0.5 shrink-0" title="Tienda Oficial con Plan PRO">
+                <Crown className="w-2.5 h-2.5 text-amber-800 fill-amber-500" />
+                <span>PRO</span>
+              </span>
+            )}
           </span>
           {(storeConfig.whatsapp || storeConfig.phone) && (
             <a
