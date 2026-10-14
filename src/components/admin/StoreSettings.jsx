@@ -1421,6 +1421,7 @@ export const StoreSettings = () => {
                             onChange={(e) => {
                               const val = e.target.value;
                               setForm(prev => {
+                                const ds = prev.deliverySchedule || {};
                                 const start = ds.slot1Start || '11:30';
                                 const s2 = ds.hasSecondSlot ? ` y ${ds.slot2Start || '18:30'} - ${ds.slot2End || '22:00'}` : '';
                                 return {

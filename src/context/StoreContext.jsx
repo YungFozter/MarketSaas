@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores } from '../data/initialData';
+import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores, presetBanners } from '../data/initialData';
 import { initialSuppliers, SUPPLIER_CATEGORIES } from '../data/supplierInitialData';
 import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
 import { fernandoSuppliers, fernandoCreditCustomers, getFernandoOrders } from '../data/tienditaFernandoData';
@@ -11,6 +11,7 @@ import { exportSalesToCSV, exportSalesToStyledExcel, exportSalesToPDF } from '..
 import { 
   DEFAULT_WEEKLY_SCHEDULE, 
   normalizeStoreSchedule, 
+  normalizeDeliverySchedule,
   getBoliviaTime, 
   calculateStoreOpenStatus, 
   formatScheduleSummary 

@@ -143,6 +143,7 @@ export const SalesHistory = () => {
           : '';
 
         const customerName = order.customer?.name || '';
+        const customerPhone = order.customer?.phone || '';
         const customerAddress = `${order.customer?.address || ''} ${order.customer?.reference || ''}`;
 
         return (

@@ -158,6 +158,7 @@ export const sendOrderNotification = async (order, storeConfig = {}) => {
   const deliveryTypeStr = (order?.deliveryType === 'delivery' || order?.delivery_type === 'delivery')
     ? 'Delivery a Domicilio'
     : 'Retiro en Tienda';
+  const orderId = order?.id ?? '';
   const totalStr = Number(order?.total || 0).toFixed(2);
   const addrStr = order?.customer?.address ? ` • ${order.customer.address}` : '';
 
