@@ -16,7 +16,12 @@ import {
   Calendar,
   Lock,
   Unlock,
-  HelpCircle
+  HelpCircle,
+  Crown,
+  Wrench,
+  Check,
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 
 export const SubscriptionManager = () => {
@@ -260,6 +265,269 @@ export const SubscriptionManager = () => {
           <p className="text-[11px] text-slate-400 mt-4 leading-relaxed">
             * Cada código es de un solo uso y sumará automáticamente el tiempo correspondiente de forma acumulativa a tu fecha de vencimiento actual.
           </p>
+        </div>
+      </div>
+
+      {/* 2.5. SECCIÓN DE PLANES DISPONIBLES */}
+      <div className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-xs">
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            Membresías & Escalabilidad
+          </span>
+          <h3 className="text-xl sm:text-3xl font-black text-slate-900 mt-2 tracking-tight">
+            Elige el Plan que se Ajusta a tu Crecimiento
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Plataforma 100% digital pensada exclusivamente para minimarkets y negocios de barrio en Bolivia.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          
+          {/* PLAN 1: BÁSICO */}
+          <div className="rounded-3xl border-2 border-slate-200 p-6 flex flex-col justify-between bg-slate-50/50 hover:border-slate-300 transition-all shadow-xs relative">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-3 py-1 rounded-full bg-slate-200 text-slate-800 text-[10px] font-black uppercase tracking-wider">
+                  Todo Incluido
+                </span>
+                <span className="text-xs font-bold text-slate-500">Plan Esencial</span>
+              </div>
+
+              <h4 className="text-xl font-black text-slate-900 mb-1">Plan Básico</h4>
+              <p className="text-xs text-slate-500 mb-4">
+                La solución digital completa para operar tu minimarket de barrio día a día sin complicaciones.
+              </p>
+
+              <div className="mb-6 pb-5 border-b border-slate-200">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-black text-slate-900">Bs. 75</span>
+                  <span className="text-xs font-bold text-slate-500">/ mes</span>
+                </div>
+                <span className="text-[11px] text-emerald-700 font-bold mt-0.5 block">
+                  Sin contratos forzosos • Cancela o renueva cuando quieras
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs text-slate-700">
+                <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 mb-2">
+                  Todo a lo que accedes:
+                </p>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Catálogo Web Online:</strong> subdominio propio para compartir a tus vecinos.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Pedidos Directos por WhatsApp:</strong> carrito estructurado con cálculo automático.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>POS / Venta Rápida de Mostrador:</strong> cobros en efectivo, QR o crédito.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Gestión de Inventario:</strong> control de stock, precios y alertas de reposición.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Libreta de Fiado / Crédito Vecinal:</strong> cuentas por cobrar y abonos en vivo.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Gestión de Proveedores:</strong> compras, contactos y pedidos de abastecimiento.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Presencia en el Mapa Vecinal:</strong> tienda oficial visible con geolocalización GPS.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Horarios & Tarifas de Envíos:</strong> cálculo de costo por distancia y turnos de delivery.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Kit Imprimible de Mostrador:</strong> póster A4 y carpas con QR para vitrina.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Cierre y Arqueo de Caja:</strong> control de ingresos, retiros y balance diario.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Notificaciones Sonoras en Vivo:</strong> alerta acústica de nuevos pedidos en PC y móvil.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-200">
+              <a
+                href={`https://wa.me/59172125280?text=${encodeURIComponent(
+                  `Hola, deseo activar/renovar el Plan Básico (Bs. 75/mes) para mi tienda "${storeConfig?.name || 'Mi Tienda'}".`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+              >
+                <span>Solicitar Plan Básico</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* PLAN 2: PRO (DESTACADO) */}
+          <div className="rounded-3xl border-2 border-emerald-500 p-6 flex flex-col justify-between bg-gradient-to-b from-emerald-50/50 via-white to-white hover:shadow-xl hover:shadow-emerald-500/10 transition-all relative">
+            {/* Badge de Plan Más Popular */}
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-[10px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md flex items-center gap-1 whitespace-nowrap">
+              <Crown className="w-3 h-3 text-amber-300 fill-amber-300" />
+              <span>Recomendado para Crecer</span>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3 mt-1">
+                <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-wider">
+                  Crecimiento Pro
+                </span>
+                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Más Potente
+                </span>
+              </div>
+
+              <h4 className="text-xl font-black text-slate-900 mb-1">Plan Pro</h4>
+              <p className="text-xs text-slate-500 mb-4">
+                Todo lo del Básico más seguimiento comercial, soporte prioritario VIP y herramientas de fidelización avanzada.
+              </p>
+
+              <div className="mb-6 pb-5 border-b border-emerald-100">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl sm:text-4xl font-black text-emerald-700">Bs. 129</span>
+                  <span className="text-xs font-bold text-slate-500">/ mes</span>
+                </div>
+                <span className="text-[11px] text-emerald-800 font-bold mt-0.5 block">
+                  Incluye TODO lo del Plan Básico + Beneficios Exclusivos
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs text-slate-700">
+                <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-800 mb-2">
+                  Beneficios Exclusivos PRO:
+                </p>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Soporte Prioritario VIP:</strong> canal directo de WhatsApp con atención preferencial en &lt; 2h.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Acompañamiento y Asistencia Mensual:</strong> ayuda en carga masiva de productos, ajuste de precios y optimización.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Reportes Analíticos Avanzados:</strong> métricas de productos más rentables, clientes top y descargas en Excel/PDF.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Destacado Preferencial en el Mapa:</strong> pin distintivo con corona en el mapa vecinal y mejor visibilidad de búsqueda.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Personalización Avanzada de Marca:</strong> banner HD personalizado en cabecera y colores representativos de tu negocio.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Campañas de Marketing Vecinal:</strong> plantillas y artes para estados de WhatsApp y ofertas del fin de semana.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span><strong>Acceso Temprano a Novedades:</strong> sé el primero en recibir e integrar nuevas funciones del sistema.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-emerald-100">
+              <a
+                href={`https://wa.me/59172125280?text=${encodeURIComponent(
+                  `Hola, deseo activar el Plan PRO (Bs. 129/mes) para mi tienda "${storeConfig?.name || 'Mi Tienda'}".`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/25 cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                <span>Activar Plan PRO</span>
+              </a>
+            </div>
+          </div>
+
+          {/* PLAN 3: MEJORA (PAGO ÚNICO / A MEDIDA) */}
+          <div className="rounded-3xl border-2 border-slate-200 p-6 flex flex-col justify-between bg-slate-50/50 hover:border-slate-300 transition-all shadow-xs relative">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[10px] font-black uppercase tracking-wider">
+                  Desarrollo a Medida
+                </span>
+                <span className="text-xs font-bold text-indigo-600 flex items-center gap-1">
+                  <Wrench className="w-3.5 h-3.5" />
+                  Personalizado
+                </span>
+              </div>
+
+              <h4 className="text-xl font-black text-slate-900 mb-1">Plan Mejora</h4>
+              <p className="text-xs text-slate-500 mb-4">
+                Pago único para implementar mejoras exclusivas, nuevas funcionalidades, diseños personalizados o integraciones tecnológicas.
+              </p>
+
+              <div className="mb-6 pb-5 border-b border-slate-200">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900">Cotización a Medida</span>
+                </div>
+                <span className="text-[11px] text-indigo-700 font-bold mt-0.5 block">
+                  Pago único por proyecto o funcionalidad requerida
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs text-slate-700">
+                <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 mb-2">
+                  ¿Qué puedes solicitar en este plan?
+                </p>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span><strong>Nuevas Funcionalidades:</strong> módulos específicos para el flujo único de tu negocio.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span><strong>Rediseño y Agregados Visuales:</strong> interfaz adaptada a la identidad exacta de tu marca.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span><strong>Integración de Tecnologías:</strong> conexión con lectores de códigos de barras específicos, balanzas o APIs.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span><strong>Automatizaciones Exclusivas:</strong> bots, avisos personalizados a clientes y reportes especiales.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span><strong>Consultoría y Soporte Directo:</strong> reunión técnica para definir alcance, tiempos y presupuesto.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-slate-200">
+              <a
+                href={`https://wa.me/59172125280?text=${encodeURIComponent(
+                  `Hola, me interesa el Plan Mejora para implementar una funcionalidad / mejora personalizada en mi tienda "${storeConfig?.name || 'Mi Tienda'}" de MarketSaaS.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-indigo-600/20 cursor-pointer"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Contactar al +591 72125280</span>
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
 
