@@ -674,8 +674,8 @@
       font-size: 14px;
     }
 
-    /* Adaptación Mobile Responsive */
-    @media (max-width: 900px) {
+    /* Adaptación Mobile Responsive SOLO para Pantalla (no afecta print) */
+    @media screen and (max-width: 900px) {
       body {
         padding-bottom: 80px;
         justify-content: flex-start;
@@ -697,6 +697,7 @@
         min-height: auto;
         height: auto;
         border-bottom: 8px solid #030712;
+        overflow-y: auto;
       }
 
       .grid-2 {
@@ -712,9 +713,14 @@
         font-size: 14px;
       }
 
-      .stats-row, .timeline-steps, .features-8-grid, .pricing-grid, .obj-grid {
+      .stats-row, .timeline-steps, .pricing-grid, .obj-grid {
         grid-template-columns: 1fr;
         gap: 12px;
+      }
+
+      .features-8-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
       }
 
       .confidence-grid {
@@ -789,7 +795,7 @@
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
-        padding: 36px 52px !important;
+        padding: 34px 50px !important;
         page-break-before: auto !important;
         page-break-after: always !important;
         break-after: page !important;
@@ -810,35 +816,52 @@
         break-after: avoid !important;
       }
 
+      /* 2 Columnas Estrictas en Landscape 16:9 */
+      .grid-2 {
+        display: grid !important;
+        grid-template-columns: 1.15fr 0.85fr !important;
+        gap: 32px !important;
+        height: 100% !important;
+        align-items: center !important;
+      }
+
       .slide-title {
-        font-size: 34px !important;
+        font-size: 32px !important;
         line-height: 1.15 !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 10px !important;
       }
 
       .slide-desc {
-        font-size: 14px !important;
+        font-size: 13.5px !important;
         line-height: 1.45 !important;
-        margin-bottom: 16px !important;
+        margin-bottom: 14px !important;
+      }
+
+      .stats-row {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 14px !important;
+        margin-top: 14px !important;
       }
 
       .stat-number {
-        font-size: 36px !important;
+        font-size: 32px !important;
       }
 
       .stat-box {
-        padding-top: 10px !important;
+        padding-top: 8px !important;
       }
 
       .phone-mockup {
-        max-width: 330px !important;
-        padding: 14px !important;
+        max-width: 320px !important;
+        padding: 12px 14px !important;
+        font-size: 11px !important;
       }
 
       .chat-bubble {
-        padding: 8px 10px !important;
-        font-size: 11px !important;
-        margin-bottom: 6px !important;
+        padding: 7px 10px !important;
+        font-size: 10.5px !important;
+        margin-bottom: 5px !important;
       }
 
       .ledger-table th, .ledger-table td,
@@ -861,7 +884,9 @@
       }
 
       .timeline-steps {
-        margin: 14px 0 !important;
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        margin: 12px 0 !important;
         gap: 10px !important;
       }
 
@@ -869,16 +894,31 @@
         padding: 10px !important;
       }
 
+      /* 8 Capacidades en 4 columnas x 2 filas */
       .features-8-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
         gap: 10px !important;
         margin-top: 12px !important;
       }
 
       .feat-card {
-        padding: 10px !important;
+        padding: 10px 12px !important;
+      }
+
+      .feat-card h4 {
+        font-size: 12.5px !important;
+        margin-bottom: 2px !important;
+      }
+
+      .feat-card p {
+        font-size: 10.5px !important;
+        line-height: 1.35 !important;
       }
 
       .confidence-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
         margin-top: 14px !important;
         row-gap: 12px !important;
         column-gap: 24px !important;
@@ -899,15 +939,19 @@
       }
 
       .obj-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
         gap: 10px !important;
         margin-top: 12px !important;
       }
 
       .obj-card {
-        padding: 10px !important;
+        padding: 9px 10px !important;
       }
 
       .pricing-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
         gap: 12px !important;
         margin-top: 12px !important;
       }
@@ -917,7 +961,7 @@
       }
 
       .price-tag {
-        font-size: 24px !important;
+        font-size: 22px !important;
       }
     }
   </style>
@@ -1008,30 +1052,30 @@
         </div>
 
         <div>
-          <div class="phone-mockup" style="border-color: #374151;">
-            <div class="chat-header">
-              <div class="avatar-circle" style="background: #475569;">TU</div>
+          <div class="phone-mockup" style="border-color: #374151; padding: 14px 16px; max-width: 350px;">
+            <div class="chat-header" style="padding-bottom: 10px; margin-bottom: 10px;">
+              <div class="avatar-circle" style="background: #475569; width: 34px; height: 34px; font-size: 13px;">TU</div>
               <div>
-                <div style="font-weight: 800; color: #fff; font-size: 13.5px;">Tu WhatsApp actual (Sin MarketSaaS)</div>
-                <div style="font-size: 11px; color: #94a3b8; font-family: var(--mono);">Últ. vez ayer a las 20:30</div>
+                <div style="font-weight: 800; color: #fff; font-size: 12.5px;">Tu WhatsApp actual (Sin MarketSaaS)</div>
+                <div style="font-size: 10px; color: #94a3b8; font-family: var(--mono);">Últ. vez ayer a las 20:30</div>
               </div>
             </div>
-            <div class="chat-bubble bubble-in">
+            <div class="chat-bubble bubble-in" style="font-size: 11.5px; padding: 8px 12px; margin-bottom: 6px;">
               Hola, buenas noches. ¿Tiene pañales Huggies talla G y toallitas húmedas?
               <span class="bubble-time">22:45</span>
             </div>
-            <div class="chat-bubble bubble-in" style="margin-top: 4px;">
+            <div class="chat-bubble bubble-in" style="font-size: 11.5px; padding: 8px 12px; margin-bottom: 6px;">
               ¿Vecino? ¿Está abierto?
               <span class="bubble-time">22:58</span>
             </div>
-            <div style="text-align: center; margin: 18px 0; padding: 10px; background: rgba(244, 63, 94, 0.12); border-radius: 10px; border: 1px dashed rgba(244, 63, 94, 0.4);">
-              <span style="font-size: 11px; font-weight: 800; color: #fda4af; font-family: var(--mono); letter-spacing: 0.1em;">10 HORAS DE SILENCIO</span>
+            <div style="text-align: center; margin: 10px 0; padding: 6px 10px; background: rgba(244, 63, 94, 0.12); border-radius: 8px; border: 1px dashed rgba(244, 63, 94, 0.4);">
+              <span style="font-size: 10px; font-weight: 800; color: #fda4af; font-family: var(--mono); letter-spacing: 0.1em;">10 HORAS DE SILENCIO</span>
             </div>
-            <div class="chat-bubble bubble-out" style="background: #374151; color: #e5e7eb;">
+            <div class="chat-bubble bubble-out" style="background: #374151; color: #e5e7eb; font-size: 11.5px; padding: 8px 12px; margin-bottom: 6px;">
               Buen día vecino, disculpe la demora. Sí tenemos en stock.
               <span class="bubble-time">08:45 ✓✓</span>
             </div>
-            <div class="chat-bubble bubble-in">
+            <div class="chat-bubble bubble-in" style="font-size: 11.5px; padding: 8px 12px; margin-bottom: 0;">
               Gracias, anoche lo pedí por delivery a otra tienda.
               <span class="bubble-time">08:46</span>
             </div>
@@ -1345,41 +1389,58 @@
         </p>
 
         <div class="pricing-grid">
+          <!-- PLAN 1: BÁSICO -->
           <div class="price-card">
-            <div style="font-size: 12px; font-weight: 800; color: #64748b; font-family: var(--mono);">PLAN BÁSICO</div>
-            <div class="price-tag" style="color: #0f172a;">Bs. 75<span style="font-size: 14px; font-weight: 600; color: #64748b;"> / mes</span></div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Para la tienda que recién empieza a digitalizarse.</div>
-            <ul style="list-style: none; font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 6px;">
-              <li>✓ Catálogo en vivo hasta 300 productos</li>
-              <li>✓ Pedidos por WhatsApp formateados</li>
-              <li>✓ Cobro con QR Simple bancario</li>
-              <li>✓ Libreta Digital de Fiados</li>
+            <div style="font-size: 11px; font-weight: 800; color: #64748b; font-family: var(--mono); text-transform: uppercase;">TODO INCLUIDO · PLAN ESENCIAL</div>
+            <div style="font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 4px;">Plan Básico</div>
+            <div class="price-tag" style="color: #0f172a;">Bs. 75<span style="font-size: 13px; font-weight: 600; color: #64748b;"> / mes</span></div>
+            <div style="font-size: 11px; color: #16a34a; font-weight: 700; margin-bottom: 10px;">≈ Bs. 2,50 al día · Cancela cuando quieras</div>
+            <ul style="list-style: none; font-size: 11.5px; color: #334155; display: flex; flex-direction: column; gap: 5px;">
+              <li>✓ <strong>Catálogo Web Online:</strong> subdominio propio para tus vecinos</li>
+              <li>✓ <strong>Pedidos a WhatsApp:</strong> carrito con cálculo automático</li>
+              <li>✓ <strong>POS Mostrador Táctil:</strong> cobro en efectivo, QR Simple o fiado</li>
+              <li>✓ <strong>Control de Inventario:</strong> stock en tiempo real y alertas mínimas</li>
+              <li>✓ <strong>Libreta Digital de Fiados:</strong> créditos y abonos al centavo</li>
+              <li>✓ <strong>Gestión de Proveedores:</strong> compras y pedidos de reposición</li>
+              <li>✓ <strong>Mapa Vecinal:</strong> ubicación oficial con geolocalización GPS</li>
+              <li>✓ <strong>Cierre de Caja Diario:</strong> control por método de cobro + alerta sonora</li>
             </ul>
           </div>
 
+          <!-- PLAN 2: PRO (DESTACADO) -->
           <div class="price-card featured">
-            <div style="background: #4338ca; color: #fff; font-size: 10px; font-weight: 800; font-family: var(--mono); padding: 3px 10px; border-radius: 9999px; position: absolute; top: -10px; right: 16px;">EL MÁS ELEGIDO</div>
-            <div style="font-size: 12px; font-weight: 800; color: #a5b4fc; font-family: var(--mono);">PLAN PRO</div>
-            <div class="price-tag">Bs. 149<span style="font-size: 14px; font-weight: 600; color: #94a3b8;"> / mes</span></div>
-            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Para minimarkets con alto flujo y caja en mostrador.</div>
-            <ul style="list-style: none; font-size: 12px; color: #e2e8f0; display: flex; flex-direction: column; gap: 6px;">
-              <li>✓ Productos y fotos ilimitadas</li>
-              <li>✓ Punto de Venta POS de mostrador táctil</li>
-              <li>✓ Control de stock en vivo con alertas</li>
-              <li>✓ Arqueo de caja diario y exportación a Excel</li>
-              <li>✓ Soporte prioritario por WhatsApp</li>
+            <div style="background: #10b981; color: #064e3b; font-size: 10px; font-weight: 900; font-family: var(--mono); padding: 4px 12px; border-radius: 9999px; position: absolute; top: -12px; right: 16px; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);">
+              ★ EL MÁS ELEGIDO
+            </div>
+            <div style="font-size: 11px; font-weight: 800; color: #38bdf8; font-family: var(--mono); text-transform: uppercase;">CRECIMIENTO ACELERADO</div>
+            <div style="font-size: 18px; font-weight: 900; color: #fff; margin-top: 4px;">Plan Pro</div>
+            <div class="price-tag" style="color: #34d399;">Bs. 129<span style="font-size: 13px; font-weight: 600; color: #94a3b8;"> / mes</span></div>
+            <div style="font-size: 11px; color: #6ee7b7; font-weight: 700; margin-bottom: 10px;">≈ Bs. 4,30 al día · Todo lo del Básico + Beneficios VIP</div>
+            <ul style="list-style: none; font-size: 11.5px; color: #e2e8f0; display: flex; flex-direction: column; gap: 5px;">
+              <li>✓ <strong>TODO lo del Plan Básico incluido</strong></li>
+              <li>✓ <strong>Soporte Prioritario VIP:</strong> canal directo WhatsApp (&lt; 2 horas)</li>
+              <li>✓ <strong>Acompañamiento Mensual:</strong> carga masiva Excel y ajuste de precios</li>
+              <li>✓ <strong>Reportes Analíticos Avanzados:</strong> productos top y descargas Excel/PDF</li>
+              <li>✓ <strong>Destacado con Corona en el Mapa:</strong> máxima visibilidad vecinal</li>
+              <li>✓ <strong>Personalización de Marca:</strong> banner HD y colores propios</li>
+              <li>✓ <strong>Campañas de Marketing:</strong> artes listos para estados de WhatsApp</li>
+              <li>✓ <strong>Acceso Temprano:</strong> primero en recibir nuevas funciones</li>
             </ul>
           </div>
 
+          <!-- PLAN 3: PLAN MEJORA (A MEDIDA) -->
           <div class="price-card">
-            <div style="font-size: 12px; font-weight: 800; color: #64748b; font-family: var(--mono);">PLAN CORPORATIVO / RED</div>
-            <div class="price-tag" style="color: #0f172a;">Bs. 249<span style="font-size: 14px; font-weight: 600; color: #64748b;"> / mes</span></div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Para comercios con sucursales o franquicias.</div>
-            <ul style="list-style: none; font-size: 12px; color: #334155; display: flex; flex-direction: column; gap: 6px;">
-              <li>✓ Múltiples sucursales y cajas</li>
-              <li>✓ Usuarios con roles (cajero, dueño, repartidor)</li>
-              <li>✓ Integración y asistencia técnica personalizada</li>
-              <li>✓ Todo lo del Plan Pro incluido</li>
+            <div style="font-size: 11px; font-weight: 800; color: #6366f1; font-family: var(--mono); text-transform: uppercase;">DESARROLLO A MEDIDA</div>
+            <div style="font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 4px;">Plan Mejora</div>
+            <div class="price-tag" style="color: #4338ca; font-size: 20px;">Cotización a Medida</div>
+            <div style="font-size: 11px; color: #4338ca; font-weight: 700; margin-bottom: 10px;">Pago único por proyecto o funcionalidad requerida</div>
+            <ul style="list-style: none; font-size: 11.5px; color: #334155; display: flex; flex-direction: column; gap: 5px;">
+              <li>✓ <strong>Nuevas Funcionalidades:</strong> módulos específicos a tu flujo de negocio</li>
+              <li>✓ <strong>Rediseño y Agregados Visuales:</strong> interfaz adaptada a tu marca</li>
+              <li>✓ <strong>Integración Tecnológica:</strong> lectores específicos, balanzas o APIs</li>
+              <li>✓ <strong>Automatizaciones Exclusivas:</strong> bots y reportes especiales</li>
+              <li>✓ <strong>Consultoría Técnica Directa:</strong> reunión de alcance y tiempos</li>
+              <li>✓ <strong>Implementación Garantizada:</strong> pruebas conjuntas y soporte directo</li>
             </ul>
           </div>
         </div>
