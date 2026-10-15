@@ -936,14 +936,8 @@ export const StoreProvider = ({ children }) => {
     return false;
   });
 
-  // Modo Impersonación (SuperAdmin inspeccionando una tienda en vivo)
-  const [isImpersonating, setIsImpersonating] = useState(() => {
-    try {
-      return localStorage.getItem('marketsaas_is_impersonating') === 'true';
-    } catch {
-      return false;
-    }
-  });
+  // Modo Impersonación (SuperAdmin inspeccionando una tienda en vivo - Seguro, requiere validación de sesión activa)
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   // Sistema de Avisos Globales de Difusión (Broadcast del SuperAdmin a todas las tiendas)
   const [systemBroadcast, setSystemBroadcast] = useState(() => {
@@ -1641,7 +1635,7 @@ export const StoreProvider = ({ children }) => {
   const [toast, setToast] = useState(null);
 
   // Función para buscar y cargar la tienda asociada al dueño
-  const fetchStoreForUser = async (userId, userEmail = null) => {
+  const fetchStoreForUser = async (userId, userEmail = null, userObj = null) => {
     if (!supabase || (!userId && !userEmail)) return null;
     try {
       let storeRecord = null;
@@ -1659,13 +1653,17 @@ export const StoreProvider = ({ children }) => {
       }
 
       // Intento 2: buscar por email de dueño, config JSONB o coincidencia de tienda
-      if (!storeRecord) {
+      // BLINDAJE DE SEGURIDAD: Solo asociar por correo si la cuenta tiene email verificado (email_confirmed_at)
+      const activeUser = userObj || currentUser;
+      const isEmailVerified = Boolean(activeUser?.email_confirmed_at || activeUser?.confirmed_at);
+
+      if (!storeRecord && isEmailVerified && userEmail) {
         const allStores = await supabase.from('store_config').select('*');
         if (allStores.data && allStores.data.length > 0) {
           storeRecord = allStores.data.find(s => {
             const cfg = s.config || s;
             const matchesId = userId && (s.owner_id === userId || cfg?.owner_id === userId);
-            const matchesEmail = userEmail && (
+            const matchesEmail = (
               s.owner_email === userEmail ||
               cfg?.adminEmail === userEmail ||
               cfg?.owner_email === userEmail
@@ -1673,7 +1671,7 @@ export const StoreProvider = ({ children }) => {
             return matchesId || matchesEmail;
           }) || null;
 
-          // Si encontramos la tienda por email pero el owner_id estaba desfasado, re-vincular en Supabase
+          // Si encontramos la tienda por email verificado pero el owner_id estaba desfasado, re-vincular en Supabase
           if (storeRecord && userId && storeRecord.owner_id !== userId) {
             try {
               await supabase.from('store_config').update({ owner_id: userId }).eq('id', storeRecord.id);
@@ -1754,16 +1752,30 @@ export const StoreProvider = ({ children }) => {
     return null;
   };
 
-  // Identificador de usuario SuperAdmin validado por Supabase (estrictamente app_metadata)
+  // Identificador de usuario SuperAdmin validado por Supabase (estrictamente app_metadata o credencial confirmada)
   const isSuperAdminUser = (user) => {
     if (!user) return false;
     const email = (user.email || '').toLowerCase().trim();
-    return (
-      user.app_metadata?.role === 'superadmin' ||
+    const hasSuperAdminMetadata = user.app_metadata?.role === 'superadmin' || user.app_metadata?.is_superadmin === true;
+    const isEmailConfirmed = Boolean(user.email_confirmed_at || user.confirmed_at);
+    const isMasterAdminEmail = isEmailConfirmed && (
       email === 'superadmin@marketsaas.com' ||
       email === 'admin@marketsaas.com'
     );
+    return Boolean(hasSuperAdminMetadata || isMasterAdminEmail);
   };
+
+  // Blindaje reactivo: si no es SuperAdmin, purgar cualquier vestigio de impersonación en memoria o localStorage
+  useEffect(() => {
+    if (!currentUser || !isSuperAdminUser(currentUser)) {
+      if (isImpersonating) {
+        setIsImpersonating(false);
+      }
+      try {
+        localStorage.removeItem('marketsaas_is_impersonating');
+      } catch {}
+    }
+  }, [currentUser, isImpersonating]);
 
   // Inicialización y Listener de Supabase Auth
   useEffect(() => {
@@ -1776,13 +1788,18 @@ export const StoreProvider = ({ children }) => {
       if (session?.user) {
         setCurrentUser(session.user);
         if (isSuperAdminUser(session.user)) {
+          try {
+            if (localStorage.getItem('marketsaas_is_impersonating') === 'true') {
+              setIsImpersonating(true);
+            }
+          } catch {}
           const params = new URLSearchParams(window.location.search);
           const savedView = localStorage.getItem('marketsaas_active_view_mode');
           if (params.get('view') === 'superadmin' || savedView === 'superadmin') {
             setViewModeState('superadmin');
           }
         } else {
-          await fetchStoreForUser(session.user.id, session.user.email);
+          await fetchStoreForUser(session.user.id, session.user.email, session.user);
         }
       } else {
         setViewModeState(prev => prev === 'superadmin' ? 'spectator' : prev);
@@ -1800,12 +1817,16 @@ export const StoreProvider = ({ children }) => {
           if (isSuperAdminUser(session.user)) {
             setViewModeState('superadmin');
           } else {
-            await fetchStoreForUser(session.user.id, session.user.email);
+            await fetchStoreForUser(session.user.id, session.user.email, session.user);
           }
         }
       } else {
         setCurrentUser(null);
         setMerchantStore(null);
+        setIsImpersonating(false);
+        try {
+          localStorage.removeItem('marketsaas_is_impersonating');
+        } catch {}
         setViewModeState(prev => prev === 'superadmin' ? 'spectator' : prev);
         const activeTenant = localStorage.getItem('marketsaas_active_tenant');
         if (!activeTenant || activeTenant === 'default') {
@@ -3193,6 +3214,10 @@ export const StoreProvider = ({ children }) => {
 
   // Modo Soporte SuperAdmin: Acceder e Impersonar una tienda
   const impersonateStore = (storeSlugOrId) => {
+    if (!isSuperAdminUser(currentUser)) {
+      showToast('Acceso denegado: Se requieren permisos legítimos de SuperAdmin.', 'error');
+      return;
+    }
     const targetStore = (stores || []).find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId);
     if (targetStore) {
       setMerchantStore(targetStore);
@@ -5163,7 +5188,8 @@ export const StoreProvider = ({ children }) => {
   // Tienda de comerciante efectiva (resuelve tienda de dueño o tienda impersonada por SuperAdmin)
   const effectiveMerchantStore = useMemo(() => {
     if (merchantStore) return merchantStore;
-    if (isImpersonating || (isSuperAdminUser(currentUser) && tenantSlug && tenantSlug !== 'default')) {
+    const safeImpersonation = Boolean(isImpersonating && isSuperAdminUser(currentUser));
+    if (safeImpersonation || (isSuperAdminUser(currentUser) && tenantSlug && tenantSlug !== 'default')) {
       const match = (stores || []).find(s => s.slug === tenantSlug || s.id === tenantSlug);
       if (match) return match;
       if (storeConfig && storeConfig.name) {
@@ -5298,7 +5324,7 @@ export const StoreProvider = ({ children }) => {
         suspendStoreSubscription,
         impersonateStore,
         stopImpersonating,
-        isImpersonating,
+        isImpersonating: Boolean(isImpersonating && isSuperAdminUser(currentUser)),
         systemBroadcast,
         saveSystemBroadcast,
         formatBoliviaDateTime,

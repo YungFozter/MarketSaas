@@ -278,45 +278,53 @@ DROP POLICY IF EXISTS "Lectura pública de solicitudes" ON public.product_reques
 DROP POLICY IF EXISTS "Inserción pública de solicitudes" ON public.product_requests;
 DROP POLICY IF EXISTS "Gestión de solicitudes por dueño" ON public.product_requests;
 
--- 7.1. Tiendas: Lectura pública, registro autenticado, edición por dueño
+-- 7.1. Tiendas: Lectura pública, registro autenticado, edición por dueño legítimo
 CREATE POLICY "Lectura pública de store_config" ON public.store_config FOR SELECT USING (true);
 CREATE POLICY "Registro de tienda por usuarios autenticados" ON public.store_config FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Actualización de tienda por su dueño" ON public.store_config FOR UPDATE USING (
-  auth.uid() = owner_id OR id = 'default'
+  auth.role() = 'authenticated' AND auth.uid()::text = owner_id::text
 ) WITH CHECK (
-  auth.uid() = owner_id OR id = 'default'
+  auth.role() = 'authenticated' AND auth.uid()::text = owner_id::text
 );
 
 -- 7.2. Productos: Catálogo público, gestión reservada al dueño
 CREATE POLICY "Lectura pública de productos" ON public.products FOR SELECT USING (true);
 CREATE POLICY "Gestión de productos por dueño" ON public.products FOR ALL USING (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+  auth.role() = 'authenticated' AND
+  auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text)
 ) WITH CHECK (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = products.tenant_id)
+  auth.role() = 'authenticated' AND
+  auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = products.tenant_id::text OR sc.tenant_id::text = products.tenant_id::text)
 );
 
 -- 7.3. Pedidos: Inserción comunitaria por clientes, gestión por dueño
 CREATE POLICY "Inserción pública de pedidos" ON public.orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Lectura de pedidos por dueño" ON public.orders FOR SELECT USING (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+  (auth.role() = 'authenticated' AND (
+    auth.uid()::text = owner_id::text OR
+    auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text)
+  ))
+  OR
+  (auth.role() = 'anon' AND id::text = (COALESCE(NULLIF(current_setting('request.headers', true), ''), '{}')::json->>'x-order-id')::text)
 );
 CREATE POLICY "Actualización de pedidos por dueño" ON public.orders FOR UPDATE USING (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+  auth.role() = 'authenticated' AND (
+    auth.uid()::text = owner_id::text OR
+    auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text)
+  )
 ) WITH CHECK (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = orders.tenant_id)
+  auth.role() = 'authenticated' AND (
+    auth.uid()::text = owner_id::text OR
+    auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = orders.tenant_id::text OR sc.tenant_id::text = orders.tenant_id::text)
+  )
 );
 
 -- 7.4. Peticiones de Vecinos
 CREATE POLICY "Lectura pública de solicitudes" ON public.product_requests FOR SELECT USING (true);
 CREATE POLICY "Inserción pública de solicitudes" ON public.product_requests FOR INSERT WITH CHECK (true);
 CREATE POLICY "Gestión de solicitudes por dueño" ON public.product_requests FOR UPDATE USING (
-  tenant_id = 'default' OR
-  auth.uid() IN (SELECT owner_id FROM public.store_config WHERE store_config.id = product_requests.tenant_id)
+  auth.role() = 'authenticated' AND
+  auth.uid()::text IN (SELECT sc.owner_id::text FROM public.store_config sc WHERE sc.id::text = product_requests.tenant_id::text OR sc.tenant_id::text = product_requests.tenant_id::text)
 );
 
 -- ==============================================================================
