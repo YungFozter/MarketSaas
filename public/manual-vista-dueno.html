@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MarketSaaS - Manual Integral de la Vista Dueño (Pantalla por Pantalla)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 9.5pt;
+      line-height: 1.45;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page {
+      page-break-after: always;
+      position: relative;
+      height: 100%;
+      min-height: 260mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6mm 0;
+    }
+    .page:last-child {
+      page-break-after: avoid;
+    }
+
+    /* Encabezados y pies de página */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .doc-header-logo {
+      height: 28px;
+      object-fit: contain;
+    }
+    .doc-header-tag {
+      font-size: 7.5pt;
+      font-weight: 800;
+      color: #065f46;
+      background: #ecfdf5;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .doc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      margin-top: 14px;
+      font-size: 8pt;
+      color: #64748b;
+    }
+
+    /* Portada */
+    .owner-cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      padding: 15mm 4mm;
+    }
+    .cover-chip {
+      background: #022c22;
+      color: #34d399;
+      font-size: 8.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 14px;
+      align-self: flex-start;
+    }
+    .cover-h1 {
+      font-size: 28pt;
+      font-weight: 900;
+      color: #064e3b;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .cover-h1 span {
+      color: #10b981;
+    }
+    .cover-sub {
+      font-size: 12pt;
+      color: #334155;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+    }
+    .summary-card h3 {
+      font-size: 12pt;
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .screens-index-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .screen-index-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 9pt;
+      font-weight: 700;
+      color: #1e293b;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .screen-index-badge {
+      background: #10b981;
+      color: #ffffff;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8pt;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    /* Cabeceras de Pantalla */
+    .screen-header-banner {
+      background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+      color: #ffffff;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .screen-header-num {
+      font-size: 10pt;
+      font-weight: 900;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .screen-header-title {
+      font-size: 16pt;
+      font-weight: 900;
+      margin-top: 4px;
+    }
+    .screen-header-purpose {
+      font-size: 9pt;
+      color: #d1fae5;
+      margin-top: 2px;
+    }
+
+    /* Módulos de Pantalla */
+    .screen-section-title {
+      font-size: 12pt;
+      font-weight: 900;
+      color: #064e3b;
+      margin-bottom: 6px;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+    .screen-section-desc {
+      font-size: 9pt;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .feature-box {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: #ffffff;
+    }
+    .feature-box.accent {
+      border-color: #34d399;
+      background: #f0fdf4;
+    }
+    .feature-box-title {
+      font-size: 9.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feature-box-body {
+      font-size: 8.5pt;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    /* Tablas informativas */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 8.5pt;
+      margin-bottom: 12px;
+    }
+    .data-table th {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 8px 10px;
+      text-align: left;
+      font-weight: 800;
+    }
+    .data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .data-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    /* Callout de Valor Comercial */
+    .value-callout {
+      background: #fefce8;
+      border: 1.5px solid #facc15;
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #713f12;
+      font-size: 8.5pt;
+      margin-top: 10px;
+      line-height: 1.45;
+    }
+    .value-callout strong {
+      color: #854d0e;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 1: PORTADA & ÍNDICE GENERAL DEL PANEL DUEÑO                         -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Manual de Capacidades • Vista Dueño</span>
+    </div>
+
+    <div class="owner-cover">
+      <span class="cover-chip">Suite de Gestión Integral para Comerciantes</span>
+      <h1 class="cover-h1">Panel de Control & Gestión: <span>Vista Dueño</span></h1>
+      <p class="cover-sub">
+        Guía técnica, operativa y funcional detallada pantalla por pantalla. Descubre cómo MarketSaaS centraliza toda la operación de tu minimarket en una sola herramienta potente y fácil de usar.
+      </p>
+
+      <div class="summary-card">
+        <h3>Estructura Sistemática de Pantallas del Minimarket</h3>
+        <p style="font-size: 9pt; color: #64748b; margin-bottom: 10px;">
+          El sistema está organizado en 7 pantallas maestras, diseñadas para responder en tiempo real a las exigencias de un comercio vecinal:
+        </p>
+
+        <div class="screens-index-grid">
+          <div class="screen-index-item">
+            <span class="screen-index-badge">1</span>
+            <span>Cockpit & Tablero de Pedidos (Kanban)</span>
+          </div>
+          <div class="screen-index-item">
+            <span class="screen-index-badge">2</span>
+            <span>Punto de Venta (POS) Mostrador</span>
+          </div>
+          <div class="screen-index-item">
+            <span class="screen-index-badge">3</span>
+            <span>Gestión de Inventario & Almacén</span>
+          </div>
+          <div class="screen-index-item">
+            <span class="screen-index-badge">4</span>
+            <span>Libreta Digital de Fiados (Créditos)</span>
+          </div>
+          <div class="screen-index-item">
+            <span class="screen-index-badge">5</span>
+            <span>Agenda & Pedidos a Proveedores</span>
+          </div>
+          <div class="screen-index-item">
+            <span class="screen-index-badge">6</span>
+            <span>Reportes Financieros & Arqueo de Caja</span>
+          </div>
+          <div class="screen-index-item" style="grid-column: span 2;">
+            <span class="screen-index-badge">7</span>
+            <span>Mi Suscripción, Licencias & Ajustes del Comercio</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Índice Maestro</span>
+      <span>Página 1</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 2: PANTALLA 1 - COCKPIT Y TABLERO DE PEDIDOS EN VIVO (KANBAN)     -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 1 • Pedidos en Vivo</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 1: Cockpit & Pedidos en Vivo</div>
+          <div class="screen-header-purpose">Monitoreo en tiempo real de órdenes vecinales y avance de fases.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 1</div>
+      </div>
+
+      <div class="screen-section-title">A. Monitor Operativo y Alerta Auditiva</div>
+      <p class="screen-section-desc">Cero pedidos ignorados o demorados en el mostrador.</p>
+
+      <div class="feature-row">
+        <div class="feature-box accent">
+          <div class="feature-box-title">🔔 Alerta Sonora Instantánea</div>
+          <div class="feature-box-body">
+            En el milisegundo exacto en que un vecino envía un pedido por la web, el parlante del celular o computadora emite un sonido claro de timbre. Permite atender inmediatamente sin tener la pantalla abierta todo el tiempo.
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-box-title">📊 KPIs del Día en Tiempo Real</div>
+          <div class="feature-box-body">
+            Contadores superiores visibles: <strong>Ventas Totales del Día (Bs.)</strong>, número de pedidos completados, órdenes en preparación y alertas de productos que se quedaron sin stock.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Flujo de Trabajo Kanban en 4 Columnas</div>
+      <p class="screen-section-desc">Organización visual que elimina el caos de comandas o papeles.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Columna</th>
+            <th>Acción del Dueño</th>
+            <th>Efecto en el Cliente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Pendientes</strong></td>
+            <td>Llega la orden con sonido. El dueño revisa artículos y presiona <em>'Comenzar a Preparar'</em>.</td>
+            <td>El vecino ve en su pantalla que su pedido fue aceptado por la tienda.</td>
+          </tr>
+          <tr>
+            <td><strong>2. En Preparación</strong></td>
+            <td>El cajero o ayudante embolsa los productos. Al terminar, presiona <em>'Despachar'</em>.</td>
+            <td>El vecino sabe que sus productos ya están empacados y listos.</td>
+          </tr>
+          <tr>
+            <td><strong>3. En Camino</strong></td>
+            <td>La motodelivery sale con la orden hacia el condominio o domicilio.</td>
+            <td>El cliente se alista en la puerta con el dinero en mano o comprobante QR.</td>
+          </tr>
+          <tr>
+            <td><strong>4. Entregado</strong></td>
+            <td>El repartidor cobra y el dueño marca <em>'Entregar'</em>. Se suma a las ventas del día.</td>
+            <td>Lluvia de confeti en la pantalla del cliente y confirmación de compra exitosa.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="value-callout">
+        <strong>💡 Control Anti-Pérdidas:</strong> Si un pedido debe cancelarse, MarketSaaS devuelve automáticamente las cantidades de cada producto al inventario de la tienda sin necesidad de ajustes manuales.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 1: Cockpit y Kanban</span>
+      <span>Página 2</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 3: PANTALLA 2 - PUNTO DE VENTA (POS) DE MOSTRADOR                  -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 2 • Punto de Venta POS</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 2: Punto de Venta (POS) Mostrador</div>
+          <div class="screen-header-purpose">Venta presencial ultrarrápida para mostrador físico en tienda.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 2</div>
+      </div>
+
+      <div class="screen-section-title">A. Velocidad Absoluta en Mostrador</div>
+      <p class="screen-section-desc">Diseñado para operar en pantallas táctiles de celulares, tablets o monitores de caja.</p>
+
+      <div class="feature-row">
+        <div class="feature-box">
+          <div class="feature-box-title">⚡ Búsqueda Instantánea & Código de Barras</div>
+          <div class="feature-box-body">
+            Encuentra cualquier producto en 50 milisegundos con lector de código de barras o escribiendo las primeras letras (ej. <em>"coc"</em> para Coca-Cola).
+          </div>
+        </div>
+
+        <div class="feature-box accent">
+          <div class="feature-box-title">🔢 Teclado Numérico y Cambio Rápido</div>
+          <div class="feature-box-body">
+            Calculadora inteligente de vuelto: seleccionas billete de 20, 50, 100 o 200 Bs. y el sistema te indica el cambio exacto sin margen de error.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Métodos de Cobro Integrados en Pantalla</div>
+      <p class="screen-section-desc">Cobra como prefiera el cliente en menos de 5 segundos.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Modalidad de Cobro</th>
+            <th>Mecanismo en Pantalla</th>
+            <th>Ventaja para la Tienda</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Cobro con Efectivo</strong></td>
+            <td>Ingreso rápido de monto entregado con botones táctiles de denominación nacional.</td>
+            <td>Caja rápida, adiós a las filas y cálculos mentales con cansancio.</td>
+          </tr>
+          <tr>
+            <td><strong>Cobro con QR en Pantalla</strong></td>
+            <td>Aparece el QR bancario gigante para que el cliente apunte su celular y pague.</td>
+            <td>No necesitas imprimir papeles de QR que se despintan o ensucian.</td>
+          </tr>
+          <tr>
+            <td><strong>Cobro con Tarjeta POS</strong></td>
+            <td>Registro del pago con tarjeta para conciliar con el voucher del lector inalámbrico.</td>
+            <td>Arqueo contable cuadrado al final del día entre efectivo y banco.</td>
+          </tr>
+          <tr>
+            <td><strong>Pase Directo a Libreta de Fiao</strong></td>
+            <td>Botón de 1 toque: <em>"Anotar a Cuenta"</em> buscando el nombre del casero registrado.</td>
+            <td>No buscas cuadernos ni bolígrafos; el saldo se suma de inmediato.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="value-callout">
+        <strong>💡 Cierre de Venta Instantáneo:</strong> Cada venta del POS descuenta el stock en tiempo real y suma automáticamente al arqueo de caja de la jornada.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 2: Punto de Venta POS</span>
+      <span>Página 3</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 4: PANTALLA 3 - GESTIÓN DE INVENTARIO & ALMACÉN                    -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 3 • Inventario & Stock</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 3: Inventario & Stock Inteligente</div>
+          <div class="screen-header-purpose">Control total de existencias, márgenes de ganancia y reposición.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 3</div>
+      </div>
+
+      <div class="screen-section-title">A. Catálogo Maestro y Ajuste Exprés</div>
+      <p class="screen-section-desc">Actualiza tu mercadería en 1 toque sin trámites engorrosos.</p>
+
+      <div class="feature-row">
+        <div class="feature-box accent">
+          <div class="feature-box-title">➕ Ajuste Rápido de Stock (+1, -1, +5, +10)</div>
+          <div class="feature-box-body">
+            ¿Llegó una paca de leche? Solo tocas <strong>+10</strong> sobre el producto en la lista y el stock se actualiza al instante en la web de los vecinos y en el POS.
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-box-title">📈 Control de Costo vs Precio (Margen)</div>
+          <div class="feature-box-body">
+            Registras el precio al que le compras al proveedor y el precio de venta al público. MarketSaaS calcula tu margen de ganancia porcentual automáticamente.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Alertas Visuales y Carga Masiva por Excel</div>
+      <p class="screen-section-desc">Ahorra semanas de trabajo administrativo con nuestras herramientas exclusivas.</p>
+
+      <div class="feature-row">
+        <div class="feature-box">
+          <div class="feature-box-title">🚨 Semáforo de Stock Crítico</div>
+          <div class="feature-box-body">
+            Badge amarillo cuando un producto baja de su stock mínimo de seguridad (ej. menos de 5 unidades) y badge rojo cuando se agotó. Sabes exactamente qué pedir antes de quedarte sin producto.
+          </div>
+        </div>
+
+        <div class="feature-box accent">
+          <div class="feature-box-title">📊 Importador Masivo Excel (.XLSX)</div>
+          <div class="feature-box-body">
+            Sube cientos de productos en 30 segundos con nuestra plantilla de Excel lista. Incluye catálogo semilla con los 50 productos más consumidos de Bolivia ya cargados.
+          </div>
+        </div>
+      </div>
+
+      <div class="value-callout">
+        <strong>💡 Eliminación de Pérdidas Ocultas:</strong> Los minimarkets que no controlan stock pierden entre un <strong>8% y un 12% de utilidades anuales</strong> por mercadería vencida, robos hormiga o quiebres de producto no detectados a tiempo.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 3: Inventario y Stock</span>
+      <span>Página 4</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 5: PANTALLA 4 - LIBRETA DIGITAL DE FIADOS (CRÉDITOS)               -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 4 • Libreta de Fiados</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 4: Libreta Digital de Fiados</div>
+          <div class="screen-header-purpose">Modernización de las cuentas por cobrar vecinales sin perder dinero.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 4</div>
+      </div>
+
+      <div class="screen-section-title">A. Adiós al Cuaderno de Papel</div>
+      <p class="screen-section-desc">El fiado es el corazón de la fidelización del barrio, pero el papel genera pérdidas y peleas.</p>
+
+      <div class="feature-row">
+        <div class="feature-box accent">
+          <div class="feature-box-title">👥 Ficha por Cliente con WhatsApp</div>
+          <div class="feature-box-body">
+            Registras a tus caseros de confianza con su nombre, número de WhatsApp y dirección o referencia (ej. <em>"Doña Carmen - Casa 12"</em>). Visualizas su saldo deudor en color rojo destacado.
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-box-title">📝 Registro Detallado de Compras</div>
+          <div class="feature-box-body">
+            Cada vez que fían, queda grabado el día, la hora exacta, qué productos se llevaron y el total sumado a su cuenta. Se acabaron los reclamos de <em>"yo no me llevé ese aceite"</em>.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Cobro Amable por WhatsApp y Amortizaciones</div>
+      <p class="screen-section-desc">Recupera tu capital de trabajo de forma diplomática y profesional.</p>
+
+      <div class="feature-row">
+        <div class="feature-box">
+          <div class="feature-box-title">📲 Botón de Cobro Cordial por WhatsApp</div>
+          <div class="feature-box-body">
+            Con un toque, MarketSaaS redacta un mensaje respetuoso y claro con el saldo pendiente y el QR del banco para que el vecino pague desde su celular sin sentirse avergonzado.
+          </div>
+        </div>
+
+        <div class="feature-box accent">
+          <div class="feature-box-title">💵 Registro de Abonos y Liquidación</div>
+          <div class="feature-box-body">
+            Si Doña Carmen te abona Bs. 50 de una deuda de Bs. 120, registras el abono en 2 segundos y el sistema le envía un comprobante digital con su saldo restante actualizado a Bs. 70.
+          </div>
+        </div>
+      </div>
+
+      <div class="value-callout">
+        <strong>💡 Recuperación de Cartera:</strong> La libreta digital de MarketSaaS permite a los minimarkets <strong>recuperar hasta el 95% de cuentas por cobrar</strong> que antes se daban por perdidas debido a extravío del cuaderno o desidia del cliente.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 4: Libreta de Fiados</span>
+      <span>Página 5</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 6: PANTALLA 5 - GESTIÓN DE PROVEEDORES & COMPRAS                   -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 5 • Proveedores & Compras</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 5: Agenda & Pedidos a Proveedores</div>
+          <div class="screen-header-purpose">Planificación de abastecimiento y comunicación directa con preventistas.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 5</div>
+      </div>
+
+      <div class="screen-section-title">A. Directorio Centralizado de Mayoristas</div>
+      <p class="screen-section-desc">Todos los teléfonos, empresas y días de visita ordenados en un solo lugar.</p>
+
+      <div class="feature-row">
+        <div class="feature-box">
+          <div class="feature-box-title">🏢 Ficha de Distribuidor por Categoría</div>
+          <div class="feature-box-body">
+            Guarda tus contactos clave de Pil Andina, Coca-Cola, Embol, Arcor, Guabirá, Fino y distribuidores locales con nombre del preventista, teléfono y monto mínimo de pedido.
+          </div>
+        </div>
+
+        <div class="feature-box accent">
+          <div class="feature-box-title">🗓️ Calendario de Días de Visita</div>
+          <div class="feature-box-body">
+            Configuras qué días pasa cada camión (ej. Lácteos los martes y viernes, Bebidas los miércoles). El sistema te recuerda preparar el pedido el día anterior.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Generador Automático de Pedidos por WhatsApp</div>
+      <p class="screen-section-desc">Abastece exactamente lo que te hace falta sin perder tiempo revisando estantes.</p>
+
+      <div class="module-box highlight">
+        <div class="module-content">
+          <strong>¿Cómo funciona la Inteligencia de Reposición de MarketSaaS?</strong>
+          <ul class="subfeatures-list" style="margin-top: 6px;">
+            <li><strong>Cálculo Automático:</strong> El sistema identifica qué productos de esa marca están por debajo del stock mínimo.</li>
+            <li><strong>Generación de Mensaje:</strong> Redacta un pedido formal para el preventista: <em>"Buenas tardes, del Minimarket [Nombre] requerimos: 2 cajas de Leche Entera, 1 fardo de Refresco..."</em></li>
+            <li><strong>Envío Directo:</strong> Se abre WhatsApp con el preventista con la orden lista para enviar con 1 clic.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="value-callout">
+        <strong>💡 Ahorro de Tiempo y Dinero:</strong> Reduce el tiempo diario de hacer pedidos a mayoristas de 45 minutos a solo <strong>3 minutos</strong> y evita comprar productos que ya tenías acumulados en el almacén.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 5: Proveedores</span>
+      <span>Página 6</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 7: PANTALLA 6 - REPORTES FINANCIEROS & ARQUEO DE CAJA               -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 6 • Reportes & Finanzas</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 6: Reportes Financieros & Arqueo</div>
+          <div class="screen-header-purpose">Claridad contable, conciliación de caja y auditoría del negocio.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 6</div>
+      </div>
+
+      <div class="screen-section-title">A. Desglose Financiero por Método de Cobro</div>
+      <p class="screen-section-desc">Sabe con exactitud matemática cuánto dinero ingresó en cada canal.</p>
+
+      <div class="feature-row">
+        <div class="feature-box accent">
+          <div class="feature-box-title">💵 Efectivo en Gaveta de Caja</div>
+          <div class="feature-box-body">
+            Muestra el total recaudado en billetes físicos restando los vueltos entregados para un arqueo de caja infalible al cerrar turno.
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-box-title">📱 Total Recaudado por QR Simple</div>
+          <div class="feature-box-body">
+            Monto acumulado en transferencias digitales para conciliar directamente con el extracto de tu aplicación bancaria.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Exportación Oficial a Excel (.XLSX) y PDF Membretado</div>
+      <p class="screen-section-desc">Toda tu información contable disponible en cualquier momento.</p>
+
+      <div class="feature-row">
+        <div class="feature-box">
+          <div class="feature-box-title">📊 Planilla Excel con Fórmulas y Estilos</div>
+          <div class="feature-box-body">
+            Descarga un reporte en Excel ordenado con fecha, hora, cliente, productos, canal (POS vs Online), método de pago y totales para entregar directamente a tu contador.
+          </div>
+        </div>
+
+        <div class="feature-box accent">
+          <div class="feature-box-title">📄 Reporte PDF Ejecutivo con Membrete</div>
+          <div class="feature-box-body">
+            Genera un documento PDF formal con el logotipo de tu minimarket, gráficos de ticket promedio y resumen ejecutivo listo para imprimir o guardar.
+          </div>
+        </div>
+      </div>
+
+      <div class="value-callout">
+        <strong>💡 Tranquilidad Total:</strong> Se acabaron los faltantes de caja a fin de mes. Sabes al centavo cuánto vendiste, qué porcentaje entró en efectivo y cuánto tienes en banco.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 6: Finanzas y Reportes</span>
+      <span>Página 7</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PÁGINA 8: PANTALLA 7 - MI SUSCRIPCIÓN & AJUSTES DEL COMERCIO              -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Pantalla 7 • Ajustes & Suscripción</span>
+    </div>
+
+    <div>
+      <div class="screen-header-banner">
+        <div>
+          <div class="screen-header-title">Pantalla 7: Mi Suscripción & Ajustes</div>
+          <div class="screen-header-purpose">Control de licencia, planes y personalización de marca de la tienda.</div>
+        </div>
+        <div class="screen-header-num">PANTALLA 7</div>
+      </div>
+
+      <div class="screen-section-title">A. Control de Licencia y Canje de Códigos</div>
+      <p class="screen-section-desc">Gestión transparente de tu servicio sin ataduras ni sorpresas.</p>
+
+      <div class="feature-row">
+        <div class="feature-box accent">
+          <div class="feature-box-title">⏳ Contador de Tiempo en Vivo</div>
+          <div class="feature-box-body">
+            Muestra con claridad cuántos días y horas te quedan de tu período de prueba o suscripción activa. Nunca te cortarán el servicio de golpe.
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-box-title">🎟️ Canje de Códigos de Activación</div>
+          <div class="feature-box-body">
+            Al pagar tu mensualidad de Bs. 75, ingresas tu código de activación y el sistema te acredita inmediatamente tus 30 días de servicio con confeti en pantalla.
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-section-title" style="margin-top: 14px;">B. Personalización Integral de la Tienda</div>
+      <p class="screen-section-desc">Tu minimarket con tu propia identidad y reglas comerciales.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Parámetro Configurable</th>
+            <th>Descripción de la Función</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Nombre, Slogan y Logo</strong></td>
+            <td>Coloca el nombre comercial de tu tienda, slogan del barrio y tu logotipo propio.</td>
+          </tr>
+          <tr>
+            <td><strong>Banner de Portada</strong></td>
+            <td>Elige entre fotos profesionales precargadas o sube la fachada real de tu local.</td>
+          </tr>
+          <tr>
+            <td><strong>WhatsApp de Pedidos</strong></td>
+            <td>El número al que entrarán todas las órdenes y solicitudes del vecindario.</td>
+          </tr>
+          <tr>
+            <td><strong>Horarios y Días de Atención</strong></td>
+            <td>Define los turnos de apertura (ej. Lunes a Sábado 07:00 a 22:00) para avisar si estás abierto o cerrado.</td>
+          </tr>
+          <tr>
+            <td><strong>Zonas y Condominios de Reparto</strong></td>
+            <td>Agrega condominios cercanos con su tarifa de entrega o radio en kilómetros.</td>
+          </tr>
+          <tr>
+            <td><strong>Modo Lluvia Manual</strong></td>
+            <td>Interruptor para activar el recargo de lluvia cuando el clima lo amerite.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="value-callout">
+        <strong>💡 Conclusión:</strong> MarketSaaS no es solo una página web; es el **sistema operativo comercial definitivo** para que las tiendas de barrio crezcan, se ordenen y prosperen en la era digital.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
+      <span>Pantalla 7: Ajustes y Conclusión</span>
+      <span>Página 8</span>
+    </div>
+  </div>
+
+</body>
+</html>

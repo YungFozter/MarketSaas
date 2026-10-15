@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>MarketSaaS - Guía de la Vista Vecino (Experiencia del Cliente)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 10pt;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page {
+      page-break-after: always;
+      position: relative;
+      height: 100%;
+      min-height: 260mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6mm 0;
+    }
+    .page:last-child {
+      page-break-after: avoid;
+    }
+
+    /* Encabezados y pies de página */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .doc-header-logo {
+      height: 30px;
+      object-fit: contain;
+    }
+    .doc-header-tag {
+      font-size: 8pt;
+      font-weight: 700;
+      color: #0284c7;
+      background: #f0f9ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #bae6fd;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .doc-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 8px;
+      margin-top: 16px;
+      font-size: 8pt;
+      color: #64748b;
+    }
+
+    /* Títulos */
+    .section-title {
+      font-size: 16pt;
+      font-weight: 900;
+      color: #0c4a6e;
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+    .section-desc {
+      font-size: 9.5pt;
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    /* Portada de Guía */
+    .hero-banner {
+      background: linear-gradient(135deg, #075985 0%, #0369a1 100%);
+      color: #ffffff;
+      padding: 24px 26px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+    .hero-banner h1 {
+      font-size: 24pt;
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .hero-banner p {
+      font-size: 11pt;
+      color: #e0f2fe;
+      line-height: 1.5;
+    }
+
+    /* Módulos de funcionalidad */
+    .module-box {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #ffffff;
+      margin-bottom: 14px;
+    }
+    .module-box.highlight {
+      border-color: #38bdf8;
+      background: #f0f9ff;
+    }
+    .module-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .module-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #0284c7;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 10pt;
+    }
+    .module-title {
+      font-size: 11pt;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .module-content {
+      font-size: 9pt;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .subfeatures-list {
+      margin-top: 8px;
+      padding-left: 18px;
+      font-size: 8.5pt;
+      color: #334155;
+    }
+    .subfeatures-list li {
+      margin-bottom: 4px;
+    }
+
+    /* Grid de dos columnas */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    /* Flujo del pedido */
+    .steps-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .step-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .step-badge {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      line-height: 28px;
+      background: #0284c7;
+      color: #ffffff;
+      border-radius: 50%;
+      font-weight: 900;
+      font-size: 11pt;
+      margin-bottom: 6px;
+    }
+    .step-title {
+      font-size: 9pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .step-desc {
+      font-size: 7.5pt;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Tabla de pagos */
+    .pay-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 8.5pt;
+      margin-bottom: 14px;
+    }
+    .pay-table th {
+      background: #0c4a6e;
+      color: #ffffff;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .pay-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .pay-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    /* Banner de impacto */
+    .impact-callout {
+      background: #ecfdf5;
+      border: 1.5px solid #10b981;
+      border-radius: 12px;
+      padding: 12px 16px;
+      color: #065f46;
+      font-size: 9pt;
+      line-height: 1.5;
+    }
+    .impact-callout strong {
+      color: #047857;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PÁGINA 1: INTRODUCCIÓN Y CATÁLOGO HIPERLOCAL -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Especificación Funcional • Vista Vecino</span>
+    </div>
+
+    <div>
+      <div class="hero-banner">
+        <h1>Vista Vecino: La Experiencia de Compra sin Fricción</h1>
+        <p>Descubre cómo MarketSaaS permite a los vecinos comprar en su minimarket favorito en menos de 60 segundos, sin instalar aplicaciones pesadas ni crear contraseñas.</p>
+      </div>
+
+      <h2 class="section-title">1. Acceso y Directorio Hiperlocal de Tiendas</h2>
+      <p class="section-desc">Diseñado para que cualquier persona, desde jóvenes hasta personas mayores, compre al instante.</p>
+
+      <div class="module-box highlight">
+        <div class="module-header">
+          <div class="module-num">A</div>
+          <div class="module-title">Cero Descargas (100% Web PWA Instantánea)</div>
+        </div>
+        <div class="module-content">
+          El 85% de los clientes abandona la compra si se les obliga a descargar una aplicación pesada de 80 MB o crear una cuenta con contraseña. MarketSaaS funciona directamente en el navegador con un enlace web o escaneando el código QR en el mostrador del minimarket.
+        </div>
+      </div>
+
+      <div class="two-col-grid">
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">B</div>
+            <div class="module-title">Directorio & Mapa Interactivo</div>
+          </div>
+          <div class="module-content">
+            Mapa interactivo con tecnología Leaflet que muestra los minimarkets del barrio. El vecino ve la distancia exacta a su domicilio y el estado en tiempo real (Abierto / Cerrado).
+          </div>
+        </div>
+
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">C</div>
+            <div class="module-title">Aviso de Clima y Lluvia</div>
+          </div>
+          <div class="module-content">
+            Si está lloviendo, el sistema activa automáticamente el aviso de mal clima y calcula el recargo de lluvia para los motodeliveries con total transparencia.
+          </div>
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 14px;">2. Catálogo Interactivo con Fotos HD</h2>
+      <p class="section-desc">Organizado visualmente en las 7 categorías principales de consumo masivo.</p>
+
+      <div class="module-box">
+        <div class="module-content">
+          <ul class="subfeatures-list">
+            <li><strong>Categorías Claras:</strong> Lácteos & Huevos, Panadería & Desayuno, Abarrotes, Frutas & Verduras, Bebidas & Licores, Snacks & Golosinas, Limpieza & Hogar.</li>
+            <li><strong>Buscador Predictivo Instantáneo:</strong> Escribes "leche" o "arroz" y los resultados aparecen en menos de 100 milisegundos.</li>
+            <li><strong>Badges de Oferta y Stock:</strong> Etiquetas llamativas de "Más Vendido", "Oferta" y alerta de "Últimas unidades" para acelerar la decisión de compra.</li>
+            <li><strong>Selector Rápido de Cantidad (+ / -):</strong> Suma o resta unidades con animación táctil sin abrir ventanas emergentes molestas.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual de Producto: Vista Vecino</span>
+      <span>Catálogo y Navegación</span>
+      <span>Página 1</span>
+    </div>
+  </div>
+
+  <!-- PÁGINA 2: CARRITO, CUPONES, ENTREGAS Y PETICIONES -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Especificación Funcional • Vista Vecino</span>
+    </div>
+
+    <div>
+      <h2 class="section-title">3. Carrito Inteligente & Buzón de Peticiones</h2>
+      <p class="section-desc">Herramientas que aumentan el ticket promedio y la fidelidad del cliente.</p>
+
+      <div class="two-col-grid">
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">A</div>
+            <div class="module-title">Carrito Flotante Persistente</div>
+          </div>
+          <div class="module-content">
+            El carrito permanece accesible en la parte inferior con el total en Bolivianos (Bs.) y el número de artículos. Los productos se guardan en el celular aunque el vecino cierre la pestaña por error.
+          </div>
+        </div>
+
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">B</div>
+            <div class="module-title">Cupones de Descuento</div>
+          </div>
+          <div class="module-content">
+            Soporta códigos promocionales creados por el dueño (ej. <em>VECINO10</em>). El descuento se aplica inmediatamente y se desglosa con transparencia en el ticket de compra.
+          </div>
+        </div>
+      </div>
+
+      <div class="module-box highlight">
+        <div class="module-header">
+          <div class="module-num">C</div>
+          <div class="module-title">Buzón Vecinal: "¿No encuentras lo que buscas?"</div>
+        </div>
+        <div class="module-content">
+          Una funcionalidad exclusiva de MarketSaaS: si un cliente busca un producto que la tienda no tiene en stock, puede hacer clic en <strong>"Pedir que traigan este producto"</strong>. El comerciante recibe la sugerencia y sabe exactamente qué mercadería comprar con demanda garantizada.
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 18px;">4. Modalidades de Entrega Adaptadas al Barrio</h2>
+      <p class="section-desc">Cálculo de costos transparente para compras de cercanía.</p>
+
+      <div class="two-col-grid">
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">1</div>
+            <div class="module-title">Envío a Domicilio (Motodelivery)</div>
+          </div>
+          <div class="module-content">
+            <ul class="subfeatures-list">
+              <li>Geolocalización GPS automática con mapa satelital.</li>
+              <li>Ingreso manual de Calle, Número, Torre y Referencia de puerta.</li>
+              <li>Soporte para condominios (ej. Torre B, Depto 402).</li>
+              <li>Cálculo dinámico de tarifa por kilómetro.</li>
+              <li>Aviso de <strong>Envío Gratis</strong> al superar el monto mínimo.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="module-box">
+          <div class="module-header">
+            <div class="module-num">2</div>
+            <div class="module-title">Retiro en Tienda (Paso por el Local)</div>
+          </div>
+          <div class="module-content">
+            <ul class="subfeatures-list">
+              <li>Costo de envío: <strong>Bs. 0.00 (Gratis)</strong>.</li>
+              <li>El cliente hace su pedido desde el trabajo o camino a casa.</li>
+              <li>La tienda empaqueta todo con anticipación.</li>
+              <li>El cliente llega, muestra su código de pedido y retira en 10 segundos sin hacer fila en caja.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="impact-callout">
+        <strong>💡 Impacto Comercial:</strong> Los minimarkets que ofrecen ambas modalidades aumentan hasta un <strong>42% sus ventas de noche y fines de semana</strong>, captando compras de vecinos que antes pedían por delivery a cadenas lejanas.
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual de Producto: Vista Vecino</span>
+      <span>Carrito y Entregas</span>
+      <span>Página 2</span>
+    </div>
+  </div>
+
+  <!-- PÁGINA 3: PAGOS, WHATSAPP Y SEGUIMIENTO EN VIVO -->
+  <div class="page">
+    <div class="doc-header">
+      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
+      <span class="doc-header-tag">Especificación Funcional • Vista Vecino</span>
+    </div>
+
+    <div>
+      <h2 class="section-title">5. Pasarela de Pagos Multi-Método</h2>
+      <p class="section-desc">Adaptada a los hábitos reales de pago en Bolivia.</p>
+
+      <table class="pay-table">
+        <thead>
+          <tr>
+            <th>Método de Pago</th>
+            <th>Cómo Funciona para el Vecino</th>
+            <th>Beneficio para la Tienda</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Efectivo contra Entrega</strong></td>
+            <td>El cliente ingresa con cuánto dinero pagará (ej. <em>"Pagaré con Bs. 100"</em>). El sistema calcula el vuelto exacto en pantalla.</td>
+            <td>El repartidor sale de la tienda con el cambio exacto en mano. Se eliminan las demoras y reclamos por falta de cambio.</td>
+          </tr>
+          <tr>
+            <td><strong>QR Simple Digital (Multibanco)</strong></td>
+            <td>Muestra la imagen oficial del QR del banco del dueño. Permite escanearlo o descargarlo para subirlo a la app bancaria (BNB, BCP, Bisa, Unión, etc.).</td>
+            <td>El dinero entra <strong>directo e inmediato</strong> a la cuenta del dueño. Sin intermediarios ni retenciones de saldo.</td>
+          </tr>
+          <tr>
+            <td><strong>Tarjeta Débito / Crédito</strong></td>
+            <td>El cliente solicita que el repartidor o mostrador cobre con lector POS inalámbrico en puerta.</td>
+            <td>Se captan compras de mayor valor de clientes que no llevan efectivo en su billetera.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-title" style="margin-top: 18px;">6. El Flujo de Pedido: De la Web a WhatsApp en 4 Pasos</h2>
+      <p class="section-desc">Sin registros engorrosos ni pérdidas de comunicación.</p>
+
+      <div class="steps-container">
+        <div class="step-card">
+          <div class="step-badge">1</div>
+          <div class="step-title">Arma Carrito</div>
+          <div class="step-desc">Elige productos con fotos y precios actualizados.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-badge">2</div>
+          <div class="step-title">Selecciona Entrega</div>
+          <div class="step-desc">Elige Delivery a domicilio o Retiro en mostrador.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-badge">3</div>
+          <div class="step-title">Forma de Pago</div>
+          <div class="step-desc">Efectivo con vuelto, QR bancario o tarjeta.</div>
+        </div>
+        <div class="step-card">
+          <div class="step-badge">4</div>
+          <div class="step-title">Ticket a WhatsApp</div>
+          <div class="step-desc">Se abre WhatsApp con el pedido ordenado y listo.</div>
+        </div>
+      </div>
+
+      <h2 class="section-title" style="margin-top: 14px;">7. Seguimiento en Tiempo Real (Live Tracking)</h2>
+      <p class="section-desc">Estatus y tranquilidad total para el comprador.</p>
+
+      <div class="module-box highlight">
+        <div class="module-content">
+          Una vez enviado el pedido, el vecino accede a su pantalla de seguimiento en vivo protegida con identificador único:
+          <ul class="subfeatures-list" style="margin-top: 6px;">
+            <li><strong>Fase 1: Recibido (Pendiente):</strong> La tienda recibió la orden y la está revisando.</li>
+            <li><strong>Fase 2: En Preparación:</strong> El comerciante está embolsando los artículos.</li>
+            <li><strong>Fase 3: En Camino / Listo para retiro:</strong> La moto delivery va en camino o el pedido espera en caja.</li>
+            <li><strong>Fase 4: Entregado:</strong> Animación festiva de confeti y confirmación de compra exitosa.</li>
+            <li><strong>Actualización Automática:</strong> Sincronización en vivo mediante WebSockets sin recargar la página.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-footer">
+      <span>MarketSaaS • Manual de Producto: Vista Vecino</span>
+      <span>Pagos y Seguimiento en Vivo</span>
+      <span>Página 3</span>
+    </div>
+  </div>
+
+</body>
+</html>
