@@ -391,7 +391,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       }
 
       const waUrl = `https://wa.me/${cleanWa}?text=${encodeURIComponent(waText)}`;
-      window.open(waUrl, '_blank');
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
     }
 
     onClose();

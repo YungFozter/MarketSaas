@@ -2053,8 +2053,9 @@ export const StoreProvider = ({ children }) => {
       }
     });
 
-    // 3. Cargar pedidos por tienda con filtro server-side seguro y purga de órdenes fantasma
-    if (currentUser || tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || tenantSlug === 'matias-tiendatodo' || tenantSlug === 'default') {
+    // 3. Cargar pedidos por tienda con filtro server-side seguro (Estrictamente para dueño autenticado o SuperAdmin)
+    const canLoadStoreOrders = Boolean(currentUser && (merchantStore?.id || isImpersonating || isSuperAdminUser(currentUser)));
+    if (canLoadStoreOrders) {
       const activeAdminTenant = merchantStore?.id || tenantSlug;
       let query = supabase.from('orders').select('*');
       if (currentUser?.id && activeAdminTenant && activeAdminTenant !== 'default') {
@@ -3628,8 +3629,12 @@ export const StoreProvider = ({ children }) => {
     return newOrder;
   };
 
-  // Actualizar estado de pedido (Dueño o Cancelación por Vecino)
+  // Actualizar estado de pedido (Dueño legítimo o SuperAdmin)
   const updateOrderStatus = (orderId, newStatus) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Solo el comerciante titular puede cambiar el estado de un pedido.', 'error');
+      return;
+    }
     const targetOrder = orders.find(ord => ord.id === orderId);
 
     setOrders(prev =>
@@ -3696,6 +3701,10 @@ export const StoreProvider = ({ children }) => {
 
   // Eliminar pedido permanentemente (Dueño)
   const deleteOrder = (orderId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Solo el comerciante titular puede eliminar pedidos.', 'error');
+      return;
+    }
     setOrders(prev => {
       const filtered = prev.filter(ord => ord.id !== orderId);
       try {
@@ -3720,6 +3729,10 @@ export const StoreProvider = ({ children }) => {
 
   // Crear o Editar Producto (Dueño) con persistencia garantizada en Nube y Local
   const saveProduct = async (productData, options = {}) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Debes iniciar sesión como dueño para modificar productos.', 'error');
+      return { success: false, error: 'Unauthorized' };
+    }
     const { silent = false } = options;
     const cleanImage = (productData.image && productData.image.trim()) 
       ? productData.image.trim() 
@@ -3913,6 +3926,10 @@ export const StoreProvider = ({ children }) => {
   };
 
   const deleteProduct = async (productId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Debes iniciar sesión como dueño para eliminar productos.', 'error');
+      return;
+    }
     recordDeletedProductIds(tenantSlug, [productId]);
     let nextProducts = [];
     setProducts(prev => {
@@ -3941,6 +3958,10 @@ export const StoreProvider = ({ children }) => {
 
   // Eliminación Masiva de Productos Seleccionados
   const deleteProductsBatch = async (productIds) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Debes iniciar sesión como dueño para eliminar productos.', 'error');
+      return;
+    }
     if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return;
     recordDeletedProductIds(tenantSlug, productIds);
     const idSet = new Set(productIds);
@@ -4463,6 +4484,10 @@ export const StoreProvider = ({ children }) => {
   };
 
   const deleteSupplier = async (supplierId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Debes iniciar sesión como dueño para gestionar proveedores.', 'error');
+      return;
+    }
     const supplierToDelete = suppliers.find(s => s.id === supplierId);
     setSuppliers(prev => prev.filter(s => s.id !== supplierId));
 
@@ -4787,6 +4812,10 @@ export const StoreProvider = ({ children }) => {
   };
 
   const deleteCreditCustomer = async (customerId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Debes iniciar sesión como dueño para gestionar clientes fiados.', 'error');
+      return;
+    }
     const cust = creditCustomers.find(c => c.id === customerId);
     setCreditCustomers(prev => prev.filter(c => c.id !== customerId));
 

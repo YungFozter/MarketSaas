@@ -603,6 +603,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- RPC: get_order_tracking (Rastreo individual seguro para clientes anónimos sin exponer tabla orders)
+CREATE OR REPLACE FUNCTION public.get_order_tracking(p_order_id TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+  v_order public.orders%ROWTYPE;
+BEGIN
+  IF p_order_id IS NULL OR LENGTH(TRIM(p_order_id)) < 8 THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT * INTO v_order
+  FROM public.orders
+  WHERE id::text = TRIM(p_order_id);
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  RETURN to_jsonb(v_order);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_order_tracking(TEXT) TO anon, authenticated;
+
 -- ------------------------------------------------------------------------------
 -- 12. REVOCACIÓN DE SEGURIDAD: RECUPERACIÓN DE CONTRASEÑA NO AUTORIZADA
 -- ------------------------------------------------------------------------------
@@ -615,6 +643,27 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'verify_user_phone') THEN
     REVOKE EXECUTE ON FUNCTION public.verify_user_phone(TEXT, TEXT) FROM anon;
   END IF;
+END $$;
+
+-- ------------------------------------------------------------------------------
+-- 13. CONSTRAINTS DE INTEGRIDAD Y PREVENCIÓN DE MANIPULACIÓN DE PRECIOS
+-- ------------------------------------------------------------------------------
+DO $$
+BEGIN
+  -- Validar que pedidos no tengan montos negativos
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_orders_positive_total') THEN
+    ALTER TABLE public.orders ADD CONSTRAINT chk_orders_positive_total CHECK (total >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_orders_positive_subtotal') THEN
+    ALTER TABLE public.orders ADD CONSTRAINT chk_orders_positive_subtotal CHECK (subtotal >= 0);
+  END IF;
+
+  -- Validar que productos no tengan precios negativos
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_products_positive_price') THEN
+    ALTER TABLE public.products ADD CONSTRAINT chk_products_positive_price CHECK (price >= 0);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
 END $$;
 
 -- ------------------------------------------------------------------------------

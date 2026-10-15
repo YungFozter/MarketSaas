@@ -104,14 +104,25 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
     // Heartbeat de consulta cada 2.5 segundos (garantía infalible para móviles si WebSocket entra en suspensión)
     const pollInterval = setInterval(async () => {
       try {
-        const { data, error } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .maybeSingle();
+        let orderRecord = null;
+        // Intento 1: Función RPC con SECURITY DEFINER (Acceso anónimo seguro por token/ID exacto)
+        const { data: rpcData, error: rpcErr } = await supabase.rpc('get_order_tracking', { p_order_id: orderId });
+        if (!rpcErr && rpcData) {
+          orderRecord = rpcData;
+        } else {
+          // Intento 2: Consulta directa por tabla
+          const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .maybeSingle();
+          if (!error && data) {
+            orderRecord = data;
+          }
+        }
 
-        if (!error && data) {
-          const fresh = normalizeOrder(data);
+        if (orderRecord) {
+          const fresh = normalizeOrder(orderRecord);
           setOrder(prev => {
             if (!prev || prev.status !== fresh.status) {
               if (prev && prev.status !== fresh.status) {
