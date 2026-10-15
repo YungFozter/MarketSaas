@@ -2,861 +2,1291 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>MarketSaaS - Manual Integral de la Vista Dueño (Pantalla por Pantalla)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketSaaS · Manual Completo Vista Dueño</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
-    @page {
-      size: A4;
-      margin: 12mm 14mm;
+    :root {
+      --bg-dark: #0b0f19;
+      --card-dark: #131926;
+      --card-border: #1f293d;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.18);
+      --rose: #f43f5e;
+      --amber: #f59e0b;
+      --indigo: #6366f1;
+      --sky: #38bdf8;
+      --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
     }
-    *, *::before, *::after {
+
+    * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
     body {
-      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-      color: #0f172a;
-      background: #ffffff;
-      font-size: 9.5pt;
-      line-height: 1.45;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .page {
-      page-break-after: always;
-      position: relative;
-      height: 100%;
-      min-height: 260mm;
+      background: #000;
+      font-family: var(--font);
+      color: var(--text-main);
+      overflow-x: hidden;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      padding: 6mm 0;
-    }
-    .page:last-child {
-      page-break-after: avoid;
-    }
-
-    /* Encabezados y pies de página */
-    .doc-header {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 8px;
-      margin-bottom: 14px;
-    }
-    .doc-header-logo {
-      height: 28px;
-      object-fit: contain;
-    }
-    .doc-header-tag {
-      font-size: 7.5pt;
-      font-weight: 800;
-      color: #065f46;
-      background: #ecfdf5;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid #a7f3d0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .doc-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-top: 1px solid #e2e8f0;
-      padding-top: 8px;
-      margin-top: 14px;
-      font-size: 8pt;
-      color: #64748b;
-    }
-
-    /* Portada */
-    .owner-cover {
-      display: flex;
-      flex-direction: column;
       justify-content: center;
-      height: 100%;
-      padding: 15mm 4mm;
     }
-    .cover-chip {
-      background: #022c22;
-      color: #34d399;
-      font-size: 8.5pt;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 6px 14px;
-      border-radius: 6px;
-      display: inline-block;
-      margin-bottom: 14px;
-      align-self: flex-start;
-    }
-    .cover-h1 {
-      font-size: 28pt;
-      font-weight: 900;
-      color: #064e3b;
-      line-height: 1.15;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
-    }
-    .cover-h1 span {
-      color: #10b981;
-    }
-    .cover-sub {
-      font-size: 12pt;
-      color: #334155;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-    .summary-card {
-      background: #f8fafc;
-      border: 1.5px solid #cbd5e1;
-      border-radius: 14px;
-      padding: 18px 22px;
-      margin-bottom: 24px;
-    }
-    .summary-card h3 {
-      font-size: 12pt;
-      font-weight: 900;
-      color: #0f172a;
-      margin-bottom: 8px;
-    }
-    .screens-index-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 10px;
-    }
-    .screen-index-item {
+
+    /* Navegación Flotante */
+    .deck-nav {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 8px 18px;
+      border-radius: 9999px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 9pt;
+      gap: 14px;
+      z-index: 1000;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .deck-nav button {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 13px;
       font-weight: 700;
-      color: #1e293b;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      padding: 8px 12px;
-      border-radius: 8px;
-    }
-    .screen-index-badge {
-      background: #10b981;
-      color: #ffffff;
-      width: 22px;
-      height: 22px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 8pt;
-      font-weight: 900;
-      flex-shrink: 0;
-    }
-
-    /* Cabeceras de Pantalla */
-    .screen-header-banner {
-      background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
-      color: #ffffff;
-      padding: 16px 20px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .screen-header-num {
-      font-size: 10pt;
-      font-weight: 900;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 4px 12px;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .screen-header-title {
-      font-size: 16pt;
-      font-weight: 900;
-      margin-top: 4px;
-    }
-    .screen-header-purpose {
-      font-size: 9pt;
-      color: #d1fae5;
-      margin-top: 2px;
-    }
-
-    /* Módulos de Pantalla */
-    .screen-section-title {
-      font-size: 12pt;
-      font-weight: 900;
-      color: #064e3b;
-      margin-bottom: 6px;
-      border-bottom: 1.5px solid #e2e8f0;
-      padding-bottom: 4px;
-    }
-    .screen-section-desc {
-      font-size: 9pt;
-      color: #64748b;
-      margin-bottom: 12px;
-    }
-
-    .feature-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .feature-box {
-      border: 1.5px solid #e2e8f0;
-      border-radius: 10px;
-      padding: 12px 14px;
-      background: #ffffff;
-    }
-    .feature-box.accent {
-      border-color: #34d399;
-      background: #f0fdf4;
-    }
-    .feature-box-title {
-      font-size: 9.5pt;
-      font-weight: 800;
-      color: #0f172a;
-      margin-bottom: 4px;
+      cursor: pointer;
+      padding: 7px 16px;
+      border-radius: 9999px;
+      transition: all 0.2s;
       display: flex;
       align-items: center;
       gap: 6px;
     }
-    .feature-box-body {
-      font-size: 8.5pt;
+
+    .deck-nav button:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .deck-nav .btn-primary {
+      background: var(--emerald);
+      color: #064e3b;
+    }
+
+    .deck-nav .btn-primary:hover {
+      background: #34d399;
+    }
+
+    .slide-counter {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      min-width: 90px;
+      text-align: center;
+    }
+
+    /* Contenedor 16:9 */
+    .deck-container {
+      width: 100vw;
+      max-width: 1366px;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background: var(--bg-dark);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 20px auto;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      transform: scale(0.98);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 44px 60px;
+      box-sizing: border-box;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: scale(1);
+      z-index: 10;
+    }
+
+    .slide.theme-dark {
+      background: #0b0f19;
+      color: #f8fafc;
+    }
+
+    .slide.theme-light {
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    .sub-tag {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #818cf8;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide.theme-light .sub-tag {
+      color: #4338ca;
+    }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+      max-width: 95%;
+    }
+
+    .slide.theme-light .slide-title {
+      color: #0f172a;
+    }
+
+    .slide-desc {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-muted);
+      max-width: 660px;
+      margin-bottom: 20px;
+    }
+
+    .slide.theme-light .slide-desc {
       color: #475569;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 32px;
+      height: 100%;
+      align-items: center;
+    }
+
+    .badges-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .badge-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 7px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-pill.highlight {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    /* Grid de Tarjetas de Pantalla */
+    .cards-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .cards-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .feat-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .slide.theme-dark .feat-box {
+      background: #131926;
+      border-color: #1f293d;
+    }
+
+    .feat-box h4 {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .slide.theme-dark .feat-box h4 {
+      color: #f8fafc;
+    }
+
+    .feat-box p {
+      font-size: 12px;
+      color: #64748b;
       line-height: 1.45;
     }
 
-    /* Tablas informativas */
+    .slide.theme-dark .feat-box p {
+      color: #94a3b8;
+    }
+
+    /* Mockups de UI / Tableros */
+    .ui-panel-box {
+      background: #111827;
+      border: 1px solid #1f293d;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .ui-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1f293d;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    /* Columnas Kanban */
+    .kanban-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .kanban-col {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .kanban-col-title {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #94a3b8;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .kanban-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 8px;
+      margin-bottom: 8px;
+      font-size: 11px;
+    }
+
+    /* Tabla de Datos Limpia */
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-      font-size: 8.5pt;
-      margin-bottom: 12px;
-    }
-    .data-table th {
-      background: #0f172a;
-      color: #ffffff;
-      padding: 8px 10px;
-      text-align: left;
-      font-weight: 800;
-    }
-    .data-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .data-table tr:nth-child(even) {
-      background: #f8fafc;
+      margin-top: 10px;
+      font-size: 12px;
     }
 
-    /* Callout de Valor Comercial */
-    .value-callout {
-      background: #fefce8;
-      border: 1.5px solid #facc15;
-      border-radius: 10px;
-      padding: 12px 14px;
-      color: #713f12;
-      font-size: 8.5pt;
-      margin-top: 10px;
-      line-height: 1.45;
+    .data-table th {
+      text-align: left;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      color: #64748b;
+      padding: 8px 10px;
+      border-bottom: 2px solid #e2e8f0;
     }
-    .value-callout strong {
-      color: #854d0e;
+
+    .slide.theme-dark .data-table th {
+      border-bottom: 2px solid #1f293d;
+      color: #94a3b8;
+    }
+
+    .data-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+
+    .slide.theme-dark .data-table td {
+      border-bottom: 1px solid #1f293d;
+      color: #cbd5e1;
+    }
+
+    /* Botones de acción */
+    .btn-act {
+      background: #10b981;
+      color: #064e3b;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 900px) {
+      body {
+        padding-bottom: 80px;
+        justify-content: flex-start;
+      }
+
+      .deck-container {
+        aspect-ratio: auto;
+        min-height: auto;
+        margin: 0;
+        border-radius: 0;
+      }
+
+      .slide {
+        position: relative;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        padding: 30px 18px;
+        min-height: auto;
+        height: auto;
+        border-bottom: 8px solid #030712;
+      }
+
+      .grid-2, .cards-grid-3, .cards-grid-4, .kanban-cols {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .slide-title {
+        font-size: 26px;
+      }
+
+      .slide-desc {
+        font-size: 13.5px;
+      }
+
+      .deck-nav {
+        display: none;
+      }
+    }
+
+    /* Regla Oficial 16:9 Print/PDF */
+    @page {
+      size: landscape;
+      margin: 0;
+    }
+
+    @media print {
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      html, body {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #000 !important;
+      }
+
+      .deck-nav {
+        display: none !important;
+      }
+
+      .deck-container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: auto !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+      }
+
+      .slide {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        padding: 34px 48px !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+      }
+
+      .slide:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      .slide-title {
+        font-size: 30px !important;
+        margin-bottom: 10px !important;
+      }
+
+      .slide-desc {
+        font-size: 13px !important;
+        margin-bottom: 14px !important;
+      }
+
+      .feat-box {
+        padding: 10px !important;
+      }
+
+      .cards-grid-3, .cards-grid-4 {
+        gap: 10px !important;
+        margin-top: 10px !important;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 1: PORTADA & ÍNDICE GENERAL DEL PANEL DUEÑO                         -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Manual de Capacidades • Vista Dueño</span>
+  <div class="deck-container" id="deckContainer">
+
+    <!-- SLIDE 1: Portada Vista Dueño -->
+    <div class="slide theme-dark active" id="slide-1">
+      <div class="grid-2">
+        <div>
+          <div class="sub-tag">MANUAL OPERATIVO Y ESTRATÉGICO · 2026</div>
+          <h1 class="slide-title">Vista Dueño: El Centro de Comando Total de tu Minimarket.</h1>
+          <p class="slide-desc">
+            El sistema de gestión integral creado a la medida del comerciante boliviano. Administra tus pedidos web en vivo, atiende el mostrador en 3 segundos, elimina las pérdidas de inventario y automatiza la cobranza de fiados con código QR.
+          </p>
+          <div class="badges-row">
+            <span class="badge-pill highlight">⚡ 7 Pantallas Especializadas</span>
+            <span class="badge-pill">📊 Control de Stock en Vivo</span>
+            <span class="badge-pill">📖 Libreta Digital de Fiados</span>
+            <span class="badge-pill">🛵 Tablero Kanban en Tiempo Real</span>
+          </div>
+          <div style="font-size: 13px; color: #94a3b8;">
+            Funciona en celulares, tablets o computadoras de escritorio. Sin instalaciones engorrosas.
+          </div>
+        </div>
+
+        <div>
+          <div class="ui-panel-box">
+            <div class="ui-header-bar">
+              <span style="color: #34d399; font-weight: 800;">● MARKETSAAS COCKPIT ACTIVO</span>
+              <span style="color: #94a3b8;">Tienda Central · 15 Oct</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+              <div style="background: #1e293b; padding: 10px; border-radius: 8px;">
+                <div style="font-size: 10px; color: #94a3b8;">VENTAS HOY</div>
+                <div style="font-size: 18px; font-weight: 900; color: #34d399; font-family: var(--mono);">Bs. 1.840,50</div>
+              </div>
+              <div style="background: #1e293b; padding: 10px; border-radius: 8px;">
+                <div style="font-size: 10px; color: #94a3b8;">PEDIDOS ACTIVOS</div>
+                <div style="font-size: 18px; font-weight: 900; color: #38bdf8; font-family: var(--mono);">4 en curso</div>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: #cbd5e1; margin-bottom: 6px; font-weight: 700;">ÚLTIMO PEDIDO RECIBIDO:</div>
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: #fff;">#MS-204 · Carlos M.</strong>
+                <div style="font-size: 10px; color: #94a3b8;">3 productos · Moto Delivery</div>
+              </div>
+              <span class="btn-act">Preparar ▶</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="owner-cover">
-      <span class="cover-chip">Suite de Gestión Integral para Comerciantes</span>
-      <h1 class="cover-h1">Panel de Control & Gestión: <span>Vista Dueño</span></h1>
-      <p class="cover-sub">
-        Guía técnica, operativa y funcional detallada pantalla por pantalla. Descubre cómo MarketSaaS centraliza toda la operación de tu minimarket en una sola herramienta potente y fácil de usar.
-      </p>
-
-      <div class="summary-card">
-        <h3>Estructura Sistemática de Pantallas del Minimarket</h3>
-        <p style="font-size: 9pt; color: #64748b; margin-bottom: 10px;">
-          El sistema está organizado en 7 pantallas maestras, diseñadas para responder en tiempo real a las exigencias de un comercio vecinal:
+    <!-- PANTALLA 1.1: Cockpit & Métricas en Vivo -->
+    <div class="slide theme-light" id="slide-2">
+      <div>
+        <div class="sub-tag">PANTALLA 1.1 · COCKPIT DEL COMERCIO</div>
+        <h2 class="slide-title">Métricas clave del día en un solo vistazo sin esperar al cierre.</h2>
+        <p class="slide-desc">
+          El panel principal resume la salud financiera de tu tienda en tiempo real, desde cualquier lugar donde estés:
         </p>
 
-        <div class="screens-index-grid">
-          <div class="screen-index-item">
-            <span class="screen-index-badge">1</span>
-            <span>Cockpit & Tablero de Pedidos (Kanban)</span>
+        <div class="cards-grid-4">
+          <div class="feat-box" style="border-top: 4px solid #10b981;">
+            <h4>💰 Ventas Brutas del Día</h4>
+            <p>Total acumulado en bolivianos actualizado al instante con cada venta presencial o pedido digital.</p>
           </div>
-          <div class="screen-index-item">
-            <span class="screen-index-badge">2</span>
-            <span>Punto de Venta (POS) Mostrador</span>
+          <div class="feat-box" style="border-top: 4px solid #38bdf8;">
+            <h4>📦 Pedidos en Curso</h4>
+            <p>Contador de pedidos pendientes por confirmar, en preparación y en camino con motodelivery.</p>
           </div>
-          <div class="screen-index-item">
-            <span class="screen-index-badge">3</span>
-            <span>Gestión de Inventario & Almacén</span>
+          <div class="feat-box" style="border-top: 4px solid #f59e0b;">
+            <h4>📊 Ticket Promedio</h4>
+            <p>Monto promedio de compra por cliente para medir si las promociones están dando frutos.</p>
           </div>
-          <div class="screen-index-item">
-            <span class="screen-index-badge">4</span>
-            <span>Libreta Digital de Fiados (Créditos)</span>
+          <div class="feat-box" style="border-top: 4px solid #ef4444;">
+            <h4>🔔 Alerta Sonora Instantánea</h4>
+            <p>Timbre sonoro de tienda ("ding") que suena automáticamente cuando entra un pedido web o WhatsApp.</p>
           </div>
-          <div class="screen-index-item">
-            <span class="screen-index-badge">5</span>
-            <span>Agenda & Pedidos a Proveedores</span>
+        </div>
+
+        <div style="margin-top: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="color: #166534; font-size: 13px; font-weight: 700;">
+            ✓ Cero incertidumbre: El dueño puede ver las ventas desde su celular mientras está de compras o en su hogar.
           </div>
-          <div class="screen-index-item">
-            <span class="screen-index-badge">6</span>
-            <span>Reportes Financieros & Arqueo de Caja</span>
+          <div style="font-family: var(--mono); color: #15803d; font-weight: 800; font-size: 12px;">EN VIVO 24/7</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 1.2: Tablero Kanban de Pedidos -->
+    <div class="slide theme-dark" id="slide-3">
+      <div>
+        <div class="sub-tag">PANTALLA 1.2 · TABLERO KANBAN EN VIVO</div>
+        <h2 class="slide-title">Flujo visual sin enredos: de pedido entrante a entregado.</h2>
+        <p class="slide-desc">
+          Organiza el trabajo en el mostrador para que ningún pedido se quede frío ni se confundan las bolsas:
+        </p>
+
+        <div class="kanban-cols" style="margin-top: 14px;">
+          <div class="kanban-col">
+            <div class="kanban-col-title">
+              <span>🟡 PENDIENTES</span>
+              <span>2 pedidos</span>
+            </div>
+            <div class="kanban-card">
+              <strong style="color: #fff;">#MS-205 · María Laura</strong>
+              <div style="color: #94a3b8; font-size: 10px; margin: 2px 0;">Leche, Pan, Mantequilla</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                <span style="color: #34d399; font-weight: 800; font-family: var(--mono);">Bs. 22,00</span>
+                <span style="color: #38bdf8; font-size: 10px;">Aceptar ▶</span>
+              </div>
+            </div>
           </div>
-          <div class="screen-index-item" style="grid-column: span 2;">
-            <span class="screen-index-badge">7</span>
-            <span>Mi Suscripción, Licencias & Ajustes del Comercio</span>
+
+          <div class="kanban-col">
+            <div class="kanban-col-title">
+              <span>🔵 EN PREPARACIÓN</span>
+              <span>1 pedido</span>
+            </div>
+            <div class="kanban-card" style="border-color: #38bdf8;">
+              <strong style="color: #fff;">#MS-204 · Carlos M.</strong>
+              <div style="color: #94a3b8; font-size: 10px; margin: 2px 0;">Gaseosa 2L, Snacks</div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                <span style="color: #34d399; font-weight: 800; font-family: var(--mono);">Bs. 20,50</span>
+                <span style="color: #34d399; font-size: 10px;">Despachar ▶</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-title">
+              <span>🟢 EN RUTA / ENTREGADOS</span>
+              <span>Listo</span>
+            </div>
+            <div class="kanban-card" style="border-color: #059669; opacity: 0.85;">
+              <strong style="color: #fff;">#MS-203 · Rodrigo S.</strong>
+              <div style="color: #34d399; font-size: 10px; margin: 2px 0;">✓ Pagado por QR Simple</div>
+              <div style="color: #94a3b8; font-size: 10px; margin-top: 4px;">Entregado en Calle 3 #45</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding: 12px 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; font-size: 12.5px; color: #cbd5e1;">
+          🛡️ <strong>Reversión automática de stock:</strong> Si un pedido es cancelado o rechazado, los productos vuelven de inmediato al inventario disponible sin descuadres.
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 1.3: Asignación de Repartidores & Comandas -->
+    <div class="slide theme-light" id="slide-4">
+      <div>
+        <div class="sub-tag">PANTALLA 1.3 · LOGÍSTICA Y DESPACHO</div>
+        <h2 class="slide-title">Impresión de tickets y coordinación con motodeliveries.</h2>
+        <p class="slide-desc">
+          Todo lo necesario para despachar pedidos a domicilio con máxima velocidad y sin errores de dirección:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>🧾 Comanda Térmica Rápida</h4>
+            <p>Imprime recibos en formato 58mm o 80mm con 1 clic para pegar en la bolsa del cliente con lista de productos y total.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🛵 Asignación de Repartidor</h4>
+            <p>Selecciona si el pedido lo lleva el ayudante de la tienda o un mototaxista del barrio con control de su comisión.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📍 Enlace GPS de Google Maps</h4>
+            <p>Un botón abre la ubicación exacta de la casa o departamento del vecino en Google Maps para que el repartidor no se pierda.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 22px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
+          <h4 style="color: #0f172a; font-size: 14px; margin-bottom: 6px;">Modo Lluvia y Tarifas Personalizables</h4>
+          <p style="color: #64748b; font-size: 12.5px; line-height: 1.5;">
+            Puedes activar el "Modo Lluvia" en días de tormenta con un recargo justo para los mototaxistas y definir tarifas planas (ej. Bs. 5 en tu barrio) o dinámicas según los kilómetros recorridos.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2.1: Terminal POS Táctil de Mostrador -->
+    <div class="slide theme-light" id="slide-5">
+      <div>
+        <div class="sub-tag">PANTALLA 2.1 · PUNTO DE VENTA MOSTRADOR</div>
+        <h2 class="slide-title">Terminal POS táctil de alta velocidad para atender en tienda.</h2>
+        <p class="slide-desc">
+          Diseñado para cobrar en segundos en horas pico cuando hay fila de vecinos en el mostrador:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>👆 Interfaz Táctil con Botones Grandes</h4>
+            <p>Categorías y productos más vendidos accesibles con un solo toque en pantallas de celulares o tablets.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📷 Lector de Código de Barras</h4>
+            <p>Usa la cámara del celular o conecta una lectora USB de mano. Escanea y agrega el producto en 10 milisegundos.</p>
+          </div>
+          <div class="feat-box">
+            <h4>⌨️ Atajos de Teclado Numérico</h4>
+            <p>Busca por nombre con las primeras letras o presiona "Enter" para cerrar la venta inmediatamente.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 16px;">
+          <div style="flex: 1; background: #eff6ff; padding: 14px; border-radius: 10px; border-left: 4px solid #3b82f6;">
+            <strong style="color: #1e40af; font-size: 13px;">Sin Esperas en Caja</strong>
+            <p style="color: #3b82f6; font-size: 11.5px; margin-top: 2px;">Cierra una venta presencial completa en menos de 5 segundos.</p>
+          </div>
+          <div style="flex: 1; background: #ecfdf5; padding: 14px; border-radius: 10px; border-left: 4px solid #10b981;">
+            <strong style="color: #065f46; font-size: 13px;">Descuentos al Vuelo</strong>
+            <p style="color: #059669; font-size: 11.5px; margin-top: 2px;">Aplica rebajas especiales o redondeo de centavos de forma transparente.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Índice Maestro</span>
-      <span>Página 1</span>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 2: PANTALLA 1 - COCKPIT Y TABLERO DE PEDIDOS EN VIVO (KANBAN)     -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 1 • Pedidos en Vivo</span>
-    </div>
-
-    <div>
-      <div class="screen-header-banner">
+    <!-- PANTALLA 2.2: Calculadora de Cambio & Cobro QR Gigante -->
+    <div class="slide theme-dark" id="slide-6">
+      <div class="grid-2">
         <div>
-          <div class="screen-header-title">Pantalla 1: Cockpit & Pedidos en Vivo</div>
-          <div class="screen-header-purpose">Monitoreo en tiempo real de órdenes vecinales y avance de fases.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 1</div>
-      </div>
+          <div class="sub-tag">PANTALLA 2.2 · COBROS Y CAMBIO INTELIGENTE</div>
+          <h2 class="slide-title">Calculadora de cambio y código QR en pantalla sin fallos de conteo.</h2>
+          <p class="slide-desc">
+            Evita confusiones al dar vuelto y ofrece cobro bancario rápido directo en el mostrador:
+          </p>
 
-      <div class="screen-section-title">A. Monitor Operativo y Alerta Auditiva</div>
-      <p class="screen-section-desc">Cero pedidos ignorados o demorados en el mostrador.</p>
-
-      <div class="feature-row">
-        <div class="feature-box accent">
-          <div class="feature-box-title">🔔 Alerta Sonora Instantánea</div>
-          <div class="feature-box-body">
-            En el milisegundo exacto en que un vecino envía un pedido por la web, el parlante del celular o computadora emite un sonido claro de timbre. Permite atender inmediatamente sin tener la pantalla abierta todo el tiempo.
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #38bdf8; font-size: 13.5px;">Botones de Billetes Rápidos</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">Toca Bs. 20, 50, 100 o 200 y el sistema te dice el cambio exacto al instante.</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #38bdf8; font-size: 13.5px;">QR Simple en Pantalla Gigante</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">El cliente apunta la cámara de su banco hacia tu pantalla y paga sin tocar billetes.</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #38bdf8; font-size: 13.5px;">Cero Pérdida por Malos Cálculos</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">Se acabaron las diferencias de caja de Bs 20 o 50 a fin de turno por dar vuelto apurado.</p>
+            </div>
           </div>
         </div>
 
-        <div class="feature-box">
-          <div class="feature-box-title">📊 KPIs del Día en Tiempo Real</div>
-          <div class="feature-box-body">
-            Contadores superiores visibles: <strong>Ventas Totales del Día (Bs.)</strong>, número de pedidos completados, órdenes en preparación y alertas de productos que se quedaron sin stock.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Flujo de Trabajo Kanban en 4 Columnas</div>
-      <p class="screen-section-desc">Organización visual que elimina el caos de comandas o papeles.</p>
-
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Columna</th>
-            <th>Acción del Dueño</th>
-            <th>Efecto en el Cliente</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>1. Pendientes</strong></td>
-            <td>Llega la orden con sonido. El dueño revisa artículos y presiona <em>'Comenzar a Preparar'</em>.</td>
-            <td>El vecino ve en su pantalla que su pedido fue aceptado por la tienda.</td>
-          </tr>
-          <tr>
-            <td><strong>2. En Preparación</strong></td>
-            <td>El cajero o ayudante embolsa los productos. Al terminar, presiona <em>'Despachar'</em>.</td>
-            <td>El vecino sabe que sus productos ya están empacados y listos.</td>
-          </tr>
-          <tr>
-            <td><strong>3. En Camino</strong></td>
-            <td>La motodelivery sale con la orden hacia el condominio o domicilio.</td>
-            <td>El cliente se alista en la puerta con el dinero en mano o comprobante QR.</td>
-          </tr>
-          <tr>
-            <td><strong>4. Entregado</strong></td>
-            <td>El repartidor cobra y el dueño marca <em>'Entregar'</em>. Se suma a las ventas del día.</td>
-            <td>Lluvia de confeti en la pantalla del cliente y confirmación de compra exitosa.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="value-callout">
-        <strong>💡 Control Anti-Pérdidas:</strong> Si un pedido debe cancelarse, MarketSaaS devuelve automáticamente las cantidades de cada producto al inventario de la tienda sin necesidad de ajustes manuales.
-      </div>
-    </div>
-
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 1: Cockpit y Kanban</span>
-      <span>Página 2</span>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 3: PANTALLA 2 - PUNTO DE VENTA (POS) DE MOSTRADOR                  -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 2 • Punto de Venta POS</span>
-    </div>
-
-    <div>
-      <div class="screen-header-banner">
         <div>
-          <div class="screen-header-title">Pantalla 2: Punto de Venta (POS) Mostrador</div>
-          <div class="screen-header-purpose">Venta presencial ultrarrápida para mostrador físico en tienda.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 2</div>
-      </div>
-
-      <div class="screen-section-title">A. Velocidad Absoluta en Mostrador</div>
-      <p class="screen-section-desc">Diseñado para operar en pantallas táctiles de celulares, tablets o monitores de caja.</p>
-
-      <div class="feature-row">
-        <div class="feature-box">
-          <div class="feature-box-title">⚡ Búsqueda Instantánea & Código de Barras</div>
-          <div class="feature-box-body">
-            Encuentra cualquier producto en 50 milisegundos con lector de código de barras o escribiendo las primeras letras (ej. <em>"coc"</em> para Coca-Cola).
-          </div>
-        </div>
-
-        <div class="feature-box accent">
-          <div class="feature-box-title">🔢 Teclado Numérico y Cambio Rápido</div>
-          <div class="feature-box-body">
-            Calculadora inteligente de vuelto: seleccionas billete de 20, 50, 100 o 200 Bs. y el sistema te indica el cambio exacto sin margen de error.
+          <div style="background: #131926; border: 1px solid #1f293d; border-radius: 16px; padding: 20px;">
+            <div style="font-family: var(--mono); font-size: 11px; color: #34d399; margin-bottom: 8px;">SIMULACIÓN DE COBRO EN MOSTRADOR</div>
+            <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+              <div style="font-size: 11px; color: #94a3b8;">TOTAL A COBRAR:</div>
+              <div style="font-size: 28px; font-weight: 900; color: #fff; font-family: var(--mono);">Bs. 37,50</div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+              <span style="background: #1e293b; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 12px; color: #cbd5e1;">Bs 50</span>
+              <span style="background: #059669; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 12px; color: #fff;">Bs 100</span>
+              <span style="background: #1e293b; padding: 6px 12px; border-radius: 6px; font-weight: 800; font-size: 12px; color: #cbd5e1;">Bs 200</span>
+            </div>
+            <div style="background: #032e24; border: 1px solid #065f46; border-radius: 8px; padding: 10px;">
+              <div style="font-size: 10.5px; color: #a7f3d0;">CAMBIO A DEVOLVER AL CLIENTE:</div>
+              <div style="font-size: 24px; font-weight: 900; color: #34d399; font-family: var(--mono);">Bs. 62,50</div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="screen-section-title" style="margin-top: 14px;">B. Métodos de Cobro Integrados en Pantalla</div>
-      <p class="screen-section-desc">Cobra como prefiera el cliente en menos de 5 segundos.</p>
+    <!-- PANTALLA 2.3: Pase a Libreta de Fiados & Cierre -->
+    <div class="slide theme-light" id="slide-7">
+      <div>
+        <div class="sub-tag">PANTALLA 2.3 · FLEXIBILIDAD EN MOSTRADOR</div>
+        <h2 class="slide-title">«Vecina, ¿me lo anota?»: pase a fiado con 1 clic sin cuadernos.</h2>
+        <p class="slide-desc">
+          Si el vecino de confianza no trajo plata ni celular, no pierdes la venta ni buscas un bolígrafo en el desorden:
+        </p>
 
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Modalidad de Cobro</th>
-            <th>Mecanismo en Pantalla</th>
-            <th>Ventaja para la Tienda</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Cobro con Efectivo</strong></td>
-            <td>Ingreso rápido de monto entregado con botones táctiles de denominación nacional.</td>
-            <td>Caja rápida, adiós a las filas y cálculos mentales con cansancio.</td>
-          </tr>
-          <tr>
-            <td><strong>Cobro con QR en Pantalla</strong></td>
-            <td>Aparece el QR bancario gigante para que el cliente apunte su celular y pague.</td>
-            <td>No necesitas imprimir papeles de QR que se despintan o ensucian.</td>
-          </tr>
-          <tr>
-            <td><strong>Cobro con Tarjeta POS</strong></td>
-            <td>Registro del pago con tarjeta para conciliar con el voucher del lector inalámbrico.</td>
-            <td>Arqueo contable cuadrado al final del día entre efectivo y banco.</td>
-          </tr>
-          <tr>
-            <td><strong>Pase Directo a Libreta de Fiao</strong></td>
-            <td>Botón de 1 toque: <em>"Anotar a Cuenta"</em> buscando el nombre del casero registrado.</td>
-            <td>No buscas cuadernos ni bolígrafos; el saldo se suma de inmediato.</td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>📖 Botón Directo "Anotar a Fiado"</h4>
+            <p>Seleccionas el nombre del vecino de la lista y la compra se suma de inmediato a su saldo deudor.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🛡️ Validación de Límite de Crédito</h4>
+            <p>El sistema te avisa si el cliente ya superó su límite permitido (ej: "Límite: Bs 200 / Saldo actual: Bs 190").</p>
+          </div>
+          <div class="feat-box">
+            <h4>📲 Comprobante al WhatsApp del Cliente</h4>
+            <p>El vecino recibe en su celular el detalle exacto de lo que se llevó con fecha y hora para que no haya dudas.</p>
+          </div>
+        </div>
 
-      <div class="value-callout">
-        <strong>💡 Cierre de Venta Instantáneo:</strong> Cada venta del POS descuenta el stock en tiempo real y suma automáticamente al arqueo de caja de la jornada.
+        <div style="margin-top: 22px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px;">
+          <h4 style="color: #14532d; font-size: 14px; margin-bottom: 4px;">Transparencia que Fortalece la Confianza</h4>
+          <p style="color: #15803d; font-size: 12px;">
+            El vecino sabe que en tu minimarket hay orden y control. No hay espacio para desconfianzas ni cuentas borrosas.
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 2: Punto de Venta POS</span>
-      <span>Página 3</span>
-    </div>
-  </div>
+    <!-- PANTALLA 3.1: Ficha Maestra de Producto -->
+    <div class="slide theme-light" id="slide-8">
+      <div>
+        <div class="sub-tag">PANTALLA 3.1 · GESTIÓN DE PRODUCTOS</div>
+        <h2 class="slide-title">Control de costos, precios de venta y margen de ganancia real.</h2>
+        <p class="slide-desc">
+          Configuración clara de cada artículo para que siempre sepas cuánto ganas en cada venta:
+        </p>
 
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 4: PANTALLA 3 - GESTIÓN DE INVENTARIO & ALMACÉN                    -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 3 • Inventario & Stock</span>
+        <div class="cards-grid-4">
+          <div class="feat-box">
+            <h4>🏷️ Precio de Costo vs Venta</h4>
+            <p>Ingresas a cuánto compraste al distribuidor y a cuánto lo vendes. El sistema calcula el margen porcentual.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🖼️ Fotos y Descripción</h4>
+            <p>Sube imágenes nítidas de productos para que resalten en el catálogo del vecino.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📂 Categorías y Marcas</h4>
+            <p>Organiza en lácteos, abarrotes, bebidas, limpieza o snacks con filtros sencillos.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🔘 Switch "Activo en Web"</h4>
+            <p>Con un solo toque puedes pausar un producto para que no aparezca en la web si está temporalmente agotado.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding: 12px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 12.5px; color: #475569;">
+          💡 <strong>Ajuste rápido de precios por inflación:</strong> Si los proveedores suben el aceite o la harina, cambias el precio en 3 segundos y se actualiza en el mostrador y en la web simultáneamente.
+        </div>
+      </div>
     </div>
 
-    <div>
-      <div class="screen-header-banner">
+    <!-- PANTALLA 3.2: Control de Stock con Semáforo Inteligente -->
+    <div class="slide theme-dark" id="slide-9">
+      <div>
+        <div class="sub-tag">PANTALLA 3.2 · SEMÁFORO DE INVENTARIO</div>
+        <h2 class="slide-title">Alertas de reposición antes de que te quedes sin mercadería.</h2>
+        <p class="slide-desc">
+          Semáforo visual en tiempo real para no enterarte de que falta azúcar cuando el cliente ya te la pidió:
+        </p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ESTADO SEMÁFORO</th>
+              <th>PRODUCTO</th>
+              <th>STOCK ACTUAL</th>
+              <th>MÍNIMO</th>
+              <th>AJUSTE EXPRÉS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span style="color: #34d399; font-weight: 800;">● VERDE (OK)</span></td>
+              <td>Leche PIL Natural 1L</td>
+              <td><strong>28 unidades</strong></td>
+              <td>10 unid</td>
+              <td><button class="btn-act">+1</button> <button class="btn-act">+5</button></td>
+            </tr>
+            <tr>
+              <td><span style="color: #fbbf24; font-weight: 800;">● AMARILLO (BAJO)</span></td>
+              <td>Aceite Crisol 900ml</td>
+              <td><strong style="color: #fbbf24;">4 unidades</strong></td>
+              <td>6 unid</td>
+              <td><button class="btn-act">+1</button> <button class="btn-act">+12</button></td>
+            </tr>
+            <tr>
+              <td><span style="color: #f87171; font-weight: 800;">● ROJO (AGOTADO)</span></td>
+              <td>Arroz Grano de Oro 1kg</td>
+              <td><strong style="color: #f87171;">0 unidades</strong></td>
+              <td>5 unid</td>
+              <td><button class="btn-act">+10</button> <button class="btn-act">+20</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 18px; padding: 12px 18px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; font-size: 12.5px; color: #a7f3d0;">
+          ⚡ <strong>Ajustes sin formularios:</strong> Los botones rápidos (+1, -1, +5, +10) permiten recibir cajas de mercadería en segundos directo desde el mostrador.
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 3.3: Importador & Exportador Masivo en Excel -->
+    <div class="slide theme-light" id="slide-10">
+      <div>
+        <div class="sub-tag">PANTALLA 3.3 · CARGA MASIVA DE INVENTARIO</div>
+        <h2 class="slide-title">Carga cientos de productos en minutos con planillas Excel.</h2>
+        <p class="slide-desc">
+          No tienes que escribir producto por producto: aprovecha nuestras herramientas de carga masiva:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>📊 Plantilla Excel Lista</h4>
+            <p>Descarga el formato modelo con columnas de código, nombre, categoría, precio y stock inicial.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📥 Subida en 1 Clic</h4>
+            <p>Arrastra tu archivo Excel y el sistema valida y crea cientos de artículos en pocos segundos.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📤 Exportación de Auditoría</h4>
+            <p>Descarga el listado completo a Excel cuando desees hacer inventario físico o balance con tu contador.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 22px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px 20px;">
+          <h4 style="color: #1e3a8a; font-size: 14px; margin-bottom: 4px;">Acompañamiento Incluido en tu Activación</h4>
+          <p style="color: #1e40af; font-size: 12px;">
+            Nuestro equipo de soporte boliviano te ayuda a migrar tu lista de productos de tu cuaderno o sistema anterior sin costo adicional.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 4.1: Libreta Digital de Fiados - Ficha de Deudor -->
+    <div class="slide theme-light" id="slide-11">
+      <div>
+        <div class="sub-tag">PANTALLA 4.1 · EL CUADERNO DIGITAL INTELIGENTE</div>
+        <h2 class="slide-title">Historial exacto al centavo por cada vecino del barrio.</h2>
+        <p class="slide-desc">
+          El fiado es el corazón de la fidelidad del minimarket de barrio, pero desordenado genera pérdidas enormes:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>👤 Ficha Individual del Vecino</h4>
+            <p>Nombre, teléfono, dirección o número de departamento y límite de crédito acordado.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🧾 Desglose Detallado</h4>
+            <p>Lista cronológica con fecha, hora exacta y los artículos llevados (ej. "1x Aceite, 2x Pan").</p>
+          </div>
+          <div class="feat-box">
+            <h4>🛑 Alerta de Límite Superado</h4>
+            <p>Avisa al cajero si el vecino ya debe más de lo permitido antes de seguir entregando productos.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px; padding: 14px 20px;">
+          <span style="color: #9f1239; font-size: 13px; font-weight: 700;">
+            ✓ Cero discusiones: Se acabaron los reclamos incómodos de «yo no me llevé ese queso» o «yo ya le pagué la semana pasada».
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 4.2: Cobro Amable por WhatsApp & Abonos -->
+    <div class="slide theme-dark" id="slide-12">
+      <div class="grid-2">
         <div>
-          <div class="screen-header-title">Pantalla 3: Inventario & Stock Inteligente</div>
-          <div class="screen-header-purpose">Control total de existencias, márgenes de ganancia y reposición.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 3</div>
-      </div>
+          <div class="sub-tag">PANTALLA 4.2 · COBRANZA AMABLE Y EFECTIVA</div>
+          <h2 class="slide-title">Envía estados de cuenta por WhatsApp con QR en 1 clic.</h2>
+          <p class="slide-desc">
+            Cobra a tus clientes con respeto y profesionalismo sin pasar momentos de vergüenza en el mostrador:
+          </p>
 
-      <div class="screen-section-title">A. Catálogo Maestro y Ajuste Exprés</div>
-      <p class="screen-section-desc">Actualiza tu mercadería en 1 toque sin trámites engorrosos.</p>
-
-      <div class="feature-row">
-        <div class="feature-box accent">
-          <div class="feature-box-title">➕ Ajuste Rápido de Stock (+1, -1, +5, +10)</div>
-          <div class="feature-box-body">
-            ¿Llegó una paca de leche? Solo tocas <strong>+10</strong> sobre el producto en la lista y el stock se actualiza al instante en la web de los vecinos y en el POS.
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #34d399; font-size: 13.5px;">Mensaje Pre-redactado Amistoso</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">Genera un mensaje cordial con el resumen de la cuenta y el monto pendiente.</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #34d399; font-size: 13.5px;">Código QR de Pago Incluido</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">El cliente paga con su banca móvil desde su sillón sin tener que ir a tu tienda.</p>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px;">
+              <strong style="color: #34d399; font-size: 13.5px;">Registro de Abonos Parciales</strong>
+              <p style="color: #94a3b8; font-size: 11.5px; margin-top: 2px;">Si abona Bs 50 de una deuda de Bs 120, se actualiza el saldo en 1 clic a Bs 70.</p>
+            </div>
           </div>
         </div>
 
-        <div class="feature-box">
-          <div class="feature-box-title">📈 Control de Costo vs Precio (Margen)</div>
-          <div class="feature-box-body">
-            Registras el precio al que le compras al proveedor y el precio de venta al público. MarketSaaS calcula tu margen de ganancia porcentual automáticamente.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Alertas Visuales y Carga Masiva por Excel</div>
-      <p class="screen-section-desc">Ahorra semanas de trabajo administrativo con nuestras herramientas exclusivas.</p>
-
-      <div class="feature-row">
-        <div class="feature-box">
-          <div class="feature-box-title">🚨 Semáforo de Stock Crítico</div>
-          <div class="feature-box-body">
-            Badge amarillo cuando un producto baja de su stock mínimo de seguridad (ej. menos de 5 unidades) y badge rojo cuando se agotó. Sabes exactamente qué pedir antes de quedarte sin producto.
-          </div>
-        </div>
-
-        <div class="feature-box accent">
-          <div class="feature-box-title">📊 Importador Masivo Excel (.XLSX)</div>
-          <div class="feature-box-body">
-            Sube cientos de productos en 30 segundos con nuestra plantilla de Excel lista. Incluye catálogo semilla con los 50 productos más consumidos de Bolivia ya cargados.
-          </div>
-        </div>
-      </div>
-
-      <div class="value-callout">
-        <strong>💡 Eliminación de Pérdidas Ocultas:</strong> Los minimarkets que no controlan stock pierden entre un <strong>8% y un 12% de utilidades anuales</strong> por mercadería vencida, robos hormiga o quiebres de producto no detectados a tiempo.
-      </div>
-    </div>
-
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 3: Inventario y Stock</span>
-      <span>Página 4</span>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 5: PANTALLA 4 - LIBRETA DIGITAL DE FIADOS (CRÉDITOS)               -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 4 • Libreta de Fiados</span>
-    </div>
-
-    <div>
-      <div class="screen-header-banner">
         <div>
-          <div class="screen-header-title">Pantalla 4: Libreta Digital de Fiados</div>
-          <div class="screen-header-purpose">Modernización de las cuentas por cobrar vecinales sin perder dinero.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 4</div>
-      </div>
-
-      <div class="screen-section-title">A. Adiós al Cuaderno de Papel</div>
-      <p class="screen-section-desc">El fiado es el corazón de la fidelización del barrio, pero el papel genera pérdidas y peleas.</p>
-
-      <div class="feature-row">
-        <div class="feature-box accent">
-          <div class="feature-box-title">👥 Ficha por Cliente con WhatsApp</div>
-          <div class="feature-box-body">
-            Registras a tus caseros de confianza con su nombre, número de WhatsApp y dirección o referencia (ej. <em>"Doña Carmen - Casa 12"</em>). Visualizas su saldo deudor en color rojo destacado.
+          <div style="background: #111827; border: 1px solid #1f293d; border-radius: 16px; padding: 20px;">
+            <div style="font-family: var(--mono); font-size: 11px; color: #38bdf8; margin-bottom: 10px; font-weight: 800;">
+              MENSAJE GENERADO PARA EL VECINO
+            </div>
+            <div style="background: #032e24; border: 1px solid #065f46; border-radius: 10px; padding: 14px; font-family: var(--mono); font-size: 11.5px; color: #d1fae5; line-height: 1.5;">
+              Estimado(a) vecino(a) Juan Pérez 👋<br>
+              Le enviamos el resumen de su libreta en *Minimarket Doña Mary*:<br>
+              ────────────────────<br>
+              • 12/Oct: 2x Leche PIL (Bs. 14)<br>
+              • 14/Oct: 1x Aceite Fino (Bs. 13,50)<br>
+              ────────────────────<br>
+              💰 *Saldo pendiente: Bs. 27,50*<br>
+              Puede cancelarlo por QR bancario aquí:<br>
+              🔗 _marketsaas.vercel.app/qr/pago-2750_<br>
+              ¡Muchas gracias por su preferencia!
+            </div>
           </div>
         </div>
-
-        <div class="feature-box">
-          <div class="feature-box-title">📝 Registro Detallado de Compras</div>
-          <div class="feature-box-body">
-            Cada vez que fían, queda grabado el día, la hora exacta, qué productos se llevaron y el total sumado a su cuenta. Se acabaron los reclamos de <em>"yo no me llevé ese aceite"</em>.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Cobro Amable por WhatsApp y Amortizaciones</div>
-      <p class="screen-section-desc">Recupera tu capital de trabajo de forma diplomática y profesional.</p>
-
-      <div class="feature-row">
-        <div class="feature-box">
-          <div class="feature-box-title">📲 Botón de Cobro Cordial por WhatsApp</div>
-          <div class="feature-box-body">
-            Con un toque, MarketSaaS redacta un mensaje respetuoso y claro con el saldo pendiente y el QR del banco para que el vecino pague desde su celular sin sentirse avergonzado.
-          </div>
-        </div>
-
-        <div class="feature-box accent">
-          <div class="feature-box-title">💵 Registro de Abonos y Liquidación</div>
-          <div class="feature-box-body">
-            Si Doña Carmen te abona Bs. 50 de una deuda de Bs. 120, registras el abono en 2 segundos y el sistema le envía un comprobante digital con su saldo restante actualizado a Bs. 70.
-          </div>
-        </div>
-      </div>
-
-      <div class="value-callout">
-        <strong>💡 Recuperación de Cartera:</strong> La libreta digital de MarketSaaS permite a los minimarkets <strong>recuperar hasta el 95% de cuentas por cobrar</strong> que antes se daban por perdidas debido a extravío del cuaderno o desidia del cliente.
       </div>
     </div>
 
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 4: Libreta de Fiados</span>
-      <span>Página 5</span>
-    </div>
-  </div>
+    <!-- PANTALLA 5.1: Directorio de Distribuidores y Proveedores -->
+    <div class="slide theme-light" id="slide-13">
+      <div>
+        <div class="sub-tag">PANTALLA 5.1 · DIRECTORIO DE PROVEEDORES</div>
+        <h2 class="slide-title">Organiza las visitas de preventistas y mayoristas.</h2>
+        <p class="slide-desc">
+          Nunca más te quedes sin stock porque se te olvidó qué día pasa el camión repartidor:
+        </p>
 
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 6: PANTALLA 5 - GESTIÓN DE PROVEEDORES & COMPRAS                   -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 5 • Proveedores & Compras</span>
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>🚚 Agenda Semanal de Visitas</h4>
+            <p>Registra qué días te visita PIL (martes/viernes), Coca-Cola (lunes), Cervecería (jueves), etc.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📞 Contactos de Preventistas</h4>
+            <p>Teléfonos directos de cada vendedor mayorista y condiciones de compra por paquete o fardo.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📝 Registro de Facturas y Notas</h4>
+            <p>Control de notas de entrega y facturas de compras para verificar aumentos de precios.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px;">
+          <h4 style="color: #0f172a; font-size: 14px; margin-bottom: 4px;">Poder de Negociación con Mayoristas</h4>
+          <p style="color: #64748b; font-size: 12px;">
+            Al tener el historial exacto de compras, puedes solicitar mejores descuentos por volumen a tus distribuidores.
+          </p>
+        </div>
+      </div>
     </div>
 
-    <div>
-      <div class="screen-header-banner">
+    <!-- PANTALLA 5.2: Generador Automático de Lista de Compras -->
+    <div class="slide theme-light" id="slide-14">
+      <div>
+        <div class="sub-tag">PANTALLA 5.2 · REPOSICIÓN INTELIGENTE</div>
+        <h2 class="slide-title">Genera el pedido de mercadería en 1 clic según tu stock crítico.</h2>
+        <p class="slide-desc">
+          El sistema analiza tus productos agotados o en amarillo y redacta el pedido de compra automáticamente:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>🤖 Detección Automática de Quiebres</h4>
+            <p>Filtra todos los productos por debajo del stock mínimo con su cantidad sugerida de compra.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📲 Envío al WhatsApp del Preventista</h4>
+            <p>Con un clic, abre WhatsApp con la lista formateada: "Hola Juan (PIL), necesito: 3 fardos de leche...".</p>
+          </div>
+          <div class="feat-box">
+            <h4>⏳ Ahorro de 2 Horas Semanales</h4>
+            <p>No tienes que recorrer estante por estante con un papelito anotando lo que falta antes de que llegue el camión.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 20px;">
+          <span style="color: #065f46; font-size: 13px; font-weight: 700;">
+            ✓ Eficiencia garantizada: Tu dinero solo se invierte en mercadería que realmente rota y no en productos estancados.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 6.1: Arqueo y Cuadre de Turno de Caja -->
+    <div class="slide theme-dark" id="slide-15">
+      <div>
+        <div class="sub-tag">PANTALLA 6.1 · CONTROL DE CAJA DIARIO</div>
+        <h2 class="slide-title">Cierre de caja transparente por método de cobro.</h2>
+        <p class="slide-desc">
+          Control absoluto del dinero al terminar el día o al cambiar de turno de cajero:
+        </p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>MÉTODO DE COBRO</th>
+              <th>TRANSACCIONES</th>
+              <th>MONTO REGISTRADO</th>
+              <th>ESTADO EN CAJA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>💵 Efectivo en Gaveta</td>
+              <td>42 ventas</td>
+              <td><strong style="color: #fff; font-family: var(--mono);">Bs. 1.250,00</strong></td>
+              <td><span style="color: #34d399;">Cuadre Exacto ✓</span></td>
+            </tr>
+            <tr>
+              <td>📱 Cobros QR Simple Bancario</td>
+              <td>18 ventas</td>
+              <td><strong style="color: #fff; font-family: var(--mono);">Bs. 590,50</strong></td>
+              <td><span style="color: #34d399;">Directo en Banco BNB ✓</span></td>
+            </tr>
+            <tr>
+              <td>📖 Cuentas Fiadas del Día</td>
+              <td>6 operaciones</td>
+              <td><strong style="color: #f59e0b; font-family: var(--mono);">Bs. 145,00</strong></td>
+              <td><span style="color: #f59e0b;">En Libreta Digital</span></td>
+            </tr>
+            <tr style="background: rgba(255, 255, 255, 0.05);">
+              <td><strong>TOTAL VENTAS TURNO</strong></td>
+              <td><strong>66 operaciones</strong></td>
+              <td><strong style="color: #34d399; font-size: 14px; font-family: var(--mono);">Bs. 1.985,50</strong></td>
+              <td><strong style="color: #38bdf8;">Caja Cerrada sin Fugas</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="margin-top: 18px; padding: 12px 18px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; font-size: 12.5px; color: #bae6fd;">
+          🔒 <strong>Seguridad para el dueño:</strong> Si contratas personal o te ayudan familiares, el sistema evita extravíos involuntarios de dinero.
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 6.2: Reportes de Ganancias & Analítica -->
+    <div class="slide theme-light" id="slide-16">
+      <div>
+        <div class="sub-tag">PANTALLA 6.2 · ANALÍTICA FINANCIERA</div>
+        <h2 class="slide-title">Conoce tus ganancias netas reales y qué productos rotan más.</h2>
+        <p class="slide-desc">
+          Toma decisiones basadas en datos reales y no en suposiciones de memoria:
+        </p>
+
+        <div class="cards-grid-3">
+          <div class="feat-box">
+            <h4>📈 Margen Neto Acumulado</h4>
+            <p>Diferencia entre ingresos por ventas y costo de mercadería vendida para ver tu ganancia real en el bolsillo.</p>
+          </div>
+          <div class="feat-box">
+            <h4>🏆 Top 10 Productos Estrella</h4>
+            <p>Descubre qué artículos generan el 80% de tus ingresos para asegurar que nunca falten en estantería.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📄 Exportación a PDF y Excel</h4>
+            <p>Descarga resúmenes mensuales limpios para tu contabilidad o para planificar compras de fin de año.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px 20px;">
+          <span style="color: #15803d; font-size: 13px; font-weight: 700;">
+            ✓ Crecimiento predecible: Sabrás exactamente qué días vendes más y qué promociones funcionan mejor en tu barrio.
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANTALLA 7: Configuración del Comercio -->
+    <div class="slide theme-dark" id="slide-17">
+      <div>
+        <div class="sub-tag">PANTALLA 7 · CONFIGURACIÓN Y OPERACIONES</div>
+        <h2 class="slide-title">Tu marca, tus horarios y el control total de tu cuenta.</h2>
+        <p class="slide-desc">
+          Personaliza MarketSaaS para que refleje la identidad y el estilo propio de tu minimarket:
+        </p>
+
+        <div class="cards-grid-4">
+          <div class="feat-box">
+            <h4>🎨 Nombre y Logo</h4>
+            <p>Configura el nombre comercial de tu minimarket, colores de marca y logotipo para la cabecera del catálogo.</p>
+          </div>
+          <div class="feat-box">
+            <h4>📍 Cobertura y Delivery</h4>
+            <p>Define tu tarifa base de envío, kilómetros de entrega a la redonda y barrios con atención especial.</p>
+          </div>
+          <div class="feat-box">
+            <h4>👥 Roles de Usuario</h4>
+            <p>Crea accesos separados para cajeros o ayudantes restringiendo el acceso a balances financieros privados.</p>
+          </div>
+          <div class="feat-box">
+            <h4>💳 Conexión de QR Bancario</h4>
+            <p>Actualiza la imagen o credenciales del QR de tu banco en cualquier momento con un clic.</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 22px; padding: 12px 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; font-size: 12.5px; color: #cbd5e1;">
+          🇧🇴 <strong>Soporte prioritario boliviano:</strong> Cambios de configuración o dudas atendidas de inmediato por WhatsApp (+591 72125280).
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 18: Resumen y Activación -->
+    <div class="slide theme-dark" id="slide-18">
+      <div class="grid-2">
         <div>
-          <div class="screen-header-title">Pantalla 5: Agenda & Pedidos a Proveedores</div>
-          <div class="screen-header-purpose">Planificación de abastecimiento y comunicación directa con preventistas.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 5</div>
-      </div>
-
-      <div class="screen-section-title">A. Directorio Centralizado de Mayoristas</div>
-      <p class="screen-section-desc">Todos los teléfonos, empresas y días de visita ordenados en un solo lugar.</p>
-
-      <div class="feature-row">
-        <div class="feature-box">
-          <div class="feature-box-title">🏢 Ficha de Distribuidor por Categoría</div>
-          <div class="feature-box-body">
-            Guarda tus contactos clave de Pil Andina, Coca-Cola, Embol, Arcor, Guabirá, Fino y distribuidores locales con nombre del preventista, teléfono y monto mínimo de pedido.
+          <div class="sub-tag">TRANSFORMACIÓN TOTAL DEL COMERCIO</div>
+          <h2 class="slide-title">Toma el control de tu minimarket hoy mismo.</h2>
+          <p class="slide-desc">
+            Deja atrás el cuaderno arrugado, los cálculos manuales y las ventas que se pierden de noche. Moderniza tu negocio con el sistema que ya usan los comercios líderes de barrio.
+          </p>
+          <div class="badges-row">
+            <span class="badge-pill highlight">✨ 15 Días de Prueba Gratis</span>
+            <span class="badge-pill">🔒 Sin Contrato Forzoso</span>
+            <span class="badge-pill">📱 Asistencia en Español</span>
+          </div>
+          <div style="display: flex; gap: 14px; margin-top: 18px; flex-wrap: wrap;">
+            <a href="https://wa.me/59172125280?text=Hola%2C%20quiero%20activar%20el%20sistema%20MarketSaaS%20para%20mi%20minimarket" target="_blank" style="background: #10b981; color: #064e3b; padding: 14px 28px; border-radius: 9999px; text-decoration: none; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+              📲 Contactar Asesor por WhatsApp
+            </a>
+            <a href="https://marketsaas.vercel.app" target="_blank" style="border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; padding: 14px 24px; border-radius: 9999px; text-decoration: none; font-weight: 700; font-size: 14px;">
+              🌐 Explorar Sistema en Vivo
+            </a>
           </div>
         </div>
 
-        <div class="feature-box accent">
-          <div class="feature-box-title">🗓️ Calendario de Días de Visita</div>
-          <div class="feature-box-body">
-            Configuras qué días pasa cada camión (ej. Lácteos los martes y viernes, Bebidas los miércoles). El sistema te recuerda preparar el pedido el día anterior.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Generador Automático de Pedidos por WhatsApp</div>
-      <p class="screen-section-desc">Abastece exactamente lo que te hace falta sin perder tiempo revisando estantes.</p>
-
-      <div class="module-box highlight">
-        <div class="module-content">
-          <strong>¿Cómo funciona la Inteligencia de Reposición de MarketSaaS?</strong>
-          <ul class="subfeatures-list" style="margin-top: 6px;">
-            <li><strong>Cálculo Automático:</strong> El sistema identifica qué productos de esa marca están por debajo del stock mínimo.</li>
-            <li><strong>Generación de Mensaje:</strong> Redacta un pedido formal para el preventista: <em>"Buenas tardes, del Minimarket [Nombre] requerimos: 2 cajas de Leche Entera, 1 fardo de Refresco..."</em></li>
-            <li><strong>Envío Directo:</strong> Se abre WhatsApp con el preventista con la orden lista para enviar con 1 clic.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="value-callout">
-        <strong>💡 Ahorro de Tiempo y Dinero:</strong> Reduce el tiempo diario de hacer pedidos a mayoristas de 45 minutos a solo <strong>3 minutos</strong> y evita comprar productos que ya tenías acumulados en el almacén.
-      </div>
-    </div>
-
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 5: Proveedores</span>
-      <span>Página 6</span>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 7: PANTALLA 6 - REPORTES FINANCIEROS & ARQUEO DE CAJA               -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 6 • Reportes & Finanzas</span>
-    </div>
-
-    <div>
-      <div class="screen-header-banner">
         <div>
-          <div class="screen-header-title">Pantalla 6: Reportes Financieros & Arqueo</div>
-          <div class="screen-header-purpose">Claridad contable, conciliación de caja y auditoría del negocio.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 6</div>
-      </div>
-
-      <div class="screen-section-title">A. Desglose Financiero por Método de Cobro</div>
-      <p class="screen-section-desc">Sabe con exactitud matemática cuánto dinero ingresó en cada canal.</p>
-
-      <div class="feature-row">
-        <div class="feature-box accent">
-          <div class="feature-box-title">💵 Efectivo en Gaveta de Caja</div>
-          <div class="feature-box-body">
-            Muestra el total recaudado en billetes físicos restando los vueltos entregados para un arqueo de caja infalible al cerrar turno.
+          <div style="background: #131926; border: 1px solid #1f293d; border-radius: 20px; padding: 22px;">
+            <div style="font-family: var(--mono); font-size: 11px; color: #38bdf8; margin-bottom: 12px; font-weight: 800;">
+              LO QUE OBTIENES DESDE HOY
+            </div>
+            <ul style="list-style: none; font-size: 12.5px; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px;">
+              <li>✓ Tablero Kanban de Pedidos en Vivo con alerta sonora</li>
+              <li>✓ Punto de Venta POS de mostrador táctil ultra veloz</li>
+              <li>✓ Control de Stock en tiempo real con semáforo inteligente</li>
+              <li>✓ Libreta Digital de Fiados con cobro por WhatsApp y QR</li>
+              <li>✓ Generador de pedidos de compra a distribuidores</li>
+              <li>✓ Arqueo diario de caja y reportes de ganancias en Excel</li>
+              <li>✓ Catálogo digital PWA sin descargas para tus vecinos</li>
+            </ul>
           </div>
         </div>
-
-        <div class="feature-box">
-          <div class="feature-box-title">📱 Total Recaudado por QR Simple</div>
-          <div class="feature-box-body">
-            Monto acumulado en transferencias digitales para conciliar directamente con el extracto de tu aplicación bancaria.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Exportación Oficial a Excel (.XLSX) y PDF Membretado</div>
-      <p class="screen-section-desc">Toda tu información contable disponible en cualquier momento.</p>
-
-      <div class="feature-row">
-        <div class="feature-box">
-          <div class="feature-box-title">📊 Planilla Excel con Fórmulas y Estilos</div>
-          <div class="feature-box-body">
-            Descarga un reporte en Excel ordenado con fecha, hora, cliente, productos, canal (POS vs Online), método de pago y totales para entregar directamente a tu contador.
-          </div>
-        </div>
-
-        <div class="feature-box accent">
-          <div class="feature-box-title">📄 Reporte PDF Ejecutivo con Membrete</div>
-          <div class="feature-box-body">
-            Genera un documento PDF formal con el logotipo de tu minimarket, gráficos de ticket promedio y resumen ejecutivo listo para imprimir o guardar.
-          </div>
-        </div>
-      </div>
-
-      <div class="value-callout">
-        <strong>💡 Tranquilidad Total:</strong> Se acabaron los faltantes de caja a fin de mes. Sabes al centavo cuánto vendiste, qué porcentaje entró en efectivo y cuánto tienes en banco.
       </div>
     </div>
 
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 6: Finanzas y Reportes</span>
-      <span>Página 7</span>
-    </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- PÁGINA 8: PANTALLA 7 - MI SUSCRIPCIÓN & AJUSTES DEL COMERCIO              -->
-  <!-- ========================================================================= -->
-  <div class="page">
-    <div class="doc-header">
-      <img src="logoCompleto.png" alt="MarketSaaS" class="doc-header-logo">
-      <span class="doc-header-tag">Pantalla 7 • Ajustes & Suscripción</span>
-    </div>
-
-    <div>
-      <div class="screen-header-banner">
-        <div>
-          <div class="screen-header-title">Pantalla 7: Mi Suscripción & Ajustes</div>
-          <div class="screen-header-purpose">Control de licencia, planes y personalización de marca de la tienda.</div>
-        </div>
-        <div class="screen-header-num">PANTALLA 7</div>
-      </div>
-
-      <div class="screen-section-title">A. Control de Licencia y Canje de Códigos</div>
-      <p class="screen-section-desc">Gestión transparente de tu servicio sin ataduras ni sorpresas.</p>
-
-      <div class="feature-row">
-        <div class="feature-box accent">
-          <div class="feature-box-title">⏳ Contador de Tiempo en Vivo</div>
-          <div class="feature-box-body">
-            Muestra con claridad cuántos días y horas te quedan de tu período de prueba o suscripción activa. Nunca te cortarán el servicio de golpe.
-          </div>
-        </div>
-
-        <div class="feature-box">
-          <div class="feature-box-title">🎟️ Canje de Códigos de Activación</div>
-          <div class="feature-box-body">
-            Al pagar tu mensualidad de Bs. 75, ingresas tu código de activación y el sistema te acredita inmediatamente tus 30 días de servicio con confeti en pantalla.
-          </div>
-        </div>
-      </div>
-
-      <div class="screen-section-title" style="margin-top: 14px;">B. Personalización Integral de la Tienda</div>
-      <p class="screen-section-desc">Tu minimarket con tu propia identidad y reglas comerciales.</p>
-
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Parámetro Configurable</th>
-            <th>Descripción de la Función</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Nombre, Slogan y Logo</strong></td>
-            <td>Coloca el nombre comercial de tu tienda, slogan del barrio y tu logotipo propio.</td>
-          </tr>
-          <tr>
-            <td><strong>Banner de Portada</strong></td>
-            <td>Elige entre fotos profesionales precargadas o sube la fachada real de tu local.</td>
-          </tr>
-          <tr>
-            <td><strong>WhatsApp de Pedidos</strong></td>
-            <td>El número al que entrarán todas las órdenes y solicitudes del vecindario.</td>
-          </tr>
-          <tr>
-            <td><strong>Horarios y Días de Atención</strong></td>
-            <td>Define los turnos de apertura (ej. Lunes a Sábado 07:00 a 22:00) para avisar si estás abierto o cerrado.</td>
-          </tr>
-          <tr>
-            <td><strong>Zonas y Condominios de Reparto</strong></td>
-            <td>Agrega condominios cercanos con su tarifa de entrega o radio en kilómetros.</td>
-          </tr>
-          <tr>
-            <td><strong>Modo Lluvia Manual</strong></td>
-            <td>Interruptor para activar el recargo de lluvia cuando el clima lo amerite.</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="value-callout">
-        <strong>💡 Conclusión:</strong> MarketSaaS no es solo una página web; es el **sistema operativo comercial definitivo** para que las tiendas de barrio crezcan, se ordenen y prosperen en la era digital.
-      </div>
-    </div>
-
-    <div class="doc-footer">
-      <span>MarketSaaS • Manual Operativo Vista Dueño</span>
-      <span>Pantalla 7: Ajustes y Conclusión</span>
-      <span>Página 8</span>
-    </div>
+  <!-- Barra de Navegación Flotante -->
+  <div class="deck-nav" id="deckNav">
+    <button onclick="prevSlide()">◀ Anterior</button>
+    <div class="slide-counter" id="slideCounter">1 / 18</div>
+    <button onclick="nextSlide()">Siguiente ▶</button>
+    <button class="btn-primary" onclick="window.print()">📥 Imprimir / Guardar PDF</button>
   </div>
 
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 18;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      currentSlide = index;
+
+      document.querySelectorAll('.slide').forEach((slide, idx) => {
+        if (idx + 1 === currentSlide) {
+          slide.classList.add('active');
+        } else {
+          slide.classList.remove('active');
+        }
+      });
+
+      const counter = document.getElementById('slideCounter');
+      if (counter) counter.innerText = `${currentSlide} / ${totalSlides}`;
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        showSlide(currentSlide - 1);
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        showSlide(currentSlide + 1);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      }
+    });
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const swipeDistance = touchEndX - touchStartX;
+      if (Math.abs(swipeDistance) > 40) {
+        if (swipeDistance < 0) {
+          nextSlide();
+        } else {
+          prevSlide();
+        }
+      }
+    }
+  </script>
 </body>
 </html>
