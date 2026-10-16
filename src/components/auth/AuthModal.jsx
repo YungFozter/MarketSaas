@@ -1230,8 +1230,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
                   <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 text-emerald-950 text-xs flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-bold block">¡Inicialización Inmediata!</span>
-                      <span>Tu tienda se creará lista para subir tus propios productos o importar tu inventario desde Excel.</span>
+                      <span className="font-bold block">¡15 Días de Prueba 100% Gratis!</span>
+                      <span>Tu tienda se creará con acceso completo sin costo por 15 días, lista para vender, cargar productos o importar inventario desde Excel.</span>
                     </div>
                   </div>
 
