@@ -298,14 +298,14 @@ export const Navbar = ({
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {viewMode === 'spectator' ? (
               <div className="flex items-center gap-1.5 sm:gap-2.5">
-                {/* Botón rápido Explorar Tienda Vecino en Navbar */}
+                {/* Botón rápido Explorar Tiendas en Navbar */}
                 <button
                   onClick={() => setViewMode('customer')}
                   className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-slate-100 hover:bg-emerald-50 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl border border-slate-200/90 transition-all cursor-pointer shadow-2xs group"
-                  title="Explorar catálogo y experiencia de compra"
+                  title="Explorar tiendas de barrio"
                 >
                   <ShoppingBag className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  <span>Ver Tienda Demo</span>
+                  <span>Explorar Tiendas</span>
                 </button>
 
                 {/* Botón Principal de Acceso Dueños */}
@@ -407,7 +407,7 @@ export const Navbar = ({
                 className="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-600 text-white text-left text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span>Explorar Tienda de Demostración</span>
+                <span>Explorar Tiendas</span>
               </button>
             ) : (
               <button
