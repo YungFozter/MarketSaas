@@ -132,6 +132,17 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       if (selectedLocation?.latitude) setClientLat(selectedLocation.latitude);
       if (selectedLocation?.longitude) setClientLng(selectedLocation.longitude);
       setFormErrors({ name: false, phone: false, address: false });
+
+      const originalBodyOverflow = document.body.style.overflow;
+      const originalHtmlOverflow = document.documentElement.style.overflow;
+
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.overflow = originalBodyOverflow;
+        document.documentElement.style.overflow = originalHtmlOverflow;
+      };
     }
   }, [isOpen, storedCustomerName, storedCustomerPhone, selectedLocation]);
 
@@ -398,9 +409,12 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto overscroll-contain"
+      onClick={onClose}
+    >
       <div 
-        className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col my-auto"
+        className="relative bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col my-auto overscroll-contain"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

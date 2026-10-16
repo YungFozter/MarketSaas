@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Trash2, 
@@ -38,6 +38,30 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
 
   const [couponInput, setCouponInput] = useState('');
 
+  // Bloqueo estricto del scroll de fondo en móvil y desktop
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const freeDeliveryThreshold = storeConfig?.freeDeliveryThreshold || 0;
@@ -46,18 +70,19 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   return (
-    <div className="fixed inset-0 z-[99999] overflow-hidden animate-fadeIn">
+    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-contain animate-fadeIn">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity touch-none"
         onClick={onClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
-        <div className="w-screen max-w-full sm:max-w-md bg-white shadow-2xl flex flex-col justify-between">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 overscroll-contain">
+        <div className="w-screen max-w-full sm:max-w-md bg-white shadow-2xl flex flex-col justify-between h-full overscroll-contain">
           
           {/* Header del Carrito */}
-          <div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50/70">
+          <div className="p-5 sm:p-6 border-b border-slate-100 bg-slate-50/70 select-none" onTouchMove={(e) => e.preventDefault()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 {storeConfig?.logoUrl ? (
@@ -109,7 +134,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
           </div>
 
           {/* Lista de Ítems */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-4">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12 text-slate-400">
                 <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mb-4 text-slate-300">
@@ -184,7 +209,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
 
           {/* Footer con Resumen y Checkout */}
           {cart.length > 0 && (
-            <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50/80 space-y-3">
+            <div className="p-5 sm:p-6 border-t border-slate-100 bg-slate-50/80 space-y-3" onTouchMove={(e) => e.stopPropagation()}>
               
               {/* Cupón aplicado */}
               {appliedCoupon ? (
