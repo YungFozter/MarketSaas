@@ -215,10 +215,10 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         </div>
       </div>
 
-      {/* Vista Previa Profesional del Horario de Hoy y Semana Completa */}
+      {/* Vista Previa Profesional del Horario de Hoy y Semana Completa (contraída por defecto) */}
       <CustomerStoreSchedule 
         storeConfig={storeConfig} 
-        initialExpanded={storeOpenStatus ? !storeOpenStatus.isOpen : false} 
+        initialExpanded={false} 
       />
 
       {/* Card / Banner de Horario de Envíos a Domicilio (Motodelivery) */}

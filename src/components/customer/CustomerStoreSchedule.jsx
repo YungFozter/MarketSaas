@@ -22,7 +22,8 @@ import {
 } from '../../utils/scheduleUtils';
 
 export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id = "store-schedule-section" }) => {
-  const [isExpanded, setIsExpanded] = useState(initialExpanded);
+  const [isCardExpanded, setIsCardExpanded] = useState(initialExpanded);
+  const [isWeeklyExpanded, setIsWeeklyExpanded] = useState(false);
 
   // Normalizar el horario semanal y calcular el estado en vivo
   const schedule = useMemo(() => {
@@ -58,7 +59,7 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
     <section 
       id={id}
       aria-label="Horario de atención de la tienda"
-      className="mb-6 w-full animate-fadeIn"
+      className="mb-4 w-full animate-fadeIn"
     >
       <div className={`relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-xs ${
         openStatus.isOpen 
@@ -73,38 +74,50 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
         }`} />
 
         {/* ========================================================================= */}
-        {/* 1. VISTA PREVIA COMPACTA DEL DÍA ACTUAL (Siempre visible al entrar)       */}
+        {/* 1. ENCABEZADO DE LA TARJETA (Interactiva: clic para abrir/cerrar)        */}
         {/* ========================================================================= */}
-        <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
-          {/* Bloque Izquierdo: Icono + Estado de Hoy + Horas */}
-          <div className="flex items-start gap-3.5 min-w-0">
+        <div 
+          onClick={() => setIsCardExpanded(prev => !prev)}
+          className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-slate-50/70 transition-colors"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsCardExpanded(prev => !prev);
+            }
+          }}
+          aria-expanded={isCardExpanded}
+        >
+          {/* Bloque Izquierdo: Icono + Título + Badge + Horas */}
+          <div className="flex items-center gap-3 min-w-0">
             {/* Ícono de reloj con pulso visual */}
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs relative mt-0.5 sm:mt-0 ${
+            <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs relative ${
               openStatus.isOpen 
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' 
                 : 'bg-amber-50 text-amber-800 border border-amber-300/80'
             }`}>
-              <Clock className="w-5 h-5 shrink-0" />
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               {/* Luz de pulso en vivo */}
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                   openStatus.isOpen ? 'bg-emerald-400' : 'bg-amber-400'
                 }`} />
-                <span className={`relative inline-flex rounded-full h-3 w-3 border-2 border-white ${
+                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 border-2 border-white ${
                   openStatus.isOpen ? 'bg-emerald-500' : 'bg-amber-500'
                 }`} />
               </span>
             </div>
 
             {/* Textos descriptivos */}
-            <div className="space-y-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs sm:text-sm font-black text-slate-900">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
                   Horario de Hoy ({openStatus.currentDayName})
                 </span>
 
                 {/* Badge de estado en tiempo real */}
-                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
+                <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wide border shadow-2xs ${
                   openStatus.isOpen
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                     : 'bg-amber-50 text-amber-900 border-amber-300'
@@ -114,18 +127,50 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
 
                 {/* Chip con la hora de apertura/cierre de hoy */}
                 {isTodayOpen && todayItem ? (
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200">
+                  <span className="font-mono text-[11px] sm:text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200 hidden xs:inline">
                     {todayItem.openTime} - {todayItem.closeTime}
                   </span>
                 ) : (
-                  <span className="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200">
+                  <span className="text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-200 hidden xs:inline">
                     Descanso
                   </span>
                 )}
               </div>
 
-              {/* Subtítulo dinámico con hora estimada de cambio de estado */}
-              <p className="text-xs text-slate-600 font-medium leading-relaxed truncate max-w-xl">
+              {/* Subtítulo visible cuando está contraído */}
+              {!isCardExpanded && openStatus.statusText && (
+                <p className="text-[11px] text-slate-500 font-medium truncate max-w-md hidden sm:block">
+                  {openStatus.statusText}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Bloque Derecho: Botón Desplegable con Chevron */}
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] text-slate-500 font-bold hidden md:inline">
+              {isCardExpanded ? 'Ocultar detalles' : 'Ver detalles'}
+            </span>
+            <div 
+              className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+                isCardExpanded 
+                  ? 'bg-slate-900 text-white border-slate-900 rotate-180 shadow-xs' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200/90 shadow-2xs'
+              }`}
+              title={isCardExpanded ? 'Contraer horario' : 'Expandir horario'}
+            >
+              <ChevronDown className="w-4 h-4 transition-transform duration-300" />
+            </div>
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 2. CONTENIDO EXPANDIBLE                                                   */}
+        {/* ========================================================================= */}
+        {isCardExpanded && (
+          <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-slate-100 animate-fadeIn space-y-3.5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 {openStatus.statusText}
                 {customMessage && !openStatus.isOpen && (
                   <span className="text-amber-900 font-bold block sm:inline sm:ml-1">
@@ -133,44 +178,39 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
                   </span>
                 )}
               </p>
-            </div>
-          </div>
 
-          {/* Bloque Derecho: Reloj Oficial Bolivia + Botón para Desplegar Horario Semanal */}
-          <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2.5 sm:pt-0 border-slate-100">
-            {/* Reloj Digital Bolivia */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white shadow-2xs font-mono text-xs font-bold" title="Hora oficial de Bolivia (UTC-4)">
-              <span className="text-amber-400 font-black">🇧🇴 {openStatus.currentBoliviaTime}</span>
-              <span className="text-[10px] text-slate-400 font-sans hidden sm:inline">UTC-4</span>
-            </div>
+              <div className="flex items-center gap-2 self-end sm:self-center shrink-0 w-full sm:w-auto justify-between sm:justify-end">
+                {/* Reloj Digital Bolivia */}
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 text-white shadow-2xs font-mono text-[11px] font-bold" title="Hora oficial de Bolivia (UTC-4)">
+                  <span className="text-amber-400 font-black">🇧🇴 {openStatus.currentBoliviaTime}</span>
+                  <span className="text-[10px] text-slate-400 font-sans hidden sm:inline">UTC-4</span>
+                </div>
 
-            {/* Botón Interactivo para Desplegar/Ocultar Horario Semanal */}
-            <button
-              type="button"
-              onClick={() => setIsExpanded(prev => !prev)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
-                isExpanded
-                  ? 'bg-slate-900 text-white hover:bg-slate-800'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/90'
-              }`}
-              title={isExpanded ? 'Ocultar cronograma semanal' : 'Ver todos los días y horas de la semana'}
-              aria-expanded={isExpanded}
-            >
-              <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{isExpanded ? 'Ocultar Horarios' : 'Horario Semanal'}</span>
-              {isExpanded ? (
-                <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
-              )}
-            </button>
-          </div>
-        </div>
+                {/* Botón Interactivo para Desplegar/Ocultar Horario Semanal */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsWeeklyExpanded(prev => !prev);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs active:scale-95 ${
+                    isWeeklyExpanded
+                      ? 'bg-slate-900 text-white hover:bg-slate-800'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/90'
+                  }`}
+                  aria-expanded={isWeeklyExpanded}
+                >
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{isWeeklyExpanded ? 'Ocultar Horarios' : 'Horario Semanal'}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isWeeklyExpanded ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            </div>
 
         {/* ========================================================================= */}
         {/* 2. DESGLOSE COMPLETO DE LA SEMANA (Lunes a Domingo - Elegante y Fluido)   */}
         {/* ========================================================================= */}
-        {isExpanded && (
+        {isWeeklyExpanded && (
           <div className="px-4 pb-5 sm:px-6 sm:pb-6 pt-1 border-t border-slate-100/90 animate-fadeIn space-y-4">
             {/* Header del Desglose */}
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
@@ -322,6 +362,8 @@ export const CustomerStoreSchedule = ({ storeConfig, initialExpanded = false, id
           </div>
         )}
       </div>
-    </section>
-  );
+    )}
+  </div>
+</section>
+);
 };

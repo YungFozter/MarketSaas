@@ -1,12 +1,14 @@
-import React from 'react';
-import { Bike, Clock, Sparkles, CheckCircle2, AlertCircle, Info, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bike, Clock, Sparkles, CheckCircle2, AlertCircle, Info, Calendar, ChevronDown } from 'lucide-react';
 import { calculateDeliveryScheduleStatus, normalizeDeliverySchedule } from '../../utils/scheduleUtils';
 
 export const CustomerDeliveryScheduleCard = ({ 
   storeConfig, 
   variant = 'card', // 'card' | 'banner' | 'checkout' | 'compact'
-  className = '' 
+  className = '',
+  initialExpanded = false
 }) => {
+  const [isCardExpanded, setIsCardExpanded] = useState(initialExpanded);
   const isDeliveryEnabled = storeConfig?.enableDelivery !== false;
   if (!isDeliveryEnabled) return null;
 
@@ -100,7 +102,7 @@ export const CustomerDeliveryScheduleCard = ({
 
   // Variante: 'card' (tarjeta o banner dentro de CustomerHome / Vista Vecino)
   return (
-    <div className={`relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-xs mb-6 ${
+    <div className={`relative overflow-hidden rounded-3xl border transition-all duration-300 shadow-xs mb-4 ${
       status.isCurrentlyDelivering 
         ? 'bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-white border-emerald-200/90' 
         : 'bg-gradient-to-r from-amber-50/90 via-orange-50/60 to-white border-amber-200/90'
@@ -112,32 +114,45 @@ export const CustomerDeliveryScheduleCard = ({
           : 'bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500'
       }`} />
 
-      <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Lado izquierdo: Ícono + Título + Horario */}
-        <div className="flex items-start gap-3.5 min-w-0">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs relative mt-0.5 sm:mt-0 ${
+      {/* Encabezado compacto (clic para abrir/cerrar) */}
+      <div 
+        onClick={() => setIsCardExpanded(prev => !prev)}
+        className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-white/40 transition-colors"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsCardExpanded(prev => !prev);
+          }
+        }}
+        aria-expanded={isCardExpanded}
+      >
+        {/* Lado izquierdo: Ícono + Título + Badge + Mínimo */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs relative ${
             status.isCurrentlyDelivering 
               ? 'bg-emerald-600 text-white shadow-emerald-600/20' 
               : 'bg-amber-500 text-white shadow-amber-500/20'
           }`}>
-            <Bike className="w-5 h-5 shrink-0" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <Bike className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                 status.isCurrentlyDelivering ? 'bg-emerald-400' : 'bg-amber-400'
               }`} />
-              <span className={`relative inline-flex rounded-full h-3 w-3 border-2 border-white ${
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 border-2 border-white ${
                 status.isCurrentlyDelivering ? 'bg-emerald-500' : 'bg-amber-500'
               }`} />
             </span>
           </div>
 
-          <div className="space-y-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
-                <span>Horario de Envíos a Domicilio</span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-900 truncate">
+                Horario de Envíos a Domicilio
               </span>
 
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide border ${
+              <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wide border ${
                 status.isCurrentlyDelivering 
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
                   : 'bg-amber-100 text-amber-800 border-amber-300'
@@ -146,49 +161,82 @@ export const CustomerDeliveryScheduleCard = ({
               </span>
 
               {minDelivery > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-slate-700 border border-slate-200">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-slate-700 border border-slate-200 hidden xs:inline">
                   Mínimo: {currency} {minDelivery.toFixed(2)}
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-700 pt-0.5">
-              <span className="font-extrabold text-slate-900 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>{status.daysText}:</span>
-              </span>
-              <span className="font-black text-emerald-800 bg-white/90 px-2 py-0.5 rounded-lg border border-slate-200/80 shadow-2xs flex items-center gap-1">
-                <Clock className="w-3 h-3 text-emerald-600" />
-                <span>{status.timeText}</span>
-              </span>
-            </div>
-
-            {status.nextDeliveryHint && (
-              <p className="text-[11px] text-slate-600 font-semibold pt-0.5">
-                🛵 {status.nextDeliveryHint}
-              </p>
-            )}
-
-            {status.note && (
-              <p className="text-[11px] text-slate-500 italic">
-                * {status.note}
+            {/* Hint rápido cuando está contraído */}
+            {!isCardExpanded && (
+              <p className="text-[11px] text-slate-600 font-medium truncate max-w-md hidden sm:block">
+                {status.daysText}: {status.timeText}
               </p>
             )}
           </div>
         </div>
 
-        {/* Lado derecho: Píldora de cobertura rápida */}
-        <div className="flex items-center gap-2 shrink-0 md:self-center border-t md:border-t-0 pt-2.5 md:pt-0 border-slate-200/60">
-          <div className="text-right hidden sm:block">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">Cobertura</span>
-            <span className="text-xs font-black text-slate-800">0 a 18 Km en Moto</span>
-          </div>
-          <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs font-bold text-slate-800 shadow-2xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span>Motodelivery Activo</span>
+        {/* Lado derecho: Botón Chevron interactivo */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[11px] text-slate-500 font-bold hidden md:inline">
+            {isCardExpanded ? 'Ocultar turnos' : 'Ver turnos'}
+          </span>
+          <div 
+            className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all duration-300 ${
+              isCardExpanded 
+                ? 'bg-slate-900 text-white border-slate-900 rotate-180 shadow-xs' 
+                : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200/90 shadow-2xs'
+            }`}
+            title={isCardExpanded ? 'Contraer horario de envíos' : 'Expandir horario de envíos'}
+          >
+            <ChevronDown className="w-4 h-4 transition-transform duration-300" />
           </div>
         </div>
       </div>
+
+      {/* Contenido expandible */}
+      {isCardExpanded && (
+        <div className="px-4 pb-4 sm:px-5 sm:pb-5 pt-2 border-t border-slate-200/60 animate-fadeIn space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-700">
+                <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{status.daysText}:</span>
+                </span>
+                <span className="font-black text-emerald-800 bg-white/90 px-2 py-0.5 rounded-lg border border-slate-200/80 shadow-2xs flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-emerald-600" />
+                  <span>{status.timeText}</span>
+                </span>
+              </div>
+
+              {status.nextDeliveryHint && (
+                <p className="text-[11px] text-slate-600 font-semibold pt-0.5">
+                  🛵 {status.nextDeliveryHint}
+                </p>
+              )}
+
+              {status.note && (
+                <p className="text-[11px] text-slate-500 italic">
+                  * {status.note}
+                </p>
+              )}
+            </div>
+
+            {/* Píldora de cobertura rápida */}
+            <div className="flex items-center gap-2 shrink-0 md:self-center border-t md:border-t-0 pt-2 md:pt-0 border-slate-200/60">
+              <div className="text-right hidden sm:block">
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Cobertura</span>
+                <span className="text-xs font-black text-slate-800">0 a 18 Km en Moto</span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs font-bold text-slate-800 shadow-2xs flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span>Motodelivery Activo</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
