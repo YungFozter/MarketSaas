@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
+  Store,
   Settings, 
   Save, 
   Plus, 
@@ -909,7 +910,70 @@ export const StoreSettings = () => {
         </button>
       </div>
 
-      {/* SECCIÓN PRINCIPAL: Grid 2 Columnas Balanceado en PC */}
+      {/* SECCIÓN 1: Información Básica & Autenticación de Dueño (Ancho Completo al Inicio) */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+        <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2 pb-1 border-b border-slate-100">
+          <Store className="w-4 h-4 text-emerald-600" />
+          <span>Información Básica & Autenticación de Dueño</span>
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-2">
+            <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Tienda / Local *</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-emerald-500"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="text-xs font-bold text-slate-700 block mb-1">Eslogan / Subtítulo</label>
+            <input
+              type="text"
+              value={form.tagline}
+              onChange={(e) => setForm(prev => ({ ...prev, tagline: e.target.value }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-emerald-500"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="text-xs font-bold text-slate-700 block mb-1">Moneda del Sistema</label>
+            <input
+              type="text"
+              disabled
+              value="Bolivianos (Bs.)"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-600 cursor-not-allowed"
+            />
+          </div>
+
+          <div className="lg:col-span-2">
+            <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp de Pedidos</label>
+            <input
+              type="text"
+              value={form.phone}
+              onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value, whatsapp: e.target.value.replace(/[^0-9]/g, '') }))}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white focus:outline-emerald-500"
+            />
+          </div>
+
+          <div className="col-span-full p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-950">Acceso y Credenciales Protegidas</h4>
+              <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                El acceso a tu panel de comerciante está blindado mediante <strong>Supabase Auth</strong> con encriptación de grado bancario. Para cambiar tu contraseña de acceso, utiliza el enlace seguro desde la pantalla de inicio de sesión.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SECCIÓN 2: Grid 2 Columnas Balanceado en PC */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* COLUMNA IZQUIERDA: Identidad Visual, QR de Cobro & Cupones de Descuento */}
         <div className="space-y-6">
@@ -1302,14 +1366,14 @@ export const StoreSettings = () => {
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: Información Básica, Delivery & Horarios */}
+        {/* COLUMNA DERECHA: Recepción de Pedidos, Delivery & Horarios */}
         <div className="space-y-6">
-          {/* Card 2: Estado del Local & Datos Generales */}
+          {/* Card 2: Recepción de Pedidos & Horarios de Delivery */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
             <div className="space-y-4">
               <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                 <Power className="w-4 h-4 text-emerald-600" />
-                <span>Información Básica & Autenticación de Dueño</span>
+                <span>Recepción de Pedidos & Horarios de Delivery</span>
               </h3>
 
         {/* Estado en Vivo de la Tienda */}
@@ -1890,61 +1954,6 @@ export const StoreSettings = () => {
                   variant="checkout" 
                 />
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Nombre de la Tienda / Local *</label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Eslogan / Subtítulo</label>
-            <input
-              type="text"
-              value={form.tagline}
-              onChange={(e) => setForm(prev => ({ ...prev, tagline: e.target.value }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Moneda del Sistema</label>
-            <input
-              type="text"
-              disabled
-              value="Bolivianos (Bs.)"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-600 cursor-not-allowed"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold text-slate-700 block mb-1">Teléfono / WhatsApp de Pedidos</label>
-            <input
-              type="text"
-              value={form.phone}
-              onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value, whatsapp: e.target.value.replace(/[^0-9]/g, '') }))}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium bg-white"
-            />
-          </div>
-
-          <div className="sm:col-span-2 p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80 flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-              <Lock className="w-4 h-4" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-emerald-950">Acceso y Credenciales Protegidas</h4>
-              <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
-                El acceso a tu panel de comerciante está blindado mediante <strong>Supabase Auth</strong> con encriptación de grado bancario. Para cambiar tu contraseña de acceso, utiliza el enlace seguro desde la pantalla de inicio de sesión.
-              </p>
             </div>
           </div>
         </div>
