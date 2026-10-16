@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Zap, 
+  Clock, 
   PiggyBank, 
   MessageSquare, 
-  Sparkles, 
   Layers, 
   PlusCircle, 
   Building2, 
-  ShieldCheck, 
+  QrCode, 
   ChevronLeft, 
   ChevronRight,
   Tag
@@ -17,13 +16,13 @@ import './SpectatorCarousel.css';
 const SYSTEM_FEATURES = [
   {
     id: 'delivery',
-    icon: Zap,
+    icon: Clock,
     color: 'emerald',
-    badge: 'HIPERLOCAL',
-    title: 'Entregas en 15 a 30 min',
-    subtitle: 'Directo a tu torre o puerta',
-    description: 'Olvídate de esperas interminables. Tus compras cotidianas van desde el minimarket del vecindario directo a conserjería o ascensor en tiempo récord.',
-    stat: '⚡ 15 min tiempo estimado'
+    badge: 'LOGÍSTICA BARRIAL',
+    title: 'Envíos por Turnos y Retiro Local',
+    subtitle: 'Despachos coordinados a tu puerta',
+    description: 'Recibe tus compras en las franjas horarias configuradas por tu tienda de confianza o retira directamente en el local sin demoras ni filas.',
+    stat: '🛵 Entregas programadas y retiro en tienda'
   },
   {
     id: 'margin',
@@ -42,7 +41,7 @@ const SYSTEM_FEATURES = [
     badge: 'CONVERSIÓN',
     title: 'Compras por WhatsApp',
     subtitle: 'Confirmación en un toque',
-    description: 'El carrito de compras genera un mensaje estructurado con emojis, torre, depto y desglose de productos para pedir al instante sin descargar apps.',
+    description: 'El carrito de compras genera un mensaje estructurado con emojis, dirección y desglose de productos para pedir al instante sin descargar apps.',
     stat: '📱 Directo al chat del comerciante'
   },
   {
@@ -86,14 +85,14 @@ const SYSTEM_FEATURES = [
     stat: '🏢 Datos y marcas 100% aislados'
   },
   {
-    id: 'security',
-    icon: ShieldCheck,
+    id: 'payments',
+    icon: QrCode,
     color: 'teal',
-    badge: 'SEGURIDAD',
-    title: 'Tranquilidad en el Edificio',
-    subtitle: 'Menos tránsito foráneo',
-    description: 'Reduce el ingreso de repartidores desconocidos en los pasillos mediante entregas coordinadas por personal conocido de la zona o conserjería.',
-    stat: '🛡️ -68% tránsito vehicular foráneo'
+    badge: 'PAGOS FÁCILES',
+    title: 'QR Simple, Efectivo y Tarjeta',
+    subtitle: 'Cobros y pagos directos',
+    description: 'Paga de forma fácil y segura con código QR Simple interoperable, tarjeta física o efectivo al recibir tus compras, sin comisiones bancarias.',
+    stat: '💳 QR Simple, Efectivo y Tarjeta POS'
   }
 ];
 

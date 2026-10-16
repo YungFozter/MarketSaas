@@ -421,7 +421,7 @@ export const SpectatorShowcase = ({
                     <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                     <div className="text-[10px]">
                       <span className="font-bold text-amber-900 block uppercase">Despacho Vecinal Prioritario</span>
-                      <span className="text-slate-600">Llega directo a conserjería con sello de entrega.</span>
+                      <span className="text-slate-600">Llega directo a tu puerta con sello de entrega.</span>
                     </div>
                   </div>
 
