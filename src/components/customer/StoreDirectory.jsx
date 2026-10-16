@@ -307,12 +307,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
       {/* 1. SECCIÓN SUPERIOR: TÍTULO Y SUBTÍTULO */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-4">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-extrabold uppercase tracking-wider border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Red Hiperlocal Activa
-            </span>
-
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             {/* Botón PWA para Instalar la App */}
             <button
               type="button"
@@ -335,13 +330,11 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
 
       {/* 2. SECCIÓN HERO: BARRA DE BÚSQUEDA Y GOOGLE MAPS INTERACTIVO */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
-        {/* Barra de Búsqueda y Filtros Rápidos */}
+        {/* Barra de Búsqueda */}
         <div className="mb-4 sm:mb-5">
           <StoreSearchBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            activeFilters={activeFilters}
-            onToggleFilter={handleToggleFilter}
             onSearchSubmit={handleSearchSubmit}
           />
         </div>
@@ -440,10 +433,10 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               <Store className="w-8 h-8" />
             </div>
             <h3 className="text-lg font-bold text-slate-900 mb-1">
-              No se encontraron minimarkets con los filtros actuales
+              No se encontraron minimarkets para tu búsqueda
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-              Prueba cambiando los términos de búsqueda o desactivando algunos de los filtros rápidos.
+              Prueba cambiando o simplificando los términos de búsqueda.
             </p>
             <button
               type="button"
@@ -458,7 +451,7 @@ export const StoreDirectory = ({ onSelectStore, onOpenAuthModal }) => {
               }}
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
             >
-              Restablecer Filtros
+              Limpiar Búsqueda
             </button>
           </div>
         ) : (

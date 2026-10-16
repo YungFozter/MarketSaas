@@ -1,53 +1,12 @@
 import React from 'react';
-import { 
-  Search, 
-  ArrowRight, 
-  QrCode, 
-  CheckCircle2,
-  Store,
-  MapPin
-} from 'lucide-react';
+import { Search, ArrowRight } from 'lucide-react';
 import './StoreSearchBar.css';
 
 export const StoreSearchBar = ({
   searchQuery,
   setSearchQuery,
-  activeFilters,
-  onToggleFilter,
   onSearchSubmit
 }) => {
-  const filterPills = [
-    {
-      id: 'openNow',
-      label: 'Abiertas Ahora',
-      icon: null,
-      pulse: true,
-      activeClass: 'filter-pill-active-emerald',
-      baseClass: 'filter-pill-emerald'
-    },
-    {
-      id: 'within5km',
-      label: 'Radio 3-5 km',
-      icon: <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />,
-      activeClass: 'filter-pill-active-emerald',
-      baseClass: 'filter-pill-glass'
-    },
-    {
-      id: 'registeredOnly',
-      label: 'Tiendas Registradas',
-      icon: <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />,
-      activeClass: 'filter-pill-active-emerald',
-      baseClass: 'filter-pill-glass'
-    },
-    {
-      id: 'acceptsQr',
-      label: 'Aceptan QR / Simple',
-      icon: <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />,
-      activeClass: 'filter-pill-active',
-      baseClass: 'filter-pill-glass'
-    }
-  ];
-
   return (
     <div className="store-search-container w-full max-w-4xl mx-auto flex flex-col gap-3 relative z-20">
       {/* Barra de Búsqueda Flotante Glassmórfica */}
@@ -84,33 +43,6 @@ export const StoreSearchBar = ({
           <span>Buscar Tiendas</span>
           <ArrowRight className="w-4 h-4" />
         </button>
-      </div>
-
-      {/* Riel Centrado de Filtros Rápidos (Pills) */}
-      <div className="w-full flex items-center justify-center">
-        <div className="flex items-center justify-center gap-2 sm:gap-2.5 flex-wrap py-0.5 px-1 select-none">
-          {filterPills.map((pill) => {
-            const isActive = !!activeFilters[pill.id];
-            return (
-              <button
-                key={pill.id}
-                type="button"
-                onClick={() => onToggleFilter(pill.id)}
-                className={`inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all cursor-pointer select-none shadow-xs whitespace-nowrap active:scale-95 ${
-                  isActive
-                    ? pill.activeClass
-                    : pill.baseClass
-                }`}
-              >
-                {pill.pulse && (
-                  <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-white' : 'bg-emerald-500'} animate-pulse`} />
-                )}
-                {pill.icon}
-                <span>{pill.label}</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
     </div>
   );
