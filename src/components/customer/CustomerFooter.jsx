@@ -3,7 +3,6 @@ import {
   MessageCircle,
   ShieldCheck,
   Sparkles,
-  ShoppingBag,
   HelpCircle,
   Banknote,
   QrCode,
@@ -47,18 +46,8 @@ export const CustomerFooter = ({ onOpenCart, onOpenRequests }) => {
           </div>
 
           {/* Accesos Rápidos para Vecinos */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {onOpenCart && (
-              <button
-                onClick={onOpenCart}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
-              >
-                <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Mi Canasta</span>
-              </button>
-            )}
-
-            {onOpenRequests && customerSubView === 'storefront' && (
+          {onOpenRequests && customerSubView === 'storefront' && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <button
                 onClick={onOpenRequests}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700/60 hover:text-white transition-colors cursor-pointer"
@@ -66,8 +55,8 @@ export const CustomerFooter = ({ onOpenCart, onOpenRequests }) => {
                 <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Pedir Producto</span>
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Línea Sutil para Comercios */}
