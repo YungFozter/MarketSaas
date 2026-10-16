@@ -132,22 +132,29 @@ export const getBoliviaTime = () => {
       sunday: 'sunday'
     };
 
+    const numHour = parseInt(hour, 10) || 0;
+    const numMinute = parseInt(minute, 10) || 0;
+
     return {
       dayKey: dayMap[weekdayStr] || 'monday',
       timeStr,
-      hour: parseInt(hour, 10),
-      minute: parseInt(minute, 10)
+      hour: numHour,
+      minute: numMinute,
+      totalMinutes: numHour * 60 + numMinute
     };
   } catch {
     const d = new Date();
     const dayKeys = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
+    const numH = d.getHours();
+    const numM = d.getMinutes();
     return {
       dayKey: dayKeys[d.getDay()] || 'monday',
       timeStr: `${hh}:${mm}`,
-      hour: d.getHours(),
-      minute: d.getMinutes()
+      hour: numH,
+      minute: numM,
+      totalMinutes: numH * 60 + numM
     };
   }
 };
@@ -418,7 +425,7 @@ export const calculateDeliveryScheduleStatus = (rawDeliverySchedule, storeConfig
   }
 
   const bolivia = getBoliviaTime();
-  const currentMinutes = bolivia.totalMinutes;
+  const currentMinutes = bolivia.totalMinutes ?? ((bolivia.hour ?? 0) * 60 + (bolivia.minute ?? 0));
 
   const toMins = (timeStr) => {
     if (!timeStr || typeof timeStr !== 'string') return 0;

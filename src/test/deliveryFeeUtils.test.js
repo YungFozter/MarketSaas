@@ -10,7 +10,8 @@ import {
 } from '../utils/deliveryFeeUtils.js';
 import {
   normalizeDeliverySchedule,
-  calculateDeliveryScheduleStatus
+  calculateDeliveryScheduleStatus,
+  getBoliviaTime
 } from '../utils/scheduleUtils.js';
 
 test('calculateDistanceKm calcula correctamente distancias reales con Haversine', () => {
@@ -186,4 +187,11 @@ test('normalizeDeliverySchedule y calculateDeliveryScheduleStatus gestionan turn
   assert.equal(statusPaused.isDeliveryActive, false);
   assert.equal(statusPaused.isCurrentlyDelivering, false);
   assert.equal(statusPaused.badgeText, 'Delivery Pausado');
+});
+
+test('getBoliviaTime retorna totalMinutes válido y permite evaluar turnos de delivery', () => {
+  const time = getBoliviaTime();
+  assert.equal(typeof time.totalMinutes, 'number', 'totalMinutes debe ser numérico');
+  assert.ok(time.totalMinutes >= 0 && time.totalMinutes < 1440, 'totalMinutes debe estar entre 0 y 1439');
+  assert.equal(time.totalMinutes, time.hour * 60 + time.minute);
 });
