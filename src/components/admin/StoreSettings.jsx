@@ -909,10 +909,12 @@ export const StoreSettings = () => {
         </button>
       </div>
 
-      {/* FILA 1: Personalización Visual & Información Básica (Lado a lado en PC) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* Card 1: Identidad Visual & Portadas */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5 flex flex-col justify-between">
+      {/* SECCIÓN PRINCIPAL: Grid 2 Columnas Balanceado en PC */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* COLUMNA IZQUIERDA: Identidad Visual, QR de Cobro & Cupones de Descuento */}
+        <div className="space-y-6">
+          {/* Card 1: Identidad Visual & Portadas */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-5">
           <div className="space-y-5">
             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-emerald-600" />
@@ -991,13 +993,324 @@ export const StoreSettings = () => {
       </div>
     </div>
 
-        {/* Card 2: Estado del Local & Datos Generales */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4 flex flex-col justify-between">
-          <div className="space-y-4">
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-              <Power className="w-4 h-4 text-emerald-600" />
-              <span>Información Básica & Autenticación de Dueño</span>
-            </h3>
+          {/* Card 4: Imagen del Código QR de Cobro */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-emerald-600" />
+                <span>Imagen del Código QR de Cobro</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
+              </p>
+            </div>
+
+            {/* Cargar Foto de QR con Compresión */}
+            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
+              <div className="flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-28 h-28 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
+                  {form.qrImageUrl ? (
+                    <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1.5" />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-center p-2">
+                      <QrCode className="w-8 h-8 text-amber-400 mb-1" />
+                      <span className="text-[10px] text-amber-700 font-bold">Sin Foto QR</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-2 w-full">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, 'qrImageUrl')}
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
+                  />
+                  <input
+                    type="url"
+                    placeholder="O pega una URL directa de la imagen del QR..."
+                    value={form.qrImageUrl || ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
+                    className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium focus:border-amber-400 focus:outline-hidden"
+                  />
+                  {form.qrImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, qrImageUrl: '' }))}
+                      className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                    >
+                      Quitar imagen de QR
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Kit Imprimible de Mostrador & Cartel QR */}
+            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+              <div>
+                <p className="text-xs font-bold text-slate-800">¿Quieres exhibir tu código QR en tu negocio?</p>
+                <p className="text-[11px] text-slate-500">Genera carteles para vitrina, carpa de mostrador y volantes listos para imprimir.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrintKitOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
+              >
+                <Printer className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Imprimir Carteles QR</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 5: Cupones de Descuento de la Tienda */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+            <div>
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-600" />
+                <span>Gestión de Cupones de Descuento</span>
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
+              </p>
+            </div>
+
+            {/* Modal / Panel de Edición de Cupón (cuando se edita uno existente) */}
+            {editingCoupon && (
+              <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300 space-y-3 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                    <Edit3 className="w-4 h-4 text-emerald-600" />
+                    <span>Editar Cupón: <code className="text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">{editingCoupon.code}</code></span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingCoupon(null)}
+                    className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                    title="Cerrar edición"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Código del Cupón</label>
+                    <input
+                      type="text"
+                      value={editingCoupon.code}
+                      onChange={(e) => setEditingCoupon(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                      className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-black uppercase bg-white focus:outline-hidden focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Monto de Descuento (Bs.)</label>
+                    <input
+                      type="number"
+                      step="0.50"
+                      min="0.50"
+                      value={editingCoupon.discount}
+                      onChange={(e) => setEditingCoupon(prev => ({ ...prev, discount: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-white border border-emerald-200">
+                    <div>
+                      <span className="text-xs font-bold text-slate-800 block">Disponibilidad del Cupón (1 solo uso):</span>
+                      <span className="text-[10px] text-slate-500">
+                        {editingCoupon.isUsed ? 'Figura como ya utilizado/canjeado por un cliente.' : 'Listo y disponible para ser canjeado 1 sola vez.'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCoupon(prev => ({ ...prev, isUsed: !prev.isUsed }))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                        editingCoupon.isUsed ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                      }`}
+                    >
+                      {editingCoupon.isUsed ? '✓ CANJEADO / USADO' : '● DISPONIBLE (1 USO)'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCoupon(null)}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveEditCoupon}
+                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Guardar Cambios de Cupón</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Lista de Cupones */}
+            <div className="space-y-2">
+              {(form.coupons || []).length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 font-medium">
+                  No tienes cupones de descuento activos actualmente.
+                </p>
+              ) : (
+                (form.coupons || []).map((c) => {
+                  const isUsed = !!c.isUsed || (c.usedCount && c.usedCount >= (c.maxUses || 1));
+                  return (
+                    <div 
+                      key={c.id} 
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border text-xs transition-all gap-3 ${
+                        isUsed 
+                          ? 'bg-slate-100/80 border-slate-200/90 text-slate-500' 
+                          : 'bg-amber-50/50 border-amber-200/80 text-slate-800 hover:bg-amber-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`font-black font-mono tracking-wider text-sm px-3 py-1 rounded-xl border shadow-2xs ${
+                          isUsed 
+                            ? 'bg-slate-200/90 text-slate-500 border-slate-300 line-through' 
+                            : 'bg-white text-amber-950 border-amber-200'
+                        }`}>
+                          {c.code}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-bold text-xs ${isUsed ? 'text-slate-600 line-through' : 'text-slate-800'}`}>
+                              {c.description || `Descuento directo de Bs. ${parseFloat(c.discount || 0).toFixed(2)}`}
+                            </span>
+                            {isUsed ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px]">
+                                ✓ CANJEADO / USADO {c.usedInOrder ? `(${c.usedInOrder})` : ''}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                                ● DISPONIBLE (1 solo uso)
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[11px] mt-0.5">
+                            <span className={isUsed ? 'text-slate-400 font-medium' : 'font-black text-emerald-700'}>
+                              Ahorro al cliente: -Bs. {parseFloat(c.discount || 0).toFixed(2)}
+                            </span>
+                            {c.usedAt && (
+                              <span className="text-slate-400 text-[10px]">
+                                • Usado el: {new Date(c.usedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 self-end sm:self-center">
+                        {/* Botón para Reactivar o Marcar Usado */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleCouponUsed(c.id)}
+                          className={`p-2 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 ${
+                            isUsed 
+                              ? 'text-emerald-700 hover:bg-emerald-100 bg-emerald-50' 
+                              : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                          }`}
+                          title={isUsed ? 'Reactivar cupón para 1 nuevo uso' : 'Marcar manualmente como usado'}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span className="text-[10px]">{isUsed ? 'Reactivar' : 'Marcar usado'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditCoupon(c)}
+                          className="p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
+                          title="Editar código y monto"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCoupon(c.id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Eliminar cupón"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Formulario para Crear Nuevo Cupón */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <p className="text-xs font-bold text-slate-800">Crear Nuevo Cupón de Descuento:</p>
+                  <p className="text-[11px] text-slate-500">Por seguridad cada cupón es de <strong>1 solo uso</strong>. Al completarse un pedido se marcará automáticamente como CANJEADO.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateCouponCode}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300/80 transition-colors cursor-pointer shrink-0"
+                  title="Generar automáticamente un código al azar"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>⚡ Autogenerar Código</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Código del Cupón</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. PROMO-742 o VECINO10"
+                    value={newCouponCode}
+                    onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white focus:outline-hidden focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-600 block mb-1">Monto de Descuento en Bs.</label>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="0.50"
+                    placeholder="Ej. 10.00"
+                    value={newCouponDiscount}
+                    onChange={(e) => setNewCouponDiscount(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAddCoupon}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Crear Cupón</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* COLUMNA DERECHA: Información Básica, Delivery & Horarios */}
+        <div className="space-y-6">
+          {/* Card 2: Estado del Local & Datos Generales */}
+          <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
+            <div className="space-y-4">
+              <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <Power className="w-4 h-4 text-emerald-600" />
+                <span>Información Básica & Autenticación de Dueño</span>
+              </h3>
 
         {/* Estado en Vivo de la Tienda */}
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1638,6 +1951,7 @@ export const StoreSettings = () => {
       </div>
     </div>
   </div>
+  </div>
 
 
       {/* FILA 2: Ubicación Física & Geolocalización en el Mapa (Ancho Completo) */}
@@ -1806,317 +2120,6 @@ export const StoreSettings = () => {
               }}
             />
           </div>
-        </div>
-      </div>
-    </div>
-
-      {/* FILA 3: Código QR de Cobro & Cupones de Descuento (Lado a lado en PC) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        {/* Card 4: Imagen del Código QR de Cobro */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-          <div>
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-              <QrCode className="w-4 h-4 text-emerald-600" />
-              <span>Imagen del Código QR de Cobro</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Sube la imagen de tu código QR (Simple QR o entidad bancaria). Tus clientes podrán escanearlo y transferir directamente al pagar su pedido.
-            </p>
-          </div>
-
-          {/* Cargar Foto de QR con Compresión */}
-          <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-28 h-28 rounded-2xl bg-white border-2 border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-sm">
-                {form.qrImageUrl ? (
-                  <img src={form.qrImageUrl} alt="QR Cobro" className="w-full h-full object-contain p-1.5" />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-2">
-                    <QrCode className="w-8 h-8 text-amber-400 mb-1" />
-                    <span className="text-[10px] text-amber-700 font-bold">Sin Foto QR</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 space-y-2 w-full">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'qrImageUrl')}
-                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 cursor-pointer"
-                />
-                <input
-                  type="url"
-                  placeholder="O pega una URL directa de la imagen del QR..."
-                  value={form.qrImageUrl || ''}
-                  onChange={(e) => setForm(prev => ({ ...prev, qrImageUrl: e.target.value }))}
-                  className="w-full px-3.5 py-2 rounded-xl border border-amber-200 text-xs bg-white font-medium focus:border-amber-400 focus:outline-hidden"
-                />
-                {form.qrImageUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setForm(prev => ({ ...prev, qrImageUrl: '' }))}
-                    className="text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
-                  >
-                    Quitar imagen de QR
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Kit Imprimible de Mostrador & Cartel QR */}
-          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-            <div>
-              <p className="text-xs font-bold text-slate-800">¿Quieres exhibir tu código QR en tu negocio?</p>
-              <p className="text-[11px] text-slate-500">Genera carteles para vitrina, carpa de mostrador y volantes listos para imprimir.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsPrintKitOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 font-bold text-xs flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
-            >
-              <Printer className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Imprimir Carteles QR</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Card 5: Cupones de Descuento de la Tienda */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-2xs space-y-4">
-          <div>
-            <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600" />
-              <span>Gestión de Cupones de Descuento</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Crea códigos de descuento automáticos o personalizados para incentivar pedidos en tu tienda.
-            </p>
-          </div>
-
-        {/* Modal / Panel de Edición de Cupón (cuando se edita uno existente) */}
-        {editingCoupon && (
-          <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300 space-y-3 animate-fadeIn">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
-                <Edit3 className="w-4 h-4 text-emerald-600" />
-                <span>Editar Cupón: <code className="text-emerald-700 bg-white px-1.5 py-0.5 rounded-md border border-emerald-200">{editingCoupon.code}</code></span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setEditingCoupon(null)}
-                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
-                title="Cerrar edición"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Código del Cupón</label>
-                <input
-                  type="text"
-                  value={editingCoupon.code}
-                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                  className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-mono font-black uppercase bg-white focus:outline-hidden focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">Monto de Descuento (Bs.)</label>
-                <input
-                  type="number"
-                  step="0.50"
-                  min="0.50"
-                  value={editingCoupon.discount}
-                  onChange={(e) => setEditingCoupon(prev => ({ ...prev, discount: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
-                />
-              </div>
-
-              <div className="sm:col-span-2 flex items-center justify-between p-2.5 rounded-xl bg-white border border-emerald-200">
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Disponibilidad del Cupón (1 solo uso):</span>
-                  <span className="text-[10px] text-slate-500">
-                    {editingCoupon.isUsed ? 'Figura como ya utilizado/canjeado por un cliente.' : 'Listo y disponible para ser canjeado 1 sola vez.'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingCoupon(prev => ({ ...prev, isUsed: !prev.isUsed }))}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-                    editingCoupon.isUsed ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                  }`}
-                >
-                  {editingCoupon.isUsed ? '✓ CANJEADO / USADO' : '● DISPONIBLE (1 USO)'}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setEditingCoupon(null)}
-                className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEditCoupon}
-                className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Guardar Cambios de Cupón</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Lista de Cupones */}
-        <div className="space-y-2">
-          {(form.coupons || []).length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 font-medium">
-              No tienes cupones de descuento activos actualmente.
-            </p>
-          ) : (
-            (form.coupons || []).map((c) => {
-              const isUsed = !!c.isUsed || (c.usedCount && c.usedCount >= (c.maxUses || 1));
-              return (
-                <div 
-                  key={c.id} 
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-2xl border text-xs transition-all gap-3 ${
-                    isUsed 
-                      ? 'bg-slate-100/80 border-slate-200/90 text-slate-500' 
-                      : 'bg-amber-50/50 border-amber-200/80 text-slate-800 hover:bg-amber-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={`font-black font-mono tracking-wider text-sm px-3 py-1 rounded-xl border shadow-2xs ${
-                      isUsed 
-                        ? 'bg-slate-200/90 text-slate-500 border-slate-300 line-through' 
-                        : 'bg-white text-amber-950 border-amber-200'
-                    }`}>
-                      {c.code}
-                    </span>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`font-bold text-xs ${isUsed ? 'text-slate-600 line-through' : 'text-slate-800'}`}>
-                          {c.description || `Descuento directo de Bs. ${parseFloat(c.discount || 0).toFixed(2)}`}
-                        </span>
-                        {isUsed ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 font-bold text-[10px]">
-                            ✓ CANJEADO / USADO {c.usedInOrder ? `(${c.usedInOrder})` : ''}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                            ● DISPONIBLE (1 solo uso)
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] mt-0.5">
-                        <span className={isUsed ? 'text-slate-400 font-medium' : 'font-black text-emerald-700'}>
-                          Ahorro al cliente: -Bs. {parseFloat(c.discount || 0).toFixed(2)}
-                        </span>
-                        {c.usedAt && (
-                          <span className="text-slate-400 text-[10px]">
-                            • Usado el: {new Date(c.usedAt).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 self-end sm:self-center">
-                    {/* Botón para Reactivar o Marcar Usado */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleCouponUsed(c.id)}
-                      className={`p-2 rounded-xl transition-colors cursor-pointer text-xs font-bold flex items-center gap-1 ${
-                        isUsed 
-                          ? 'text-emerald-700 hover:bg-emerald-100 bg-emerald-50' 
-                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                      }`}
-                      title={isUsed ? 'Reactivar cupón para 1 nuevo uso' : 'Marcar manualmente como usado'}
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span className="text-[10px]">{isUsed ? 'Reactivar' : 'Marcar usado'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleStartEditCoupon(c)}
-                      className="p-2 text-slate-500 hover:text-emerald-700 rounded-xl hover:bg-emerald-50 transition-colors cursor-pointer"
-                      title="Editar código y monto"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCoupon(c.id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Eliminar cupón"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* Formulario para Crear Nuevo Cupón */}
-        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold text-slate-800">Crear Nuevo Cupón de Descuento:</p>
-              <p className="text-[11px] text-slate-500">Por seguridad cada cupón es de <strong>1 solo uso</strong>. Al completarse un pedido se marcará automáticamente como CANJEADO.</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleGenerateCouponCode}
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2.5 py-1 rounded-lg border border-amber-300/80 transition-colors cursor-pointer shrink-0"
-              title="Generar automáticamente un código al azar"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>⚡ Autogenerar Código</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">Código del Cupón</label>
-              <input
-                type="text"
-                placeholder="Ej. PROMO-742 o VECINO10"
-                value={newCouponCode}
-                onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-600 block mb-1">Monto de Descuento en Bs.</label>
-              <input
-                type="number"
-                step="0.50"
-                min="0.50"
-                placeholder="Ej. 10.00"
-                value={newCouponDiscount}
-                onChange={(e) => setNewCouponDiscount(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleAddCoupon}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Crear Cupón</span>
-          </button>
         </div>
       </div>
     </div>
