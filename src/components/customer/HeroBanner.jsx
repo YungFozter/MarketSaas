@@ -1,16 +1,15 @@
 import React from 'react';
-import { Search, Sparkles, Truck, ShieldCheck, Zap, HeartHandshake, MapPin, Clock, Crown } from 'lucide-react';
+import { Search, Store, Crown } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './HeroBanner.css';
 
 export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal }) => {
-  const { storeConfig, selectedLocation, cartSavings, storeOpenStatus, isProPlan } = useStore();
-  const currency = storeConfig?.currencySymbol || 'Bs.';
+  const { storeConfig, isProPlan } = useStore();
   const isProStore = Boolean(storeConfig?.isProStore || isProPlan || String(storeConfig?.plan || storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'));
 
   return (
     <div 
-      className={`relative overflow-hidden rounded-3xl text-white shadow-xl mb-6 sm:mb-8 p-5 sm:p-8 lg:p-10 ${
+      className={`relative overflow-hidden rounded-3xl text-white shadow-xl mb-6 sm:mb-8 p-4 sm:p-8 lg:p-10 ${
         !storeConfig?.bannerUrl ? 'bg-gradient-to-br from-emerald-700 via-teal-700 to-emerald-900' : 'bg-slate-900'
       }`}
       style={storeConfig?.bannerUrl ? {
@@ -31,104 +30,32 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
         </div>
       )}
 
-      <div className="relative z-10 max-w-3xl">
-        {/* Identidad de Marca: Logotipo y Pill Promocional */}
-        <div className="flex items-center gap-3.5 mb-4">
+      <div className="relative z-10 max-w-4xl">
+        {/* Identidad y Título Principal: Logotipo de la tienda junto al texto principal */}
+        <div className="flex items-center gap-3.5 sm:gap-6 mb-3 sm:mb-4">
           {storeConfig?.logoUrl ? (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/95 backdrop-blur-md p-1.5 shadow-lg border border-white/40 shrink-0 flex items-center justify-center">
+            <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl sm:rounded-3xl bg-white/95 backdrop-blur-md p-1.5 sm:p-2.5 shadow-xl border-2 border-white/60 shrink-0 flex items-center justify-center">
               <img 
                 src={storeConfig.logoUrl} 
-                alt={storeConfig.name || 'Logotipo oficial'} 
-                className="w-full h-full object-contain rounded-xl"
+                alt={storeConfig.name || 'Logotipo de la tienda'} 
+                className="w-full h-full object-contain rounded-xl sm:rounded-2xl"
               />
             </div>
-          ) : null}
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-[11px] sm:text-xs font-bold text-emerald-100 shadow-xs max-w-full">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0 animate-spin" />
-                <span className="truncate">
-                  🛍️ Catálogo Oficial • {storeConfig?.name || 'Tienda de Barrio'}
-                </span>
-              </div>
-
-              {isProStore && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full hero-banner-pro-badge font-black text-[11px] sm:text-xs shadow-md border border-amber-300/80">
-                  <Crown className="w-3.5 h-3.5 text-amber-950 fill-amber-300" />
-                  <span>Comercio Oficial PRO</span>
-                </div>
-              )}
-
-              {storeOpenStatus && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('store-schedule-section');
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth' });
-                      const btn = el.querySelector('button[aria-expanded]');
-                      if (btn && btn.getAttribute('aria-expanded') === 'false') {
-                        btn.click();
-                      }
-                    }
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black shadow-xs border backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 transition-all ${
-                    storeOpenStatus.isOpen
-                      ? 'bg-emerald-500/25 hover:bg-emerald-500/35 border-emerald-300/40 text-emerald-100'
-                      : 'bg-rose-500/30 hover:bg-rose-500/40 border-rose-300/40 text-rose-100'
-                  }`}
-                  title="Toca para ver el horario semanal de atención"
-                >
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    {storeOpenStatus.isOpen ? (
-                      <>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                      </>
-                    ) : (
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-400"></span>
-                    )}
-                  </span>
-                  <span>{storeOpenStatus.isOpen ? 'Abierto Ahora' : 'Cerrado Ahora'}</span>
-                  {storeOpenStatus.nextStatusChangeText && (
-                    <span className="text-[10px] opacity-80 font-normal hidden sm:inline">
-                      • {storeOpenStatus.nextStatusChangeText}
-                    </span>
-                  )}
-                  <span className="text-[10px] opacity-80 font-medium ml-0.5">
-                    ▾
-                  </span>
-                </button>
-              )}
-
-              {/* Botón PWA Rápido */}
-              <button
-                type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold shadow-xs border border-emerald-300/30 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-100 backdrop-blur-md cursor-pointer transition-all hover:scale-105 active:scale-95"
-                title="Instalar la App en tu celular o PC"
-              >
-                <span>📲 Instalar App</span>
-              </button>
+          ) : (
+            <div className="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-2xl sm:rounded-3xl bg-white/20 backdrop-blur-md p-1.5 sm:p-2 shadow-xl border-2 border-white/40 shrink-0 flex items-center justify-center text-white">
+              <Store className="w-8 h-8 sm:w-12 sm:h-12" />
             </div>
+          )}
 
-            {storeConfig?.tagline && (
-              <p className="text-xs text-emerald-100/90 font-medium truncate">
-                {storeConfig.tagline}
-              </p>
-            )}
-          </div>
+          <h1 className="text-lg xs:text-xl sm:text-3xl md:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight sm:leading-tight text-white min-w-0">
+            Todo lo de tu despensa{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-200 to-teal-100 block sm:inline">
+              a precio justo y productos de calidad
+            </span>
+          </h1>
         </div>
 
-        {/* Título Principal */}
-        <h1 className="text-xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-2.5">
-          Todo lo de tu despensa <br className="hidden sm:inline" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-200 to-teal-100">
-            a precio justo y productos de calidad
-          </span>
-        </h1>
-
-        <p className="text-xs sm:text-base text-emerald-100/90 mb-5 max-w-xl font-normal leading-relaxed">
+        <p className="text-xs sm:text-base text-emerald-100/90 mb-4 sm:mb-5 max-w-2xl font-normal leading-relaxed">
           Pide fácil desde tu celular y ahorra tiempo. Tu canasta lista para retiro rápido en local o entrega según la disponibilidad de tu tienda.
         </p>
 
@@ -147,7 +74,7 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
                 }
               }}
               placeholder="Busca leche, pan, bebidas, snacks, SKU..."
-              className="w-full pl-10 sm:pl-12 pr-20 sm:pr-28 py-3 sm:py-4 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-medium text-xs sm:text-base shadow-lg border-2 border-transparent focus:border-amber-400 focus:outline-hidden transition-all"
+              className="w-full pl-10 sm:pl-12 pr-20 sm:pr-28 py-2.5 sm:py-3.5 rounded-2xl bg-white text-slate-900 placeholder:text-slate-400 font-medium text-xs sm:text-base shadow-lg border-2 border-transparent focus:border-amber-400 focus:outline-hidden transition-all"
             />
             {searchQuery && (
               <button
@@ -164,61 +91,10 @@ export const HeroBanner = ({ searchQuery, setSearchQuery, onOpenLocationModal })
                   el.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="absolute right-1.5 px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
+              className="absolute right-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center gap-1 active:scale-95 cursor-pointer"
             >
               <span>Buscar</span>
             </button>
-          </div>
-        </div>
-
-        {/* Ventajas y Garantías Visuales */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-5 pt-5 border-t border-white/15 text-xs text-emerald-100">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
-              <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">
-                Retiro en Local
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">
-                Envíos según cada Tienda
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300 shrink-0">
-              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">Precios Justos</p>
-              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate">Sin recargos extras</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/10 flex items-center justify-center text-amber-300 shrink-0">
-              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-white leading-tight truncate text-[11px] sm:text-xs">
-                {storeOpenStatus?.badgeText || 'Horario'}
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-emerald-200 truncate" title={storeOpenStatus?.summary}>
-                {storeOpenStatus?.summary || 'Atención según horario'}
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-emerald-300 shrink-0">
-              <HeartHandshake className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-bold text-white leading-tight text-xs">Apoyo Vecinal</p>
-              <p className="text-[11px] text-emerald-200">100% Confianza</p>
-            </div>
           </div>
         </div>
       </div>
