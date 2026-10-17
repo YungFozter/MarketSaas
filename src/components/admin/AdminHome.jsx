@@ -439,6 +439,34 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     };
   }, [soundAlertsActive, showToast, storeConfig]);
 
+  // Al montar la Vista Dueño o recibir/actualizar pedidos, alertar inmediatamente si hay pedidos pendientes recientes no atendidos
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+
+    const unnotifiedPending = orders.filter(o => {
+      if (!o || o.status !== 'pending' || !o.id) return false;
+      if (notifiedOrderIds.current.has(o.id)) return false;
+      const orderAgeMs = Date.now() - new Date(o.createdAt || o.created_at || Date.now()).getTime();
+      // Notificar si el pedido tiene menos de 2 horas de antigüedad
+      return orderAgeMs < 2 * 60 * 60 * 1000;
+    });
+
+    if (unnotifiedPending.length > 0) {
+      unnotifiedPending.forEach(o => notifiedOrderIds.current.add(o.id));
+      const newest = unnotifiedPending[0];
+      if (soundAlertsActive) {
+        playOrderNotificationSound();
+      }
+      sendOrderNotification(newest, storeConfig);
+      showToast?.(
+        unnotifiedPending.length === 1
+          ? `🔔 ¡Tienes un pedido pendiente #${newest.id} de ${newest.customer?.name || 'Vecino'}!`
+          : `🔔 ¡Tienes ${unnotifiedPending.length} pedidos pendientes por atender!`,
+        'info'
+      );
+    }
+  }, [orders, soundAlertsActive, showToast, storeConfig]);
+
   // Monitoreo al desbloquear el teléfono o volver a la pestaña (visibilitychange / focus)
   useEffect(() => {
     const handleVisibilityOrFocus = () => {

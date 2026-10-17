@@ -17,6 +17,8 @@ ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS createdAt TIMESTAMPTZ DEFAULT
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS couponCode TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS distance_km NUMERIC DEFAULT 0;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS is_rain_surcharge BOOLEAN DEFAULT FALSE;
 
 -- 2. FUNCIÓN Y TRIGGER PARA AUTO-ASIGNAR EL DUEÑO (owner_id) DE LA TIENDA
 -- Si entra una venta sin owner_id (ej. pedido web de un cliente o venta offline sincronizada),

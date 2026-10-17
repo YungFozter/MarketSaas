@@ -587,21 +587,25 @@ export const normalizeOrder = (o) => {
     cashChange = o.paymentMethod.cashChangeFor || o.paymentMethod.cash_change_for || null;
   }
 
+  const rawCust = o.customer || {};
   const dType = o.delivery_type || o.deliveryType || 'pickup';
   const dFee = o.delivery_fee != null ? Number(o.delivery_fee) : (o.deliveryFee != null ? Number(o.deliveryFee) : 0);
-  const dDist = o.distance_km != null ? Number(o.distance_km) : (o.distanceKm != null ? Number(o.distanceKm) : null);
-  const isRain = Boolean(o.is_rain_surcharge ?? o.isRainSurcharge);
+  const dDist = o.distance_km != null 
+    ? Number(o.distance_km) 
+    : (o.distanceKm != null ? Number(o.distanceKm) : (rawCust.distance_km != null ? Number(rawCust.distance_km) : (rawCust.distanceKm != null ? Number(rawCust.distanceKm) : null)));
+  const isRain = Boolean(o.is_rain_surcharge ?? o.isRainSurcharge ?? rawCust.is_rain_surcharge ?? rawCust.isRainSurcharge);
   const created = o.created_at || o.createdAt || new Date().toISOString();
   const cCode = o.coupon_code || o.couponCode || null;
 
-  const rawCust = o.customer || {};
   const normalizedCustomer = {
     name: rawCust.name || 'Cliente',
     phone: rawCust.phone || '',
     address: rawCust.address || '',
     reference: rawCust.reference || '',
     coordinates: rawCust.coordinates || null,
-    notes: rawCust.notes || ''
+    notes: rawCust.notes || '',
+    distance_km: dDist,
+    is_rain_surcharge: isRain
   };
 
   return {
@@ -960,6 +964,7 @@ export const StoreProvider = ({ children }) => {
       } catch (e) {}
       setStoreConfigState(prev => ({
         ...prev,
+        owner_id: foundStore.owner_id || prev.owner_id,
         name: foundStore.name,
         tagline: foundStore.tagline || prev.tagline,
         address: foundStore.address || prev.address
@@ -1999,13 +2004,25 @@ export const StoreProvider = ({ children }) => {
               }
             });
           }
-          setOrders(normalized);
-          try {
-            localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(normalized));
-            if (activeAdminTenant && activeAdminTenant !== tenantSlug) {
-              localStorage.setItem(`marketsaas_${activeAdminTenant}_orders`, JSON.stringify(normalized));
-            }
-          } catch (e) {}
+
+          setOrders(prev => {
+            // Preservar pedidos pendientes legítimos locales para que nunca se pierdan por desfase de red
+            const localPending = (prev || []).filter(o => o && o.status === 'pending' && !o.id?.startsWith('MOCK-') && !o.id?.startsWith('TEST-'));
+            const existingIds = new Set(normalized.map(o => o.id));
+            const merged = [...normalized];
+            localPending.forEach(lp => {
+              if (!existingIds.has(lp.id)) {
+                merged.unshift(lp);
+              }
+            });
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(merged));
+              if (activeAdminTenant && activeAdminTenant !== tenantSlug) {
+                localStorage.setItem(`marketsaas_${activeAdminTenant}_orders`, JSON.stringify(merged));
+              }
+            } catch (e) {}
+            return merged;
+          });
         }
       });
     } else if (activeTrackingOrderId) {
@@ -2216,6 +2233,35 @@ export const StoreProvider = ({ children }) => {
           setOrders(prev => prev.filter(o => o.id !== payload.old.id));
         }
       })
+      .on('broadcast', { event: 'new_order' }, payload => {
+        if (payload?.payload) {
+          const normalized = normalizeOrder(payload.payload);
+          const isOurStore = 
+            normalized.tenant_id === tenantSlug || 
+            (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
+            (currentUser && normalized.owner_id === currentUser.id) ||
+            (!tenantSlug || tenantSlug === 'default');
+
+          if (isOurStore) {
+            setOrders(prev => {
+              const exists = prev.some(o => o.id === normalized.id);
+              if (!exists) {
+                try {
+                  window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalized }));
+                } catch (e) {}
+              }
+              const updated = [normalized, ...prev.filter(o => o.id !== normalized.id)];
+              try {
+                localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+                if (merchantStore?.id) {
+                  localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+                }
+              } catch (e) {}
+              return updated;
+            });
+          }
+        }
+      })
       .subscribe();
 
     const productsChannel = supabase
@@ -2345,6 +2391,71 @@ export const StoreProvider = ({ children }) => {
       supabase.removeChannel(creditsChannel);
     };
   }, [tenantSlug, viewMode, currentUser, merchantStore?.id]);
+
+  // Sincronización inmediata entre pestañas locales del mismo navegador (Cross-Tab Sync)
+  useEffect(() => {
+    const handleCrossTabOrder = (incomingOrder) => {
+      if (!incomingOrder || !incomingOrder.id) return;
+      const normalized = normalizeOrder(incomingOrder);
+      const isOurStore = 
+        normalized.tenant_id === tenantSlug || 
+        (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
+        (currentUser && normalized.owner_id === currentUser.id) ||
+        (!tenantSlug || tenantSlug === 'default');
+
+      if (isOurStore) {
+        setOrders(prev => {
+          const exists = prev.some(o => o.id === normalized.id);
+          if (!exists) {
+            try {
+              window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalized }));
+            } catch (e) {}
+            const updated = [normalized, ...prev.filter(o => o.id !== normalized.id)];
+            try {
+              localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+              if (merchantStore?.id) {
+                localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+              }
+            } catch (e) {}
+            return updated;
+          }
+          return prev;
+        });
+      }
+    };
+
+    let bc = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('marketsaas_orders_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'NEW_ORDER' && event.data?.order) {
+            handleCrossTabOrder(event.data.order);
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleStorageEvent = (e) => {
+      if (e.key === 'marketsaas_last_order_event' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.order) {
+            handleCrossTabOrder(parsed.order);
+          }
+        } catch (err) {}
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      if (bc) {
+        try { bc.close(); } catch (err) {}
+      }
+      window.removeEventListener('storage', handleStorageEvent);
+    };
+  }, [tenantSlug, merchantStore?.id, currentUser?.id]);
 
   // Auto-purga en Supabase de peticiones de prueba residuales generadas durante diagnósticos
   useEffect(() => {
@@ -3458,17 +3569,36 @@ export const StoreProvider = ({ children }) => {
 
     const cleanPhone = normalizeCustomerPhone(orderData.phone);
 
+    const resolvedOwnerId = storeConfig?.owner_id || 
+      merchantStore?.owner_id || 
+      stores?.find(s => s.slug === tenantSlug || s.id === tenantSlug)?.owner_id || 
+      null;
+
+    const deliveryFeeValue = orderData.deliveryType === 'delivery' 
+      ? (orderData.deliveryFee != null ? Number(orderData.deliveryFee) : actualDeliveryFee) 
+      : 0;
+
+    const distanceKmValue = orderData.deliveryType === 'delivery' 
+      ? (orderData.distanceKm != null ? Number(orderData.distanceKm) : currentDistanceKm) 
+      : 0;
+
+    const isRainSurchargeValue = orderData.deliveryType === 'delivery' 
+      ? Boolean(storeConfig?.isRainActive) 
+      : false;
+
     const dbPayload = {
       id: orderId,
       tenant_id: tenantSlug,
-      owner_id: storeConfig?.owner_id || null,
+      owner_id: resolvedOwnerId,
       customer: {
         name: orderData.name || 'Cliente',
         phone: orderData.phone || '',
         address: orderData.address || '',
         reference: orderData.reference || '',
         coordinates: orderData.coordinates || (orderData.latitude && orderData.longitude ? { lat: orderData.latitude, lng: orderData.longitude } : null),
-        notes: orderData.notes || ''
+        notes: orderData.notes || '',
+        distance_km: distanceKmValue,
+        is_rain_surcharge: isRainSurchargeValue
       },
       items: cart.map(item => ({
         id: item.id,
@@ -3478,12 +3608,10 @@ export const StoreProvider = ({ children }) => {
       })),
       subtotal: cartSubtotal,
       discount: discountAmount,
-      delivery_fee: orderData.deliveryType === 'delivery' ? (orderData.deliveryFee != null ? Number(orderData.deliveryFee) : actualDeliveryFee) : 0,
+      delivery_fee: deliveryFeeValue,
       delivery_type: orderData.deliveryType || 'pickup',
-      distance_km: orderData.deliveryType === 'delivery' ? (orderData.distanceKm != null ? Number(orderData.distanceKm) : currentDistanceKm) : 0,
-      is_rain_surcharge: orderData.deliveryType === 'delivery' ? Boolean(storeConfig?.isRainActive) : false,
       total: orderData.deliveryType === 'delivery' 
-        ? Math.max(0, cartSubtotal + (orderData.deliveryFee != null ? Number(orderData.deliveryFee) : actualDeliveryFee) - discountAmount) 
+        ? Math.max(0, cartSubtotal + deliveryFeeValue - discountAmount) 
         : Math.max(0, cartSubtotal - discountAmount),
       status: 'pending',
       payment_method: orderData.cashChangeFor 
@@ -3495,8 +3623,12 @@ export const StoreProvider = ({ children }) => {
 
     const newOrder = normalizeOrder({
       ...dbPayload,
-      deliveryFee: dbPayload.delivery_fee,
+      deliveryFee: deliveryFeeValue,
       deliveryType: dbPayload.delivery_type,
+      distance_km: distanceKmValue,
+      distanceKm: distanceKmValue,
+      is_rain_surcharge: isRainSurchargeValue,
+      isRainSurcharge: isRainSurchargeValue,
       paymentMethod: orderData.paymentMethod,
       cashChangeFor: orderData.cashChangeFor || null,
       couponCode: dbPayload.coupon_code,
@@ -3562,13 +3694,39 @@ export const StoreProvider = ({ children }) => {
       localStorage.setItem('marketsaas_active_order_obj', JSON.stringify(newOrder));
       localStorage.setItem(`marketsaas_${tenantSlug}_active_order`, orderId);
       localStorage.setItem('marketsaas_default_active_order', orderId);
+      localStorage.setItem('marketsaas_last_order_event', JSON.stringify({ order: newOrder, timestamp: Date.now() }));
     } catch (e) {}
 
+    // Difusión multi-canal para notificaciones en tiempo real
+    // A) Evento en ventana actual
     try {
       window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: newOrder }));
     } catch (e) {}
 
+    // B) BroadcastChannel nativo del navegador (pestañas abiertas en el mismo dispositivo)
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('marketsaas_orders_channel');
+        bc.postMessage({ type: 'NEW_ORDER', order: newOrder, tenantId: tenantSlug });
+        bc.close();
+      }
+    } catch (e) {}
+
     if (supabase) {
+      // C) WebSocket Broadcast a través de Supabase Realtime a otros dispositivos (celular o PC del dueño)
+      try {
+        const rtChannel = supabase.channel(`public:orders:${tenantSlug || 'all'}`);
+        rtChannel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            rtChannel.send({
+              type: 'broadcast',
+              event: 'new_order',
+              payload: newOrder
+            });
+          }
+        });
+      } catch (e) {}
+
       supabase.from('orders').insert([dbPayload]).then(({ error }) => {
         if (error) {
           console.error('Error insertando pedido en Supabase:', error);
