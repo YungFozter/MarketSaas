@@ -21,6 +21,8 @@ import {
   Plus,
   Minus,
   Trash2,
+  RotateCcw,
+  Ban,
   ExternalLink,
   Eye,
   LogOut,
@@ -81,6 +83,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     updateOrderStatus,
     cancelOrder,
     deleteOrder,
+    restoreOrder,
+    purgeOrderPermanently,
     createCustomerOrder,
     products, 
     setProducts,
@@ -200,7 +204,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
   const [isCashRegisterModalOpen, setIsCashRegisterModalOpen] = useState(false);
   const [isWeeklySummaryModalOpen, setIsWeeklySummaryModalOpen] = useState(false);
-  const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery'
+  const [isExpandedDelivered, setIsExpandedDelivered] = useState(false);
+  const [feedFilter, setFeedFilter] = useState('all'); // 'all' | 'pos' | 'delivery' | 'omitted'
   const [feedPage, setFeedPage] = useState(1);
   const feedScrollRef = useRef(null);
   const FEED_PAGE_SIZE = 10;
@@ -325,17 +330,30 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return false;
   };
 
-  // Historial completo de transacciones cobradas/entregadas para el Feed de Actividad en Vivo
-  const allDeliveredOrders = (orders || []).filter(o => o && o.status === 'delivered');
+  // Helper para identificar pedidos omitidos, cancelados o eliminados
+  const isOmittedOrDeletedOrder = (o) => Boolean(
+    o && (o.status === 'omitted' || o.status === 'cancelled' || o.status === 'deleted' || o.is_deleted || o.isDeleted)
+  );
 
-  const filteredFeedTransactions = allDeliveredOrders
+  // Auditoría completa de transacciones: pedidos entregados/cobrados Y pedidos eliminados/omitidos
+  const allFeedOrders = (orders || []).filter(o => {
+    if (!o) return false;
+    return o.status === 'delivered' || isOmittedOrDeletedOrder(o);
+  });
+
+  const filteredFeedTransactions = allFeedOrders
     .filter(o => {
-      const isPickup = isPickupOrPosOrder(o);
-      if (feedFilter === 'pos') return isPickup;
-      if (feedFilter === 'delivery') return !isPickup;
-      return true;
+      const isOmitted = isOmittedOrDeletedOrder(o);
+      if (feedFilter === 'omitted') return isOmitted;
+      if (feedFilter === 'pos') return !isOmitted && isPickupOrPosOrder(o);
+      if (feedFilter === 'delivery') return !isOmitted && !isPickupOrPosOrder(o);
+      return true; // 'all' shows both delivered and omitted
     })
-    .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime());
+    .sort((a, b) => {
+      const timeA = new Date(a.deletedAt || a.deleted_at || a.deliveredAt || a.updatedAt || a.createdAt || a.created_at || 0).getTime();
+      const timeB = new Date(b.deletedAt || b.deleted_at || b.deliveredAt || b.updatedAt || b.createdAt || b.created_at || 0).getTime();
+      return timeB - timeA;
+    });
 
   const feedTotalCount = filteredFeedTransactions.length;
   const feedTotalPages = Math.max(1, Math.ceil(feedTotalCount / FEED_PAGE_SIZE));
@@ -370,16 +388,20 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
   // Pedidos activos (Pendientes, En Preparación, En Camino):
   // NUNCA deben ocultarse por filtros de fecha, pues representan trabajo en curso y atención prioritaria inmediata.
-  const activeOrders = (orders || []).filter(o => o && (o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way'));
+  const activeOrders = (orders || []).filter(o => 
+    o && !isOmittedOrDeletedOrder(o) && (o.status === 'pending' || o.status === 'preparing' || o.status === 'on_the_way')
+  );
   const pendingOrders = activeOrders.filter(o => o.status === 'pending');
   const preparingOrders = activeOrders.filter(o => o.status === 'preparing');
   const onTheWayOrders = activeOrders.filter(o => o.status === 'on_the_way');
 
-  // Pedidos entregados / completados: sí responden al filtro temporal ('today', '24h', 'all')
-  const deliveredOrders = (orders || []).filter(o => {
-    if (!o || o.status !== 'delivered') return false;
-    return matchesKanbanTimeRange(o.createdAt || o.created_at, kanbanTimeRange);
-  });
+  // Pedidos entregados / completados: sí responden al filtro temporal ('today', '24h', 'all') y ordenados por fecha descendente
+  const deliveredOrders = (orders || [])
+    .filter(o => {
+      if (!o || o.status !== 'delivered' || isOmittedOrDeletedOrder(o)) return false;
+      return matchesKanbanTimeRange(o.deliveredAt || o.updatedAt || o.createdAt || o.created_at, kanbanTimeRange);
+    })
+    .sort((a, b) => new Date(b.deliveredAt || b.updatedAt || b.createdAt || b.created_at || 0).getTime() - new Date(a.deliveredAt || a.updatedAt || a.createdAt || a.created_at || 0).getTime());
 
   // Lista consolidada de pedidos visibles en el Kanban (para contadores de pestañas y vista global)
   const visibleKanbanOrders = [...activeOrders, ...deliveredOrders];
@@ -1974,7 +1996,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     </div>
 
-                    {deliveredOrders.slice(0, 4).map(order => {
+                    {(isExpandedDelivered ? deliveredOrders : deliveredOrders.slice(0, 5)).map(order => {
                       const displayId = getDisplayOrderId(order.id);
                       return (
                         <div key={order.id} className="rounded-xl bg-white p-3.5 shadow-xs border border-slate-200/80 hover:shadow-sm transition-all space-y-2">
@@ -2011,12 +2033,12 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               </span>
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`¿Deseas eliminar del registro el pedido #${order.id}?`)) {
+                                  if (window.confirm(`¿Deseas omitir / descartar el pedido #${order.id}?`)) {
                                     deleteOrder(order.id);
                                   }
                                 }}
                                 className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Eliminar pedido"
+                                title="Omitir pedido del tablero"
                                 type="button"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2034,14 +2056,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                         </div>
                       );
                     })}
-                    {deliveredOrders.length > 4 && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveTab('sales')}
-                        className="w-full py-2 text-center text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100/90 rounded-xl transition-colors cursor-pointer"
-                      >
-                        +{deliveredOrders.length - 4} pedidos más entregados • Ver historial →
-                      </button>
+                    {deliveredOrders.length > 5 && (
+                      <div className="flex items-center gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setIsExpandedDelivered(prev => !prev)}
+                          className="flex-1 py-1.5 text-center text-xs font-bold text-emerald-800 bg-emerald-100/70 hover:bg-emerald-100 rounded-xl transition-colors cursor-pointer"
+                        >
+                          {isExpandedDelivered ? 'Mostrar menos' : `+${deliveredOrders.length - 5} pedidos más`}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('sales')}
+                          className="py-1.5 px-3 text-center text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                          title="Ver historial de ventas completo"
+                        >
+                          Historial →
+                        </button>
+                      </div>
                     )}
                     {deliveredOrders.length === 0 && (
                       <div className="py-4 px-3 sm:p-5 text-center text-xs text-slate-400 bg-white/70 rounded-xl border border-dashed border-slate-200">
@@ -2069,7 +2101,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     </div>
                   </div>
 
-                  {/* Filtros rápidos: Todos, Mostrador, Domicilio */}
+                  {/* Filtros rápidos: Todos, Mostrador, Domicilio, Eliminados/Omitidos */}
                   <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs overflow-x-auto no-scrollbar max-w-full">
                     <button
                       type="button"
@@ -2080,7 +2112,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      Todos ({allDeliveredOrders.length})
+                      Todos ({allFeedOrders.length})
                     </button>
                     <button
                       type="button"
@@ -2091,7 +2123,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🏪 Mostrador ({allDeliveredOrders.filter(isPickupOrPosOrder).length})
+                      🏪 Mostrador ({allFeedOrders.filter(o => !isOmittedOrDeletedOrder(o) && isPickupOrPosOrder(o)).length})
                     </button>
                     <button
                       type="button"
@@ -2102,7 +2134,18 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
-                      🛵 Domicilio ({allDeliveredOrders.filter(o => !isPickupOrPosOrder(o)).length})
+                      🛵 Domicilio ({allFeedOrders.filter(o => !isOmittedOrDeletedOrder(o) && !isPickupOrPosOrder(o)).length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetFeedFilter('omitted')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap active:scale-95 ${
+                        feedFilter === 'omitted' 
+                          ? 'bg-rose-600 text-white shadow-xs' 
+                          : 'text-rose-700 hover:text-rose-900 hover:bg-rose-50'
+                      }`}
+                    >
+                      🚫 Eliminados / Omitidos ({allFeedOrders.filter(isOmittedOrDeletedOrder).length})
                     </button>
                   </div>
                 </div>
@@ -2118,30 +2161,39 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                         <Receipt className="w-6 h-6" />
                       </div>
-                      <p className="text-sm font-bold text-slate-700">Aún no hay transacciones registradas</p>
+                      <p className="text-sm font-bold text-slate-700">
+                        {feedFilter === 'omitted' ? 'No hay pedidos eliminados ni omitidos' : 'Aún no hay transacciones registradas'}
+                      </p>
                       <p className="text-xs text-slate-400 max-w-md mx-auto">
-                        Cuando realices una venta en el mostrador o un vecino confirme un pedido, se reflejará aquí en tiempo real.
+                        {feedFilter === 'omitted' 
+                          ? 'Todos los pedidos registrados se encuentran activos o fueron cobrados con éxito.' 
+                          : 'Cuando realices una venta en el mostrador o un vecino confirme un pedido, se reflejará aquí en tiempo real.'}
                       </p>
                     </div>
                   ) : (
                     recentTransactions.map((tx) => {
+                      const isOmitted = isOmittedOrDeletedOrder(tx);
                       const idStr = String(tx.id || '');
                       const isPos = idStr.includes('POS-') || tx.customer?.name?.includes('Presencial') || tx.customer?.name?.includes('Mostrador') || tx.customer?.name?.includes('Cliente Mostrador');
                       const isPickup = tx.deliveryType === 'pickup' || tx.delivery_type === 'pickup' || tx.customer?.address === 'Retiro en Tienda' || tx.customer?.address === 'En Tienda' || tx.customer?.reference === 'Mostrador';
                       const payMethod = tx.paymentMethod || tx.payment_method || 'cash';
-                      const txTime = tx.createdAt || tx.created_at;
+                      const txTime = tx.deletedAt || tx.deleted_at || tx.createdAt || tx.created_at;
                       const displayId = getDisplayOrderId(tx.id);
                       const itemsCount = tx.items?.length || 1;
 
                       return (
                         <div 
                           key={tx.id}
-                          className="p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
+                          className={`p-3.5 sm:p-4 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                            isOmitted ? 'bg-rose-50/30 border-l-4 border-l-rose-500' : ''
+                          }`}
                         >
                           {/* Izquierda: Método de Pago + Datos del Cliente / Origen + Metadatos */}
                           <div className="flex items-start gap-3 min-w-0 flex-1">
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 md:mt-0 ${
-                              payMethod === 'cash' 
+                              isOmitted
+                                ? 'bg-rose-100/80 text-rose-600 border border-rose-300/80'
+                                : payMethod === 'cash' 
                                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80'
                                 : payMethod === 'qr'
                                 ? 'bg-cyan-50 text-cyan-600 border border-cyan-200/80'
@@ -2149,16 +2201,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 ? 'bg-purple-50 text-purple-600 border border-purple-200/80'
                                 : 'bg-blue-50 text-blue-600 border border-blue-200/80'
                             }`}>
-                              {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
-                              {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
-                              {payMethod === 'card' && <CreditCard className="w-5 h-5" />}
-                              {payMethod === 'credit' && <BookOpen className="w-5 h-5" />}
+                              {isOmitted ? (
+                                <Ban className="w-5 h-5 text-rose-600" />
+                              ) : (
+                                <>
+                                  {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
+                                  {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
+                                  {payMethod === 'card' && <CreditCard className="w-5 h-5" />}
+                                  {payMethod === 'credit' && <BookOpen className="w-5 h-5" />}
+                                </>
+                              )}
                             </div>
 
                             <div className="min-w-0 flex-1 space-y-1">
                               {/* Fila 1: Origen de la Venta + Badge de método de pago */}
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                <span className={`font-extrabold text-xs sm:text-sm truncate ${isOmitted ? 'text-slate-600 line-through' : 'text-slate-900'}`}>
                                   {isPos ? (
                                     '🏪 Venta Rápida de Mostrador'
                                   ) : isPickup ? (
@@ -2167,71 +2225,114 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                     `🛵 ${tx.customer?.name ? `${tx.customer.name} • ` : ''}${tx.customer?.address || 'Domicilio'}`
                                   )}
                                   {!isPos && !isPickup && tx.customer?.reference && (
-                                    <span className="font-semibold text-slate-600 ml-1">
+                                    <span className="font-semibold text-slate-500 ml-1">
                                       ({tx.customer.reference})
                                     </span>
                                   )}
                                 </span>
 
-                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
-                                  payMethod === 'cash' ? 'bg-emerald-100 text-emerald-800' :
-                                  payMethod === 'qr' ? 'bg-cyan-100 text-cyan-800' :
-                                  payMethod === 'credit' ? 'bg-purple-100 text-purple-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {payMethod === 'cash' ? '💵 Efectivo' : payMethod === 'qr' ? '📱 QR Simple' : payMethod === 'credit' ? '📒 A Cuenta' : '💳 Tarjeta POS'}
-                                </span>
+                                {isOmitted ? (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-rose-100 text-rose-800 border border-rose-200">
+                                    🚫 Eliminado / Omitido
+                                  </span>
+                                ) : (
+                                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
+                                    payMethod === 'cash' ? 'bg-emerald-100 text-emerald-800' :
+                                    payMethod === 'qr' ? 'bg-cyan-100 text-cyan-800' :
+                                    payMethod === 'credit' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-blue-100 text-blue-800'
+                                  }`}>
+                                    {payMethod === 'cash' ? '💵 Efectivo' : payMethod === 'qr' ? '📱 QR Simple' : payMethod === 'credit' ? '📒 A Cuenta' : '💳 Tarjeta POS'}
+                                  </span>
+                                )}
                               </div>
 
                               {/* Fila 2: ID limpio en píldora + Cantidad de productos + Tiempo relativo */}
                               <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] text-slate-400 font-medium flex-wrap">
                                 <span 
-                                  className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 whitespace-nowrap" 
+                                  className={`font-mono text-[10px] font-bold px-1.5 py-0.2 rounded-md whitespace-nowrap ${
+                                    isOmitted ? 'bg-rose-100/70 text-rose-800' : 'bg-slate-100 text-slate-600'
+                                  }`} 
                                   title={`ID completo: #${tx.id}`}
                                 >
                                   #{displayId}
                                 </span>
                                 <span className="text-slate-300">•</span>
                                 <span className="whitespace-nowrap text-slate-500">
-                                  {itemsCount} {itemsCount === 1 ? 'producto' : 'productos'}
+                                  {itemsCount} {itemsCount === 1 ? 'producto' : 'productos'} {isOmitted ? 'descartados' : ''}
                                 </span>
                                 <span className="text-slate-300">•</span>
                                 <span className="flex items-center gap-1 whitespace-nowrap text-slate-400">
                                   <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span>{formatRelativeTime(txTime)}</span>
+                                  <span>{isOmitted ? `Omitido ${formatRelativeTime(txTime)}` : formatRelativeTime(txTime)}</span>
                                 </span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Derecha / Fila inferior en móvil: Estado + Importe + Borrar */}
+                          {/* Derecha / Fila inferior en móvil: Estado + Importe + Borrar / Restaurar */}
                           <div className="flex items-center justify-between md:justify-end gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100/90">
-                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${
-                              tx.status === 'delivered'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                : tx.status === 'on_the_way'
-                                ? 'bg-purple-50 text-purple-800 border-purple-200'
-                                : tx.status === 'preparing'
-                                ? 'bg-blue-50 text-blue-800 border-blue-200'
-                                : 'bg-amber-50 text-amber-800 border-amber-200'
-                            }`}>
-                              {tx.status === 'delivered' ? '✓ Cobrado / Entregado' : tx.status === 'on_the_way' ? '🛵 En camino' : tx.status === 'preparing' ? '📦 En preparación' : '⏱️ Pendiente'}
-                            </span>
+                            {isOmitted ? (
+                              <span className="text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap bg-rose-50 text-rose-800 border-rose-200">
+                                ❌ Omitido del Registro
+                              </span>
+                            ) : (
+                              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${
+                                tx.status === 'delivered'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : tx.status === 'on_the_way'
+                                  ? 'bg-purple-50 text-purple-800 border-purple-200'
+                                  : tx.status === 'preparing'
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                              }`}>
+                                {tx.status === 'delivered' ? '✓ Cobrado / Entregado' : tx.status === 'on_the_way' ? '🛵 En camino' : tx.status === 'preparing' ? '📦 En preparación' : '⏱️ Pendiente'}
+                              </span>
+                            )}
 
                             <div className="flex items-center gap-2">
                               <div className="text-right">
-                                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
-                                  +{currency} {(tx.total || 0).toFixed(2)}
+                                <span className={`text-base sm:text-lg font-black tracking-tight whitespace-nowrap ${
+                                  isOmitted ? 'text-slate-400 line-through' : 'text-slate-900'
+                                }`}>
+                                  {isOmitted ? '' : '+'}{currency} {(tx.total || 0).toFixed(2)}
                                 </span>
                               </div>
-                              <button
-                                onClick={() => setTransactionToDelete(tx)}
-                                className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                title="Eliminar transacción del registro"
-                                type="button"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+
+                              {isOmitted ? (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => restoreOrder(tx.id)}
+                                    className="px-2.5 py-1 rounded-lg text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 font-bold text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                                    title="Restaurar pedido al tablero de control"
+                                    type="button"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <span>Restaurar</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`¿Deseas purgar definitivamente este pedido #${tx.id} de la base de datos?`)) {
+                                        purgeOrderPermanently(tx.id);
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                    title="Purgar permanentemente"
+                                    type="button"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setTransactionToDelete(tx)}
+                                  className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                  title="Omitir / Descartar transacción del registro"
+                                  type="button"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>

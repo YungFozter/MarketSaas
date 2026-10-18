@@ -1502,21 +1502,32 @@ export const StoreProvider = ({ children }) => {
   });
   const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
-  // Auto-limpieza de pedido activo si el pedido ya fue entregado o cancelado (solo cuando el modal de tracking esté cerrado)
-  useEffect(() => {
-    if (!activeTrackingOrderId) return;
-    const existing = orders.find(o => o.id === activeTrackingOrderId);
-    // Si el pedido existe y ya concluyó su ciclo activo:
-    if (existing && ['delivered', 'cancelled'].includes(existing.status)) {
-      if (!isTrackingModalOpen) {
-        setActiveTrackingOrderId(null);
-        try {
-          localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
-          localStorage.removeItem('marketsaas_default_active_order');
-        } catch (e) {}
+  // 10.1 Historial de pedidos del vecino realizados en este dispositivo
+  const [neighborOrderIds, setNeighborOrderIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`marketsaas_${tenantSlug}_neighbor_orders`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       }
+      const active = localStorage.getItem(`marketsaas_${tenantSlug}_active_order`);
+      return active ? [active] : [];
+    } catch (e) {
+      return [];
     }
-  }, [orders, activeTrackingOrderId, tenantSlug, isTrackingModalOpen]);
+  });
+
+  const addNeighborOrderId = (orderId) => {
+    if (!orderId) return;
+    setNeighborOrderIds(prev => {
+      const updated = [orderId, ...prev.filter(id => id !== orderId)];
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_neighbor_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_neighbor_orders', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
 
   // 11. Toast notification
   const [toast, setToast] = useState(null);
@@ -2025,41 +2036,40 @@ export const StoreProvider = ({ children }) => {
           });
         }
       });
-    } else if (activeTrackingOrderId) {
-      // Para clientes vecinos anónimos: consultar únicamente el pedido activo en curso para sincronizar su estado
-      const syncTrackingOrder = async () => {
+    } else if (activeTrackingOrderId || (neighborOrderIds && neighborOrderIds.length > 0)) {
+      // Para clientes vecinos: consultar pedidos para sincronizar su estado (pendientes, en camino y entregados)
+      const idsToSync = Array.from(new Set([activeTrackingOrderId, ...(neighborOrderIds || [])].filter(Boolean)));
+      const syncTrackingOrders = async () => {
         try {
-          // 1. Intentar vía función RPC segura get_order_tracking
-          const { data: rpcData, error: rpcError } = await supabase
-            .rpc('get_order_tracking', { p_order_id: activeTrackingOrderId });
-          if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
-            const normalized = normalizeOrder(rpcData[0]);
+          if (idsToSync.length === 1) {
+            const { data: rpcData, error: rpcError } = await supabase
+              .rpc('get_order_tracking', { p_order_id: idsToSync[0] });
+            if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+              const normalized = normalizeOrder(rpcData[0]);
+              setOrders(prev => {
+                const remaining = (prev || []).filter(o => o.id !== normalized.id);
+                return [normalized, ...remaining];
+              });
+              return;
+            }
+          }
+
+          const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .in('id', idsToSync);
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const normalizedList = data.map(normalizeOrder);
             setOrders(prev => {
-              const remaining = prev.filter(o => o.id !== normalized.id);
-              return [normalized, ...remaining];
+              const remaining = (prev || []).filter(o => !normalizedList.some(n => n.id === o.id));
+              return [...normalizedList, ...remaining];
             });
-            return;
           }
         } catch (e) {
           // Silenciosamente continuar si el RPC aún no fue desplegado en la BD
         }
-
-        // 2. Consulta directa por ID
-        supabase.from('orders')
-          .select('*')
-          .eq('id', activeTrackingOrderId)
-          .maybeSingle()
-          .then(({ data, error }) => {
-            if (!error && data) {
-              const normalized = normalizeOrder(data);
-              setOrders(prev => {
-                const remaining = prev.filter(o => o.id !== normalized.id);
-                return [normalized, ...remaining];
-              });
-            }
-          });
       };
-      syncTrackingOrder();
+      syncTrackingOrders();
     }
 
     // 4. Cargar solicitudes de productos por tienda
@@ -3752,6 +3762,7 @@ export const StoreProvider = ({ children }) => {
 
     // Limpiar carrito y abrir tracking
     clearCart();
+    addNeighborOrderId(orderId);
     setActiveTrackingOrderId(orderId);
     setIsTrackingModalOpen(true);
     triggerConfetti();
@@ -3767,12 +3778,19 @@ export const StoreProvider = ({ children }) => {
       return;
     }
     const targetOrder = orders.find(ord => ord.id === orderId);
+    const nowIso = new Date().toISOString();
 
     setOrders(prev =>
-      prev.map(ord => (ord.id === orderId ? { ...ord, status: newStatus } : ord))
+      prev.map(ord => (ord.id === orderId ? { 
+        ...ord, 
+        status: newStatus,
+        updatedAt: nowIso,
+        deliveredAt: newStatus === 'delivered' ? nowIso : ord.deliveredAt
+      } : ord))
     );
     if (supabase) {
-      supabase.from('orders').update({ status: newStatus }).eq('id', orderId).then(({ error }) => {
+      const updatePayload = { status: newStatus };
+      supabase.from('orders').update(updatePayload).eq('id', orderId).then(({ error }) => {
         if (error) console.error('Error actualizando pedido en Supabase:', error);
       });
     }
@@ -3805,16 +3823,6 @@ export const StoreProvider = ({ children }) => {
       });
     }
 
-    if (newStatus === 'delivered') {
-      if (activeTrackingOrderId === orderId) {
-        setActiveTrackingOrderId(null);
-        try {
-          localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
-          localStorage.removeItem('marketsaas_default_active_order');
-        } catch (e) {}
-      }
-    }
-
     const statusLabels = {
       pending: 'Pendiente',
       preparing: 'En Preparación',
@@ -3830,32 +3838,144 @@ export const StoreProvider = ({ children }) => {
     updateOrderStatus(orderId, 'cancelled');
   };
 
-  // Eliminar pedido permanentemente (Dueño)
+  // Omitir o descartar pedido (eliminación suave que preserva auditoría en Feed de Actividad)
   const deleteOrder = (orderId) => {
     if (!currentUser && !isImpersonating) {
-      showToast('Acceso denegado: Solo el comerciante titular puede eliminar pedidos.', 'error');
+      showToast('Acceso denegado: Solo el comerciante titular puede eliminar o descartar pedidos.', 'error');
+      return;
+    }
+    const targetOrder = orders.find(ord => ord.id === orderId);
+    const nowIso = new Date().toISOString();
+
+    // Revertir inventario si el pedido no estaba cancelado/omitido previamente
+    if (targetOrder && targetOrder.status !== 'cancelled' && targetOrder.status !== 'omitted' && Array.isArray(targetOrder.items)) {
+      targetOrder.items.forEach(item => {
+        if (item.stock !== 'Sin definir' && item.stock != null) {
+          const qty = Number(item.quantity) || 1;
+          if (supabase) {
+            supabase.rpc('increment_stock', { product_id: item.id, quantity: qty }).then(({ error }) => {
+              if (error) {
+                const prod = products.find(p => p.id === item.id);
+                if (prod && typeof prod.stock === 'number') {
+                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id);
+                }
+              }
+            });
+          }
+          setProducts(prev => prev.map(p => {
+            if (p.id === item.id) {
+              const cur = typeof p.stock === 'number' ? p.stock : parseInt(p.stock, 10);
+              if (!isNaN(cur)) {
+                return { ...p, stock: cur + qty };
+              }
+            }
+            return p;
+          }));
+        }
+      });
+    }
+
+    setOrders(prev => {
+      const updated = prev.map(ord => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            status: 'omitted',
+            is_deleted: true,
+            isDeleted: true,
+            deleted_at: nowIso,
+            deletedAt: nowIso
+          };
+        }
+        return ord;
+      });
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (storeConfig?.tenant_id) {
+          localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
+        }
+        if (merchantStore?.id && merchantStore.id !== tenantSlug) {
+          localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+        }
+      } catch (e) {}
+      return updated;
+    });
+
+    if (supabase) {
+      supabase.from('orders').update({
+        status: 'omitted',
+        deleted_at: nowIso
+      }).eq('id', orderId).then(({ error }) => {
+        if (error) console.error('Error marcando pedido como omitido en Supabase:', error);
+      });
+    }
+    showToast(`Pedido #${orderId} omitido/descartado. Registrado en el Feed de Actividad.`, 'info');
+  };
+
+  // Restaurar pedido omitido / cancelado
+  const restoreOrder = (orderId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Solo el comerciante titular puede restaurar pedidos.', 'error');
+      return;
+    }
+    const targetOrder = orders.find(ord => ord.id === orderId);
+    const restoredStatus = (targetOrder?.deliveryType === 'pickup' && (targetOrder?.customer?.name?.includes('Mostrador') || targetOrder?.customer?.name?.includes('Presencial')))
+      ? 'delivered'
+      : 'pending';
+
+    setOrders(prev => {
+      const updated = prev.map(ord => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            status: restoredStatus,
+            is_deleted: false,
+            isDeleted: false,
+            deleted_at: null,
+            deletedAt: null
+          };
+        }
+        return ord;
+      });
+      try {
+        localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (supabase) {
+      supabase.from('orders').update({
+        status: restoredStatus,
+        deleted_at: null
+      }).eq('id', orderId).then(({ error }) => {
+        if (error) console.error('Error restaurando pedido en Supabase:', error);
+      });
+    }
+    showToast(`Pedido #${orderId} restaurado al tablero de pedidos.`, 'success');
+  };
+
+  // Eliminar definitivamente de la base de datos (Purga permanente)
+  const purgeOrderPermanently = (orderId) => {
+    if (!currentUser && !isImpersonating) {
+      showToast('Acceso denegado: Solo el comerciante titular puede purgar pedidos.', 'error');
       return;
     }
     setOrders(prev => {
       const filtered = prev.filter(ord => ord.id !== orderId);
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(filtered));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(filtered));
       } catch (e) {}
       return filtered;
     });
-    if (activeTrackingOrderId === orderId) {
-      setActiveTrackingOrderId(null);
-      try {
-        localStorage.removeItem(`marketsaas_${tenantSlug}_active_order`);
-        localStorage.removeItem('marketsaas_default_active_order');
-      } catch (e) {}
-    }
     if (supabase) {
       supabase.from('orders').delete().eq('id', orderId).then(({ error }) => {
-        if (error) console.error('Error eliminando pedido en Supabase:', error);
+        if (error) console.error('Error purgando pedido en Supabase:', error);
       });
     }
-    showToast(`Pedido #${orderId} eliminado del tablero.`, 'info');
+    showToast(`Pedido #${orderId} eliminado definitivamente del sistema.`, 'info');
   };
 
   // Crear o Editar Producto (Dueño) con persistencia garantizada en Nube y Local
@@ -5616,6 +5736,10 @@ export const StoreProvider = ({ children }) => {
         clearCustomerBalance,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
+        neighborOrderIds,
+        addNeighborOrderId,
+        restoreOrder,
+        purgeOrderPermanently,
         isTrackingModalOpen,
         setIsTrackingModalOpen,
         toast,

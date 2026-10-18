@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -19,12 +19,15 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     selectedLocation, 
     activeTrackingOrderId, 
     setActiveTrackingOrderId, 
+    neighborOrderIds,
     setIsTrackingModalOpen,
     goToDirectory, 
     storeConfig,
     tenantSlug,
     storeOpenStatus,
-    isProPlan
+    isProPlan,
+    addToCart,
+    showToast
   } = useStore();
 
   const isProStore = Boolean(storeConfig?.isProStore || isProPlan || String(storeConfig?.plan || storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'));
@@ -107,39 +110,70 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     }
   };
 
-  // Pedido activo real y en curso
-  const activeOrder = orders?.find(
-    o => o.id === activeTrackingOrderId && ['pending', 'preparing', 'on_the_way'].includes(o.status)
-  );
+  const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(true);
 
+  // Pedidos entregados legítimos del vecino (en este dispositivo o activos)
+  const neighborDeliveredOrders = useMemo(() => {
+    const relevantIds = new Set([activeTrackingOrderId, ...(neighborOrderIds || [])].filter(Boolean));
+    return (orders || [])
+      .filter(o => o && o.status === 'delivered' && (relevantIds.has(o.id) || o.id === activeTrackingOrderId))
+      .sort((a, b) => new Date(b.deliveredAt || b.updatedAt || b.createdAt || b.created_at || 0).getTime() - new Date(a.deliveredAt || a.updatedAt || a.createdAt || a.created_at || 0).getTime());
+  }, [orders, activeTrackingOrderId, neighborOrderIds]);
+
+  // Pedido activo en curso (pending, preparing, on_the_way)
+  const inProgressOrder = useMemo(() => {
+    const relevantIds = new Set([activeTrackingOrderId, ...(neighborOrderIds || [])].filter(Boolean));
+    return (orders || []).find(
+      o => o && (relevantIds.has(o.id) || o.id === activeTrackingOrderId) && ['pending', 'preparing', 'on_the_way'].includes(o.status)
+    );
+  }, [orders, activeTrackingOrderId, neighborOrderIds]);
+
+  // Pedido recién entregado para banner de felicitación / aviso
+  const recentDeliveredOrder = useMemo(() => {
+    if (inProgressOrder) return null;
+    return (orders || []).find(
+      o => o && o.id === activeTrackingOrderId && o.status === 'delivered'
+    );
+  }, [orders, activeTrackingOrderId, inProgressOrder]);
+
+  const activeOrder = inProgressOrder || recentDeliveredOrder;
+  const isDeliveredActive = Boolean(activeOrder && activeOrder.status === 'delivered');
   const isPickup = activeOrder ? (activeOrder.deliveryType === 'pickup' || activeOrder.delivery_type === 'pickup') : false;
 
   const orderTitle = activeOrder ? (
-    isPickup
-      ? activeOrder.status === 'on_the_way'
-        ? `¡Tu pedido está listo para recoger! (#${activeOrder.id})`
-        : activeOrder.status === 'preparing'
-          ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
-          : `¡Pedido recibido! (#${activeOrder.id})`
-      : activeOrder.status === 'on_the_way'
-        ? `¡Tienes un pedido en camino! (#${activeOrder.id})`
-        : activeOrder.status === 'preparing'
-          ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
-          : `¡Pedido recibido! (#${activeOrder.id})`
+    isDeliveredActive
+      ? isPickup
+        ? `¡Tu pedido #${activeOrder.id} ya fue retirado con éxito!`
+        : `¡Tu pedido #${activeOrder.id} fue entregado con éxito!`
+      : isPickup
+        ? activeOrder.status === 'on_the_way'
+          ? `¡Tu pedido está listo para recoger! (#${activeOrder.id})`
+          : activeOrder.status === 'preparing'
+            ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
+            : `¡Pedido recibido! (#${activeOrder.id})`
+        : activeOrder.status === 'on_the_way'
+          ? `¡Tienes un pedido en camino! (#${activeOrder.id})`
+          : activeOrder.status === 'preparing'
+            ? `¡Tu pedido se está preparando! (#${activeOrder.id})`
+            : `¡Pedido recibido! (#${activeOrder.id})`
   ) : '';
 
   const orderSubtitle = activeOrder ? (
-    isPickup
-      ? activeOrder.status === 'on_the_way'
-        ? `Pasa a retirarlo por el mostrador de ${storeConfig?.name || 'la tienda'}`
-        : activeOrder.status === 'preparing'
-          ? `Empacando tus productos para entrega en mostrador`
-          : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
-      : activeOrder.status === 'on_the_way'
-        ? `El repartidor va rumbo a ${activeOrder.customer?.address || selectedLocation?.address || 'tu dirección'}`
-        : activeOrder.status === 'preparing'
-          ? `Empacando tus productos frescos para el despacho`
-          : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
+    isDeliveredActive
+      ? isPickup
+        ? `Pasa a disfrutar de tus productos. ¡Gracias por comprar en ${storeConfig?.name || 'la tienda'}!`
+        : `Entregado en tu puerta. ¡Disfruta tus productos frescos del barrio!`
+      : isPickup
+        ? activeOrder.status === 'on_the_way'
+          ? `Pasa a retirarlo por el mostrador de ${storeConfig?.name || 'la tienda'}`
+          : activeOrder.status === 'preparing'
+            ? `Empacando tus productos para entrega en mostrador`
+            : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
+        : activeOrder.status === 'on_the_way'
+          ? `El repartidor va rumbo a ${activeOrder.customer?.address || selectedLocation?.address || 'tu dirección'}`
+          : activeOrder.status === 'preparing'
+            ? `Empacando tus productos frescos para el despacho`
+            : `Esperando confirmación de ${storeConfig?.name || 'la tienda'}`
   ) : '';
 
   const handleDismissActiveOrder = (e) => {
@@ -236,12 +270,22 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         onOpenLocationModal={onOpenLocationModal}
       />
 
-      {/* Banner de Pedido en Curso si existe */}
+      {/* Banner de Pedido en Curso o Pedido Recién Entregado */}
       {activeOrder && (
-        <div className="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 animate-pulse-glow relative">
+        <div className={`mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 relative ${
+          isDeliveredActive 
+            ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 animate-fadeIn border border-emerald-400/40' 
+            : 'bg-gradient-to-r from-emerald-500 to-teal-600 animate-pulse-glow'
+        }`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 flex items-center justify-center font-bold shrink-0">
-              {isPickup ? <Store className="w-5 h-5 text-white" /> : <ShoppingBag className="w-5 h-5 text-white" />}
+              {isDeliveredActive ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-200" />
+              ) : isPickup ? (
+                <Store className="w-5 h-5 text-white" />
+              ) : (
+                <ShoppingBag className="w-5 h-5 text-white" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -249,7 +293,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
                   {orderTitle}
                 </p>
                 <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  {isPickup ? 'Mostrador' : 'Delivery'}
+                  {isDeliveredActive ? '✓ Entregado' : isPickup ? 'Mostrador' : 'Delivery'}
                 </span>
               </div>
               <p className="text-[11px] sm:text-xs text-emerald-100 font-medium mt-0.5">
@@ -259,10 +303,13 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
-              onClick={() => setIsTrackingModalOpen(true)}
+              onClick={() => {
+                setActiveTrackingOrderId(activeOrder.id);
+                setIsTrackingModalOpen(true);
+              }}
               className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-white text-emerald-900 font-black text-xs shadow-md hover:bg-emerald-50 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer"
             >
-              <span>Ver Seguimiento en Vivo</span>
+              <span>{isDeliveredActive ? 'Ver Detalle y Recibo' : 'Ver Seguimiento en Vivo'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -275,6 +322,133 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             </button>
           </div>
         </div>
+      )}
+
+      {/* SECCIÓN DE ENTREGADOS: Historial y Lista de Pedidos Entregados del Vecino */}
+      {neighborDeliveredOrders.length > 0 && (
+        <section className="mb-6 sm:mb-8 rounded-3xl bg-white border border-emerald-200 shadow-sm p-4 sm:p-5 space-y-3.5 animate-fadeIn">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center font-bold shadow-2xs">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight">
+                    Pedidos Entregados
+                  </h3>
+                  <span className="px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-black">
+                    {neighborDeliveredOrders.length}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Registro de tus pedidos despachados y recibidos exitosamente
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsDeliveredSectionOpen(prev => !prev)}
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors"
+            >
+              <span>{isDeliveredSectionOpen ? 'Ocultar' : 'Ver pedidos'}</span>
+              <span className={`text-[10px] transform transition-transform ${isDeliveredSectionOpen ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+          </div>
+
+          {isDeliveredSectionOpen && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              {neighborDeliveredOrders.map(order => {
+                const isPickup = order.deliveryType === 'pickup' || order.delivery_type === 'pickup';
+                const itemsCount = (order.items || []).reduce((acc, it) => acc + (it.quantity || 1), 0);
+                const currency = storeConfig?.currencySymbol || 'Bs.';
+                const orderDate = order.deliveredAt || order.updatedAt || order.createdAt || order.created_at;
+
+                return (
+                  <div 
+                    key={order.id}
+                    className="p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/80 hover:border-emerald-300 hover:bg-emerald-50/20 transition-all flex flex-col justify-between gap-2.5 shadow-2xs"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono text-xs font-black text-slate-900">
+                              #{order.id}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200/80">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>{isPickup ? 'Retirado en Tienda' : 'Entregado'}</span>
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            {orderDate ? new Date(orderDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Hoy'}
+                          </p>
+                        </div>
+
+                        <span className="text-sm sm:text-base font-black text-emerald-800 whitespace-nowrap">
+                          {currency} {Number(order.total || 0).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Lista resumida de productos */}
+                      <div className="bg-white p-2 rounded-xl border border-slate-200/60 text-xs text-slate-600 space-y-0.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          {itemsCount} {itemsCount === 1 ? 'producto' : 'productos'}:
+                        </p>
+                        <p className="text-xs font-medium text-slate-800 line-clamp-2">
+                          {(order.items || []).map(it => `${it.quantity || 1}x ${it.name}`).join(' • ') || 'Abarrotes variados'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTrackingOrderId(order.id);
+                          setIsTrackingModalOpen(true);
+                        }}
+                        className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <PackageCheck className="w-3.5 h-3.5" />
+                        <span>Ver Seguimiento en Vivo</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (Array.isArray(order.items)) {
+                            let addedCount = 0;
+                            order.items.forEach(it => {
+                              const existingProd = products.find(p => p.id === it.id);
+                              if (existingProd) {
+                                addToCart?.(existingProd, it.quantity || 1);
+                                addedCount++;
+                              }
+                            });
+                            if (addedCount > 0) {
+                              showToast?.('Productos agregados nuevamente a tu canasta', 'success');
+                              onOpenCart?.();
+                            } else {
+                              showToast?.('Los productos ya no se encuentran en catálogo', 'warning');
+                            }
+                          }
+                        }}
+                        className="py-1.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs transition-colors cursor-pointer shrink-0"
+                        title="Volver a pedir estos mismos productos"
+                      >
+                        Repetir
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
       )}
 
       {/* Barra de Categorías */}
