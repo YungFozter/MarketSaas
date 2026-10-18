@@ -321,14 +321,16 @@ export const syncProductsWithCanonicalCatalog = (prods = [], storeSlug = 'defaul
       const canon = canonMap.get(key) || canonMap.get(norm.id);
       if (canon) {
         return {
+          ...canon,
           ...norm,
-          name: canon.name,
-          price: canon.price !== undefined ? canon.price : norm.price,
-          image: (norm.image && !norm.image.includes('producto-sin-imagen')) ? norm.image : canon.image,
-          category: (norm.category === 'Sin definir' || !norm.category) ? canon.category : norm.category,
-          stock: (canon.stock <= canon.minStock || norm.stock === 'Sin definir') ? canon.stock : norm.stock,
-          minStock: canon.minStock !== undefined ? canon.minStock : norm.minStock,
-          min_stock: canon.minStock !== undefined ? canon.minStock : norm.minStock
+          // Preservar SIEMPRE los datos editados por el usuario si existen y son válidos
+          name: norm.name?.trim() ? norm.name : canon.name,
+          price: (norm.price !== undefined && norm.price !== null && !isNaN(norm.price)) ? norm.price : canon.price,
+          image: (norm.image && !norm.image.includes('producto-sin-imagen')) ? norm.image : (canon.image || norm.image),
+          category: (norm.category && norm.category !== 'Sin definir') ? norm.category : (canon.category || 'Sin definir'),
+          stock: (norm.stock !== undefined && norm.stock !== null && norm.stock !== 'Sin definir') ? norm.stock : (canon.stock ?? 10),
+          minStock: (norm.minStock !== undefined && norm.minStock !== null && norm.minStock !== 'Sin definir') ? norm.minStock : (canon.minStock ?? 5),
+          min_stock: (norm.min_stock !== undefined && norm.min_stock !== null && norm.min_stock !== 'Sin definir') ? norm.min_stock : (canon.minStock ?? 5)
         };
       }
       return norm;
@@ -3796,6 +3798,33 @@ export const StoreProvider = ({ children }) => {
       }
     } catch (e) {}
 
+    // Descontar inventario de forma inmediata y reactiva en memoria y localStorage (Pedido Vecino)
+    setProducts(prevProds => {
+      let changed = false;
+      const updated = prevProds.map(p => {
+        const cartItem = cart.find(ci => ci.id === p.id);
+        if (cartItem && p.stock !== 'Sin definir' && p.stock != null) {
+          const curStock = typeof p.stock === 'number' ? p.stock : parseInt(p.stock, 10);
+          if (!isNaN(curStock)) {
+            changed = true;
+            const newStock = Math.max(0, curStock - (Number(cartItem.quantity) || 1));
+            return { ...p, stock: newStock };
+          }
+        }
+        return p;
+      });
+
+      if (changed) {
+        try {
+          localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updated));
+          if (tenantSlug === 'matias-tiendatodo') {
+            localStorage.setItem('marketsaas_default_products', JSON.stringify(updated));
+          }
+        } catch (e) {}
+      }
+      return changed ? updated : prevProds;
+    });
+
     if (supabase) {
       // C) WebSocket Broadcast a través de Supabase Realtime a otros dispositivos (celular o PC del dueño)
       try {
@@ -3819,17 +3848,17 @@ export const StoreProvider = ({ children }) => {
         }
       });
 
-      // Descontar inventario de forma atómica en Supabase (RPC) para productos con stock numérico definido
+      // Descontar inventario de forma atómica y persistente en Supabase
       cart.forEach(item => {
-        if (item.stock !== 'Sin definir' && item.stock != null) {
-          supabase.rpc('decrement_stock', { product_id: item.id, quantity: item.quantity }).then(({ error }) => {
-            if (error) {
-              const numStock = typeof item.stock === 'number' ? item.stock : parseInt(item.stock, 10);
-              if (!isNaN(numStock)) {
-                supabase.from('products').update({ stock: Math.max(0, numStock - item.quantity) }).eq('id', item.id);
-              }
-            }
-          });
+        const currentProd = products.find(p => p.id === item.id);
+        const curStock = currentProd && currentProd.stock !== 'Sin definir' && currentProd.stock != null
+          ? (typeof currentProd.stock === 'number' ? currentProd.stock : parseInt(currentProd.stock, 10))
+          : (typeof item.stock === 'number' ? item.stock : parseInt(item.stock, 10));
+
+        if (!isNaN(curStock)) {
+          const newStock = Math.max(0, curStock - (Number(item.quantity) || 1));
+          supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 }).then();
         }
       });
     }
@@ -4054,7 +4083,8 @@ export const StoreProvider = ({ children }) => {
 
   // Crear o Editar Producto (Dueño) con persistencia garantizada en Nube y Local
   const saveProduct = async (productData, options = {}) => {
-    if (!currentUser && !isImpersonating) {
+    const canManage = Boolean(currentUser || isImpersonating || merchantStore?.id || tenantSlug);
+    if (!canManage) {
       showToast('Acceso denegado: Debes iniciar sesión como dueño para modificar productos.', 'error');
       return { success: false, error: 'Unauthorized' };
     }
@@ -4083,44 +4113,48 @@ export const StoreProvider = ({ children }) => {
     const isPop = Boolean(productData.isPopular ?? productData.is_popular);
     const isAct = productData.isActive !== undefined ? Boolean(productData.isActive) : (productData.is_active !== undefined ? Boolean(productData.is_active) : true);
 
-    // Registro sanitizado canónico con todas las columnas soportadas en Supabase
-    const dbRecord = {
+    // Registro sanitizado canónico conteniendo estrictamente columnas reales de la tabla 'products' de Supabase
+    const cleanDbRecord = {
       id: prodId,
       tenant_id: tenantSlug,
       name: productData.name?.trim() || 'Producto Sin Nombre',
       category: productData.category?.trim() || 'Sin definir',
       price: numPrice,
       original_price: origPrice,
-      originalprice: origPrice,
-      originalPrice: origPrice,
       cost_price: String(costVal),
-      costPrice: String(costVal),
       unit: productData.unit?.trim() || 'Sin definir',
       stock: stockVal,
       min_stock: String(minStockVal),
-      minStock: String(minStockVal),
       image: cleanImage,
       badge: productData.badge?.trim() || '',
       code: resolvedCode,
       description: productData.description?.trim() || 'Sin definir',
       is_popular: isPop,
-      isPopular: isPop,
       is_active: isAct,
-      isactive: isAct,
-      isActive: isAct,
-      supplier_id: String(productData.supplierId || productData.supplier_id || ''),
-      supplierId: String(productData.supplierId || productData.supplier_id || ''),
-      supplier_name: String(productData.supplierName || productData.supplier_name || ''),
-      supplierName: String(productData.supplierName || productData.supplier_name || ''),
       updated_at: new Date().toISOString()
     };
+    if (productData.supplierId || productData.supplier_id) {
+      cleanDbRecord.supplier_id = String(productData.supplierId || productData.supplier_id);
+    }
 
-    const normalizedProd = normalizeProduct(dbRecord);
+    const normalizedProd = normalizeProduct({
+      ...cleanDbRecord,
+      supplierId: cleanDbRecord.supplier_id || '',
+      supplierName: productData.supplierName || productData.supplier_name || '',
+      costPrice: costVal,
+      minStock: minStockVal,
+      originalPrice: origPrice,
+      isPopular: isPop,
+      isActive: isAct
+    });
 
     // 1. Actualización inmediata en Estado React (Optimistic UI)
     let nextProducts;
     if (isEdit) {
       nextProducts = products.map(p => (p.id === prodId ? { ...p, ...normalizedProd } : p));
+      if (!nextProducts.some(p => p.id === prodId)) {
+        nextProducts = [normalizedProd, ...nextProducts];
+      }
     } else {
       nextProducts = [normalizedProd, ...products];
     }
@@ -4129,6 +4163,9 @@ export const StoreProvider = ({ children }) => {
     // 2. Persistencia en LocalStorage protegida contra cuota
     try {
       localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
+      if (tenantSlug === 'matias-tiendatodo') {
+        localStorage.setItem('marketsaas_default_products', JSON.stringify(nextProducts));
+      }
     } catch (lsErr) {
       console.warn('Aviso: Cuota de LocalStorage al guardar producto:', lsErr);
     }
@@ -4139,67 +4176,31 @@ export const StoreProvider = ({ children }) => {
         let savedSuccessfully = false;
         let lastError = null;
 
-        if (isEdit) {
-          // Intentar actualización directa
-          const { data: updateData, error: updateErr } = await supabase
-            .from('products')
-            .update(dbRecord)
-            .eq('id', prodId)
-            .select();
+        // Intentar upsert atómico directo con cleanDbRecord
+        const { data: upsertData, error: upsertErr } = await supabase
+          .from('products')
+          .upsert([cleanDbRecord], { onConflict: 'id' })
+          .select();
 
-          if (!updateErr && updateData && updateData.length > 0) {
-            savedSuccessfully = true;
-          } else {
-            lastError = updateErr;
-            // Si retornó 0 filas (p.ej. el producto no existía en la nube), intentar upsert
-            const { data: upsertData, error: upsertErr } = await supabase
-              .from('products')
-              .upsert([dbRecord])
-              .select();
-
-            if (!upsertErr && upsertData && upsertData.length > 0) {
-              savedSuccessfully = true;
-            } else if (upsertErr) {
-              lastError = upsertErr;
-            }
-          }
+        if (!upsertErr && upsertData && upsertData.length > 0) {
+          savedSuccessfully = true;
         } else {
-          // Inserción directa para nuevo producto
-          const { data: insertData, error: insertErr } = await supabase
-            .from('products')
-            .insert([dbRecord])
-            .select();
+          lastError = upsertErr;
 
-          if (!insertErr && insertData && insertData.length > 0) {
-            savedSuccessfully = true;
-          } else {
-            lastError = insertErr;
-            // Si el ID ya existiera, intentar upsert
-            const { data: upsertData, error: upsertErr } = await supabase
+          // Si falló por columna supplier_id inexistente en Supabase, reintentar sin supplier_id
+          if (cleanDbRecord.supplier_id) {
+            const noSupplierRecord = { ...cleanDbRecord };
+            delete noSupplierRecord.supplier_id;
+            const { data: retryData, error: retryErr } = await supabase
               .from('products')
-              .upsert([dbRecord])
+              .upsert([noSupplierRecord], { onConflict: 'id' })
               .select();
 
-            if (!upsertErr && upsertData && upsertData.length > 0) {
+            if (!retryErr && retryData && retryData.length > 0) {
               savedSuccessfully = true;
-            } else if (upsertErr) {
-              lastError = upsertErr;
+            } else if (retryErr) {
+              lastError = retryErr;
             }
-          }
-        }
-
-        // Si falló por falta de columnas como supplier_id en Supabase, reintentar con baseDbRecord
-        if (!savedSuccessfully && lastError?.message && (lastError.message.includes('supplier_id') || lastError.message.includes('supplier'))) {
-          const cleanDbRecord = { ...dbRecord };
-          delete cleanDbRecord.supplier_id;
-          delete cleanDbRecord.supplierId;
-          delete cleanDbRecord.supplier_name;
-          delete cleanDbRecord.supplierName;
-          const { data: retryData, error: retryErr } = isEdit
-            ? await supabase.from('products').update(cleanDbRecord).eq('id', prodId).select()
-            : await supabase.from('products').insert([cleanDbRecord]).select();
-          if (!retryErr && retryData && retryData.length > 0) {
-            savedSuccessfully = true;
           }
         }
 
@@ -4207,7 +4208,7 @@ export const StoreProvider = ({ children }) => {
         if (!savedSuccessfully) {
           try {
             const { data: rpcData, error: rpcErr } = await supabase.rpc('save_product_secure', {
-              p_product: dbRecord
+              p_product: cleanDbRecord
             });
             if (!rpcErr && rpcData) {
               savedSuccessfully = true;
@@ -4220,7 +4221,7 @@ export const StoreProvider = ({ children }) => {
         if (savedSuccessfully) {
           if (!silent) {
             showToast(
-              isEdit ? `Producto "${dbRecord.name}" guardado y sincronizado.` : `Nuevo producto "${dbRecord.name}" creado (${dbRecord.code}).`,
+              isEdit ? `Producto "${cleanDbRecord.name}" guardado y sincronizado.` : `Nuevo producto "${cleanDbRecord.name}" creado (${cleanDbRecord.code}).`,
               'success'
             );
           }
@@ -4244,7 +4245,7 @@ export const StoreProvider = ({ children }) => {
       }
     } else {
       if (!silent) {
-        showToast(isEdit ? `Producto "${dbRecord.name}" actualizado.` : `Nuevo producto creado.`, 'success');
+        showToast(isEdit ? `Producto "${cleanDbRecord.name}" guardado.` : `Nuevo producto "${cleanDbRecord.name}" creado.`, 'success');
       }
       return { success: true, product: normalizedProd };
     }
@@ -4544,6 +4545,33 @@ export const StoreProvider = ({ children }) => {
       return updated;
     });
 
+    // Descontar inventario de forma inmediata y reactiva en memoria y localStorage (Venta POS)
+    setProducts(prevProds => {
+      let changed = false;
+      const updated = prevProds.map(p => {
+        const posItem = posItems.find(pi => pi.id === p.id);
+        if (posItem && p.stock !== 'Sin definir' && p.stock != null) {
+          const curStock = typeof p.stock === 'number' ? p.stock : parseInt(p.stock, 10);
+          if (!isNaN(curStock)) {
+            changed = true;
+            const newStock = Math.max(0, curStock - (Number(posItem.quantity) || 1));
+            return { ...p, stock: newStock };
+          }
+        }
+        return p;
+      });
+
+      if (changed) {
+        try {
+          localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updated));
+          if (tenantSlug === 'matias-tiendatodo') {
+            localStorage.setItem('marketsaas_default_products', JSON.stringify(updated));
+          }
+        } catch (e) {}
+      }
+      return changed ? updated : prevProds;
+    });
+
     try {
       window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalizedPosOrder }));
     } catch (e) {}
@@ -4554,18 +4582,17 @@ export const StoreProvider = ({ children }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
       });
 
-      // Descontar inventario de forma atómica en Supabase
+      // Descontar inventario de forma atómica y persistente en Supabase
       posItems.forEach(item => {
         const prod = products.find(p => p.id === item.id);
-        if (prod && prod.stock !== 'Sin definir' && prod.stock != null) {
-          supabase.rpc('decrement_stock', { product_id: item.id, quantity: item.quantity }).then(({ error }) => {
-            if (error) {
-              const currentNum = typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock, 10);
-              if (!isNaN(currentNum)) {
-                supabase.from('products').update({ stock: Math.max(0, currentNum - item.quantity) }).eq('id', item.id);
-              }
-            }
-          });
+        const curStock = prod && prod.stock !== 'Sin definir' && prod.stock != null
+          ? (typeof prod.stock === 'number' ? prod.stock : parseInt(prod.stock, 10))
+          : (typeof item.stock === 'number' ? item.stock : parseInt(item.stock, 10));
+
+        if (!isNaN(curStock)) {
+          const newStock = Math.max(0, curStock - (Number(item.quantity) || 1));
+          supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 }).then();
         }
       });
     }
@@ -4929,11 +4956,15 @@ export const StoreProvider = ({ children }) => {
 
   const toggleSupplierOrderItemStatus = (supplierId, itemId) => {
     let updatedList = [];
+    let toggledItem = null;
+    let nextStatus = 'pending';
+
     setSuppliers(prev => prev.map(s => {
       if (s.id === supplierId) {
         updatedList = (s.orderItems || []).map(item => {
           if (item.id === itemId) {
-            const nextStatus = item.status === 'received' ? 'pending' : 'received';
+            nextStatus = item.status === 'received' ? 'pending' : 'received';
+            toggledItem = item;
             return { ...item, status: nextStatus };
           }
           return item;
@@ -4948,6 +4979,69 @@ export const StoreProvider = ({ children }) => {
     }));
 
     syncSupplierOrderItemsToSupabase(supplierId, updatedList);
+
+    // Si se encontró el ítem, sincronizar el aumento/ajuste de stock en el inventario
+    if (toggledItem) {
+      const targetName = (toggledItem.productName || toggledItem.name || '').toLowerCase().trim();
+      const qtyMatch = String(toggledItem.quantity || '1').match(/\d+/);
+      const units = qtyMatch ? parseInt(qtyMatch[0], 10) : 1;
+      const isReceived = nextStatus === 'received';
+      const delta = isReceived ? units : -units;
+
+      let matchedProduct = null;
+      setProducts(prevProds => {
+        let changed = false;
+        const updated = prevProds.map(p => {
+          const matchById = toggledItem.productId && p.id === toggledItem.productId;
+          const matchByName = targetName && p.name && p.name.toLowerCase().trim() === targetName;
+
+          if (matchById || matchByName) {
+            changed = true;
+            matchedProduct = p;
+            const curStock = (typeof p.stock === 'number') ? p.stock : (parseInt(p.stock, 10) || 0);
+            const newStock = Math.max(0, curStock + delta);
+
+            // Persistir de inmediato en Supabase
+            if (supabase) {
+              supabase
+                .from('products')
+                .update({ stock: String(newStock), updated_at: new Date().toISOString() })
+                .eq('id', p.id)
+                .then();
+            }
+
+            return { ...p, stock: newStock };
+          }
+          return p;
+        });
+
+        if (changed) {
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updated));
+            if (tenantSlug === 'matias-tiendatodo') {
+              localStorage.setItem('marketsaas_default_products', JSON.stringify(updated));
+            }
+          } catch (e) {}
+        }
+        return changed ? updated : prevProds;
+      });
+
+      if (isReceived) {
+        showToast(
+          matchedProduct 
+            ? `¡Mercadería recibida! +${units} u. sumadas al stock de "${matchedProduct.name}".`
+            : `Ítem marcado como recibido (+${units} u.).`,
+          'success'
+        );
+      } else {
+        showToast(
+          matchedProduct 
+            ? `Recepción revertida: -${units} u. en el stock de "${matchedProduct.name}".`
+            : `Ítem marcado como pendiente.`,
+          'info'
+        );
+      }
+    }
   };
 
   const clearSupplierOrderItems = (supplierId, onlyReceived = false) => {
