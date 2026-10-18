@@ -56,6 +56,8 @@ export const InventoryManager = () => {
     addSupplier,
     updateSupplier,
     deleteSupplier,
+    supplierCategories = SUPPLIER_CATEGORIES,
+    addSupplierCategory,
     isSubscriptionActive
   } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
@@ -66,6 +68,15 @@ export const InventoryManager = () => {
   const activeSuppliers = useMemo(() => {
     return filterOutDemoSuppliers(suppliers || []).filter(Boolean);
   }, [suppliers]);
+
+  // Lista unificada de rubros / categorías de proveedores disponibles
+  const allSupplierCategories = useMemo(() => {
+    const fromStore = Array.isArray(supplierCategories) && supplierCategories.length > 0
+      ? supplierCategories
+      : (Array.isArray(storeConfig?.supplierCategories) && storeConfig.supplierCategories.length > 0 ? storeConfig.supplierCategories : SUPPLIER_CATEGORIES);
+    const combined = [...fromStore, ...SUPPLIER_CATEGORIES];
+    return Array.from(new Set(combined.map(c => String(c).trim()).filter(Boolean)));
+  }, [supplierCategories, storeConfig?.supplierCategories]);
 
   const baseDefaults = [
     'Lácteos & Huevos',
@@ -218,7 +229,78 @@ export const InventoryManager = () => {
   const [isUpdatingInlineSupplier, setIsUpdatingInlineSupplier] = useState(false);
   const supplierDropdownRef = useRef(null);
 
-  // Cerrar el selector de proveedores al hacer click fuera o presionar Esc
+  // Estados para selector scrolleable y CRUD inline de Rubro / Categoría de Proveedor (Creación)
+  const [isSupplierCategoryDropdownOpen, setIsSupplierCategoryDropdownOpen] = useState(false);
+  const [supplierCategorySearch, setSupplierCategorySearch] = useState('');
+  const [isCreatingInlineSupplierCategory, setIsCreatingInlineSupplierCategory] = useState(false);
+  const [inlineSupplierCategoryInput, setInlineSupplierCategoryInput] = useState('');
+  const [isSavingSupplierCategory, setIsSavingSupplierCategory] = useState(false);
+  const supplierCategoryDropdownRef = useRef(null);
+
+  // Estados para selector scrolleable de Rubro en Edición Inline de Proveedor
+  const [isEditSupplierCategoryDropdownOpen, setIsEditSupplierCategoryDropdownOpen] = useState(false);
+  const [editSupplierCategorySearch, setEditSupplierCategorySearch] = useState('');
+  const [isCreatingEditSupplierCategory, setIsCreatingEditSupplierCategory] = useState(false);
+  const [editSupplierCategoryInput, setEditSupplierCategoryInput] = useState('');
+  const [isSavingEditSupplierCategory, setIsSavingEditSupplierCategory] = useState(false);
+  const editSupplierCategoryDropdownRef = useRef(null);
+
+  // Crear y guardar nuevo rubro de proveedor inline
+  const handleCreateSupplierCategoryInline = async (e, isEditMode = false) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const cleanCat = isEditMode ? editSupplierCategoryInput.trim() : inlineSupplierCategoryInput.trim();
+    if (!cleanCat) return;
+
+    const existing = allSupplierCategories.find(c => c.toLowerCase() === cleanCat.toLowerCase());
+    if (existing) {
+      showToast(`El rubro "${existing}" ya existe. Seleccionado.`, 'info');
+      if (isEditMode) {
+        setEditInlineSupplierForm(prev => ({ ...prev, category: existing }));
+        setIsEditSupplierCategoryDropdownOpen(false);
+        setIsCreatingEditSupplierCategory(false);
+        setEditSupplierCategoryInput('');
+      } else {
+        setInlineSupplierForm(prev => ({ ...prev, category: existing }));
+        setIsSupplierCategoryDropdownOpen(false);
+        setIsCreatingInlineSupplierCategory(false);
+        setInlineSupplierCategoryInput('');
+      }
+      return;
+    }
+
+    try {
+      if (isEditMode) setIsSavingEditSupplierCategory(true);
+      else setIsSavingSupplierCategory(true);
+
+      if (addSupplierCategory) {
+        await addSupplierCategory(cleanCat);
+      }
+
+      if (isEditMode) {
+        setEditInlineSupplierForm(prev => ({ ...prev, category: cleanCat }));
+        setIsEditSupplierCategoryDropdownOpen(false);
+        setIsCreatingEditSupplierCategory(false);
+        setEditSupplierCategoryInput('');
+      } else {
+        setInlineSupplierForm(prev => ({ ...prev, category: cleanCat }));
+        setIsSupplierCategoryDropdownOpen(false);
+        setIsCreatingInlineSupplierCategory(false);
+        setInlineSupplierCategoryInput('');
+      }
+      showToast(`Rubro "${cleanCat}" creado y asignado.`, 'success');
+    } catch (err) {
+      console.error('Error al registrar rubro de proveedor:', err);
+      showToast('Error al registrar nuevo rubro.', 'error');
+    } finally {
+      if (isEditMode) setIsSavingEditSupplierCategory(false);
+      else setIsSavingSupplierCategory(false);
+    }
+  };
+
+  // Cerrar el selector de proveedores y de rubros al hacer click fuera o presionar Esc
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(e.target)) {
@@ -226,24 +308,34 @@ export const InventoryManager = () => {
         setIsCreatingInlineSupplier(false);
         setEditingInlineSupplierId(null);
       }
+      if (supplierCategoryDropdownRef.current && !supplierCategoryDropdownRef.current.contains(e.target)) {
+        setIsSupplierCategoryDropdownOpen(false);
+        setIsCreatingInlineSupplierCategory(false);
+        setInlineSupplierCategoryInput('');
+      }
+      if (editSupplierCategoryDropdownRef.current && !editSupplierCategoryDropdownRef.current.contains(e.target)) {
+        setIsEditSupplierCategoryDropdownOpen(false);
+        setIsCreatingEditSupplierCategory(false);
+        setEditSupplierCategoryInput('');
+      }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setIsSupplierDropdownOpen(false);
         setIsCreatingInlineSupplier(false);
         setEditingInlineSupplierId(null);
+        setIsSupplierCategoryDropdownOpen(false);
+        setIsEditSupplierCategoryDropdownOpen(false);
       }
     };
 
-    if (isSupplierDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSupplierDropdownOpen]);
+  }, []);
 
   // Si se cierra el modal de producto, resetear selector de proveedor
   useEffect(() => {
@@ -252,6 +344,8 @@ export const InventoryManager = () => {
       setIsCreatingInlineSupplier(false);
       setEditingInlineSupplierId(null);
       setSupplierSearchTerm('');
+      setIsSupplierCategoryDropdownOpen(false);
+      setIsEditSupplierCategoryDropdownOpen(false);
     }
   }, [editingProduct]);
 
@@ -1540,17 +1634,140 @@ export const InventoryManager = () => {
                             </div>
                           </div>
 
-                          <div>
-                            <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Rubro / Categoría</label>
-                            <select
-                              value={inlineSupplierForm.category}
-                              onChange={(e) => setInlineSupplierForm({ ...inlineSupplierForm, category: e.target.value })}
-                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium bg-white focus:border-emerald-500 focus:outline-hidden"
+                          {/* Selector Scrolleable y Creación Inline de Rubro / Categoría del Proveedor */}
+                          <div className="relative" ref={supplierCategoryDropdownRef}>
+                            <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                              Rubro / Categoría *
+                            </label>
+                            
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsSupplierCategoryDropdownOpen(prev => !prev);
+                                setIsCreatingInlineSupplierCategory(false);
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white flex items-center justify-between hover:border-emerald-400 focus:border-emerald-500 focus:outline-hidden cursor-pointer shadow-2xs"
                             >
-                              {SUPPLIER_CATEGORIES.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                              ))}
-                            </select>
+                              <span className="flex items-center gap-1.5 truncate text-slate-800">
+                                <Tag className="w-3 h-3 text-emerald-600 shrink-0" />
+                                <span className="truncate">{inlineSupplierForm.category || 'Seleccionar rubro...'}</span>
+                              </span>
+                              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSupplierCategoryDropdownOpen ? 'rotate-180 text-emerald-600' : ''}`} />
+                            </button>
+
+                            {/* Desplegable Flotante Scrolleable */}
+                            {isSupplierCategoryDropdownOpen && (
+                              <div 
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute left-0 right-0 z-50 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-fadeIn"
+                              >
+                                {/* Botón / Formulario Inline para Crear Nuevo Rubro */}
+                                <div className="p-2 border-b border-slate-100 bg-slate-50/80">
+                                  {isCreatingInlineSupplierCategory ? (
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center gap-1">
+                                        <input
+                                          type="text"
+                                          autoFocus
+                                          value={inlineSupplierCategoryInput}
+                                          onChange={(e) => setInlineSupplierCategoryInput(e.target.value)}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              e.preventDefault();
+                                              handleCreateSupplierCategoryInline(e, false);
+                                            }
+                                            if (e.key === 'Escape') {
+                                              setIsCreatingInlineSupplierCategory(false);
+                                              setInlineSupplierCategoryInput('');
+                                            }
+                                          }}
+                                          placeholder="Nombre del nuevo rubro..."
+                                          className="w-full px-2 py-1 text-xs rounded border border-emerald-300 bg-white font-semibold focus:outline-hidden"
+                                        />
+                                        <button
+                                          type="button"
+                                          disabled={isSavingSupplierCategory || !inlineSupplierCategoryInput.trim()}
+                                          onClick={(e) => handleCreateSupplierCategoryInline(e, false)}
+                                          className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-bold flex items-center gap-0.5 disabled:opacity-50 cursor-pointer shrink-0"
+                                          title="Guardar nuevo rubro"
+                                        >
+                                          {isSavingSupplierCategory ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setIsCreatingInlineSupplierCategory(false);
+                                            setInlineSupplierCategoryInput('');
+                                          }}
+                                          className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                      <span className="text-[9px] text-slate-400 block px-0.5">
+                                        Presiona Enter para guardar en base de datos
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsCreatingInlineSupplierCategory(true);
+                                      }}
+                                      className="w-full py-1 px-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 text-[11px] font-extrabold flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                                    >
+                                      <Plus className="w-3 h-3 text-emerald-600" />
+                                      <span>+ Crear nuevo rubro</span>
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Buscador de rubros */}
+                                {allSupplierCategories.length > 3 && (
+                                  <div className="p-1.5 border-b border-slate-100 bg-white">
+                                    <div className="relative">
+                                      <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                                      <input
+                                        type="text"
+                                        value={supplierCategorySearch}
+                                        onChange={(e) => setSupplierCategorySearch(e.target.value)}
+                                        placeholder="Buscar rubro..."
+                                        className="w-full pl-6 pr-2 py-1 text-[11px] rounded bg-slate-50 border border-slate-200 focus:bg-white focus:outline-hidden"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Lista Scrolleable de Rubros Disponibles */}
+                                <div className="max-h-44 overflow-y-auto divide-y divide-slate-50">
+                                  {allSupplierCategories
+                                    .filter(cat => !supplierCategorySearch || cat.toLowerCase().includes(supplierCategorySearch.toLowerCase()))
+                                    .map(cat => {
+                                      const isSelected = inlineSupplierForm.category === cat;
+                                      return (
+                                        <button
+                                          key={cat}
+                                          type="button"
+                                          onClick={() => {
+                                            setInlineSupplierForm(prev => ({ ...prev, category: cat }));
+                                            setIsSupplierCategoryDropdownOpen(false);
+                                          }}
+                                          className={`w-full px-2.5 py-1.5 text-left text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
+                                            isSelected
+                                              ? 'bg-emerald-50 text-emerald-900 font-bold'
+                                              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                                          }`}
+                                        >
+                                          <span className="truncate">{cat}</span>
+                                          {isSelected && <Check className="w-3 h-3 text-emerald-600 shrink-0 ml-1" />}
+                                        </button>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-end gap-2 pt-1">
@@ -1675,15 +1892,115 @@ export const InventoryManager = () => {
                                     className="px-2 py-1 rounded border border-amber-300 text-xs bg-white focus:outline-hidden"
                                   />
                                 </div>
-                                <div className="flex items-center justify-between pt-1">
-                                  <select
-                                    value={editInlineSupplierForm.category}
-                                    onChange={(e) => setEditInlineSupplierForm({ ...editInlineSupplierForm, category: e.target.value })}
-                                    className="px-2 py-1 rounded border border-amber-300 text-[11px] bg-white focus:outline-hidden"
-                                  >
-                                    {SUPPLIER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                  </select>
-                                  <div className="flex items-center gap-1">
+                                <div className="space-y-1.5 pt-1">
+                                  {/* Selector Scrolleable de Rubro en Edición */}
+                                  <div className="relative" ref={editSupplierCategoryDropdownRef}>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsEditSupplierCategoryDropdownOpen(prev => !prev);
+                                        setIsCreatingEditSupplierCategory(false);
+                                      }}
+                                      className="w-full px-2 py-1 rounded border border-amber-300 text-[11px] bg-white font-semibold flex items-center justify-between cursor-pointer focus:outline-hidden"
+                                    >
+                                      <span className="flex items-center gap-1 truncate text-amber-950">
+                                        <Tag className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                        <span className="truncate">{editInlineSupplierForm.category || 'Rubro...'}</span>
+                                      </span>
+                                      <ChevronDown className={`w-3 h-3 text-amber-600 transition-transform ${isEditSupplierCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {/* Desplegable Flotante Scrolleable */}
+                                    {isEditSupplierCategoryDropdownOpen && (
+                                      <div 
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="absolute left-0 right-0 z-50 mt-1 bg-white rounded-xl border border-amber-300 shadow-xl overflow-hidden animate-fadeIn"
+                                      >
+                                        <div className="p-1.5 border-b border-amber-100 bg-amber-50/70">
+                                          {isCreatingEditSupplierCategory ? (
+                                            <div className="flex items-center gap-1">
+                                              <input
+                                                type="text"
+                                                autoFocus
+                                                value={editSupplierCategoryInput}
+                                                onChange={(e) => setEditSupplierCategoryInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleCreateSupplierCategoryInline(e, true);
+                                                  }
+                                                  if (e.key === 'Escape') {
+                                                    setIsCreatingEditSupplierCategory(false);
+                                                    setEditSupplierCategoryInput('');
+                                                  }
+                                                }}
+                                                placeholder="Nuevo rubro..."
+                                                className="w-full px-1.5 py-0.5 text-[11px] rounded border border-amber-400 bg-white font-semibold focus:outline-hidden"
+                                              />
+                                              <button
+                                                type="button"
+                                                disabled={isSavingEditSupplierCategory || !editSupplierCategoryInput.trim()}
+                                                onClick={(e) => handleCreateSupplierCategoryInline(e, true)}
+                                                className="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shrink-0 cursor-pointer"
+                                              >
+                                                {isSavingEditSupplierCategory ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setIsCreatingEditSupplierCategory(false);
+                                                  setEditSupplierCategoryInput('');
+                                                }}
+                                                className="p-0.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                                              >
+                                                <X className="w-3 h-3" />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setIsCreatingEditSupplierCategory(true);
+                                              }}
+                                              className="w-full py-1 px-1.5 rounded bg-amber-100/70 hover:bg-amber-100 text-amber-900 text-[10px] font-extrabold flex items-center justify-center gap-1 cursor-pointer"
+                                            >
+                                              <Plus className="w-2.5 h-2.5 text-amber-700" />
+                                              <span>+ Crear nuevo rubro</span>
+                                            </button>
+                                          )}
+                                        </div>
+
+                                        {/* Lista scrolleable */}
+                                        <div className="max-h-36 overflow-y-auto divide-y divide-slate-100">
+                                          {allSupplierCategories.map(cat => {
+                                            const isSelected = editInlineSupplierForm.category === cat;
+                                            return (
+                                              <button
+                                                key={cat}
+                                                type="button"
+                                                onClick={() => {
+                                                  setEditInlineSupplierForm(prev => ({ ...prev, category: cat }));
+                                                  setIsEditSupplierCategoryDropdownOpen(false);
+                                                }}
+                                                className={`w-full px-2 py-1 text-left text-[11px] flex items-center justify-between transition-colors cursor-pointer ${
+                                                  isSelected
+                                                    ? 'bg-amber-100 text-amber-900 font-bold'
+                                                    : 'text-slate-700 hover:bg-slate-50'
+                                                }`}
+                                              >
+                                                <span className="truncate">{cat}</span>
+                                                {isSelected && <Check className="w-3 h-3 text-emerald-600 shrink-0 ml-1" />}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center justify-end gap-1 pt-1">
                                     <button
                                       type="button"
                                       onClick={() => setEditingInlineSupplierId(null)}

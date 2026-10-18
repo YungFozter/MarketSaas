@@ -4812,8 +4812,8 @@ export const StoreProvider = ({ children }) => {
     });
 
     try {
-      if (supabase && targetTenant && targetTenant !== 'default') {
-        await supabase.from('suppliers').insert([{
+      if (supabase && targetTenant) {
+        await supabase.from('suppliers').upsert([{
           id: newSupplier.id,
           tenant_id: targetTenant,
           name: newSupplier.name,
@@ -4825,7 +4825,7 @@ export const StoreProvider = ({ children }) => {
           order_items: newSupplier.orderItems,
           created_at: newSupplier.createdAt,
           updated_at: newSupplier.updatedAt
-        }]);
+        }], { onConflict: 'id' });
 
         supabase.from('store_config')
           .update({ config: { ...storeConfig, suppliersBackup: [newSupplier, ...suppliers] } })
@@ -4860,12 +4860,15 @@ export const StoreProvider = ({ children }) => {
       try {
         localStorage.setItem(`marketsaas_${activeSlug}_suppliers`, JSON.stringify(updatedList));
         localStorage.setItem(`marketsaas_${activeSlug}_suppliers_initialized`, 'true');
+        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
+          localStorage.setItem('marketsaas_default_suppliers', JSON.stringify(updatedList));
+        }
       } catch (e) {}
       return updatedList;
     });
 
     try {
-      if (supabase && targetTenant && targetTenant !== 'default') {
+      if (supabase && targetTenant) {
         const payload = {};
         if (updatedFields.name !== undefined) payload.name = updatedFields.name;
         if (updatedFields.contactName !== undefined) payload.contact_name = updatedFields.contactName;
@@ -4878,8 +4881,7 @@ export const StoreProvider = ({ children }) => {
 
         await supabase.from('suppliers')
           .update(payload)
-          .eq('id', supplierId)
-          .eq('tenant_id', targetTenant);
+          .eq('id', supplierId);
 
         supabase.from('store_config')
           .update({ config: { ...storeConfig, suppliersBackup: updatedList } })
@@ -4911,11 +4913,10 @@ export const StoreProvider = ({ children }) => {
     });
 
     try {
-      if (supabase && targetTenant && targetTenant !== 'default') {
+      if (supabase && targetTenant) {
         await supabase.from('suppliers')
           .delete()
-          .eq('id', supplierId)
-          .eq('tenant_id', targetTenant);
+          .eq('id', supplierId);
 
         supabase.from('store_config')
           .update({ config: { ...storeConfig, suppliersBackup: remaining } })
