@@ -116,7 +116,13 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
     }
 
     const nowParts = getBoliviaDateParts(new Date());
-    const validOrders = (orders || []).filter(o => o && o.status !== 'cancelled' && Array.isArray(o.items));
+    // Regla de negocio oficial: Solo se consideran ventas concretadas aquellas entregadas o de mostrador (POS)
+    const validOrders = (orders || []).filter(o => {
+      if (!o || o.status === 'cancelled' || !Array.isArray(o.items)) return false;
+      const isDelivered = o.status === 'delivered';
+      const isPos = Boolean(o.isPosSale || o.is_pos_sale || o.orderType === 'pos' || o.id?.startsWith('POS-'));
+      return isDelivered || isPos;
+    });
 
     const result = {
       today: { units: 0, revenue: 0, ordersCount: 0 },
@@ -180,6 +186,19 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
     return result;
   }, [product, orders]);
 
+  // Ítems actualmente agendados para este producto en el proveedor seleccionado
+  const pendingOrdersForProduct = useMemo(() => {
+    if (!product || !selectedSupplierId) return [];
+    const sup = activeSuppliers.find(s => s.id === selectedSupplierId);
+    if (!sup || !Array.isArray(sup.orderItems)) return [];
+    const prodNameNorm = normalizeSearchText(product.name || '');
+    return sup.orderItems.filter(item => {
+      const matchId = item.productId && item.productId === product.id;
+      const matchName = item.productName && normalizeSearchText(item.productName) === prodNameNorm;
+      return (matchId || matchName) && item.status !== 'received';
+    });
+  }, [product, selectedSupplierId, activeSuppliers]);
+
   if (!isOpen || !product) return null;
 
   const currentStats = salesMetrics[timePeriod] || salesMetrics.month;
@@ -193,6 +212,7 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
 
     const cleanQty = orderQuantity.trim() || '1 unidad';
     addSupplierOrderItem(selectedSupplierId, {
+      productId: product.id,
       productName: product.name,
       quantity: cleanQty.includes('unidad') || cleanQty.includes('fardo') || cleanQty.includes('docena') || cleanQty.includes('caja')
         ? cleanQty
@@ -410,6 +430,18 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
                       </option>
                     ))}
                   </select>
+
+                  {pendingOrdersForProduct.length > 0 && (
+                    <div className="mt-1.5 p-2 rounded-lg bg-emerald-50 border border-emerald-200/80 text-[11px] text-emerald-900 flex items-center justify-between">
+                      <span className="font-semibold flex items-center gap-1.5">
+                        <ShoppingBag className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Ya tienes {pendingOrdersForProduct.length} pedido(s) agendado(s):</span>
+                      </span>
+                      <span className="font-mono font-bold text-emerald-800">
+                        {pendingOrdersForProduct.map(p => p.quantity).join(', ')}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

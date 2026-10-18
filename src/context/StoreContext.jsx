@@ -4745,19 +4745,40 @@ export const StoreProvider = ({ children }) => {
   // GESTIÓN DE PROVEEDORES Y PEDIDOS DE ABASTECIMIENTO
   // ==============================================================================
 
-  const syncSupplierOrderItemsToSupabase = async (supplierId, updatedItems) => {
+  const saveSuppliersToLocal = (updatedSuppliers) => {
+    const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     try {
-      if (supabase && tenantSlug && tenantSlug !== 'default') {
-        await supabase.from('suppliers')
+      localStorage.setItem(`marketsaas_${activeSlug}_suppliers`, JSON.stringify(updatedSuppliers));
+      localStorage.setItem(`marketsaas_${activeSlug}_suppliers_initialized`, 'true');
+      if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
+        localStorage.setItem('marketsaas_default_suppliers', JSON.stringify(updatedSuppliers));
+      }
+    } catch (e) {}
+  };
+
+  const syncSupplierOrderItemsToSupabase = async (supplierId, updatedItems) => {
+    const targetTenant = merchantStore?.id || tenantSlug || 'default';
+    try {
+      if (supabase) {
+        const { error } = await supabase.from('suppliers')
           .update({
             order_items: updatedItems,
             updated_at: new Date().toISOString()
           })
-          .eq('id', supplierId)
-          .eq('tenant_id', tenantSlug);
+          .eq('id', supplierId);
+
+        if (error) {
+          await supabase.from('suppliers')
+            .update({
+              order_items: updatedItems,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', supplierId)
+            .eq('tenant_id', targetTenant);
+        }
       }
     } catch (e) {
-      // Fallback silencioso si la tabla aún no fue creada en Supabase
+      console.warn('Aviso sincronización proveedor en Supabase:', e);
     }
   };
 
@@ -4910,25 +4931,31 @@ export const StoreProvider = ({ children }) => {
   const addSupplierOrderItem = (supplierId, item) => {
     const newItem = {
       id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      productId: item.productId || '',
       productName: item.productName.trim(),
       quantity: item.quantity?.trim() || '1 unidad',
       status: 'pending',
-      notes: item.notes?.trim() || ''
+      notes: item.notes?.trim() || '',
+      createdAt: new Date().toISOString()
     };
 
     let updatedList = [];
-    setSuppliers(prev => prev.map(s => {
-      if (s.id === supplierId) {
-        const orderItems = Array.isArray(s.orderItems) ? s.orderItems : [];
-        updatedList = [...orderItems, newItem];
-        return {
-          ...s,
-          orderItems: updatedList,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return s;
-    }));
+    setSuppliers(prev => {
+      const next = prev.map(s => {
+        if (s.id === supplierId) {
+          const orderItems = Array.isArray(s.orderItems) ? s.orderItems : [];
+          updatedList = [...orderItems, newItem];
+          return {
+            ...s,
+            orderItems: updatedList,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      saveSuppliersToLocal(next);
+      return next;
+    });
 
     if (updatedList.length > 0) {
       syncSupplierOrderItemsToSupabase(supplierId, updatedList);
@@ -4939,17 +4966,21 @@ export const StoreProvider = ({ children }) => {
 
   const removeSupplierOrderItem = (supplierId, itemId) => {
     let updatedList = [];
-    setSuppliers(prev => prev.map(s => {
-      if (s.id === supplierId) {
-        updatedList = (s.orderItems || []).filter(item => item.id !== itemId);
-        return {
-          ...s,
-          orderItems: updatedList,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return s;
-    }));
+    setSuppliers(prev => {
+      const next = prev.map(s => {
+        if (s.id === supplierId) {
+          updatedList = (s.orderItems || []).filter(item => item.id !== itemId);
+          return {
+            ...s,
+            orderItems: updatedList,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      saveSuppliersToLocal(next);
+      return next;
+    });
 
     syncSupplierOrderItemsToSupabase(supplierId, updatedList);
   };
@@ -4959,24 +4990,28 @@ export const StoreProvider = ({ children }) => {
     let toggledItem = null;
     let nextStatus = 'pending';
 
-    setSuppliers(prev => prev.map(s => {
-      if (s.id === supplierId) {
-        updatedList = (s.orderItems || []).map(item => {
-          if (item.id === itemId) {
-            nextStatus = item.status === 'received' ? 'pending' : 'received';
-            toggledItem = item;
-            return { ...item, status: nextStatus };
-          }
-          return item;
-        });
-        return {
-          ...s,
-          orderItems: updatedList,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return s;
-    }));
+    setSuppliers(prev => {
+      const next = prev.map(s => {
+        if (s.id === supplierId) {
+          updatedList = (s.orderItems || []).map(item => {
+            if (item.id === itemId) {
+              nextStatus = item.status === 'received' ? 'pending' : 'received';
+              toggledItem = item;
+              return { ...item, status: nextStatus };
+            }
+            return item;
+          });
+          return {
+            ...s,
+            orderItems: updatedList,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      saveSuppliersToLocal(next);
+      return next;
+    });
 
     syncSupplierOrderItemsToSupabase(supplierId, updatedList);
 
@@ -5046,19 +5081,23 @@ export const StoreProvider = ({ children }) => {
 
   const clearSupplierOrderItems = (supplierId, onlyReceived = false) => {
     let updatedList = [];
-    setSuppliers(prev => prev.map(s => {
-      if (s.id === supplierId) {
-        updatedList = onlyReceived 
-          ? (s.orderItems || []).filter(item => item.status !== 'received')
-          : [];
-        return {
-          ...s,
-          orderItems: updatedList,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return s;
-    }));
+    setSuppliers(prev => {
+      const next = prev.map(s => {
+        if (s.id === supplierId) {
+          updatedList = onlyReceived 
+            ? (s.orderItems || []).filter(item => item.status !== 'received')
+            : [];
+          return {
+            ...s,
+            orderItems: updatedList,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      saveSuppliersToLocal(next);
+      return next;
+    });
 
     syncSupplierOrderItemsToSupabase(supplierId, updatedList);
     showToast(onlyReceived ? 'Ítems recibidos limpiados.' : 'Lista de compras vaciada.', 'info');

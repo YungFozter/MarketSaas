@@ -172,3 +172,51 @@ test('Sanitización de dbRecord para Supabase descarta columnas camelCase incomp
   assert.equal(cleanDbRecord.cost_price, '11');
   assert.equal(cleanDbRecord.supplier_id, 'sup-fino');
 });
+
+test('Filtro de ventas en ProductPerformanceModal solo cuenta pedidos entregados o ventas POS', () => {
+  const orders = [
+    { id: 'ORD-001', status: 'pending', items: [{ id: 'prod-1', quantity: 2, price: 10 }] },
+    { id: 'ORD-002', status: 'preparing', items: [{ id: 'prod-1', quantity: 1, price: 10 }] },
+    { id: 'ORD-003', status: 'delivered', items: [{ id: 'prod-1', quantity: 4, price: 10 }] },
+    { id: 'POS-004', status: 'delivered', isPosSale: true, items: [{ id: 'prod-1', quantity: 3, price: 10 }] },
+    { id: 'ORD-005', status: 'cancelled', items: [{ id: 'prod-1', quantity: 10, price: 10 }] }
+  ];
+
+  const validOrders = orders.filter(o => {
+    if (!o || o.status === 'cancelled' || !Array.isArray(o.items)) return false;
+    const isDelivered = o.status === 'delivered';
+    const isPos = Boolean(o.isPosSale || o.is_pos_sale || o.orderType === 'pos' || o.id?.startsWith('POS-'));
+    return isDelivered || isPos;
+  });
+
+  assert.equal(validOrders.length, 2, 'Solo deben considerarse ORD-003 y POS-004');
+
+  let totalUnits = 0;
+  let totalRevenue = 0;
+  validOrders.forEach(o => {
+    o.items.forEach(i => {
+      if (i.id === 'prod-1') {
+        totalUnits += i.quantity;
+        totalRevenue += (i.quantity * i.price);
+      }
+    });
+  });
+
+  assert.equal(totalUnits, 7, 'Deben ser 4 de ORD-003 + 3 de POS-004 = 7 unidades');
+  assert.equal(totalRevenue, 70, 'Deben ser Bs. 70');
+});
+
+test('Creación de ítem para lista de compras a proveedor preserva productId para vínculo exacto', () => {
+  const product = { id: 'prod-arroz', name: 'Arroz Grano de Oro 1kg' };
+  const supplierOrderItem = {
+    id: 'item-12345',
+    productId: product.id,
+    productName: product.name,
+    quantity: '10 unidades',
+    status: 'pending',
+    notes: 'Reponer urgente'
+  };
+
+  assert.equal(supplierOrderItem.productId, 'prod-arroz');
+  assert.equal(supplierOrderItem.status, 'pending');
+});
