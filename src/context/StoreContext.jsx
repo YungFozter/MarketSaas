@@ -964,13 +964,49 @@ export const StoreProvider = ({ children }) => {
       try {
         localStorage.setItem('marketsaas_active_tenant', foundStore.slug);
       } catch (e) {}
-      setStoreConfigState(prev => ({
-        ...prev,
-        owner_id: foundStore.owner_id || prev.owner_id,
-        name: foundStore.name,
-        tagline: foundStore.tagline || prev.tagline,
-        address: foundStore.address || prev.address
-      }));
+
+      // Recuperar configuración aislada para la tienda seleccionada
+      let localStoreConfig = null;
+      try {
+        const raw = localStorage.getItem(`marketsaas_${foundStore.slug}_store_config`) 
+          || localStorage.getItem(`marketsaas_${foundStore.slug}_config`);
+        if (raw) {
+          localStoreConfig = JSON.parse(raw);
+        }
+      } catch (e) {}
+
+      setStoreConfigState(prev => {
+        const isCurrentOwner = Boolean(
+          currentUser && (
+            foundStore.owner_id === currentUser.id ||
+            merchantStore?.id === foundStore.id ||
+            merchantStore?.slug === foundStore.slug
+          )
+        );
+
+        const storeSchedule = normalizeStoreSchedule(
+          localStoreConfig?.schedule || foundStore.schedule || (isCurrentOwner ? prev?.schedule : initialStoreConfig.schedule)
+        );
+
+        const baseConfig = localStoreConfig || (isCurrentOwner ? prev : initialStoreConfig);
+        const resolved = {
+          ...initialStoreConfig,
+          ...baseConfig,
+          id: foundStore.id || foundStore.slug,
+          tenant_id: foundStore.slug,
+          name: foundStore.name || baseConfig?.name,
+          tagline: foundStore.tagline || baseConfig?.tagline,
+          address: foundStore.address || baseConfig?.address,
+          owner_id: foundStore.owner_id || baseConfig?.owner_id,
+          schedule: storeSchedule,
+          storeOpenMode: localStoreConfig?.storeOpenMode || foundStore.storeOpenMode || (isCurrentOwner ? prev?.storeOpenMode : 'auto') || 'auto',
+          scheduleClosedMessage: localStoreConfig?.scheduleClosedMessage || foundStore.scheduleClosedMessage || (isCurrentOwner ? prev?.scheduleClosedMessage : '') || '',
+          deliverySchedule: normalizeDeliverySchedule(localStoreConfig?.deliverySchedule || foundStore.deliverySchedule || baseConfig?.deliverySchedule)
+        };
+        const statusCalc = calculateStoreOpenStatus(resolved);
+        resolved.isOpen = foundStore.isOpen !== undefined ? foundStore.isOpen : statusCalc.isOpen;
+        return resolved;
+      });
 
       // Pre-cargar de forma inmediata el catálogo variado de la tienda seleccionada
       try {
@@ -1051,9 +1087,10 @@ export const StoreProvider = ({ children }) => {
     return tenantSlug === 'default' ? initialProducts.map(normalizeProduct) : [];
   });
 
-  // 3. Configuración de Tienda
+  // 3. Configuración de Tienda Aislada por Tenant
   const [storeConfig, setStoreConfigState] = useState(() => {
-    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
+    const saved = localStorage.getItem(`marketsaas_${tenantSlug}_store_config`) 
+      || localStorage.getItem(`marketsaas_${tenantSlug}_config`);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -1083,6 +1120,8 @@ export const StoreProvider = ({ children }) => {
           coupons: parsed.coupons,
           subscription: normalizeSubscription(parsed.subscription)
         };
+        const statusCalc = calculateStoreOpenStatus(cleaned);
+        cleaned.isOpen = parsed.isOpen !== undefined ? parsed.isOpen : statusCalc.isOpen;
         try {
           localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(cleaned));
         } catch (err) {}
@@ -1623,9 +1662,15 @@ export const StoreProvider = ({ children }) => {
           storeRecord.created_at
         );
 
+        const effectiveSchedule = normalizeStoreSchedule(
+          configData.schedule || storeRecord.schedule || initialStoreConfig.schedule
+        );
+
         const resolvedConfig = {
           ...initialStoreConfig,
           ...configData,
+          id: storeRecord.id,
+          tenant_id: storeRecord.id,
           subscription: effectiveSubscription,
           logoUrl: effectiveLogo,
           bannerUrl: effectiveBanner,
@@ -1635,10 +1680,22 @@ export const StoreProvider = ({ children }) => {
           reference: storeRecord.reference || configData.reference || '',
           latitude: storeRecord.latitude ?? configData.latitude ?? null,
           longitude: storeRecord.longitude ?? configData.longitude ?? null,
+          schedule: effectiveSchedule,
+          storeOpenMode: configData.storeOpenMode || storeRecord.store_open_mode || 'auto',
+          scheduleClosedMessage: configData.scheduleClosedMessage || '',
+          deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || storeRecord.delivery_schedule || initialStoreConfig.deliverySchedule),
           ...(loadedCategories ? { categories: loadedCategories } : {}),
           coupons: loadedCoupons,
           name: storeRecord.name || configData.name || 'Mi Tienda'
         };
+
+        const statusCalc = calculateStoreOpenStatus(resolvedConfig);
+        resolvedConfig.isOpen = storeRecord.is_open !== undefined ? storeRecord.is_open : statusCalc.isOpen;
+
+        try {
+          localStorage.setItem(`marketsaas_${storeRecord.id}_store_config`, JSON.stringify(resolvedConfig));
+          localStorage.setItem(`marketsaas_${storeRecord.id}_config`, JSON.stringify(resolvedConfig));
+        } catch (e) {}
 
         setStoreConfigState(resolvedConfig);
         setMerchantStore(storeRecord);
@@ -1962,18 +2019,38 @@ export const StoreProvider = ({ children }) => {
           const effectiveBanner = configData.bannerUrl || data.banner_url || (prev?.bannerUrl || presetBanners[0].url);
           const effectiveQr = configData.qrImageUrl || data.qr_image_url || (prev?.qrImageUrl || '');
           const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || prev?.subscription, data.created_at);
-          return {
+          const storeSchedule = normalizeStoreSchedule(configData.schedule || data.schedule || prev?.schedule || initialStoreConfig.schedule);
+          const storeMode = configData.storeOpenMode || data.store_open_mode || prev?.storeOpenMode || 'auto';
+          const storeClosedMsg = configData.scheduleClosedMessage || prev?.scheduleClosedMessage || '';
+
+          const merged = {
+            ...initialStoreConfig,
             ...prev,
             ...configData,
+            id: data.id || tenantSlug,
+            tenant_id: data.tenant_id || tenantSlug,
             subscription: effectiveSubscription,
             logoUrl: effectiveLogo,
             bannerUrl: effectiveBanner,
             qrImageUrl: effectiveQr,
+            schedule: storeSchedule,
+            storeOpenMode: storeMode,
+            scheduleClosedMessage: storeClosedMsg,
             ...(loadedCategories ? { categories: loadedCategories } : {}),
             coupons: loadedCoupons,
             deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || data.delivery_schedule || prev?.deliverySchedule),
-            name: data.name || configData.name
+            name: data.name || configData.name || prev?.name || 'Mi Tienda'
           };
+
+          const openStatus = calculateStoreOpenStatus(merged);
+          merged.isOpen = data.is_open !== undefined ? data.is_open : (configData.isOpen !== undefined ? configData.isOpen : openStatus.isOpen);
+
+          try {
+            localStorage.setItem(`marketsaas_${tenantSlug}_store_config`, JSON.stringify(merged));
+            localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(merged));
+          } catch (e) {}
+
+          return merged;
         });
       }
     });
@@ -2613,9 +2690,20 @@ export const StoreProvider = ({ children }) => {
                     lng: -63.18214 - ((idx + 1) * 0.004)
                   })));
 
+                const effectiveSchedule = normalizeStoreSchedule(
+                  (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
+                    ? storeConfig.schedule
+                    : (conf.schedule || rs.schedule || initialStoreConfig.schedule)
+                );
+
                 const targetConf = (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig
-                  : { ...conf, isOpen: rs.is_open !== false && conf.isOpen !== false };
+                  : { 
+                      ...conf, 
+                      schedule: effectiveSchedule,
+                      storeOpenMode: conf.storeOpenMode || rs.store_open_mode || 'auto',
+                      isOpen: rs.is_open !== false && conf.isOpen !== false 
+                    };
                 const openStatusCalc = calculateStoreOpenStatus(targetConf);
                 return {
                   id: rs.id || `remote-${idx}`,
@@ -2639,7 +2727,8 @@ export const StoreProvider = ({ children }) => {
                   ordersCount: 24 + idx * 8,
                   isOpen: openStatusCalc.isOpen,
                   statusBadge: openStatusCalc.statusBadge,
-                  schedule: targetConf.schedule,
+                  schedule: effectiveSchedule,
+                  storeOpenMode: targetConf.storeOpenMode,
                 logoUrl: (isCurrentOwner && storeConfig?.logoUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
                   ? storeConfig.logoUrl
                   : (conf.logoUrl || rs.logo_url || null),

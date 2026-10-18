@@ -27,6 +27,7 @@ export const StoreScheduleManager = () => {
 
   const [saving, setSaving] = useState(false);
   const initialSyncRef = useRef(false);
+  const isDirtyRef = useRef(false);
   const lastStoreIdRef = useRef(storeConfig?.id || storeConfig?.tenant_id || null);
 
   const [scheduleState, setScheduleState] = useState(() => {
@@ -41,17 +42,22 @@ export const StoreScheduleManager = () => {
     return storeConfig?.scheduleClosedMessage || storeConfig?.schedule?.customNote || '';
   });
 
-  // Sincronizar únicamente cuando cargue la tienda por primera vez o cambie de tienda
+  // Sincronizar cuando cargue la tienda por primera vez, cuando cambie de tienda o cuando lleguen datos actualizados de la nube
   useEffect(() => {
     if (!storeConfig) return;
     const currentId = storeConfig.id || storeConfig.tenant_id;
-    if (!initialSyncRef.current || (currentId && currentId !== lastStoreIdRef.current)) {
+    const storeChanged = Boolean(currentId && currentId !== lastStoreIdRef.current);
+
+    if (!initialSyncRef.current || storeChanged || !isDirtyRef.current) {
       initialSyncRef.current = true;
       lastStoreIdRef.current = currentId;
 
       setScheduleState(normalizeStoreSchedule(storeConfig.schedule));
       setOperatingMode(storeConfig.storeOpenMode || storeConfig.schedule?.mode || 'auto');
       setClosedMessage(storeConfig.scheduleClosedMessage || storeConfig.schedule?.customNote || '');
+      if (storeChanged) {
+        isDirtyRef.current = false;
+      }
     }
   }, [storeConfig]);
 
@@ -69,6 +75,7 @@ export const StoreScheduleManager = () => {
 
   // Toggle de apertura de un día individual (bidireccional y robusto)
   const handleDayToggle = (dayKey) => {
+    isDirtyRef.current = true;
     setScheduleState(prev => {
       const current = normalizeStoreSchedule(prev);
       const day = current[dayKey] || current.weekly.find(d => d.day === dayKey) || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
@@ -95,6 +102,7 @@ export const StoreScheduleManager = () => {
 
   // Cambio de hora apertura / cierre
   const handleTimeChange = (dayKey, field, value) => {
+    isDirtyRef.current = true;
     setScheduleState(prev => {
       const current = normalizeStoreSchedule(prev);
       const day = current[dayKey] || current.weekly.find(d => d.day === dayKey) || DEFAULT_WEEKLY_SCHEDULE.find(d => d.day === dayKey);
@@ -119,6 +127,7 @@ export const StoreScheduleManager = () => {
 
   // Cambio de modo de funcionamiento (Automático, Forzar Abierto, Forzar Cerrado)
   const handleSetOperatingMode = async (mode) => {
+    isDirtyRef.current = true;
     setOperatingMode(mode);
     setScheduleState(prev => ({
       ...prev,
@@ -161,6 +170,7 @@ export const StoreScheduleManager = () => {
       };
 
       const res = await setStoreConfig(updatedConfig);
+      isDirtyRef.current = false;
       if (res?.error) {
         showToast('Horarios guardados en este dispositivo.', 'info');
       } else {
