@@ -89,7 +89,12 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
   const cashStats = useMemo(() => {
     const openedTime = new Date(registerOpenedAt).getTime();
     const validOrders = (orders || []).filter(o => {
-      if (!o || o.status === 'cancelled') return false;
+      if (!o) return false;
+      const s = String(o.status || '').toLowerCase().trim();
+      if (s === 'cancelled' || s === 'omitted' || s === 'deleted' || o.is_deleted || o.isDeleted) return false;
+      const isPos = String(o.id || '').includes('POS') || (o.customer?.name || '').includes('Mostrador') || (o.customer?.name || '').includes('Presencial');
+      const isDelivered = s === 'delivered' || s === 'completed' || s === 'paid';
+      if (!isPos && !isDelivered) return false;
       const orderTime = new Date(o.createdAt || o.created_at).getTime();
       return isNaN(orderTime) ? true : orderTime >= openedTime;
     });

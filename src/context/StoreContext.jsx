@@ -2146,7 +2146,7 @@ export const StoreProvider = ({ children }) => {
         }
       });
 
-    // 6. Cargar deudores / libreta de créditos por tienda desde Supabase
+    // 6. Cargar deudores / libreta de créditos por tienda desde Supabase con persistencia resiliente
     const activeCreditTenant = merchantStore?.id || tenantSlug || 'default';
     const isIanCredit = activeCreditTenant === 'minimarket-ian' || activeCreditTenant === 'tiendita-fernando';
     const isDemoMatiasCredit = activeCreditTenant === 'matias-tiendatodo' || activeCreditTenant === 'default';
@@ -2155,33 +2155,102 @@ export const StoreProvider = ({ children }) => {
       : isDemoMatiasCredit 
         ? ['matias-tiendatodo', 'default'] 
         : [activeCreditTenant];
+
+    // Función de fusión inteligente para jamás perder saldos o transacciones locales
+    const mergeCreditCustomers = (localList = [], remoteList = []) => {
+      const map = new Map();
+
+      // 1. Agregar clientes remotos
+      (remoteList || []).forEach(remote => {
+        if (remote && remote.id) {
+          map.set(remote.id, remote);
+        }
+      });
+
+      // 2. Fusionar con clientes locales
+      (localList || []).forEach(local => {
+        if (!local || !local.id) return;
+        if (!map.has(local.id)) {
+          // Cliente existe localmente pero no en Supabase: conservarlo intacto
+          map.set(local.id, local);
+        } else {
+          const remote = map.get(local.id);
+          const localTime = new Date(local.updatedAt || local.updated_at || local.createdAt || 0).getTime();
+          const remoteTime = new Date(remote.updatedAt || remote.updated_at || remote.createdAt || 0).getTime();
+          const localTxCount = Array.isArray(local.transactions) ? local.transactions.length : 0;
+          const remoteTxCount = Array.isArray(remote.transactions) ? remote.transactions.length : 0;
+
+          // Si el registro local es más reciente o tiene más transacciones (abonos/cargos locales), priorizar el local
+          if (localTime > remoteTime || localTxCount > remoteTxCount || (localTime === remoteTime && localTxCount >= remoteTxCount)) {
+            map.set(local.id, local);
+          } else {
+            map.set(local.id, remote);
+          }
+        }
+      });
+
+      return Array.from(map.values());
+    };
     
     supabase.from('credit_customers')
       .select('*')
       .in('tenant_id', creditTenantFilter)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
+        // Leer estado local actual y respaldo en caché
+        let localExisting = [];
+        try {
+          const raw = localStorage.getItem(`marketsaas_${activeCreditTenant}_credits`) || 
+                      localStorage.getItem('marketsaas_default_credits') ||
+                      localStorage.getItem('marketsaas_matias-tiendatodo_credits');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) localExisting = parsed.map(normalizeCreditCustomer).filter(Boolean);
+          }
+        } catch (e) {}
+
         if (!error && Array.isArray(data) && data.length > 0) {
-          const normalized = data.map(normalizeCreditCustomer).filter(Boolean);
-          setCreditCustomers(normalized);
+          const remoteNormalized = data.map(normalizeCreditCustomer).filter(Boolean);
+          const merged = mergeCreditCustomers(localExisting, remoteNormalized);
+          setCreditCustomers(merged);
+
           try {
-            localStorage.setItem(`marketsaas_${activeCreditTenant}_credits`, JSON.stringify(normalized));
+            localStorage.setItem(`marketsaas_${activeCreditTenant}_credits`, JSON.stringify(merged));
             localStorage.setItem(`marketsaas_${activeCreditTenant}_credits_initialized`, 'true');
-            if (isDemoMatiasCredit) localStorage.setItem('marketsaas_default_credits', JSON.stringify(normalized));
+            if (isDemoMatiasCredit) {
+              localStorage.setItem('marketsaas_default_credits', JSON.stringify(merged));
+              localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(merged));
+            }
           } catch (e) {}
+
+          // Si algún cliente local tenía datos más nuevos que Supabase o no existía en Supabase, sincronizarlo
+          merged.forEach(cust => {
+            const remoteFound = data.find(r => r.id === cust.id);
+            const localTxCount = Array.isArray(cust.transactions) ? cust.transactions.length : 0;
+            const remoteTxCount = remoteFound && Array.isArray(remoteFound.transactions) ? remoteFound.transactions.length : 0;
+            if (!remoteFound || localTxCount > remoteTxCount || cust.balance !== (remoteFound?.balance ?? cust.balance)) {
+              supabase.from('credit_customers').upsert([{
+                id: cust.id,
+                tenant_id: activeCreditTenant,
+                name: cust.name,
+                phone: cust.phone || '',
+                apartment: cust.apartment || '',
+                notes: cust.notes || '',
+                balance: cust.balance,
+                credit_limit: cust.creditLimit || 0,
+                transactions: cust.transactions || [],
+                created_at: cust.createdAt || new Date().toISOString(),
+                updated_at: cust.updatedAt || new Date().toISOString()
+              }], { onConflict: 'id' }).then(() => {}).catch(() => {});
+            }
+          });
         } else {
-          // Si Supabase devuelve 0 filas o hay error (ej. RLS),
+          // Si Supabase devuelve 0 filas o hay error (ej. RLS o sin conexión),
           // ¡NUNCA SOBRESCRIBIR con demo si el dueño ya tiene deudores registrados localmente!
-          const localSaved = localStorage.getItem(`marketsaas_${activeCreditTenant}_credits`);
           const hasInit = localStorage.getItem(`marketsaas_${activeCreditTenant}_credits_initialized`);
-          if (localSaved) {
-            try {
-              const parsed = JSON.parse(localSaved);
-              if (Array.isArray(parsed) && (parsed.length > 0 || hasInit)) {
-                setCreditCustomers(parsed.map(normalizeCreditCustomer).filter(Boolean));
-                return;
-              }
-            } catch (e) {}
+          if (localExisting.length > 0) {
+            setCreditCustomers(localExisting);
+            return;
           }
           if (hasInit || (!isIanCredit && !isDemoMatiasCredit)) {
             setCreditCustomers([]);
@@ -2192,6 +2261,10 @@ export const StoreProvider = ({ children }) => {
           setCreditCustomers(normalizedFallback);
           try {
             localStorage.setItem(`marketsaas_${activeCreditTenant}_credits`, JSON.stringify(normalizedFallback));
+            if (isDemoMatiasCredit) {
+              localStorage.setItem('marketsaas_default_credits', JSON.stringify(normalizedFallback));
+              localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(normalizedFallback));
+            }
           } catch (e) {}
         }
       });
@@ -2822,6 +2895,7 @@ export const StoreProvider = ({ children }) => {
       localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
       if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
         localStorage.setItem('marketsaas_default_credits', JSON.stringify(creditCustomers));
+        localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(creditCustomers));
       }
       // Backup en Supabase store_config para persistencia permanente en la nube
       if (supabase && activeSlug && activeSlug !== 'default' && Array.isArray(creditCustomers)) {
@@ -5066,6 +5140,7 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
         if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
           localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
+          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
         }
       } catch (e) {}
       return updatedList;
@@ -5073,7 +5148,7 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase) {
-        await supabase.from('credit_customers').insert([{
+        await supabase.from('credit_customers').upsert([{
           id: newCustomer.id,
           tenant_id: targetTenant,
           name: newCustomer.name,
@@ -5085,7 +5160,7 @@ export const StoreProvider = ({ children }) => {
           transactions: newCustomer.transactions,
           created_at: newCustomer.createdAt,
           updated_at: newCustomer.updatedAt
-        }]);
+        }], { onConflict: 'id' });
 
         if (targetTenant && targetTenant !== 'default') {
           supabase.from('store_config')
@@ -5108,14 +5183,16 @@ export const StoreProvider = ({ children }) => {
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
 
     let updatedList = [];
+    let updatedCustomer = null;
     setCreditCustomers(prev => {
       updatedList = prev.map(c => {
         if (c.id === customerId) {
-          return normalizeCreditCustomer({
+          updatedCustomer = normalizeCreditCustomer({
             ...c,
             ...updatedFields,
             updatedAt: new Date().toISOString()
           });
+          return updatedCustomer;
         }
         return c;
       });
@@ -5124,24 +5201,27 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
         if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
           localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
+          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
         }
       } catch (e) {}
       return updatedList;
     });
 
     try {
-      if (supabase) {
-        const payload = {};
-        if (updatedFields.name !== undefined) payload.name = updatedFields.name;
-        if (updatedFields.phone !== undefined) payload.phone = updatedFields.phone;
-        if (updatedFields.apartment !== undefined) payload.apartment = updatedFields.apartment;
-        if (updatedFields.notes !== undefined) payload.notes = updatedFields.notes;
-        if (updatedFields.creditLimit !== undefined) payload.credit_limit = updatedFields.creditLimit;
-        payload.updated_at = new Date().toISOString();
-
-        await supabase.from('credit_customers')
-          .update(payload)
-          .eq('id', customerId);
+      if (supabase && updatedCustomer) {
+        await supabase.from('credit_customers').upsert([{
+          id: updatedCustomer.id,
+          tenant_id: targetTenant,
+          name: updatedCustomer.name,
+          phone: updatedCustomer.phone || '',
+          apartment: updatedCustomer.apartment || '',
+          notes: updatedCustomer.notes || '',
+          balance: updatedCustomer.balance,
+          credit_limit: updatedCustomer.creditLimit || 0,
+          transactions: updatedCustomer.transactions || [],
+          created_at: updatedCustomer.createdAt || new Date().toISOString(),
+          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
+        }], { onConflict: 'id' });
 
         if (targetTenant && targetTenant !== 'default') {
           supabase.from('store_config')
@@ -5169,6 +5249,7 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
         if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
           localStorage.setItem('marketsaas_default_credits', JSON.stringify(remaining));
+          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(remaining));
         }
       } catch (e) {}
       return remaining;
@@ -5232,6 +5313,7 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
         if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
           localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
+          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
         }
       } catch (e) {}
       return updatedList;
@@ -5239,13 +5321,19 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase && updatedCustomer) {
-        await supabase.from('credit_customers')
-          .update({
-            balance: updatedCustomer.balance,
-            transactions: updatedCustomer.transactions,
-            updated_at: updatedCustomer.updatedAt
-          })
-          .eq('id', customerId);
+        await supabase.from('credit_customers').upsert([{
+          id: updatedCustomer.id,
+          tenant_id: targetTenant,
+          name: updatedCustomer.name,
+          phone: updatedCustomer.phone || '',
+          apartment: updatedCustomer.apartment || '',
+          notes: updatedCustomer.notes || '',
+          balance: updatedCustomer.balance,
+          credit_limit: updatedCustomer.creditLimit || 0,
+          transactions: updatedCustomer.transactions || [],
+          created_at: updatedCustomer.createdAt || new Date().toISOString(),
+          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
+        }], { onConflict: 'id' });
 
         if (targetTenant && targetTenant !== 'default') {
           supabase.from('store_config')
@@ -5304,6 +5392,7 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
         if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
           localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
+          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
         }
       } catch (e) {}
       return updatedList;
@@ -5311,13 +5400,19 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase && updatedCustomer) {
-        await supabase.from('credit_customers')
-          .update({
-            balance: updatedCustomer.balance,
-            transactions: updatedCustomer.transactions,
-            updated_at: updatedCustomer.updatedAt
-          })
-          .eq('id', customerId);
+        await supabase.from('credit_customers').upsert([{
+          id: updatedCustomer.id,
+          tenant_id: targetTenant,
+          name: updatedCustomer.name,
+          phone: updatedCustomer.phone || '',
+          apartment: updatedCustomer.apartment || '',
+          notes: updatedCustomer.notes || '',
+          balance: updatedCustomer.balance,
+          credit_limit: updatedCustomer.creditLimit || 0,
+          transactions: updatedCustomer.transactions || [],
+          created_at: updatedCustomer.createdAt || new Date().toISOString(),
+          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
+        }], { onConflict: 'id' });
 
         if (targetTenant && targetTenant !== 'default') {
           supabase.from('store_config')

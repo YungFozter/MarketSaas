@@ -35,7 +35,12 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
     const validOrders = (orders || []).filter(o => {
-      if (!o || o.status === 'cancelled') return false;
+      if (!o) return false;
+      const s = String(o.status || '').toLowerCase().trim();
+      if (s === 'cancelled' || s === 'omitted' || s === 'deleted' || o.is_deleted || o.isDeleted) return false;
+      const isPos = String(o.id || '').includes('POS') || (o.customer?.name || '').includes('Mostrador') || (o.customer?.name || '').includes('Presencial');
+      const isDelivered = s === 'delivered' || s === 'completed' || s === 'paid';
+      if (!isPos && !isDelivered) return false;
       const orderDate = new Date(o.createdAt || o.created_at);
       return !isNaN(orderDate.getTime()) && orderDate >= sevenDaysAgo;
     });

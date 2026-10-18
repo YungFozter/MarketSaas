@@ -213,6 +213,22 @@ export const CreditManager = () => {
     setIsCustomerModalOpen(false);
   };
 
+  // Referencias reactivas a los clientes activos en modales para evitar snapshots obsoletos
+  const currentCustomerForHistory = useMemo(() => {
+    if (!activeCustomerForHistory) return null;
+    return creditCustomers.find(c => c.id === activeCustomerForHistory.id) || activeCustomerForHistory;
+  }, [creditCustomers, activeCustomerForHistory]);
+
+  const currentCustomerForPayment = useMemo(() => {
+    if (!activeCustomerForPayment) return null;
+    return creditCustomers.find(c => c.id === activeCustomerForPayment.id) || activeCustomerForPayment;
+  }, [creditCustomers, activeCustomerForPayment]);
+
+  const currentCustomerForCharge = useMemo(() => {
+    if (!activeCustomerForCharge) return null;
+    return creditCustomers.find(c => c.id === activeCustomerForCharge.id) || activeCustomerForCharge;
+  }, [creditCustomers, activeCustomerForCharge]);
+
   // Manejo de Cargo Manual
   const handleOpenChargeModal = (customer) => {
     setActiveCustomerForCharge(customer);
@@ -227,8 +243,11 @@ export const CreditManager = () => {
       return;
     }
 
+    const targetCustomer = currentCustomerForCharge || activeCustomerForCharge;
+    if (!targetCustomer) return;
+
     addCustomerCharge(
-      activeCustomerForCharge.id, 
+      targetCustomer.id, 
       amt, 
       chargeForm.concept.trim() || 'Compra anotada a cuenta'
     );
@@ -253,11 +272,14 @@ export const CreditManager = () => {
       return;
     }
 
+    const targetCustomer = currentCustomerForPayment || activeCustomerForPayment;
+    if (!targetCustomer) return;
+
     addCustomerPayment(
-      activeCustomerForPayment.id,
+      targetCustomer.id,
       amt,
       paymentForm.paymentMethod,
-      paymentForm.note.trim() || (amt >= activeCustomerForPayment.balance ? 'Liquidación total' : 'Abono parcial')
+      paymentForm.note.trim() || (amt >= targetCustomer.balance ? 'Liquidación total' : 'Abono parcial')
     );
     setActiveCustomerForPayment(null);
   };
@@ -950,7 +972,7 @@ export const CreditManager = () => {
                   Anotar Compra a Cuenta
                 </h3>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-indigo-700">{activeCustomerForCharge.name}</strong> (Saldo actual: {currency} {activeCustomerForCharge.balance.toFixed(2)})
+                  Vecino: <strong className="text-indigo-700">{(currentCustomerForCharge || activeCustomerForCharge).name}</strong> (Saldo actual: {currency} {(currentCustomerForCharge || activeCustomerForCharge).balance.toFixed(2)})
                 </p>
               </div>
               <button
@@ -1002,7 +1024,7 @@ export const CreditManager = () => {
               <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-bold">Nuevo saldo resultante:</span>
                 <span className="font-black text-rose-600 text-sm">
-                  {currency} {(activeCustomerForCharge.balance + (parseFloat(chargeForm.amount) || 0)).toFixed(2)}
+                  {currency} {((currentCustomerForCharge || activeCustomerForCharge).balance + (parseFloat(chargeForm.amount) || 0)).toFixed(2)}
                 </span>
               </div>
 
@@ -1038,7 +1060,7 @@ export const CreditManager = () => {
                   Registrar Abono de Dinero
                 </h3>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-emerald-700">{activeCustomerForPayment.name}</strong>
+                  Vecino: <strong className="text-emerald-700">{(currentCustomerForPayment || activeCustomerForPayment).name}</strong>
                 </p>
               </div>
               <button
@@ -1056,13 +1078,13 @@ export const CreditManager = () => {
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Deuda Pendiente</span>
                   <span className="text-xl font-black text-rose-400">
-                    {currency} {activeCustomerForPayment.balance.toFixed(2)}
+                    {currency} {(currentCustomerForPayment || activeCustomerForPayment).balance.toFixed(2)}
                   </span>
                 </div>
-                {activeCustomerForPayment.balance > 0 && (
+                {(currentCustomerForPayment || activeCustomerForPayment).balance > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPaymentForm(prev => ({ ...prev, amount: String(activeCustomerForPayment.balance) }))}
+                    onClick={() => setPaymentForm(prev => ({ ...prev, amount: String((currentCustomerForPayment || activeCustomerForPayment).balance) }))}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer shadow-xs"
                   >
                     Saldar Total
@@ -1143,7 +1165,7 @@ export const CreditManager = () => {
               <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-bold">Saldo restante tras abono:</span>
                 <span className="font-black text-emerald-700 text-sm">
-                  {currency} {Math.max(0, activeCustomerForPayment.balance - (parseFloat(paymentForm.amount) || 0)).toFixed(2)}
+                  {currency} {Math.max(0, (currentCustomerForPayment || activeCustomerForPayment).balance - (parseFloat(paymentForm.amount) || 0)).toFixed(2)}
                 </span>
               </div>
 
@@ -1181,10 +1203,10 @@ export const CreditManager = () => {
                 </div>
                 <div>
                   <h3 className="font-black text-base text-slate-900">
-                    Libreta de Cuentas: {activeCustomerForHistory.name}
+                    Libreta de Cuentas: {(currentCustomerForHistory || activeCustomerForHistory).name}
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    {activeCustomerForHistory.apartment || 'Vecino'} {activeCustomerForHistory.phone && `• Tel: ${activeCustomerForHistory.phone}`}
+                    {(currentCustomerForHistory || activeCustomerForHistory).apartment || 'Vecino'} {(currentCustomerForHistory || activeCustomerForHistory).phone && `• Tel: ${(currentCustomerForHistory || activeCustomerForHistory).phone}`}
                   </p>
                 </div>
               </div>
@@ -1192,8 +1214,8 @@ export const CreditManager = () => {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <span className="text-[10px] text-slate-400 font-bold uppercase block">Saldo Actual</span>
-                  <span className={`text-base font-black ${activeCustomerForHistory.balance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {currency} {activeCustomerForHistory.balance.toFixed(2)}
+                  <span className={`text-base font-black ${(currentCustomerForHistory || activeCustomerForHistory).balance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {currency} {(currentCustomerForHistory || activeCustomerForHistory).balance.toFixed(2)}
                   </span>
                 </div>
                 <button
@@ -1208,14 +1230,14 @@ export const CreditManager = () => {
 
             {/* Lista Cronológica de Movimientos */}
             <div className="p-4 sm:p-6 overflow-y-auto space-y-3 flex-1">
-              {(!activeCustomerForHistory.transactions || activeCustomerForHistory.transactions.length === 0) ? (
+              {(!(currentCustomerForHistory || activeCustomerForHistory).transactions || (currentCustomerForHistory || activeCustomerForHistory).transactions.length === 0) ? (
                 <div className="text-center py-12 text-slate-400 space-y-2">
                   <Clock className="w-8 h-8 mx-auto text-slate-300" />
                   <p className="font-bold text-xs">No hay movimientos registrados en la libreta todavía.</p>
                 </div>
               ) : (
                 <div className="space-y-2.5">
-                  {activeCustomerForHistory.transactions.map((tx, idx) => {
+                  {(currentCustomerForHistory || activeCustomerForHistory).transactions.map((tx, idx) => {
                     const isCharge = tx.type === 'charge';
 
                     return (
@@ -1267,8 +1289,9 @@ export const CreditManager = () => {
               <button
                 type="button"
                 onClick={() => {
+                  const cust = currentCustomerForHistory || activeCustomerForHistory;
                   setActiveCustomerForHistory(null);
-                  handleOpenChargeModal(activeCustomerForHistory);
+                  handleOpenChargeModal(cust);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-indigo-100"
               >
@@ -1277,12 +1300,13 @@ export const CreditManager = () => {
               </button>
 
               <div className="flex items-center gap-2">
-                {activeCustomerForHistory.balance > 0 && (
+                {(currentCustomerForHistory || activeCustomerForHistory).balance > 0 && (
                   <button
                     type="button"
                     onClick={() => {
+                      const cust = currentCustomerForHistory || activeCustomerForHistory;
                       setActiveCustomerForHistory(null);
-                      handleOpenPaymentModal(activeCustomerForHistory);
+                      handleOpenPaymentModal(cust);
                     }}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >

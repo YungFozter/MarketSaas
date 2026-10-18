@@ -97,12 +97,40 @@ export const SalesHistory = () => {
   const getSaleChannel = (order) => {
     const isPos = 
       (order.id && String(order.id).includes('POS')) ||
-      (order.customer?.name && order.customer.name.includes('Presencial')) ||
-      (order.customer?.name && order.customer.name.includes('Mostrador'));
+      (order.customer?.name && (order.customer.name.includes('Presencial') || order.customer.name.includes('Mostrador') || order.customer.name.includes('Cliente Mostrador'))) ||
+      order.customer?.address === 'En Tienda (POS)' ||
+      order.customer?.reference === 'Mostrador';
 
     if (isPos) return 'pos';
     if (order.deliveryType === 'delivery') return 'delivery';
     return 'pickup';
+  };
+
+  // Helper para identificar ventas concretadas en Punto de Venta (POS)
+  const isPosSale = (order) => {
+    if (!order) return false;
+    const id = String(order.id || '');
+    if (id.includes('POS-') || id.startsWith('POS-') || id.includes('POS')) return true;
+    const cName = order.customer?.name || '';
+    if (cName.includes('Presencial') || cName.includes('Mostrador') || cName.includes('Cliente Mostrador')) return true;
+    const address = order.customer?.address || '';
+    const ref = order.customer?.reference || '';
+    if (address === 'En Tienda (POS)' || ref === 'Mostrador') return true;
+    return false;
+  };
+
+  // Helper para identificar pedidos entregados/cobrados
+  const isDeliveredOrder = (order) => {
+    if (!order) return false;
+    const s = String(order.status || '').toLowerCase().trim();
+    return s === 'delivered' || s === 'completed' || s === 'paid';
+  };
+
+  // Helper para excluir pedidos omitidos, cancelados o eliminados
+  const isOmittedOrCancelled = (order) => {
+    if (!order) return true;
+    const s = String(order.status || '').toLowerCase().trim();
+    return s === 'cancelled' || s === 'omitted' || s === 'deleted' || Boolean(order.is_deleted || order.isDeleted);
   };
 
   // Toggle interactivo para los filtros de método de pago (desde tarjetas KPI o selector)
@@ -116,12 +144,19 @@ export const SalesHistory = () => {
   };
 
   // 1. Filtrado base de ventas (período, canal, búsqueda) - SIN filtrar aún por método de pago
-  // Esto garantiza que los importes en las 4 tarjetas KPI siempre muestren los totales reales del período
+  // Solo pedidos ENTREGADOS o ventas realizadas mediante PUNTO DE VENTA
   const baseSales = useMemo(() => {
     return orders
       .filter((order) => {
-        // Excluir pedidos cancelados para no distorsionar ingresos ni estadísticas
-        if (order.status === 'cancelled') return false;
+        // Excluir pedidos cancelados, omitidos o eliminados
+        if (isOmittedOrCancelled(order)) return false;
+
+        // Requerimiento: Solo mostrar un pedido cuando se ENTREGÓ, o cuando es venta por PUNTO DE VENTA
+        const isPos = isPosSale(order);
+        const isDelivered = isDeliveredOrder(order);
+        if (!isPos && !isDelivered) {
+          return false;
+        }
 
         // Filtro por Período
         const dateMatch = matchesPeriod(order.createdAt || order.created_at, selectedPeriod);
