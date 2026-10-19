@@ -40,6 +40,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Bike,
   Layers,
   ShieldAlert,
@@ -151,6 +153,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isFooterToolsOpen, setIsFooterToolsOpen] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_admin_footer_tools_open');
+      return saved !== null ? saved === 'true' : true;
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const toggleFooterTools = () => {
+    setIsFooterToolsOpen(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('marketsaas_admin_footer_tools_open', String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
 
   // Filtro de Horario / Período del Tablero Kanban y KPIs:
   // 'today' = Estrictamente pedidos/ventas del día calendario actual (desde 00:00:00 de hoy)
@@ -789,177 +809,195 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       {/* 1. MODERN VERTICAL LEFT SIDEBAR (Desktop: sticky w-64, Mobile: drawer)   */}
       {/* ========================================================================= */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between 
-        transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:h-screen lg:sticky lg:top-0 shrink-0 shadow-xl lg:shadow-none
+        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col h-screen max-h-screen overflow-hidden
+        transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:sticky lg:top-0 shrink-0 shadow-xl lg:shadow-none
         ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Top Brand & Store Selector */}
-        <div>
-          <div className="p-5 pb-4 border-b border-slate-100">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-md shadow-emerald-500/20">
-                  MS
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none">MarketSaaS</span>
-                  <span className="text-[11px] font-bold text-slate-400 mt-0.5">Comercio Panel</span>
-                </div>
+        {/* Top Brand & Store Selector (Fijo arriba: shrink-0) */}
+        <div className="shrink-0 p-4 pb-3 border-b border-slate-100 bg-white">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-md shadow-emerald-500/20">
+                MS
               </div>
-              <button 
-                onClick={() => setMobileSidebarOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 lg:hidden"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex flex-col">
+                <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none">MarketSaaS</span>
+                <span className="text-[10px] font-bold text-slate-400 mt-0.5">Comercio Panel</span>
+              </div>
             </div>
-
-            {/* Estado Tienda: Abierto / Cerrado */}
-            <div className="mt-4 flex items-center justify-between p-1 bg-slate-100 rounded-xl">
-              <button 
-                onClick={() => handleToggleStoreOpen(true)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  isOpen 
-                    ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-200' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                type="button"
-              >
-                <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-                ABIERTO
-              </button>
-              <button 
-                onClick={() => handleToggleStoreOpen(false)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  !isOpen 
-                    ? 'bg-rose-50 text-rose-800 shadow-xs border border-rose-200' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                type="button"
-              >
-                <span className={`w-2 h-2 rounded-full ${!isOpen ? 'bg-rose-500' : 'bg-slate-300'}`}></span>
-                CERRADO
-              </button>
-            </div>
-
-            {/* Sonido Pedidos Toggle Indicator */}
-            <button
-              onClick={() => {
-                const nextState = !soundAlertsActive;
-                setSoundAlertsActive(nextState);
-                if (nextState) {
-                  playNotificationSound();
-                  showToast('Sonido de pedidos activado.', 'info');
-                } else {
-                  showToast('Sonido de pedidos silenciado.', 'warning');
-                }
-              }}
-              className={`mt-2.5 w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                soundAlertsActive 
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70' 
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-              title="Haz clic para activar o probar el sonido de pedidos"
+            <button 
+              onClick={() => setMobileSidebarOpen(false)}
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 lg:hidden cursor-pointer"
             >
-              <div className="flex items-center gap-1.5">
-                {soundAlertsActive ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
-                <span>Sonido: {soundAlertsActive ? 'ACTIVO' : 'SILENCIADO'}</span>
-              </div>
-              {soundAlertsActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>}
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-3 space-y-1.5">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+          {/* Estado Tienda: Abierto / Cerrado */}
+          <div className="mt-3 flex items-center justify-between p-1 bg-slate-100 rounded-xl">
+            <button 
+              onClick={() => handleToggleStoreOpen(true)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                isOpen 
+                  ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-200' 
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              type="button"
+            >
+              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+              ABIERTO
+            </button>
+            <button 
+              onClick={() => handleToggleStoreOpen(false)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                !isOpen 
+                  ? 'bg-rose-50 text-rose-800 shadow-xs border border-rose-200' 
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+              type="button"
+            >
+              <span className={`w-2 h-2 rounded-full ${!isOpen ? 'bg-rose-500' : 'bg-slate-300'}`}></span>
+              CERRADO
+            </button>
+          </div>
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    setMobileSidebarOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge != null && (
-                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                      isActive 
-                        ? 'bg-white text-emerald-800' 
-                        : item.id === 'schedule'
-                          ? (storeOpenStatus?.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800')
-                          : 'bg-amber-100 text-amber-800'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Bottom Store Info & User Profile */}
-        <div className="p-3 border-t border-slate-100 space-y-2">
-          {/* Botón Difusión y Marketing Vecinal */}
-          <button
-            onClick={() => setIsShareModalOpen(true)}
-            className={`flex items-center justify-between w-full py-2.5 px-3 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
-              isProPlan 
-                ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
-                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
-            }`}
-            title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
-          >
-            <div className="flex items-center gap-2">
-              <Megaphone className={`w-4 h-4 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
-              <span>Marketing & Difusión</span>
-            </div>
-            {isProPlan ? (
-              <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
-                PRO
-              </span>
-            ) : (
-              <Share2 className="w-3.5 h-3.5 text-emerald-600/70" />
-            )}
-          </button>
-
-          {/* Vista Vecino Shortcut */}
+          {/* Sonido Pedidos Toggle Indicator */}
           <button
             onClick={() => {
-              setViewMode('customer');
-              goToDirectory();
+              const nextState = !soundAlertsActive;
+              setSoundAlertsActive(nextState);
+              if (nextState) {
+                playNotificationSound();
+                showToast('Sonido de pedidos activado.', 'info');
+              } else {
+                showToast('Sonido de pedidos silenciado.', 'warning');
+              }
             }}
-            className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-            title="Previsualizar catálogo como cliente"
+            className={`mt-2 w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              soundAlertsActive 
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70' 
+                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+            }`}
+            title="Haz clic para activar o probar el sonido de pedidos"
           >
-            <Eye className="w-4 h-4 text-slate-500" />
-            <span>Vista Vecino</span>
+            <div className="flex items-center gap-1.5">
+              {soundAlertsActive ? <Volume2 className="w-3.5 h-3.5 text-emerald-600" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+              <span>Sonido: {soundAlertsActive ? 'ACTIVO' : 'SILENCIADO'}</span>
+            </div>
+            {soundAlertsActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>}
           </button>
+        </div>
 
+        {/* Navigation Links con scroll vertical independiente y barra delgada */}
+        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-sidebar-scroll p-2.5 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
 
-          {/* Profile Card */}
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMobileSidebarOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.badge != null && (
+                  <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                    isActive 
+                      ? 'bg-white text-emerald-800' 
+                      : item.id === 'schedule'
+                        ? (storeOpenStatus?.isOpen ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800')
+                        : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Bottom Store Info & User Profile (Fijo abajo: shrink-0, siempre 100% visible) */}
+        <div className="shrink-0 p-3 border-t border-slate-100 bg-white space-y-2">
+          {/* Header de la sección de herramientas / accesos con botón desplegable */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+              Accesos Rápidos
+            </span>
+            <button
+              type="button"
+              onClick={toggleFooterTools}
+              className="text-[11px] font-bold text-slate-400 hover:text-emerald-700 flex items-center gap-1 transition-colors cursor-pointer py-0.5 px-1 rounded-md hover:bg-slate-100"
+              title={isFooterToolsOpen ? 'Plegar accesos' : 'Desplegar accesos'}
+            >
+              <span>{isFooterToolsOpen ? 'Ocultar' : 'Mostrar'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isFooterToolsOpen ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* Opciones desplegables */}
+          {isFooterToolsOpen && (
+            <div className="space-y-1.5 animate-in fade-in duration-200">
+              {/* Botón Difusión y Marketing Vecinal */}
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className={`flex items-center justify-between w-full py-2 px-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
+                  isProPlan 
+                    ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
+                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
+                }`}
+                title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Megaphone className={`w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                  <span className="truncate">Marketing & Difusión</span>
+                </div>
+                {isProPlan ? (
+                  <span className="shrink-0 text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
+                    PRO
+                  </span>
+                ) : (
+                  <Share2 className="w-3.5 h-3.5 text-emerald-600/70 shrink-0" />
+                )}
+              </button>
+
+              {/* Vista Vecino Shortcut */}
+              <button
+                onClick={() => {
+                  setViewMode('customer');
+                  goToDirectory();
+                }}
+                className="flex items-center justify-center gap-2 w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                title="Previsualizar catálogo como cliente"
+              >
+                <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <span>Vista Vecino</span>
+              </button>
+            </div>
+          )}
+
+          {/* Profile Card fija */}
+          <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                 {currentUser?.email ? currentUser.email[0].toUpperCase() : 'D'}
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-xs text-slate-900 truncate">
+                <p className="font-bold text-xs text-slate-900 truncate leading-tight">
                   {currentUser?.user_metadata?.full_name || storeConfig.name || 'Don Vecino'}
                 </p>
                 <p 
-                  className="text-[10px] text-slate-400 truncate"
+                  className="text-[10px] text-slate-400 truncate leading-tight mt-0.5"
                   title={storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Sin ubicación'}
                 >
                   {storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Sin ubicación'}
@@ -977,7 +1015,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             ) : (
               <button
                 onClick={onOpenAuthModal}
-                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0 font-bold text-xs"
+                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0 font-bold text-xs cursor-pointer"
                 title="Iniciar Sesión"
               >
                 Login
