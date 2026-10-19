@@ -151,6 +151,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_admin_sidebar_collapsed');
+      return saved === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('marketsaas_admin_sidebar_collapsed', String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
   const [soundAlertsActive, setSoundAlertsActive] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFooterToolsOpen, setIsFooterToolsOpen] = useState(() => {
@@ -803,93 +821,156 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc] text-slate-900 antialiased font-sans">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#f8fafc] text-slate-900 antialiased font-sans">
       
       {/* ========================================================================= */}
-      {/* 1. MODERN VERTICAL LEFT SIDEBAR (Desktop: sticky w-64, Mobile: drawer)   */}
+      {/* 1. MODERN VERTICAL LEFT SIDEBAR (Desktop/Media Pantalla: sticky, Mobile: drawer) */}
       {/* ========================================================================= */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200/80 flex flex-col h-screen max-h-screen overflow-hidden
-        transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:sticky lg:top-0 shrink-0 shadow-xl lg:shadow-none
-        ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 flex flex-col h-screen max-h-screen overflow-hidden
+        transition-all duration-300 ease-in-out md:static md:sticky md:top-0 shrink-0 shadow-xl md:shadow-none
+        ${isSidebarCollapsed ? 'md:w-16' : 'md:w-56 lg:w-64'}
+        w-64
+        ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Top Brand & Store Selector (Fijo arriba: shrink-0) */}
-        <div className="shrink-0 p-4 pb-3 border-b border-slate-100 bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-md shadow-emerald-500/20">
+        <div className={`shrink-0 p-3 sm:p-4 border-b border-slate-100 bg-white ${isSidebarCollapsed ? 'md:px-2 md:py-3' : ''}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div 
+              onClick={() => {
+                if (isSidebarCollapsed) toggleSidebarCollapse();
+              }}
+              className={`flex items-center gap-2.5 min-w-0 ${isSidebarCollapsed ? 'md:justify-center md:w-full cursor-pointer' : ''}`}
+              title={isSidebarCollapsed ? 'Clic para expandir menú' : undefined}
+            >
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-sm shadow-md shadow-emerald-500/20 shrink-0">
                 MS
               </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none">MarketSaaS</span>
-                <span className="text-[10px] font-bold text-slate-400 mt-0.5">Comercio Panel</span>
+              <div className={`flex flex-col min-w-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
+                <span className="font-extrabold text-base text-slate-900 tracking-tight leading-none truncate">MarketSaaS</span>
+                <span className="text-[10px] font-bold text-slate-400 mt-0.5 truncate">Comercio Panel</span>
               </div>
             </div>
+
+            {/* Botón de cierre en móvil */}
             <button 
               onClick={() => setMobileSidebarOpen(false)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 lg:hidden cursor-pointer"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 md:hidden cursor-pointer"
+              aria-label="Cerrar menú lateral"
             >
               <X className="w-5 h-5" />
+            </button>
+
+            {/* Botón de colapsar en media pantalla y escritorio */}
+            <button
+              type="button"
+              onClick={toggleSidebarCollapse}
+              className={`hidden md:flex p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer shrink-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}
+              aria-label="Colapsar menú lateral"
+              title="Colapsar menú lateral"
+            >
+              <ChevronLeft className="w-4 h-4" />
             </button>
           </div>
 
           {/* Estado Tienda: Abierto / Cerrado */}
-          <div className="mt-3 flex items-center justify-between p-1 bg-slate-100 rounded-xl">
-            <button 
-              onClick={() => handleToggleStoreOpen(true)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                isOpen 
-                  ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-200' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              type="button"
-            >
-              <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
-              ABIERTO
-            </button>
-            <button 
-              onClick={() => handleToggleStoreOpen(false)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                !isOpen 
-                  ? 'bg-rose-50 text-rose-800 shadow-xs border border-rose-200' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-              type="button"
-            >
-              <span className={`w-2 h-2 rounded-full ${!isOpen ? 'bg-rose-500' : 'bg-slate-300'}`}></span>
-              CERRADO
-            </button>
-          </div>
+          {!isSidebarCollapsed ? (
+            <div className="mt-3 flex items-center justify-between p-1 bg-slate-100 rounded-xl">
+              <button 
+                onClick={() => handleToggleStoreOpen(true)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  isOpen 
+                    ? 'bg-emerald-50 text-emerald-800 shadow-xs border border-emerald-200' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                type="button"
+              >
+                <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></span>
+                ABIERTO
+              </button>
+              <button 
+                onClick={() => handleToggleStoreOpen(false)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  !isOpen 
+                    ? 'bg-rose-50 text-rose-800 shadow-xs border border-rose-200' 
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                type="button"
+              >
+                <span className={`w-2 h-2 rounded-full ${!isOpen ? 'bg-rose-500' : 'bg-slate-300'}`}></span>
+                CERRADO
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 hidden md:flex justify-center">
+              <button
+                type="button"
+                onClick={() => handleToggleStoreOpen(!isOpen)}
+                className={`p-2 rounded-xl transition-all cursor-pointer ${
+                  isOpen ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                }`}
+                title={`Tienda ${isOpen ? 'ABIERTA' : 'CERRADA'}. Clic para alternar.`}
+              >
+                <span className={`w-3 h-3 rounded-full block ${isOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              </button>
+            </div>
+          )}
 
           {/* Sonido Pedidos Toggle Indicator */}
-          <button
-            onClick={() => {
-              const nextState = !soundAlertsActive;
-              setSoundAlertsActive(nextState);
-              if (nextState) {
-                playNotificationSound();
-                showToast('Sonido de pedidos activado.', 'info');
-              } else {
-                showToast('Sonido de pedidos silenciado.', 'warning');
-              }
-            }}
-            className={`mt-2 w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              soundAlertsActive 
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70' 
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-            }`}
-            title="Haz clic para activar o probar el sonido de pedidos"
-          >
-            <div className="flex items-center gap-1.5">
-              {soundAlertsActive ? <Volume2 className="w-3.5 h-3.5 text-emerald-600" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
-              <span>Sonido: {soundAlertsActive ? 'ACTIVO' : 'SILENCIADO'}</span>
+          {!isSidebarCollapsed ? (
+            <button
+              onClick={() => {
+                const nextState = !soundAlertsActive;
+                setSoundAlertsActive(nextState);
+                if (nextState) {
+                  playNotificationSound();
+                  showToast('Sonido de pedidos activado.', 'info');
+                } else {
+                  showToast('Sonido de pedidos silenciado.', 'warning');
+                }
+              }}
+              className={`mt-2 w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                soundAlertsActive 
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100/70' 
+                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              }`}
+              title="Haz clic para activar o probar el sonido de pedidos"
+            >
+              <div className="flex items-center gap-1.5">
+                {soundAlertsActive ? <Volume2 className="w-3.5 h-3.5 text-emerald-600" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+                <span>Sonido: {soundAlertsActive ? 'ACTIVO' : 'SILENCIADO'}</span>
+              </div>
+              {soundAlertsActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>}
+            </button>
+          ) : (
+            <div className="mt-2 hidden md:flex justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !soundAlertsActive;
+                  setSoundAlertsActive(nextState);
+                  if (nextState) {
+                    playNotificationSound();
+                    showToast('Sonido de pedidos activado.', 'info');
+                  } else {
+                    showToast('Sonido de pedidos silenciado.', 'warning');
+                  }
+                }}
+                className={`p-2 rounded-xl transition-all cursor-pointer ${
+                  soundAlertsActive 
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80' 
+                    : 'bg-slate-100 text-slate-500'
+                }`}
+                title={`Sonido: ${soundAlertsActive ? 'ACTIVO' : 'SILENCIADO'}`}
+              >
+                {soundAlertsActive ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+              </button>
             </div>
-            {soundAlertsActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>}
-          </button>
+          )}
         </div>
 
-        {/* Navigation Links con scroll vertical independiente y barra delgada */}
-        <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-sidebar-scroll p-2.5 space-y-1">
+        {/* Navigation Links con scroll vertical independiente */}
+        <nav className={`flex-1 min-h-0 overflow-y-auto overscroll-contain custom-sidebar-scroll p-2.5 space-y-1 ${isSidebarCollapsed ? 'md:px-2' : ''}`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -901,17 +982,18 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   setActiveTab(item.id);
                   setMobileSidebarOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer ${
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'md:justify-center px-2' : 'justify-between px-3'} py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all cursor-pointer relative ${
                   isActive
                     ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
+                title={item.label}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`flex items-center gap-2.5 min-w-0 ${isSidebarCollapsed ? 'md:justify-center' : ''}`}>
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span className="truncate">{item.label}</span>
+                  <span className={`truncate ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
                 </div>
-                {item.badge != null && (
+                {item.badge != null && !isSidebarCollapsed && (
                   <span className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full ${
                     isActive 
                       ? 'bg-white text-emerald-800' 
@@ -922,77 +1004,87 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     {item.badge}
                   </span>
                 )}
+                {item.badge != null && isSidebarCollapsed && (
+                  <span className="hidden md:block w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-2"></span>
+                )}
               </button>
             );
           })}
         </nav>
 
         {/* Bottom Store Info & User Profile (Fijo abajo: shrink-0, siempre 100% visible) */}
-        <div className="shrink-0 p-3 border-t border-slate-100 bg-white space-y-2">
-          {/* Header de la sección de herramientas / accesos con botón desplegable */}
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-              Accesos Rápidos
-            </span>
-            <button
-              type="button"
-              onClick={toggleFooterTools}
-              className="text-[11px] font-bold text-slate-400 hover:text-emerald-700 flex items-center gap-1 transition-colors cursor-pointer py-0.5 px-1 rounded-md hover:bg-slate-100"
-              title={isFooterToolsOpen ? 'Plegar accesos' : 'Desplegar accesos'}
-            >
-              <span>{isFooterToolsOpen ? 'Ocultar' : 'Mostrar'}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isFooterToolsOpen ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
+        <div className={`shrink-0 p-3 border-t border-slate-100 bg-white space-y-2 ${isSidebarCollapsed ? 'md:p-2' : ''}`}>
+          {!isSidebarCollapsed && (
+            <>
+              {/* Header de la sección de herramientas / accesos con botón desplegable */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Accesos Rápidos
+                </span>
+                <button
+                  type="button"
+                  onClick={toggleFooterTools}
+                  className="text-[11px] font-bold text-slate-400 hover:text-emerald-700 flex items-center gap-1 transition-colors cursor-pointer py-0.5 px-1 rounded-md hover:bg-slate-100"
+                  title={isFooterToolsOpen ? 'Plegar accesos' : 'Desplegar accesos'}
+                >
+                  <span>{isFooterToolsOpen ? 'Ocultar' : 'Mostrar'}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isFooterToolsOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
 
-          {/* Opciones desplegables */}
-          {isFooterToolsOpen && (
-            <div className="space-y-1.5 animate-in fade-in duration-200">
-              {/* Botón Difusión y Marketing Vecinal */}
-              <button
-                onClick={() => setIsShareModalOpen(true)}
-                className={`flex items-center justify-between w-full py-2 px-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
-                  isProPlan 
-                    ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
-                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
-                }`}
-                title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Megaphone className={`w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
-                  <span className="truncate">Marketing & Difusión</span>
+              {/* Opciones desplegables */}
+              {isFooterToolsOpen && (
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  {/* Botón Difusión y Marketing Vecinal */}
+                  <button
+                    onClick={() => setIsShareModalOpen(true)}
+                    className={`flex items-center justify-between w-full py-2 px-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
+                      isProPlan 
+                        ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
+                    }`}
+                    title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Megaphone className={`w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                      <span className="truncate">Marketing & Difusión</span>
+                    </div>
+                    {isProPlan ? (
+                      <span className="shrink-0 text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
+                        PRO
+                      </span>
+                    ) : (
+                      <Share2 className="w-3.5 h-3.5 text-emerald-600/70 shrink-0" />
+                    )}
+                  </button>
+
+                  {/* Vista Vecino Shortcut */}
+                  <button
+                    onClick={() => {
+                      setViewMode('customer');
+                      goToDirectory();
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
+                    title="Previsualizar catálogo como cliente"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span>Vista Vecino</span>
+                  </button>
                 </div>
-                {isProPlan ? (
-                  <span className="shrink-0 text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
-                    PRO
-                  </span>
-                ) : (
-                  <Share2 className="w-3.5 h-3.5 text-emerald-600/70 shrink-0" />
-                )}
-              </button>
-
-              {/* Vista Vecino Shortcut */}
-              <button
-                onClick={() => {
-                  setViewMode('customer');
-                  goToDirectory();
-                }}
-                className="flex items-center justify-center gap-2 w-full py-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer"
-                title="Previsualizar catálogo como cliente"
-              >
-                <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                <span>Vista Vecino</span>
-              </button>
-            </div>
+              )}
+            </>
           )}
 
           {/* Profile Card fija */}
-          <div className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+          <div className={`p-2 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-2 ${isSidebarCollapsed ? 'md:justify-center md:p-1.5' : ''}`}>
+            <div className={`flex items-center gap-2 min-w-0 ${isSidebarCollapsed ? 'md:justify-center' : ''}`}>
+              <div 
+                className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs"
+                title={currentUser?.email || storeConfig.name}
+              >
                 {currentUser?.email ? currentUser.email[0].toUpperCase() : 'D'}
               </div>
-              <div className="min-w-0">
+              <div className={`min-w-0 ${isSidebarCollapsed ? 'md:hidden' : ''}`}>
                 <p className="font-bold text-xs text-slate-900 truncate leading-tight">
                   {currentUser?.user_metadata?.full_name || storeConfig.name || 'Don Vecino'}
                 </p>
@@ -1004,22 +1096,24 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 </p>
               </div>
             </div>
-            {currentUser ? (
-              <button
-                onClick={signOutMerchant}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                onClick={onOpenAuthModal}
-                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0 font-bold text-xs cursor-pointer"
-                title="Iniciar Sesión"
-              >
-                Login
-              </button>
+            {!isSidebarCollapsed && (
+              currentUser ? (
+                <button
+                  onClick={signOutMerchant}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={onOpenAuthModal}
+                  className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0 font-bold text-xs cursor-pointer"
+                  title="Iniciar Sesión"
+                >
+                  Login
+                </button>
+              )
             )}
           </div>
         </div>
@@ -1029,7 +1123,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       {mobileSidebarOpen && (
         <div 
           onClick={() => setMobileSidebarOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden"
         />
       )}
 
@@ -1097,17 +1191,25 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         )}
 
         {/* Top Workspace Sub-Header Bar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 py-2.5 sm:py-3 select-none shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-5 py-2.5 select-none shadow-2xs">
+          <div className="flex flex-col gap-2.5">
             
-            {/* Fila 1 en móvil / Lado izquierdo en desktop */}
-            <div className="flex items-center justify-between gap-2 min-w-0 flex-1">
+            {/* Fila 1: Identidad del Negocio y Estados Globales */}
+            <div className="flex items-center justify-between gap-2.5 min-w-0 w-full">
               <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                {/* Botón de apertura de menú para móviles */}
+                {/* Botón de control del menú lateral (Móvil abre drawer, Desktop colapsa/expande) */}
                 <button
-                  onClick={() => setMobileSidebarOpen(true)}
-                  className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 lg:hidden cursor-pointer shrink-0 transition-transform"
-                  aria-label="Abrir menú de navegación"
+                  type="button"
+                  onClick={() => {
+                    if (window.innerWidth < 768) {
+                      setMobileSidebarOpen(prev => !prev);
+                    } else {
+                      toggleSidebarCollapse();
+                    }
+                  }}
+                  className="p-1.5 sm:p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 cursor-pointer shrink-0 transition-transform"
+                  aria-label="Abrir o colapsar menú lateral"
+                  title="Menú lateral (Clic para alternar)"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
@@ -1118,7 +1220,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
-                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate tracking-tight max-w-[130px] sm:max-w-[200px] md:max-w-none">
+                  <span className="font-extrabold text-xs sm:text-sm text-slate-900 truncate tracking-tight max-w-[130px] sm:max-w-[200px] md:max-w-[320px]">
                     {storeConfig.name}
                   </span>
                 </div>
@@ -1192,8 +1294,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               </div>
             </div>
 
-            {/* Fila 2 en móvil / Lado derecho en desktop: Acciones Principales */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x shrink-0">
+            {/* Fila 2: Acciones Principales en Carrusel Táctil Fluido */}
+            <div className="w-full min-w-0 flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none touch-pan-x pb-0.5 pt-0.5 -mx-3 px-3 sm:mx-0 sm:px-0">
               {/* Botón de Venta Rápida Directa (Con bloqueo por suscripción) */}
               <button
                 type="button"
