@@ -154,6 +154,124 @@ export const normalizeSubscription = (sub, fallbackCreatedAt = null) => {
     trialEndsAt: trialEndsIso,
     subscriptionExpiresAt: expiresAt,
     plan: sub.plan || 'trial_free',
+    planType: sub.planType || (String(sub.plan || '').toLowerCase().includes('pro') ? 'pro' : (sub.plan === 'trial_free' ? 'trial' : 'basic')),
     history: Array.isArray(sub.history) ? sub.history : []
   };
+};
+
+// ==============================================================================
+// MATRIZ DE PERMISOS Y CARACTERÍSTICAS POR PLAN DE SUSCRIPCIÓN
+// Plan Básico (Bs. 75/mes) vs Plan PRO (Bs. 129/mes) vs Prueba Gratuita (15 días)
+// ==============================================================================
+
+export const SUBSCRIPTION_PLANS = {
+  BASIC: {
+    id: 'basic',
+    name: 'Plan Básico',
+    priceBolivianos: 75,
+    badgeText: 'Plan Básico (Bs. 75/mes)',
+    color: 'emerald'
+  },
+  PRO: {
+    id: 'pro',
+    name: 'Plan PRO ⭐',
+    priceBolivianos: 129,
+    badgeText: 'Plan PRO (Bs. 129/mes)',
+    color: 'amber'
+  },
+  TRIAL: {
+    id: 'trial',
+    name: 'Prueba Gratuita',
+    priceBolivianos: 0,
+    badgeText: 'Prueba Gratuita (15 Días)',
+    color: 'indigo'
+  }
+};
+
+/**
+ * Resolver el tipo de plan activo de una tienda: 'pro' | 'basic' | 'trial' | 'expired'
+ */
+export const resolveActivePlanType = (subscription, currentTimestamp = Date.now()) => {
+  if (!subscription) return 'expired';
+  const expiresAt = subscription.subscriptionExpiresAt || subscription.trialEndsAt;
+  if (!expiresAt || new Date(expiresAt).getTime() <= currentTimestamp) {
+    return 'expired';
+  }
+
+  const explicitType = subscription.planType || subscription.plan_type;
+  if (explicitType === 'pro') return 'pro';
+  if (explicitType === 'basic') return 'basic';
+
+  const rawPlan = String(subscription.plan || '').toLowerCase();
+  if (rawPlan.includes('pro')) return 'pro';
+  if (rawPlan === 'trial_free' || (!subscription.plan && !subscription.subscriptionExpiresAt)) {
+    return 'trial';
+  }
+  return 'basic';
+};
+
+/**
+ * Catálogo de características del sistema y nivel mínimo requerido
+ */
+export const SYSTEM_FEATURES = {
+  // Características Estándar (Disponibles en Básico y PRO mientras esté activa la suscripción)
+  WEB_CATALOG: { id: 'web_catalog', name: 'Catálogo Web y Pedidos WhatsApp', minPlan: 'basic' },
+  POS_TERMINAL: { id: 'pos_terminal', name: 'Punto de Venta (POS) y Venta Rápida', minPlan: 'basic' },
+  INVENTORY_MANAGEMENT: { id: 'inventory_management', name: 'Gestión de Inventario y Stock', minPlan: 'basic' },
+  DEBT_BOOK: { id: 'debt_book', name: 'Libreta de Fiados / Créditos', minPlan: 'basic' },
+  SUPPLIERS_MANAGEMENT: { id: 'suppliers_management', name: 'Gestión de Proveedores', minPlan: 'basic' },
+  CASH_REGISTER: { id: 'cash_register', name: 'Arqueo y Cierre de Caja', minPlan: 'basic' },
+  PDF_EXPORT: { id: 'pdf_export', name: 'Reporte Oficial en PDF Imprimible', minPlan: 'basic' },
+  PRINT_KIT: { id: 'print_kit', name: 'Kit Imprimible de Mostrador & QR', minPlan: 'basic' },
+  SCHEDULE_SETTINGS: { id: 'schedule_settings', name: 'Programación de Horarios y Envíos', minPlan: 'basic' },
+
+  // Características Exclusivas de Plan PRO (Requieren Plan PRO o período de prueba activo)
+  EXCEL_ADVANCED_EXPORT: { 
+    id: 'excel_advanced_export', 
+    name: 'Planilla Contable Avanzada Excel (.XLS)', 
+    minPlan: 'pro',
+    description: 'Exporta todas las ventas con formato esmeralda profesional, métricas financieras y fórmulas contables.'
+  },
+  PRODUCT_PERFORMANCE: { 
+    id: 'product_performance', 
+    name: 'Analítica de Rendimiento & Rentabilidad', 
+    minPlan: 'pro',
+    description: 'Métricas detalladas de rotación de productos por días, semanas o meses con margen de ganancia.'
+  },
+  PRO_BADGE_MAP: { 
+    id: 'pro_badge_map', 
+    name: 'Insignia y Destacado en Mapa Vecinal', 
+    minPlan: 'pro',
+    description: 'Corona dorada 👑 y presencia destacada en la cabecera del mapa vecinal para atraer más clientes.'
+  },
+  MASS_EXCEL_IMPORT: { 
+    id: 'mass_excel_import', 
+    name: 'Importación Masiva de Productos con Excel', 
+    minPlan: 'pro',
+    description: 'Carga cientos de productos a tu catálogo en segundos desde hojas de cálculo.'
+  },
+  HEADER_ANNOUNCEMENT: { 
+    id: 'header_announcement', 
+    name: 'Anuncios & Ofertas Destacadas en Cabecera', 
+    minPlan: 'pro',
+    description: 'Banner de megáfono para destacar ofertas flash o comunicados urgentes en la tienda.'
+  }
+};
+
+/**
+ * Validar si una funcionalidad está permitida para el plan y estado actual
+ */
+export const isFeatureAllowedForPlan = (featureKey, activePlanType) => {
+  if (!activePlanType || activePlanType === 'expired') return false;
+  // Durante el período de prueba 'trial', se desbloquea todo para evaluación completa
+  if (activePlanType === 'trial') return true;
+
+  const feature = SYSTEM_FEATURES[featureKey];
+  if (!feature) return true; // Si no es una feature registrada como restringida, permitir si está activa la sub
+
+  if (feature.minPlan === 'pro') {
+    return activePlanType === 'pro';
+  }
+
+  return activePlanType === 'basic' || activePlanType === 'pro';
 };

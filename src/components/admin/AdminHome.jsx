@@ -199,6 +199,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const [isPosModalOpen, setIsPosModalOpen] = useState(false);
   const [isBlockedModalOpen, setIsBlockedModalOpen] = useState(false);
   const [blockedFeatureName, setBlockedFeatureName] = useState('');
+  const [blockedVariant, setBlockedVariant] = useState('expired');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isPrintKitOpen, setIsPrintKitOpen] = useState(false);
@@ -2581,6 +2582,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           setActiveTab('subscription');
         }}
         featureName={blockedFeatureName}
+        variant={blockedVariant}
       />
 
       {/* Modal de Exportación de Reporte de Ventas (PDF, Excel, CSV) */}

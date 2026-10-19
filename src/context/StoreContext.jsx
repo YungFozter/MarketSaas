@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { initialProducts, initialCategories, initialStoreConfig, initialOrders, initialProductRequests, initialStores, presetBanners } from '../data/initialData';
 import { initialSuppliers, SUPPLIER_CATEGORIES } from '../data/supplierInitialData';
 import { initialCreditCustomers, normalizeCreditCustomer } from '../data/creditInitialData';
@@ -39,7 +39,11 @@ export {
   calculateSubscriptionTimeRemaining,
   generateCleanCode,
   createDefaultSubscription,
-  normalizeSubscription
+  normalizeSubscription,
+  SUBSCRIPTION_PLANS,
+  SYSTEM_FEATURES,
+  resolveActivePlanType,
+  isFeatureAllowedForPlan
 } from '../utils/subscriptionUtils.js';
 
 import {
@@ -49,7 +53,11 @@ import {
   calculateSubscriptionTimeRemaining,
   generateCleanCode,
   createDefaultSubscription,
-  normalizeSubscription
+  normalizeSubscription,
+  SUBSCRIPTION_PLANS,
+  SYSTEM_FEATURES,
+  resolveActivePlanType,
+  isFeatureAllowedForPlan
 } from '../utils/subscriptionUtils.js';
 
 // Diccionario canónico de imágenes locales para productos bolivianos
@@ -3096,23 +3104,23 @@ export const StoreProvider = ({ children }) => {
   // Tipo de plan activo: 'trial' | 'basic' | 'pro' | 'expired'
   const activePlanType = useMemo(() => {
     if (!isSubscriptionActive) return 'expired';
-    const rawPlan = String(storeConfig?.subscription?.plan || '').toLowerCase();
-    if (rawPlan.includes('pro')) return 'pro';
-    if (rawPlan === 'trial_free' || (!storeConfig?.subscription?.plan && !storeConfig?.subscription?.subscriptionExpiresAt)) {
-      return 'trial';
-    }
-    return 'basic';
-  }, [isSubscriptionActive, storeConfig?.subscription?.plan, storeConfig?.subscription?.subscriptionExpiresAt]);
+    return resolveActivePlanType(storeConfig?.subscription, currentTick);
+  }, [isSubscriptionActive, storeConfig?.subscription, currentTick]);
 
   // Flag booleano de alta conveniencia para componentes
   const isProPlan = useMemo(() => {
     return isSubscriptionActive && activePlanType === 'pro';
   }, [isSubscriptionActive, activePlanType]);
 
+  // Función de consulta rápida de permisos por funcionalidad
+  const canAccessFeature = useCallback((featureKey) => {
+    return isFeatureAllowedForPlan(featureKey, activePlanType);
+  }, [activePlanType]);
+
   // Nombre legible del plan activo
   const activePlanName = useMemo(() => {
     if (!isSubscriptionActive) return 'Suscripción Vencida';
-    if (activePlanType === 'pro') return 'Plan Pro (Bs. 129)';
+    if (activePlanType === 'pro') return 'Plan PRO (Bs. 129)';
     if (activePlanType === 'trial') return 'Prueba Gratuita (15 Días)';
     return 'Plan Básico (Bs. 75)';
   }, [isSubscriptionActive, activePlanType]);
@@ -3123,17 +3131,21 @@ export const StoreProvider = ({ children }) => {
     return calculateSubscriptionTimeRemaining(expiresAt, currentTick);
   }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt, currentTick]);
 
-  // Generar códigos de suscripción (uno o por lotes)
-  const generateSubscriptionCodes = async ({ count = 1, durationDays = 0, durationMinutes = 0, planName = 'Premium', notes = '' }) => {
+  // Generar códigos de suscripción (uno o por lotes) con tipo de plan explícito (basic o pro)
+  const generateSubscriptionCodes = async ({ count = 1, durationDays = 0, durationMinutes = 0, planName = '', planType = 'basic', notes = '' }) => {
     const newCodes = [];
     const nowIso = new Date().toISOString();
+    const cleanPlanType = planType === 'pro' ? 'pro' : 'basic';
+    const effectivePlanName = planName || (cleanPlanType === 'pro' ? 'Plan PRO' : 'Plan Básico');
+
     for (let i = 0; i < count; i++) {
       newCodes.push({
         id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `code-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
         code: generateCleanCode(),
         duration_days: Number(durationDays) || 0,
         duration_minutes: Number(durationMinutes) || 0,
-        plan_name: planName || 'Premium',
+        plan_name: effectivePlanName,
+        plan_type: cleanPlanType,
         status: 'available',
         created_at: nowIso,
         redeemed_at: null,
@@ -3157,7 +3169,8 @@ export const StoreProvider = ({ children }) => {
 
     setSubscriptionCodes(prev => [...newCodes, ...prev]);
 
-    showToast(`¡Se ${count === 1 ? 'generó 1 código' : `generaron ${count} códigos`} con éxito!`, 'success');
+    const planLabel = cleanPlanType === 'pro' ? 'Plan PRO ⭐' : 'Plan Básico';
+    showToast(`¡Se ${count === 1 ? `generó 1 código para ${planLabel}` : `generaron ${count} códigos para ${planLabel}`} con éxito!`, 'success');
     return newCodes;
   };
 
@@ -3201,6 +3214,9 @@ export const StoreProvider = ({ children }) => {
           }
           const totalMinutesToAdd = Number(rpcRes.duration_minutes) || 43200;
           const days = Number(rpcRes.duration_days) || 0;
+          const cleanPlanType = rpcRes.plan_type || (String(rpcRes.plan_name || '').toLowerCase().includes('pro') ? 'pro' : 'basic');
+          const effectivePlanName = rpcRes.plan_name || (cleanPlanType === 'pro' ? 'Plan PRO' : 'Plan Básico');
+
           const now = new Date();
           const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
           let baseTime = now.getTime();
@@ -3213,7 +3229,8 @@ export const StoreProvider = ({ children }) => {
 
           const newHistoryItem = {
             code: clean,
-            planName: rpcRes.plan_name || 'Premium',
+            planName: effectivePlanName,
+            planType: cleanPlanType,
             durationMinutes: totalMinutesToAdd,
             durationDays: days,
             redeemedAt: nowIso
@@ -3224,15 +3241,22 @@ export const StoreProvider = ({ children }) => {
             trialStartedAt: storeConfig?.subscription?.trialStartedAt || nowIso,
             trialEndsAt: storeConfig?.subscription?.trialEndsAt || nowIso,
             subscriptionExpiresAt: newExpiresAt.toISOString(),
-            plan: rpcRes.plan_name || 'premium',
+            plan: effectivePlanName,
+            planType: cleanPlanType,
             history: [newHistoryItem, ...(storeConfig?.subscription?.history || [])]
           };
 
-          await setStoreConfig({ ...storeConfig, subscription: updatedSubscription });
+          await setStoreConfig({ 
+            ...storeConfig, 
+            subscription: updatedSubscription,
+            isProStore: cleanPlanType === 'pro',
+            plan: cleanPlanType === 'pro' ? 'pro' : 'basic'
+          });
           triggerConfetti();
           const durationText = days > 0 ? `${days} día(s)` : `${totalMinutesToAdd} minuto(s)`;
-          showToast(`¡Código canjeado con éxito! Se sumaron ${durationText} a tu suscripción.`, 'success');
-          return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText };
+          const planBadge = cleanPlanType === 'pro' ? 'Plan PRO ⭐' : 'Plan Básico';
+          showToast(`¡Código canjeado con éxito! Se activó ${planBadge} (+${durationText}).`, 'success');
+          return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText, planType: cleanPlanType };
         }
       } catch (rpcEx) {
         // Fallback a consulta directa si la función RPC aún no fue creada en Supabase
@@ -3273,7 +3297,7 @@ export const StoreProvider = ({ children }) => {
       return { success: false, message: 'Este código ha sido revocado o deshabilitado.' };
     }
 
-    // 2. Calcular minutos a sumar
+    // Calcular minutos a sumar
     const days = Number(targetCode.duration_days) || 0;
     const mins = Number(targetCode.duration_minutes) || 0;
     let totalMinutesToAdd = (days * 1440) + mins;
@@ -3281,7 +3305,10 @@ export const StoreProvider = ({ children }) => {
       totalMinutesToAdd = 43200; // Por defecto 30 días
     }
 
-    // 3. Extender fecha de expiración
+    const cleanPlanType = targetCode.plan_type || (String(targetCode.plan_name || '').toLowerCase().includes('pro') ? 'pro' : 'basic');
+    const effectivePlanName = targetCode.plan_name || (cleanPlanType === 'pro' ? 'Plan PRO' : 'Plan Básico');
+
+    // Extender fecha de expiración
     const now = new Date();
     const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
     let baseTime = now.getTime();
@@ -3297,7 +3324,8 @@ export const StoreProvider = ({ children }) => {
 
     const newHistoryItem = {
       code: targetCode.code,
-      planName: targetCode.plan_name || 'Premium',
+      planName: effectivePlanName,
+      planType: cleanPlanType,
       durationMinutes: totalMinutesToAdd,
       durationDays: days,
       redeemedAt: nowIso
@@ -3308,18 +3336,21 @@ export const StoreProvider = ({ children }) => {
       trialStartedAt: storeConfig?.subscription?.trialStartedAt || nowIso,
       trialEndsAt: storeConfig?.subscription?.trialEndsAt || nowIso,
       subscriptionExpiresAt: newExpiresAt.toISOString(),
-      plan: targetCode.plan_name || 'premium',
+      plan: effectivePlanName,
+      planType: cleanPlanType,
       history: [newHistoryItem, ...(storeConfig?.subscription?.history || [])]
     };
 
-    // 4. Actualizar storeConfig
+    // Actualizar storeConfig
     const updatedStoreConfig = {
       ...storeConfig,
-      subscription: updatedSubscription
+      subscription: updatedSubscription,
+      isProStore: cleanPlanType === 'pro',
+      plan: cleanPlanType === 'pro' ? 'pro' : 'basic'
     };
     await setStoreConfig(updatedStoreConfig);
 
-    // 5. Marcar código como canjeado en base de datos
+    // Marcar código como canjeado en base de datos
     const redeemedPayload = {
       status: 'redeemed',
       redeemed_at: nowIso,
@@ -3343,16 +3374,26 @@ export const StoreProvider = ({ children }) => {
 
     triggerConfetti();
     const durationText = days > 0 ? `${days} día(s)` : `${mins} minuto(s)`;
-    showToast(`¡Código canjeado con éxito! Se sumaron ${durationText} a tu suscripción.`, 'success');
+    const planBadge = cleanPlanType === 'pro' ? 'Plan PRO ⭐' : 'Plan Básico';
+    showToast(`¡Código canjeado con éxito! Se activó ${planBadge} (+${durationText}).`, 'success');
 
-    return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText };
+    return { success: true, newExpiresAt: newExpiresAt.toISOString(), durationText, planType: cleanPlanType };
   };
 
-  // Inyección / extensión directa de tiempo a cualquier tienda (SuperAdmin)
-  const addStoreSubscriptionTime = async (storeId, minutesToAdd) => {
+  // Inyección / extensión directa de tiempo a cualquier tienda (SuperAdmin), permitiendo definir o promover plan (basic / pro)
+  const addStoreSubscriptionTime = async (storeId, minutesToAdd, targetPlanType = null) => {
     if (!storeId || !minutesToAdd) return;
     const now = new Date();
     let newExpiresAtIso = null;
+
+    const resolvePlanUpdates = (prevSub) => {
+      if (!targetPlanType) return {};
+      const isTargetPro = targetPlanType === 'pro';
+      return {
+        planType: isTargetPro ? 'pro' : 'basic',
+        plan: isTargetPro ? 'Plan PRO' : 'Plan Básico'
+      };
+    };
 
     if (storeId === tenantSlug) {
       const currentExp = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
@@ -3366,9 +3407,14 @@ export const StoreProvider = ({ children }) => {
       const updatedSub = {
         ...(storeConfig.subscription || createDefaultSubscription()),
         status: 'active',
-        subscriptionExpiresAt: newExpiresAtIso
+        subscriptionExpiresAt: newExpiresAtIso,
+        ...resolvePlanUpdates(storeConfig?.subscription)
       };
-      await setStoreConfig({ ...storeConfig, subscription: updatedSub });
+      await setStoreConfig({ 
+        ...storeConfig, 
+        subscription: updatedSub,
+        ...(targetPlanType ? { isProStore: targetPlanType === 'pro', plan: targetPlanType === 'pro' ? 'pro' : 'basic' } : {})
+      });
     }
 
     if (supabase) {
@@ -3386,9 +3432,14 @@ export const StoreProvider = ({ children }) => {
           const updatedSub = {
             ...(cfg.subscription || createDefaultSubscription()),
             status: 'active',
-            subscriptionExpiresAt: newExpiresAtIso
+            subscriptionExpiresAt: newExpiresAtIso,
+            ...resolvePlanUpdates(cfg.subscription)
           };
-          const updatedCfg = { ...cfg, subscription: updatedSub };
+          const updatedCfg = { 
+            ...cfg, 
+            subscription: updatedSub,
+            ...(targetPlanType ? { isProStore: targetPlanType === 'pro', plan: targetPlanType === 'pro' ? 'pro' : 'basic' } : {})
+          };
           await supabase.from('store_config').update({ config: updatedCfg, updated_at: now.toISOString() }).eq('id', storeId);
         }
       } catch (e) {
@@ -3409,12 +3460,16 @@ export const StoreProvider = ({ children }) => {
     // Actualizar reactivamente la tienda en el estado stores en memoria
     setStores(prev => prev.map(s => {
       if (s.slug === storeId || s.id === storeId) {
+        const prevSub = s.subscription || createDefaultSubscription();
         return {
           ...s,
+          isProStore: targetPlanType ? targetPlanType === 'pro' : s.isProStore,
+          plan: targetPlanType ? (targetPlanType === 'pro' ? 'pro' : 'basic') : s.plan,
           subscription: {
-            ...(s.subscription || createDefaultSubscription()),
+            ...prevSub,
             status: 'active',
-            subscriptionExpiresAt: newExpiresAtIso
+            subscriptionExpiresAt: newExpiresAtIso,
+            ...resolvePlanUpdates(prevSub)
           }
         };
       }
@@ -6071,6 +6126,9 @@ export const StoreProvider = ({ children }) => {
         isProPlan,
         activePlanType,
         activePlanName,
+        canAccessFeature,
+        SUBSCRIPTION_PLANS,
+        SYSTEM_FEATURES,
         subscriptionTimeRemaining,
         generateSubscriptionCodes,
         deleteSubscriptionCode,

@@ -59,6 +59,7 @@ export const SuperAdminHome = () => {
   } = useStore();
 
   // Estados de generación
+  const [selectedPlanType, setSelectedPlanType] = useState('basic'); // 'basic' | 'pro'
   const [generateCount, setGenerateCount] = useState(1);
   const [durationPreset, setDurationPreset] = useState('30days'); // '30days' | '5min' | '90days' | '180days' | '365days'
   const [notes, setNotes] = useState('');
@@ -68,6 +69,7 @@ export const SuperAdminHome = () => {
 
   // Estados de filtrado y búsqueda
   const [activeTab, setActiveTab] = useState('available'); // 'available' | 'history' | 'stores' | 'broadcast'
+  const [planFilter, setPlanFilter] = useState('all'); // 'all' | 'basic' | 'pro'
   const [searchTerm, setSearchTerm] = useState('');
   const [historySearchTerm, setHistorySearchTerm] = useState('');
   const [storeSearchTerm, setStoreSearchTerm] = useState('');
@@ -79,6 +81,7 @@ export const SuperAdminHome = () => {
 
   // Modal de gestión de suscripción
   const [selectedStoreForSub, setSelectedStoreForSub] = useState(null);
+  const [storePlanModalType, setStorePlanModalType] = useState('basic'); // 'basic' | 'pro'
   const [customDaysInput, setCustomDaysInput] = useState('');
 
   // Borrador de Aviso Global del Sistema
@@ -146,14 +149,21 @@ export const SuperAdminHome = () => {
 
   // Filtrado de códigos disponibles
   const filteredAvailableCodes = useMemo(() => {
-    if (!searchTerm.trim()) return availableCodes;
+    let list = availableCodes || [];
+    if (planFilter !== 'all') {
+      list = list.filter(c => {
+        const type = c.plan_type || (String(c.plan_name || '').toLowerCase().includes('pro') ? 'pro' : 'basic');
+        return type === planFilter;
+      });
+    }
+    if (!searchTerm.trim()) return list;
     const q = searchTerm.toLowerCase();
-    return availableCodes.filter(c => 
+    return list.filter(c => 
       c.code?.toLowerCase().includes(q) || 
       c.notes?.toLowerCase().includes(q) ||
       c.plan_name?.toLowerCase().includes(q)
     );
-  }, [availableCodes, searchTerm]);
+  }, [availableCodes, planFilter, searchTerm]);
 
   // Filtrado de historial de canjes
   const filteredRedeemedCodes = useMemo(() => {
@@ -271,10 +281,17 @@ export const SuperAdminHome = () => {
   };
 
   // Handlers para el modal de suscripción
+  const handleOpenStoreSubModal = (st) => {
+    if (!st) return;
+    const isPro = Boolean(st.isProStore || st.subscription?.planType === 'pro' || String(st.subscription?.plan || '').toLowerCase().includes('pro'));
+    setStorePlanModalType(isPro ? 'pro' : 'basic');
+    setSelectedStoreForSub(st);
+  };
+
   const handleAddTimeToSelectedStore = async (minutes) => {
     if (!selectedStoreForSub) return;
     const targetSlug = selectedStoreForSub.slug || selectedStoreForSub.id;
-    await addStoreSubscriptionTime(targetSlug, minutes);
+    await addStoreSubscriptionTime(targetSlug, minutes, storePlanModalType);
     const updated = (stores || []).find(s => (s.slug || s.id) === targetSlug);
     if (updated) setSelectedStoreForSub(updated);
   };
@@ -308,24 +325,27 @@ export const SuperAdminHome = () => {
 
     let days = 0;
     let mins = 0;
-    let planName = 'Premium';
+    const isPro = selectedPlanType === 'pro';
+    let durationLabel = '30 Días';
 
     if (durationPreset === '5min') {
       mins = 5;
-      planName = 'Prueba Rápida 5 min';
+      durationLabel = '5 min';
     } else if (durationPreset === '30days') {
       days = 30;
-      planName = 'Plan Mensual (30 Días)';
+      durationLabel = '30 Días';
     } else if (durationPreset === '90days') {
       days = 90;
-      planName = 'Plan Trimestral (3 Meses)';
+      durationLabel = '3 Meses';
     } else if (durationPreset === '180days') {
       days = 180;
-      planName = 'Plan Semestral (6 Meses)';
+      durationLabel = '6 Meses';
     } else if (durationPreset === '365days') {
       days = 365;
-      planName = 'Plan Anual (1 Año)';
+      durationLabel = '1 Año';
     }
+
+    const planName = isPro ? `Plan PRO ⭐ (${durationLabel})` : `Plan Básico (${durationLabel})`;
 
     try {
       const generated = await generateSubscriptionCodes({
@@ -333,6 +353,7 @@ export const SuperAdminHome = () => {
         durationDays: days,
         durationMinutes: mins,
         planName,
+        planType: selectedPlanType,
         notes: notes.trim()
       });
 
@@ -535,7 +556,32 @@ export const SuperAdminHome = () => {
           </div>
 
           <form onSubmit={handleGenerate} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Selector de Tipo de Plan */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                  <span>Plan de Suscripción</span>
+                  {selectedPlanType === 'pro' && (
+                    <span className="text-[10px] text-amber-400 font-black">⭐ Bs. 129/mes</span>
+                  )}
+                  {selectedPlanType === 'basic' && (
+                    <span className="text-[10px] text-emerald-400 font-bold">Bs. 75/mes</span>
+                  )}
+                </label>
+                <select
+                  value={selectedPlanType}
+                  onChange={(e) => setSelectedPlanType(e.target.value)}
+                  className={`w-full px-3.5 py-2.5 bg-slate-950 border rounded-xl text-xs font-bold outline-none transition-all cursor-pointer ${
+                    selectedPlanType === 'pro'
+                      ? 'border-amber-500/60 text-amber-300 focus:border-amber-400 shadow-xs shadow-amber-500/10'
+                      : 'border-emerald-500/60 text-emerald-300 focus:border-emerald-400 shadow-xs shadow-emerald-500/10'
+                  }`}
+                >
+                  <option value="basic">📦 Plan Básico (Bs. 75)</option>
+                  <option value="pro">👑 Plan PRO ⭐ (Bs. 129)</option>
+                </select>
+              </div>
+
               {/* Selector de Duración */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
@@ -579,7 +625,7 @@ export const SuperAdminHome = () => {
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ej. Promo apertura Don Pepe"
+                  placeholder="Ej. Promo Don Pepe"
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs placeholder:text-slate-600 focus:border-amber-400 outline-none transition-colors"
                 />
               </div>
@@ -706,17 +752,31 @@ export const SuperAdminHome = () => {
           {/* CONTENIDO DE TAB 1: CÓDIGOS DISPONIBLES */}
           {activeTab === 'available' && (
             <div className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="relative flex-1 max-w-sm">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar código o nota..."
-                    className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-slate-600 outline-none"
-                  />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Buscar código o nota..."
+                      className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder:text-slate-600 focus:border-slate-600 outline-none"
+                    />
+                  </div>
+
+                  {/* Filtro por tipo de plan */}
+                  <select
+                    value={planFilter}
+                    onChange={(e) => setPlanFilter(e.target.value)}
+                    className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:border-amber-400 outline-none cursor-pointer font-medium"
+                  >
+                    <option value="all">🔍 Todos los Planes</option>
+                    <option value="basic">📦 Solo Plan Básico</option>
+                    <option value="pro">👑 Solo Plan PRO ⭐</option>
+                  </select>
                 </div>
+
                 <span className="text-xs text-slate-400 font-medium">
                   Mostrando {filteredAvailableCodes.length} código(s) listos para entrega
                 </span>
@@ -724,7 +784,7 @@ export const SuperAdminHome = () => {
 
               {filteredAvailableCodes.length === 0 ? (
                 <div className="p-10 text-center rounded-2xl bg-slate-950/40 border border-dashed border-slate-800 text-slate-500 text-xs">
-                  No hay códigos disponibles que coincidan con la búsqueda.
+                  No hay códigos disponibles que coincidan con los filtros seleccionados.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -733,60 +793,71 @@ export const SuperAdminHome = () => {
                       <tr>
                         <th className="p-3">Código</th>
                         <th className="p-3">Duración</th>
-                        <th className="p-3">Plan</th>
+                        <th className="p-3">Plan de Suscripción</th>
                         <th className="p-3">Nota / Referencia</th>
                         <th className="p-3">Creado el (UTC-4)</th>
                         <th className="p-3 text-right">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {filteredAvailableCodes.map((codeItem) => (
-                        <tr key={codeItem.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="p-3 font-mono font-bold text-emerald-400 text-sm">
-                            {codeItem.code}
-                          </td>
-                          <td className="p-3">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-medium text-[11px]">
-                              {codeItem.duration_days > 0 ? `${codeItem.duration_days} días` : `${codeItem.duration_minutes} min`}
-                            </span>
-                          </td>
-                          <td className="p-3 text-slate-300">
-                            {codeItem.plan_name || 'Premium'}
-                          </td>
-                          <td className="p-3 text-slate-400 italic">
-                            {codeItem.notes || '—'}
-                          </td>
-                          <td className="p-3 font-mono text-slate-400">
-                            {formatBoliviaDateTime(codeItem.created_at)}
-                          </td>
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleCopy(codeItem.code)}
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-                                title="Copiar código"
-                              >
-                                {copiedCode === codeItem.code ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Copy className="w-3.5 h-3.5" />
-                                )}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm(`¿Estás seguro de eliminar el código ${codeItem.code}?`)) {
-                                    deleteSubscriptionCode(codeItem.id);
-                                  }
-                                }}
-                                className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                                title="Eliminar código accidental"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredAvailableCodes.map((codeItem) => {
+                        const isProCode = codeItem.plan_type === 'pro' || String(codeItem.plan_name || '').toLowerCase().includes('pro');
+                        return (
+                          <tr key={codeItem.id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="p-3 font-mono font-bold text-emerald-400 text-sm">
+                              {codeItem.code}
+                            </td>
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 font-medium text-[11px]">
+                                {codeItem.duration_days > 0 ? `${codeItem.duration_days} días` : `${codeItem.duration_minutes} min`}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              {isProCode ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-xs">
+                                  👑 PLAN PRO (Bs. 129)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-xs">
+                                  📦 PLAN BÁSICO (Bs. 75)
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-slate-400 italic">
+                              {codeItem.notes || '—'}
+                            </td>
+                            <td className="p-3 font-mono text-slate-400">
+                              {formatBoliviaDateTime(codeItem.created_at)}
+                            </td>
+                            <td className="p-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleCopy(codeItem.code)}
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                                  title="Copiar código"
+                                >
+                                  {copiedCode === codeItem.code ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`¿Estás seguro de eliminar el código ${codeItem.code}?`)) {
+                                      deleteSubscriptionCode(codeItem.id);
+                                    }
+                                  }}
+                                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                                  title="Eliminar código accidental"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -828,6 +899,7 @@ export const SuperAdminHome = () => {
                     <thead className="bg-slate-950/70 uppercase text-[10px] tracking-wider text-slate-400 border-b border-slate-800">
                       <tr>
                         <th className="p-3">Código</th>
+                        <th className="p-3">Plan Activado</th>
                         <th className="p-3">Correo Usuario</th>
                         <th className="p-3">Tienda Asignada</th>
                         <th className="p-3">Duración Otorgada</th>
@@ -835,35 +907,49 @@ export const SuperAdminHome = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {filteredRedeemedCodes.map((rc) => (
-                        <tr key={rc.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="p-3 font-mono font-bold text-indigo-400 text-sm">
-                            {rc.code}
-                          </td>
-                          <td className="p-3 font-medium text-slate-200">
-                            <span className="flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-500" />
-                              {rc.redeemed_by_email || 'dueño@marketsaas.com'}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span className="font-semibold text-white">
-                              {rc.redeemed_by_store_name || rc.redeemed_by_store_id || 'Mi Tienda'}
-                            </span>
-                            <span className="block text-[10px] font-mono text-slate-500">
-                              ID: {rc.redeemed_by_store_id}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium text-[11px]">
-                              {rc.duration_days > 0 ? `+${rc.duration_days} días` : `+${rc.duration_minutes} min`}
-                            </span>
-                          </td>
-                          <td className="p-3 font-mono text-slate-300">
-                            {formatBoliviaDateTime(rc.redeemed_at)}
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredRedeemedCodes.map((rc) => {
+                        const isProCode = rc.plan_type === 'pro' || String(rc.plan_name || '').toLowerCase().includes('pro');
+                        return (
+                          <tr key={rc.id} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="p-3 font-mono font-bold text-indigo-400 text-sm">
+                              {rc.code}
+                            </td>
+                            <td className="p-3">
+                              {isProCode ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                  👑 PLAN PRO
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                  📦 BÁSICO
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 font-medium text-slate-200">
+                              <span className="flex items-center gap-1.5">
+                                <Mail className="w-3.5 h-3.5 text-slate-500" />
+                                {rc.redeemed_by_email || 'dueño@marketsaas.com'}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-semibold text-white">
+                                {rc.redeemed_by_store_name || rc.redeemed_by_store_id || 'Mi Tienda'}
+                              </span>
+                              <span className="block text-[10px] font-mono text-slate-500">
+                                ID: {rc.redeemed_by_store_id}
+                              </span>
+                            </td>
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium text-[11px]">
+                                {rc.duration_days > 0 ? `+${rc.duration_days} días` : `+${rc.duration_minutes} min`}
+                              </span>
+                            </td>
+                            <td className="p-3 font-mono text-slate-300">
+                              {formatBoliviaDateTime(rc.redeemed_at)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1040,9 +1126,9 @@ export const SuperAdminHome = () => {
                                     <span>Acceder</span>
                                   </button>
                                   <button
-                                    onClick={() => setSelectedStoreForSub(st)}
+                                    onClick={() => handleOpenStoreSubModal(st)}
                                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
-                                    title="Modificar tiempo o suspender suscripción"
+                                    title="Modificar tiempo, plan o suspender suscripción"
                                   >
                                     <CalendarClock className="w-3 h-3" />
                                     <span>Licencia</span>
@@ -1143,7 +1229,7 @@ export const SuperAdminHome = () => {
                             </button>
 
                             <button
-                              onClick={() => setSelectedStoreForSub(st)}
+                              onClick={() => handleOpenStoreSubModal(st)}
                               className="px-2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[11px] flex items-center justify-center gap-1 text-center cursor-pointer"
                             >
                               <CalendarClock className="w-3.5 h-3.5" />
@@ -1387,7 +1473,24 @@ export const SuperAdminHome = () => {
               </div>
 
               {/* Estado actual */}
-              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Plan Actual de la Tienda:</span>
+                  {Boolean(selectedStoreForSub.isProStore || sub.planType === 'pro' || String(sub.plan || '').toLowerCase().includes('pro')) ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 shadow-xs">
+                      👑 Plan PRO ⭐ (Bs. 129/mes)
+                    </span>
+                  ) : (sub.plan === 'trial_free' || (!sub.plan && !sub.subscriptionExpiresAt)) ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                      ⏳ Período de Prueba (15 Días)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      📦 Plan Básico (Bs. 75/mes)
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Estado de Operación:</span>
                   <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
@@ -1401,6 +1504,37 @@ export const SuperAdminHome = () => {
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-slate-500">Fecha de Vencimiento:</span>
                   <span className="text-slate-300">{formatBoliviaDateTime(expIso)}</span>
+                </div>
+              </div>
+
+              {/* Selector de Plan a Asignar / Renovar */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  Plan a Asignar / Renovar con la Extensión:
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStorePlanModalType('basic')}
+                    className={`p-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      storePlanModalType === 'basic'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/30'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>📦 Plan Básico (Bs. 75)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStorePlanModalType('pro')}
+                    className={`p-2.5 rounded-xl text-xs font-black border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      storePlanModalType === 'pro'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-xs ring-1 ring-amber-500/30'
+                        : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <span>👑 Plan PRO ⭐ (Bs. 129)</span>
+                  </button>
                 </div>
               </div>
 
