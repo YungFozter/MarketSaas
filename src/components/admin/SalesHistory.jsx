@@ -432,9 +432,6 @@ export const SalesHistory = () => {
           >
             {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500" /> : <Banknote className="w-4 h-4 text-white" />}
             <span>Cierre de Caja</span>
-            {!isSubscriptionActive && (
-              <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>
-            )}
           </button>
 
           {/* Botón Resumen Semanal para WhatsApp */}
@@ -468,14 +465,10 @@ export const SalesHistory = () => {
           >
             {!isSubscriptionActive ? <Lock className="w-4 h-4 text-amber-500" /> : <Download className="w-4 h-4 text-emerald-400" />}
             <span>Exportar Reporte</span>
-            {!isSubscriptionActive ? (
-              <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">🔒</span>
-            ) : (
-              selectedPaymentMethod !== 'all' && (
-                <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
-                  {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
-                </span>
-              )
+            {isSubscriptionActive && selectedPaymentMethod !== 'all' && (
+              <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
+              </span>
             )}
           </button>
 

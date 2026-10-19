@@ -6,13 +6,15 @@
   padding-bottom: 5rem;
 }
 
-.admin-tabs-scroller {
+.admin-tabs-scroller,
+.scrollbar-none {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.admin-tabs-scroller::-webkit-scrollbar {
+.admin-tabs-scroller::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
   display: none;
 }
 

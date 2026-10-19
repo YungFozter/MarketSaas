@@ -1193,9 +1193,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
 
             {/* Fila 2 en móvil / Lado derecho en desktop: Acciones Principales */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none touch-pan-x shrink-0">
               {/* Botón de Venta Rápida Directa (Con bloqueo por suscripción) */}
               <button
+                type="button"
                 onClick={() => {
                   if (!isSubscriptionActive) {
                     setBlockedFeatureName('Venta Rápida');
@@ -1204,50 +1205,75 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     setIsPosModalOpen(true);
                   }
                 }}
-                className={`flex-1 sm:flex-initial h-9 px-3.5 sm:px-4 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap ${
+                className={`h-9 px-3.5 sm:px-4 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shrink-0 ${
                   !isSubscriptionActive
-                    ? 'bg-slate-800 hover:bg-slate-900 text-slate-200 shadow-slate-800/20'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25'
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 shadow-2xs'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/25 border border-emerald-600'
                 }`}
                 title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Abrir terminal de Venta Rápida en mostrador"}
               >
                 {!isSubscriptionActive ? (
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 ) : (
                   <Receipt className="w-3.5 h-3.5 text-white shrink-0" />
                 )}
                 <span>Venta Rápida</span>
-                {!isSubscriptionActive && (
-                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.5 rounded-md font-black ml-0.5">
-                    Bloqueado
-                  </span>
-                )}
               </button>
 
               {/* Botón Cartel QR Mostrador */}
               <button
-                onClick={() => setIsPrintKitOpen(true)}
-                className="h-9 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
-                title="Diseñar e imprimir cartel QR para vitrina o carpa de mostrador"
+                type="button"
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Kit Imprimible y Cartel QR');
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsPrintKitOpen(true);
+                  }
+                }}
+                className={`h-9 px-3 sm:px-3.5 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 whitespace-nowrap ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                    : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                }`}
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Diseñar e imprimir cartel QR para vitrina o carpa de mostrador"}
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="hidden md:inline whitespace-nowrap">Cartel QR Mostrador</span>
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <Printer className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                )}
+                <span>Cartel QR<span className="hidden xl:inline"> Mostrador</span></span>
               </button>
 
               {/* Botón Campañas de Marketing & Difusión */}
               <button
-                onClick={() => setIsShareModalOpen(true)}
-                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
-                  isProPlan
-                    ? 'bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-amber-300'
-                    : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
+                type="button"
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Marketing Vecinal');
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsShareModalOpen(true);
+                  }
+                }}
+                className={`h-9 px-3 sm:px-3.5 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 whitespace-nowrap ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                    : isProPlan
+                      ? 'bg-amber-50/90 hover:bg-amber-100 text-amber-950 border-amber-300'
+                      : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
                 }`}
-                title="Plantillas de marketing vecinal para WhatsApp y estados"
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Plantillas de marketing vecinal para WhatsApp y estados"}
               >
-                <Megaphone className={`w-3.5 h-3.5 shrink-0 ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
-                <span className="hidden xl:inline whitespace-nowrap">Marketing Vecinal</span>
-                {isProPlan && (
-                  <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-1 py-0.2 rounded-md">
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <Megaphone className={`w-3.5 h-3.5 shrink-0 ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                )}
+                <span>Marketing<span className="hidden xl:inline"> Vecinal</span></span>
+                {isProPlan && isSubscriptionActive && (
+                  <span className="text-[9px] font-black bg-amber-200 text-amber-900 px-1 py-0.5 rounded leading-none">
                     PRO
                   </span>
                 )}
@@ -1255,6 +1281,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
 
               {/* Botón Cierre de Caja / Arqueo (Con bloqueo por suscripción) */}
               <button
+                type="button"
                 onClick={() => {
                   if (!isSubscriptionActive) {
                     setBlockedFeatureName('Cierre de Caja y Arqueo Diario');
@@ -1263,9 +1290,9 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     setIsCashRegisterModalOpen(true);
                   }
                 }}
-                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
+                className={`h-9 px-3 sm:px-3.5 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 whitespace-nowrap ${
                   !isSubscriptionActive
-                    ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-500 border-slate-200'
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
                     : 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-800 border-emerald-200/90'
                 }`}
                 title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Arqueo y Cierre de Caja Diario (Control de Efectivo)"}
@@ -1275,26 +1302,38 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 ) : (
                   <Banknote className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 )}
-                <span className="hidden lg:inline whitespace-nowrap">Cierre de Caja</span>
-                {!isSubscriptionActive && (
-                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">
-                    🔒
-                  </span>
-                )}
+                <span>Cierre de Caja</span>
               </button>
 
               {/* Botón Resumen Semanal para WhatsApp */}
               <button
-                onClick={() => setIsWeeklySummaryModalOpen(true)}
-                className="h-9 px-3 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200/90 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0"
-                title="Generar y enviar resumen semanal de rendimiento a WhatsApp"
+                type="button"
+                onClick={() => {
+                  if (!isSubscriptionActive) {
+                    setBlockedFeatureName('Resumen para WhatsApp');
+                    setIsBlockedModalOpen(true);
+                  } else {
+                    setIsWeeklySummaryModalOpen(true);
+                  }
+                }}
+                className={`h-9 px-3 sm:px-3.5 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 whitespace-nowrap ${
+                  !isSubscriptionActive
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                    : 'bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border-slate-200/90'
+                }`}
+                title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Generar y enviar resumen semanal de rendimiento a WhatsApp"}
               >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span className="hidden lg:inline whitespace-nowrap">Resumen WhatsApp</span>
+                {!isSubscriptionActive ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                ) : (
+                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                )}
+                <span>Resumen <span className="hidden md:inline">WhatsApp</span><span className="inline md:hidden">WA</span></span>
               </button>
 
               {/* Botón Exportar Reporte (Con bloqueo por suscripción) */}
               <button
+                type="button"
                 onClick={() => {
                   if (!isSubscriptionActive) {
                     setBlockedFeatureName('Exportación de Reportes Financieros');
@@ -1303,24 +1342,19 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                     setIsExportModalOpen(true);
                   }
                 }}
-                className={`h-9 px-3 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 ${
+                className={`h-9 px-3 sm:px-3.5 rounded-xl border font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 shrink-0 whitespace-nowrap ${
                   !isSubscriptionActive
-                    ? 'bg-slate-100 hover:bg-slate-200/80 text-slate-500 border-slate-200'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/60'
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200/90'
                 }`}
                 title={!isSubscriptionActive ? "Función bloqueada por suscripción vencida" : "Descargar o imprimir reporte contable de ventas (PDF, Excel)"}
               >
                 {!isSubscriptionActive ? (
                   <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 ) : (
-                  <TrendingUp className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <TrendingUp className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                 )}
-                <span className="hidden md:inline whitespace-nowrap">Exportar Reporte</span>
-                {!isSubscriptionActive && (
-                  <span className="text-[10px] bg-rose-500 text-white px-1.5 py-0.2 rounded-md font-black">
-                    🔒
-                  </span>
-                )}
+                <span>Exportar<span className="hidden lg:inline"> Reporte</span></span>
               </button>
             </div>
 
