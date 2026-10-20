@@ -93,12 +93,23 @@ export const SupplierManager = () => {
     }
   }, []);
 
-  // Productos de la tienda con Stock Bajo o Agotados
+  // Helper para obtener el stock mínimo configurado individualmente por el dueño para cada producto
+  const getProductMinStock = (p) => {
+    if (!p) return 5;
+    const rawMin = p.minStock ?? p.min_stock;
+    if (rawMin !== undefined && rawMin !== null && rawMin !== '' && rawMin !== 'Sin definir') {
+      const parsed = parseInt(rawMin, 10);
+      return isNaN(parsed) ? 5 : Math.max(0, parsed);
+    }
+    return 5;
+  };
+
+  // Productos de la tienda con Stock Bajo o Agotados (Respeta el umbral individual de cada producto)
   const lowStockProducts = useMemo(() => {
     return (products || []).filter(p => {
       if (!p) return false;
       const stock = parseInt(p.stock, 10);
-      const minStock = parseInt(p.minStock || 5, 10);
+      const minStock = getProductMinStock(p);
       return !isNaN(stock) && stock <= minStock;
     });
   }, [products]);
@@ -279,7 +290,7 @@ export const SupplierManager = () => {
       const isMatchingCat = !supplier.category || supplier.category === 'Otros' || pCatLower.includes(catLower) || catLower.includes(pCatLower);
       
       const curStock = parseInt(p.stock, 10) || 0;
-      const minStock = parseInt(p.minStock || 5, 10);
+      const minStock = getProductMinStock(p);
       const suggestedQty = Math.max(1, (minStock - curStock) > 0 ? (minStock - curStock) * 2 : 5);
 
       initialSelection[p.id] = {
@@ -339,7 +350,7 @@ export const SupplierManager = () => {
     selectedItems.forEach(item => {
       const p = item.product;
       const curStock = parseInt(p.stock, 10) || 0;
-      const minStock = parseInt(p.minStock || 5, 10);
+      const minStock = getProductMinStock(p);
       addSupplierOrderItem(suggestModalSupplier.id, {
         productId: p.id,
         productName: p.name,
@@ -1378,7 +1389,7 @@ export const SupplierManager = () => {
                       {available.map(product => {
                         const selection = selectedLowStockProducts[product.id] || { selected: false, quantity: '1 paquete' };
                         const curStock = parseInt(product.stock, 10) || 0;
-                        const minStock = parseInt(product.minStock || 5, 10);
+                        const minStock = getProductMinStock(product);
                         const isZero = curStock === 0;
 
                         return (
@@ -1413,7 +1424,7 @@ export const SupplierManager = () => {
                                     {isZero ? 'Agotado (0 u.)' : `Quedan ${curStock} u.`}
                                   </span>
                                   <span className="text-[10px] text-slate-400">
-                                    Mínimo sugerido: {minStock} u.
+                                    Stock mínimo: {minStock} u.
                                   </span>
                                   {product.category && (
                                     <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
