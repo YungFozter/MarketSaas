@@ -53,7 +53,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
       steps: [
         {
           step: 1,
-          action: 'Escucha la campana y mira el Tablero Kanban',
+          action: 'Escucha la campana y mira la Gestión de Pedidos',
           desc: 'Cuando un vecino realiza un pedido, sonará una campana y en la columna izquierda "Pendientes por Aceptar" aparecerá una tarjeta naranja con el nombre del cliente y los productos que pidió.'
         },
         {
@@ -319,7 +319,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         },
         {
           name: 'Botón "Venta Rápida" (F10 / POS Express)',
-          desc: 'Botón verde esmeralda con ícono de rayo/carrito. Al presionarlo se despliega una ventana modal de cobro inmediato en mostrador para registrar ventas físicas en 3 segundos sin salir del tablero de pedidos.'
+          desc: 'Botón verde esmeralda con ícono de rayo/carrito. Al presionarlo se despliega una ventana modal de cobro inmediato en mostrador para registrar ventas físicas en 3 segundos sin salir del módulo de Gestión de Pedidos.'
         },
         {
           name: 'Interruptor de Sonido de Pedidos (Campanita)',
@@ -358,7 +358,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
     },
     {
       id: 'kanban',
-      title: '3. Tablero Kanban de Pedidos (Cockpit Operativo Principal)',
+      title: '3. Gestión de Pedidos (Cockpit Operativo Principal)',
       subtitle: 'Flujo de preparación y despacho de pedidos web en 3 columnas',
       icon: LayoutDashboard,
       color: 'amber',
@@ -1008,7 +1008,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
             <div className="text-center py-12 bg-white rounded-3xl border border-slate-200 p-6 space-y-2">
               <Search className="w-8 h-8 text-slate-400 mx-auto" />
               <p className="font-bold text-slate-800">No encontramos secciones para "{searchQuery}"</p>
-              <p className="text-xs text-slate-500">Prueba con palabras como "header", "kanban", "pos", "horario" o "inventario".</p>
+              <p className="text-xs text-slate-500">Prueba con palabras como "header", "pedidos", "pos", "horario" o "inventario".</p>
             </div>
           )}
         </div>
