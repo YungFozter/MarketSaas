@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { Lock, ShieldAlert, KeyRound, MessageCircle, X, CheckCircle2, ArrowRight, Crown, Sparkles } from 'lucide-react';
+import { 
+  OFFICIAL_PLATFORM_CONTACT, 
+  getOfficialSubscriptionWhatsappUrl, 
+  openOfficialSubscriptionWhatsapp 
+} from '../../data/officialPlatformContact';
 
 export const SubscriptionBlockedModal = ({ 
   isOpen, 
@@ -76,13 +81,11 @@ export const SubscriptionBlockedModal = ({
     }
   };
 
-  const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '59178901234';
-  const cleanPhone = String(storePhone).replace(/\D/g, '');
-  const whatsappMessage = isProRequired
-    ? `Hola, deseo contratar o subir al *Plan PRO ⭐ (Bs. 129/mes)* para mi tienda "${storeConfig?.name || 'Mi Tienda'}" en MarketSaaS para habilitar la función de "${featureName || 'Analítica y Exportaciones'}".`
-    : `Hola, necesito un código de activación de suscripción para mi tienda "${storeConfig?.name || 'Mi Tienda'}" en MarketSaaS.`;
-
-  const supportWhatsappUrl = `https://wa.me/${cleanPhone || '59178901234'}?text=${encodeURIComponent(whatsappMessage)}`;
+  const requestedPlanTitle = isProRequired ? 'Plan PRO ⭐ (Bs. 129/mes)' : 'Plan Básico (Bs. 75/mes)';
+  const supportWhatsappUrl = getOfficialSubscriptionWhatsappUrl(
+    requestedPlanTitle,
+    storeConfig?.name
+  );
 
   return (
     <div 
@@ -227,6 +230,7 @@ export const SubscriptionBlockedModal = ({
             href={supportWhatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => openOfficialSubscriptionWhatsapp(e, requestedPlanTitle, storeConfig?.name)}
             className={`w-full py-2.5 px-3 rounded-xl border font-bold flex items-center justify-center gap-1.5 transition-colors ${
               isProRequired
                 ? 'bg-amber-50 hover:bg-amber-100 border-amber-300 text-amber-900'

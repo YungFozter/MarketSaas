@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { 
+  OFFICIAL_PLATFORM_CONTACT, 
+  getOfficialSubscriptionWhatsappUrl, 
+  openOfficialSubscriptionWhatsapp 
+} from '../../data/officialPlatformContact';
 import { 
   ShieldCheck, 
   ShieldAlert, 
@@ -72,11 +77,39 @@ export const SubscriptionManager = () => {
     }
   };
 
-  const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '59172125280';
-  const cleanPhone = String(storePhone).replace(/\D/g, '');
-  const supportWhatsappUrl = `https://wa.me/${cleanPhone || '59172125280'}?text=${encodeURIComponent(
-    `Hola, deseo adquirir o renovar una licencia para mi tienda "${storeConfig?.name || 'Mi Tienda'}" en MarketSaaS.`
-  )}`;
+  // URL Oficial Blindada de WhatsApp para solicitudes de suscripción
+  const supportWhatsappUrl = getOfficialSubscriptionWhatsappUrl(null, storeConfig?.name);
+
+  // Guardián anti-manipulación en modo desarrollador (DevTools)
+  // Si alguien altera texto, precios, atributos o enlaces en el DOM mediante "Inspeccionar elemento",
+  // el observador detecta la mutación no autorizada e instantáneamente re-renderiza con el estado original.
+  const plansContainerRef = useRef(null);
+  const [tamperTrigger, setTamperTrigger] = useState(0);
+
+  useEffect(() => {
+    const el = plansContainerRef.current;
+    if (!el || typeof MutationObserver === 'undefined') return;
+
+    let isRestoring = false;
+    const observer = new MutationObserver(() => {
+      if (isRestoring) return;
+      isRestoring = true;
+      setTamperTrigger(prev => prev + 1);
+      setTimeout(() => {
+        isRestoring = false;
+      }, 100);
+    });
+
+    observer.observe(el, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['href', 'data-plan', 'contenteditable']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-fade-in text-slate-800">
@@ -138,7 +171,8 @@ export const SubscriptionManager = () => {
           href={supportWhatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 transition-all active:scale-95 shrink-0"
+          onClick={(e) => openOfficialSubscriptionWhatsapp(e, null, storeConfig?.name)}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm shadow-emerald-600/20 transition-all active:scale-95 shrink-0 cursor-pointer"
         >
           <MessageCircle className="w-4 h-4" />
           <span>Solicitar Licencia por WhatsApp</span>
@@ -282,8 +316,12 @@ export const SubscriptionManager = () => {
         </div>
       </div>
 
-      {/* 2.5. SECCIÓN DE PLANES DISPONIBLES */}
-      <div className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-xs">
+      {/* 2.5. SECCIÓN DE PLANES DISPONIBLES (Blindada contra manipulación en DevTools) */}
+      <div 
+        ref={plansContainerRef}
+        key={`plans-guard-${tamperTrigger}`}
+        className="bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-xs select-none"
+      >
         <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
             Membresías & Escalabilidad
@@ -376,12 +414,11 @@ export const SubscriptionManager = () => {
 
             <div className="mt-6 pt-4 border-t border-slate-200">
               <a
-                href={`https://wa.me/59172125280?text=${encodeURIComponent(
-                  `Hola, deseo activar/renovar el Plan Básico (Bs. 75/mes) para mi tienda "${storeConfig?.name || 'Mi Tienda'}".`
-                )}`}
+                href={getOfficialSubscriptionWhatsappUrl('Plan Básico (Bs. 75/mes)', storeConfig?.name)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                onClick={(e) => openOfficialSubscriptionWhatsapp(e, 'Plan Básico (Bs. 75/mes)', storeConfig?.name)}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
               >
                 <span>Solicitar Plan Básico</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -460,11 +497,10 @@ export const SubscriptionManager = () => {
 
             <div className="mt-6 pt-4 border-t border-emerald-100">
               <a
-                href={`https://wa.me/59172125280?text=${encodeURIComponent(
-                  `Hola, deseo activar el Plan PRO (Bs. 129/mes) para mi tienda "${storeConfig?.name || 'Mi Tienda'}".`
-                )}`}
+                href={getOfficialSubscriptionWhatsappUrl('Plan PRO ⭐ (Bs. 129/mes)', storeConfig?.name)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => openOfficialSubscriptionWhatsapp(e, 'Plan PRO ⭐ (Bs. 129/mes)', storeConfig?.name)}
                 className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black text-xs flex items-center justify-center gap-1.5 transition-all shadow-md shadow-emerald-600/25 cursor-pointer"
               >
                 <Crown className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
@@ -529,15 +565,14 @@ export const SubscriptionManager = () => {
 
             <div className="mt-6 pt-4 border-t border-slate-200">
               <a
-                href={`https://wa.me/59172125280?text=${encodeURIComponent(
-                  `Hola, me interesa el Plan Mejora para implementar una funcionalidad / mejora personalizada en mi tienda "${storeConfig?.name || 'Mi Tienda'}" de MarketSaaS.`
-                )}`}
+                href={getOfficialSubscriptionWhatsappUrl('Plan Mejora (A Medida)', storeConfig?.name)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={(e) => openOfficialSubscriptionWhatsapp(e, 'Plan Mejora (A Medida)', storeConfig?.name)}
                 className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm shadow-indigo-600/20 cursor-pointer"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
-                <span>Contactar al +591 72125280</span>
+                <span>Contactar al {OFFICIAL_PLATFORM_CONTACT.phone}</span>
               </a>
             </div>
           </div>
