@@ -56,6 +56,33 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
   // Historial de Cierres
   const [closuresHistory, setClosuresHistory] = useState([]);
 
+  // Bloquear el scroll de fondo en la página (PC y móvil) mientras el modal esté abierto
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   // Cargar estado guardado de la caja
   useEffect(() => {
     if (!isOpen) return;
@@ -349,8 +376,16 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-slideUp">
+    <div 
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overscroll-contain select-none animate-fadeIn"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-slideUp overscroll-contain select-auto"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         {/* Header Modal */}
         <div className="p-5 sm:p-6 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -438,7 +473,7 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
             </div>
           </div>
         ) : (
-          <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
+          <div className="p-5 sm:p-6 overflow-y-auto overscroll-contain space-y-5 flex-1 custom-sidebar-scroll">
             {activeTab === 'current' ? (
             !isRegisterOpen ? (
               /* ESTADO 1: CAJA CERRADA -> ABRIR TURNO */

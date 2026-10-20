@@ -28,16 +28,31 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
   const [copiedLink, setCopiedLink] = useState(false);
   const printAreaRef = useRef(null);
 
-  // Bloquear el scroll del fondo (tablero Kanban / body) mientras el modal esté abierto
+  // Bloquear el scroll del fondo (tablero Kanban / body / html) mientras el modal esté abierto
   useEffect(() => {
     if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.body.style.overflow = originalOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   const storeName = storeConfig?.name || 'Mi Minimarket';
   const defaultTagline = storeConfig?.tagline || '¡Pide desde tu casa sin hacer filas ni esperar!';

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   Share2, 
@@ -27,6 +27,33 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   const [customPromo, setCustomPromo] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Bloquear el scroll de fondo en la página (PC y móvil) mientras el modal esté abierto
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const storeName = storeConfig?.name || 'Mi Minimarket';
   const tenant = tenantSlug || 'default';
@@ -198,9 +225,13 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-900/60 backdrop-blur-sm overscroll-contain select-none animate-fade-in"
+      onClick={onClose}
+    >
       <div 
-        className="relative w-full max-w-2xl bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden p-4 sm:p-6 text-slate-900 animate-scale-up max-h-[94vh] sm:max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-2xl bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden p-4 sm:p-6 text-slate-900 animate-scale-up max-h-[94vh] sm:max-h-[90vh] flex flex-col overscroll-contain select-auto"
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
@@ -242,7 +273,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Contenedor con Scroll */}
-        <div className="overflow-y-auto space-y-3.5 pr-0.5 sm:pr-1 flex-1">
+        <div className="overflow-y-auto overscroll-contain custom-sidebar-scroll space-y-3.5 pr-0.5 sm:pr-1 flex-1">
           {/* Selector de Plantillas / Campañas */}
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-0.5 mb-1.5">

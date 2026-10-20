@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, 
   FileText, 
@@ -27,6 +27,33 @@ import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 
 export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, titleSuffix = '' }) => {
   const { orders: storeOrders = [], storeConfig, formatBoliviaDateTime, showToast, isSubscriptionActive, isProPlan, canAccessFeature } = useStore();
+
+  // Bloquear el scroll de fondo en la página (PC y móvil) mientras el modal esté abierto
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    const originalBodyOverscroll = document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'contain';
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overscrollBehavior = originalBodyOverscroll;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   // Estados de filtrado interactivo
   const [periodFilter, setPeriodFilter] = useState('all'); // 'today' | 'yesterday' | '7days' | 'month' | 'all'
@@ -196,9 +223,13 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs overscroll-contain select-none animate-fadeIn"
+      onClick={onClose}
+    >
       <div 
-        className="relative w-full max-w-xl bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] my-auto text-slate-900 animate-scaleUp"
+        className="relative w-full max-w-xl bg-white border border-slate-200/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] my-auto text-slate-900 animate-scaleUp overscroll-contain select-auto"
+        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
@@ -270,7 +301,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
             </div>
           </div>
         ) : (
-          <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
+          <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain custom-sidebar-scroll">
           
           {/* ========================================================================= */}
           {/* 1. FILTRO: MÉTODO DE PAGO (ARQUEO DE CAJA / CUADRE BANCARIO)             */}
