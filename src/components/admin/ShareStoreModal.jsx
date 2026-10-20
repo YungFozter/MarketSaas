@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   X, 
   Share2, 
@@ -17,7 +17,9 @@ import {
   Zap,
   Coffee,
   Package,
-  Megaphone
+  Megaphone,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 
@@ -27,6 +29,28 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   const [customPromo, setCustomPromo] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Control del carrusel deslizante de opciones de campaña (1 o 2 visibles a la vez)
+  const carouselRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScrollability = () => {
+    if (!carouselRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+    setCanScrollLeft(scrollLeft > 6);
+    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(checkScrollability, 120);
+    window.addEventListener('resize', checkScrollability);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScrollability);
+    };
+  }, [isOpen]);
 
   // Bloquear el scroll de fondo en la página (PC y móvil) mientras el modal esté abierto
   useEffect(() => {
@@ -165,6 +189,40 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     return activeTemplate.buildText(customPromo.trim());
   }, [activeTemplate, customPromo]);
 
+  const activeTemplateIndex = useMemo(() => {
+    const idx = templates.findIndex(t => t.id === selectedTemplate);
+    return idx >= 0 ? idx : 0;
+  }, [templates, selectedTemplate]);
+
+  // Manejadores de navegación del carrusel de plantillas (1 o 2 visibles a la vez)
+  const handlePrev = () => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const card = container.firstElementChild;
+    const scrollAmount = card ? (card.offsetWidth + 10) : (container.clientWidth * 0.5);
+    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    setTimeout(checkScrollability, 300);
+  };
+
+  const handleNext = () => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const card = container.firstElementChild;
+    const scrollAmount = card ? (card.offsetWidth + 10) : (container.clientWidth * 0.5);
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    setTimeout(checkScrollability, 300);
+  };
+
+  const scrollToTemplateIndex = (idx) => {
+    if (!carouselRef.current) return;
+    const container = carouselRef.current;
+    const targetElement = container.children[idx];
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+      setTimeout(checkScrollability, 350);
+    }
+  };
+
   if (!isOpen) return null;
 
   // Manejador del Web Share API
@@ -274,44 +332,134 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
 
         {/* Contenedor con Scroll */}
         <div className="overflow-y-auto overscroll-contain custom-sidebar-scroll space-y-3.5 pr-0.5 sm:pr-1 flex-1">
-          {/* Selector de Plantillas / Campañas */}
-          <div>
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-0.5 mb-1.5">
-              1. Selecciona la Campaña o Plantilla:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-              {templates.map((tpl) => {
+          {/* Selector de Plantillas / Campañas en Carrusel Deslizante (1 o 2 opciones visibles) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-500">
+                  1. Selecciona la Campaña o Plantilla:
+                </label>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  {activeTemplateIndex + 1} de {templates.length}
+                </span>
+              </div>
+
+              {/* Botones Flechas de Desplazamiento */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={!canScrollLeft}
+                  className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                    canScrollLeft 
+                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs hover:scale-105 active:scale-95' 
+                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-40'
+                  }`}
+                  title="Ver opciones anteriores"
+                  aria-label="Opción anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={!canScrollRight}
+                  className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                    canScrollRight 
+                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs hover:scale-105 active:scale-95' 
+                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-40'
+                  }`}
+                  title="Ver siguientes opciones"
+                  aria-label="Siguiente opción"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Fila Desplazable de Plantillas (1 visible en móvil con peek, 2 visibles en PC) */}
+            <div
+              ref={carouselRef}
+              onScroll={checkScrollability}
+              className="flex items-stretch gap-2.5 overflow-x-auto scroll-smooth snap-x snap-mandatory py-1 px-0.5 scrollbar-none touch-pan-x"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {templates.map((tpl, idx) => {
                 const IconComponent = tpl.icon;
                 const isSelected = selectedTemplate === tpl.id;
                 return (
                   <button
                     key={tpl.id}
                     type="button"
-                    onClick={() => setSelectedTemplate(tpl.id)}
-                    className={`relative p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    onClick={() => {
+                      setSelectedTemplate(tpl.id);
+                      scrollToTemplateIndex(idx);
+                    }}
+                    className={`snap-start shrink-0 w-[84%] sm:w-[calc(50%-5px)] relative p-3 sm:p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 select-none group ${
                       isSelected 
-                        ? 'border-amber-500 bg-linear-to-b from-amber-50/80 to-amber-100/40 shadow-xs ring-2 ring-amber-400/30' 
-                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                        ? 'border-amber-500 bg-linear-to-br from-amber-50/95 via-amber-100/40 to-white shadow-md ring-2 ring-amber-400/40 scale-[1.005]' 
+                        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs hover:shadow-xs'
                     }`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                        isSelected ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        <IconComponent className="w-4 h-4" />
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                          isSelected ? 'bg-amber-500 text-white shadow-xs shadow-amber-500/30' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className={`text-xs sm:text-sm font-black tracking-tight truncate block ${
+                            isSelected ? 'text-amber-950' : 'text-slate-800'
+                          }`}>
+                            {tpl.title}
+                          </span>
+                        </div>
                       </div>
-                      {tpl.badge && (
-                        <span className="text-[8px] font-black px-1.5 py-0.2 rounded-md bg-amber-200/90 text-amber-900 border border-amber-300/80">
-                          {tpl.badge}
-                        </span>
-                      )}
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {tpl.badge && (
+                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300/80 flex items-center gap-0.5 shadow-2xs">
+                            <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-400" />
+                            <span>{tpl.badge}</span>
+                          </span>
+                        )}
+                        {isSelected && (
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" title="Seleccionada"></span>
+                        )}
+                      </div>
                     </div>
-                    <span className={`text-[11px] font-black truncate block ${
-                      isSelected ? 'text-amber-950' : 'text-slate-700'
+
+                    <p className={`text-[11px] leading-snug line-clamp-1 ${
+                      isSelected ? 'text-amber-900/80 font-medium' : 'text-slate-500'
                     }`}>
-                      {tpl.title}
-                    </span>
+                      {tpl.description}
+                    </p>
                   </button>
+                );
+              })}
+            </div>
+
+            {/* Puntos interactivos de navegación rápida */}
+            <div className="flex items-center justify-center gap-1.5 pt-0.5">
+              {templates.map((tpl, idx) => {
+                const isSelected = selectedTemplate === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTemplate(tpl.id);
+                      scrollToTemplateIndex(idx);
+                    }}
+                    className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
+                      isSelected 
+                        ? 'w-6 bg-amber-500 shadow-2xs' 
+                        : 'w-1.5 bg-slate-200 hover:bg-slate-400'
+                    }`}
+                    title={`Ver ${tpl.title}`}
+                    aria-label={`Ver ${tpl.title}`}
+                  />
                 );
               })}
             </div>
