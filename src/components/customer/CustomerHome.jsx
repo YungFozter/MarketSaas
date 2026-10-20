@@ -513,34 +513,15 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
       {/* Catálogo de Productos Principal */}
       <section id="products-catalog-section" className="scroll-mt-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-                {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
-              </h2>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                {filteredProducts.length === 1 
-                  ? '1 producto encontrado' 
-                  : `${filteredProducts.length} productos encontrados`}
-              </p>
-            </div>
-
-            {/* Botón rápido para subir a la Tienda */}
-            <button
-              type="button"
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                if (catalogGridRef.current) {
-                  catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 sm:ml-2"
-              title="Subir a la Tienda"
-            >
-              <ChevronUp className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Subir a la Tienda</span>
-              <span className="sm:hidden">Subir</span>
-            </button>
+          <div>
+            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              {filteredProducts.length === 1 
+                ? '1 producto encontrado' 
+                : `${filteredProducts.length} productos encontrados`}
+            </p>
           </div>
 
           {/* Selector de cantidad por página (16, 32, 50) */}
@@ -632,23 +613,6 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
                 >
                   <span>Siguiente</span>
                   <ChevronRight className="w-4 h-4" />
-                </button>
-
-                {/* Botón rápido para subir a la Tienda */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    if (catalogGridRef.current) {
-                      catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                    }
-                  }}
-                  className="min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs cursor-pointer active:scale-95"
-                  title="Subir a la Tienda"
-                >
-                  <ChevronUp className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden sm:inline">Subir a la Tienda</span>
-                  <span className="sm:hidden">Subir</span>
                 </button>
               </div>
             </div>
