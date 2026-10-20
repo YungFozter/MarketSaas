@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ArrowUp } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ChevronUp } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -110,22 +110,21 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     }
   };
 
+  // Control de visibilidad del botón flotante para volver arriba a la tienda
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Detección de scroll en la ventana para botón flotante "Volver Arriba"
   useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 450);
+    const handleWindowScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWindowScroll);
   }, []);
 
   // Transmisión y Chaining fluido de Scroll para el Catálogo de Productos (VISTA VECINO):
   // Al llegar al tope superior de la lista scrolleable del catálogo (scrollTop <= 0) y seguir subiendo
-  // (mediante deslizamiento táctil en móviles o rueda/trackpad en PC), el evento transmite el scroll
-  // directamente a la ventana para volver a la tienda/categorías sin atascos ni zonas muertas.
-  // Y al llegar al fondo, permite seguir bajando hacia la paginación.
+  // (mediante deslizamiento táctil en móviles o rueda/trackpad), el evento transmite el scroll
+  // directamente a la página principal para volver a la tienda sin atascos ni zonas muertas.
   useEffect(() => {
     const el = catalogGridRef.current;
     if (!el) return;
@@ -141,41 +140,28 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     const handleTouchMove = (e) => {
       if (!e.touches || e.touches.length === 0) return;
       const currentY = e.touches[0].clientY;
-      const deltaY = touchStartY - currentY; // > 0: arrastre hacia arriba (bajar página), < 0: arrastre hacia abajo (subir página)
+      const deltaY = touchStartY - currentY; // > 0: arrastre hacia arriba (bajar), < 0: arrastre hacia abajo (subir)
 
       // Si el usuario desliza con el dedo hacia abajo para subir la página
-      // y la lista del catálogo ya está en su tope superior (scrollTop <= 0)
+      // y la lista del catálogo ya se encuentra en su tope superior (scrollTop <= 0)
       if (deltaY < 0 && el.scrollTop <= 0) {
         window.scrollBy({ top: deltaY, behavior: 'auto' });
       }
-      // Si el usuario desliza hacia arriba para bajar la página y el catálogo ya llegó a su fin
+      // Si el usuario desliza hacia arriba para bajar la página y la lista ya llegó a su fin
       else if (deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
         window.scrollBy({ top: deltaY, behavior: 'auto' });
       }
       touchStartY = currentY;
     };
 
-    const handleWheel = (e) => {
-      // Si la rueda se mueve hacia arriba (deltaY < 0) y el catálogo ya está en el tope
-      if (e.deltaY < 0 && el.scrollTop <= 0) {
-        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
-      }
-      // Si la rueda se mueve hacia abajo (deltaY > 0) y el catálogo ya está en el fondo
-      else if (e.deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
-        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
-      }
-    };
-
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
     el.addEventListener('touchmove', handleTouchMove, { passive: true });
-    el.addEventListener('wheel', handleWheel, { passive: true });
 
     return () => {
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchmove', handleTouchMove);
-      el.removeEventListener('wheel', handleWheel);
     };
-  }, [paginatedProducts]);
+  }, [currentPage, itemsPerPage, selectedCategory, filteredProducts]);
 
   const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(true);
 
@@ -527,15 +513,34 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
       {/* Catálogo de Productos Principal */}
       <section id="products-catalog-section" className="scroll-mt-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-              {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
-            </h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {filteredProducts.length === 1 
-                ? '1 producto encontrado' 
-                : `${filteredProducts.length} productos encontrados`}
-            </p>
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+                {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                {filteredProducts.length === 1 
+                  ? '1 producto encontrado' 
+                  : `${filteredProducts.length} productos encontrados`}
+              </p>
+            </div>
+
+            {/* Botón rápido para subir a la Tienda */}
+            <button
+              type="button"
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                if (catalogGridRef.current) {
+                  catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 sm:ml-2"
+              title="Subir a la Tienda"
+            >
+              <ChevronUp className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden sm:inline">Subir a la Tienda</span>
+              <span className="sm:hidden">Subir</span>
+            </button>
           </div>
 
           {/* Selector de cantidad por página (16, 32, 50) */}
@@ -628,6 +633,23 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
                   <span>Siguiente</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
+
+                {/* Botón rápido para subir a la Tienda */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (catalogGridRef.current) {
+                      catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs cursor-pointer active:scale-95"
+                  title="Subir a la Tienda"
+                >
+                  <ChevronUp className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline">Subir a la Tienda</span>
+                  <span className="sm:hidden">Subir</span>
+                </button>
               </div>
             </div>
           </>
@@ -646,7 +668,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
       {/* Banner PWA: Instalar en el Celular con 1 Clic */}
       <PwaInstallBanner storeName={storeConfig?.name || 'tu tienda'} />
 
-      {/* Botón flotante para volver arriba rápidamente */}
+      {/* Botón Flotante para Volver a la Tienda cuando se hace scroll hacia abajo */}
       {showScrollTop && (
         <button
           type="button"
@@ -656,12 +678,13 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
               catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
             }
           }}
-          className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 px-3.5 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-950 text-white shadow-xl backdrop-blur-md border border-slate-700/60 flex items-center gap-1.5 text-xs font-black transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fadeIn select-none"
-          title="Volver al inicio de la tienda"
-          aria-label="Volver arriba"
+          className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-40 bg-slate-900/90 hover:bg-slate-900 text-white backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl shadow-slate-900/20 border border-slate-700/60 flex items-center gap-2 text-xs font-extrabold transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fadeIn select-none"
+          title="Subir a la Tienda"
         >
-          <ArrowUp className="w-4 h-4 text-emerald-400" />
-          <span>Subir</span>
+          <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <ChevronUp className="w-4 h-4" />
+          </div>
+          <span>Subir a la Tienda</span>
         </button>
       )}
     </main>
