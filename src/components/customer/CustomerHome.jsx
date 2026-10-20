@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ArrowUp } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -109,6 +109,73 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
       catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Detección de scroll en la ventana para botón flotante "Volver Arriba"
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 450);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Transmisión y Chaining fluido de Scroll para el Catálogo de Productos (VISTA VECINO):
+  // Al llegar al tope superior de la lista scrolleable del catálogo (scrollTop <= 0) y seguir subiendo
+  // (mediante deslizamiento táctil en móviles o rueda/trackpad en PC), el evento transmite el scroll
+  // directamente a la ventana para volver a la tienda/categorías sin atascos ni zonas muertas.
+  // Y al llegar al fondo, permite seguir bajando hacia la paginación.
+  useEffect(() => {
+    const el = catalogGridRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const currentY = e.touches[0].clientY;
+      const deltaY = touchStartY - currentY; // > 0: arrastre hacia arriba (bajar página), < 0: arrastre hacia abajo (subir página)
+
+      // Si el usuario desliza con el dedo hacia abajo para subir la página
+      // y la lista del catálogo ya está en su tope superior (scrollTop <= 0)
+      if (deltaY < 0 && el.scrollTop <= 0) {
+        window.scrollBy({ top: deltaY, behavior: 'auto' });
+      }
+      // Si el usuario desliza hacia arriba para bajar la página y el catálogo ya llegó a su fin
+      else if (deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+        window.scrollBy({ top: deltaY, behavior: 'auto' });
+      }
+      touchStartY = currentY;
+    };
+
+    const handleWheel = (e) => {
+      // Si la rueda se mueve hacia arriba (deltaY < 0) y el catálogo ya está en el tope
+      if (e.deltaY < 0 && el.scrollTop <= 0) {
+        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
+      }
+      // Si la rueda se mueve hacia abajo (deltaY > 0) y el catálogo ya está en el fondo
+      else if (e.deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: true });
+    el.addEventListener('wheel', handleWheel, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+      el.removeEventListener('wheel', handleWheel);
+    };
+  }, [paginatedProducts]);
 
   const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(true);
 
@@ -513,7 +580,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             {/* Contenedor scrolleable del catálogo para no alargar la pantalla */}
             <div 
               ref={catalogGridRef}
-              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto pr-1 sm:pr-2 pb-2 scroll-smooth rounded-2xl focus:outline-none catalog-scroll-container"
+              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto overscroll-y-auto touch-pan-y pr-1 sm:pr-2 pb-2 scroll-smooth rounded-2xl focus:outline-none catalog-scroll-container"
               tabIndex={0}
               aria-label="Lista de productos del catálogo"
             >
@@ -578,6 +645,25 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
 
       {/* Banner PWA: Instalar en el Celular con 1 Clic */}
       <PwaInstallBanner storeName={storeConfig?.name || 'tu tienda'} />
+
+      {/* Botón flotante para volver arriba rápidamente */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (catalogGridRef.current) {
+              catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 px-3.5 py-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-950 text-white shadow-xl backdrop-blur-md border border-slate-700/60 flex items-center gap-1.5 text-xs font-black transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fadeIn select-none"
+          title="Volver al inicio de la tienda"
+          aria-label="Volver arriba"
+        >
+          <ArrowUp className="w-4 h-4 text-emerald-400" />
+          <span>Subir</span>
+        </button>
+      )}
     </main>
   );
 };

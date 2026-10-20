@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  X, 
-  Share2, 
-  Copy, 
-  Check, 
-  MessageCircle, 
-  TrendingUp, 
-  ShoppingBag, 
-  Sparkles, 
-  Calendar, 
-  Clock, 
+import {
+  X,
+  Share2,
+  Copy,
+  Check,
+  MessageCircle,
+  TrendingUp,
+  ShoppingBag,
+  Sparkles,
+  Calendar,
+  Clock,
   Printer,
   Award,
   DollarSign,
@@ -187,7 +187,7 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
   // Abrir WhatsApp con el reporte
   const handleSendToWhatsApp = () => {
     const encoded = encodeURIComponent(whatsappReportMessage);
-    const targetUrl = ownerPhone 
+    const targetUrl = ownerPhone
       ? `https://wa.me/${ownerPhone}?text=${encoded}`
       : `https://api.whatsapp.com/send?text=${encoded}`;
     window.open(targetUrl, '_blank');
@@ -260,11 +260,11 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overscroll-contain select-none animate-fadeIn"
       onClick={onClose}
     >
-      <div 
+      <div
         className="bg-white rounded-3xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-slideUp overscroll-contain select-auto"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -380,10 +380,9 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
                 const heightPct = Math.max(12, Math.round((d.total / weeklyStats.maxDayTotal) * 100));
                 return (
                   <div key={idx} className="flex flex-col items-center gap-1 h-full justify-end">
-                    <div 
-                      className={`w-full rounded-md transition-all ${
-                        d.total > 0 ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-slate-200'
-                      }`}
+                    <div
+                      className={`w-full rounded-md transition-all ${d.total > 0 ? 'bg-emerald-500 hover:bg-emerald-400' : 'bg-slate-200'
+                        }`}
                       style={{ height: `${heightPct}%` }}
                       title={`${d.label}: ${currency} ${d.total.toFixed(2)} (${d.orders} pedidos)`}
                     />
