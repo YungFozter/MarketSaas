@@ -767,7 +767,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   }, [suppliers, currentDayBolivia]);
 
   const navItems = [
-    { id: 'kanban', label: 'Tablero Kanban', icon: LayoutDashboard, badge: pendingOrders.length },
+    { id: 'kanban', label: 'Gestión de Pedidos', icon: LayoutDashboard, badge: pendingOrders.length },
     { id: 'pos', label: 'Punto de Venta', icon: Store, badge: !isSubscriptionActive ? '🔒' : null },
     { id: 'sales', label: 'Historial de Ventas', icon: Receipt },
     { id: 'credits', label: 'Libreta de Deudas', icon: BookOpen, badge: creditDebtorsCount > 0 ? `${creditDebtorsCount} debe` : null },
