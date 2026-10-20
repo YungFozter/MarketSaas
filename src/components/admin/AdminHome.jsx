@@ -336,6 +336,19 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   }, [isPosModalOpen]);
 
+  // Control de estado de cierre de sesión
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await signOutMerchant();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [mobileKanbanTab, setMobileKanbanTab] = useState('all'); // 'all' | 'pending' | 'preparing' | 'on_the_way' | 'delivered'
   const [dismissedBroadcast, setDismissedBroadcast] = useState(false);
@@ -1157,14 +1170,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             {!isSidebarCollapsed && (
               currentUser ? (
                 <button
-                  onClick={signOutMerchant}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
-                  title="Cerrar Sesión"
+                  type="button"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+                  title={isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
                 >
-                  <LogOut className="w-4 h-4" />
+                  {isSigningOut ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-rose-500/30 border-t-rose-600 animate-spin" />
+                  ) : (
+                    <LogOut className="w-4 h-4" />
+                  )}
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={onOpenAuthModal}
                   className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors shrink-0 font-bold text-xs cursor-pointer"
                   title="Iniciar Sesión"
@@ -1172,6 +1192,21 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                   Login
                 </button>
               )
+            )}
+            {isSidebarCollapsed && currentUser && (
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer disabled:opacity-50"
+                title={isSigningOut ? "Cerrando sesión..." : "Cerrar Sesión"}
+              >
+                {isSigningOut ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-rose-500/30 border-t-rose-600 animate-spin" />
+                ) : (
+                  <LogOut className="w-4 h-4" />
+                )}
+              </button>
             )}
           </div>
         </div>

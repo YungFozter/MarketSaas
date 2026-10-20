@@ -1792,7 +1792,7 @@ export const StoreProvider = ({ children }) => {
         try {
           localStorage.removeItem('marketsaas_is_impersonating');
         } catch {}
-        setViewModeState(prev => prev === 'superadmin' ? 'spectator' : prev);
+        setViewModeState(prev => (prev === 'superadmin' || prev === 'admin') ? 'spectator' : prev);
         const activeTenant = localStorage.getItem('marketsaas_active_tenant');
         if (!activeTenant || activeTenant === 'default') {
           setStoreConfigState(initialStoreConfig);
@@ -3054,8 +3054,17 @@ export const StoreProvider = ({ children }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Lista de códigos de activación (Solo accesible en memoria para el SuperAdmin autenticado)
-  const [subscriptionCodes, setSubscriptionCodes] = useState([]);
+  // Lista de códigos de activación (Persistencia en nube y fallback en localStorage para SuperAdmin)
+  const [subscriptionCodes, setSubscriptionCodes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_subscription_codes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
 
   const fetchSubscriptionCodes = async () => {
     if (!supabase || !isSuperAdminUser(currentUser)) return;
@@ -3064,8 +3073,18 @@ export const StoreProvider = ({ children }) => {
         .from('subscription_codes')
         .select('*')
         .order('created_at', { ascending: false });
+
       if (!error && Array.isArray(data)) {
-        setSubscriptionCodes(data);
+        const normalized = data.map(c => ({
+          ...c,
+          plan_type: c.plan_type || (String(c.plan_name || '').toLowerCase().includes('pro') ? 'pro' : 'basic')
+        }));
+        setSubscriptionCodes(normalized);
+        try {
+          localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(normalized));
+        } catch {}
+      } else if (error) {
+        console.warn('Aviso cargando subscription_codes de Supabase:', error);
       }
     } catch (e) {
       console.warn('Aviso cargando subscription_codes de Supabase:', e);
@@ -3131,7 +3150,7 @@ export const StoreProvider = ({ children }) => {
     return calculateSubscriptionTimeRemaining(expiresAt, currentTick);
   }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt, currentTick]);
 
-  // Generar códigos de suscripción (uno o por lotes) con tipo de plan explícito (basic o pro)
+  // Generar códigos de suscripción (uno o por lotes) con persistencia estricta en Supabase
   const generateSubscriptionCodes = async ({ count = 1, durationDays = 0, durationMinutes = 0, planName = '', planType = 'basic', notes = '' }) => {
     const newCodes = [];
     const nowIso = new Date().toISOString();
@@ -3140,7 +3159,7 @@ export const StoreProvider = ({ children }) => {
 
     for (let i = 0; i < count; i++) {
       newCodes.push({
-        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `code-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`,
+        id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : undefined,
         code: generateCleanCode(),
         duration_days: Number(durationDays) || 0,
         duration_minutes: Number(durationMinutes) || 0,
@@ -3158,19 +3177,42 @@ export const StoreProvider = ({ children }) => {
 
     if (supabase) {
       try {
-        const { error } = await supabase.from('subscription_codes').insert(newCodes);
+        // 1. Intento principal con columna plan_type
+        let { error } = await supabase.from('subscription_codes').insert(newCodes);
+
+        // Si la tabla remota en Supabase aún no tiene la columna plan_type (error PGRST204)
+        if (error && (error.code === 'PGRST204' || String(error.message || '').includes('plan_type'))) {
+          console.warn('Columna plan_type no detectada en Supabase, reintentando inserción con payload compatible (plan_name)...');
+          const compatibleCodes = newCodes.map(({ plan_type, ...rest }) => rest);
+          const retryRes = await supabase.from('subscription_codes').insert(compatibleCodes);
+          error = retryRes.error;
+        }
+
         if (error) {
-          console.warn('Error guardando códigos en Supabase (usando fallback local):', error.message);
+          console.error('Error persistiendo códigos en Supabase:', error);
+          showToast(`Error al guardar en Supabase: ${error.message}`, 'error');
+          // Guardar de respaldo local para no perder el código generado en la vista
+          const updated = [...newCodes, ...subscriptionCodes];
+          setSubscriptionCodes(updated);
+          try {
+            localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+          } catch {}
+          return newCodes;
         }
       } catch (err) {
-        console.warn('Excepción guardando códigos en Supabase:', err);
+        console.error('Excepción guardando códigos en Supabase:', err);
+        showToast(`Error de conexión con la base de datos: ${err.message}`, 'error');
       }
     }
 
-    setSubscriptionCodes(prev => [...newCodes, ...prev]);
+    const updated = [...newCodes, ...subscriptionCodes];
+    setSubscriptionCodes(updated);
+    try {
+      localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+    } catch {}
 
     const planLabel = cleanPlanType === 'pro' ? 'Plan PRO ⭐' : 'Plan Básico';
-    showToast(`¡Se ${count === 1 ? `generó 1 código para ${planLabel}` : `generaron ${count} códigos para ${planLabel}`} con éxito!`, 'success');
+    showToast(`¡Se ${count === 1 ? `generó y guardó 1 código para ${planLabel}` : `generaron y guardaron ${count} códigos para ${planLabel}`} con éxito!`, 'success');
     return newCodes;
   };
 
@@ -3184,7 +3226,11 @@ export const StoreProvider = ({ children }) => {
         console.warn('Error eliminando código en Supabase:', err);
       }
     }
-    setSubscriptionCodes(prev => prev.filter(c => c.id !== codeId));
+    const updated = subscriptionCodes.filter(c => c.id !== codeId);
+    setSubscriptionCodes(updated);
+    try {
+      localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+    } catch {}
     showToast('Código eliminado correctamente.', 'info');
   };
 
@@ -3252,6 +3298,23 @@ export const StoreProvider = ({ children }) => {
             isProStore: cleanPlanType === 'pro',
             plan: cleanPlanType === 'pro' ? 'pro' : 'basic'
           });
+
+          // Actualizar estado en memoria y persistencia local del canje
+          setSubscriptionCodes(prev => {
+            const updated = prev.map(c => c.code?.toUpperCase() === clean ? { 
+              ...c, 
+              status: 'redeemed', 
+              redeemed_at: nowIso, 
+              redeemed_by_store_id: tenantSlug, 
+              redeemed_by_store_name: storeConfig?.name || 'Mi Tienda', 
+              redeemed_by_email: currentUser?.email 
+            } : c);
+            try {
+              localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
+
           triggerConfetti();
           const durationText = days > 0 ? `${days} día(s)` : `${totalMinutesToAdd} minuto(s)`;
           const planBadge = cleanPlanType === 'pro' ? 'Plan PRO ⭐' : 'Plan Básico';
@@ -3370,7 +3433,13 @@ export const StoreProvider = ({ children }) => {
       }
     }
 
-    setSubscriptionCodes(prev => prev.map(c => c.id === targetCode.id ? { ...c, ...redeemedPayload } : c));
+    setSubscriptionCodes(prev => {
+      const updated = prev.map(c => c.id === targetCode.id ? { ...c, ...redeemedPayload } : c);
+      try {
+        localStorage.setItem('marketsaas_subscription_codes', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
 
     triggerConfetti();
     const durationText = days > 0 ? `${days} día(s)` : `${mins} minuto(s)`;
@@ -5973,23 +6042,35 @@ export const StoreProvider = ({ children }) => {
 
   // 4. Cerrar Sesión de Comerciante / SuperAdmin
   const signOutMerchant = async () => {
-    if (supabase) {
-      try {
-        await supabase.auth.signOut();
-      } catch (e) {}
-    }
+    // 1. Limpieza y cambio de vista INMEDIATO y optimista (0 ms de espera para el usuario)
     try {
       localStorage.setItem('marketsaas_active_view_mode', 'spectator');
+      localStorage.removeItem('marketsaas_is_impersonating');
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('view', 'spectator');
       newUrl.searchParams.delete('superadmin');
       newUrl.searchParams.delete('mode');
+      newUrl.searchParams.delete('store');
       window.history.replaceState({}, '', newUrl.toString());
     } catch (e) {}
+
+    // Desconectar estados locales de usuario y redirigir inmediatamente
     setCurrentUser(null);
     setMerchantStore(null);
+    setIsImpersonating(false);
     setViewMode('spectator');
     showToast('Sesión cerrada correctamente.', 'info');
+
+    // 2. En segundo plano sin congelar la pantalla, invalidar la sesión en Supabase
+    if (supabase) {
+      try {
+        const signOutPromise = supabase.auth.signOut();
+        const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500));
+        await Promise.race([signOutPromise, timeoutPromise]);
+      } catch (e) {
+        console.warn('Aviso al revocar sesión en Supabase:', e);
+      }
+    }
   };
 
   // Tienda de comerciante efectiva (resuelve tienda de dueño o tienda impersonada por SuperAdmin)
