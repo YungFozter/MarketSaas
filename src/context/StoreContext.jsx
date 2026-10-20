@@ -4100,6 +4100,10 @@ export const StoreProvider = ({ children }) => {
               type: 'broadcast',
               event: 'new_order',
               payload: newOrder
+            }).then(() => {
+              setTimeout(() => {
+                try { supabase.removeChannel(rtChannel); } catch (e) {}
+              }, 2000);
             });
           }
         });
@@ -4113,7 +4117,7 @@ export const StoreProvider = ({ children }) => {
         }
       });
 
-      // Descontar inventario de forma atómica y persistente en Supabase
+      // Descontar inventario de forma atómica y persistente en Supabase (Previene condiciones de carrera con múltiples usuarios)
       cart.forEach(item => {
         const currentProd = products.find(p => p.id === item.id);
         const curStock = currentProd && currentProd.stock !== 'Sin definir' && currentProd.stock != null
@@ -4122,8 +4126,13 @@ export const StoreProvider = ({ children }) => {
 
         if (!isNaN(curStock)) {
           const newStock = Math.max(0, curStock - (Number(item.quantity) || 1));
-          supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
-          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 }).then();
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 })
+            .then(({ error }) => {
+              if (error) {
+                // Fallback de contingencia si la función RPC aún no estuviese presente
+                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+              }
+            });
         }
       });
     }
@@ -4847,7 +4856,7 @@ export const StoreProvider = ({ children }) => {
         if (error) console.error('Error insertando venta POS en Supabase:', error);
       });
 
-      // Descontar inventario de forma atómica y persistente en Supabase
+      // Descontar inventario de forma atómica y persistente en Supabase (Previene condiciones de carrera)
       posItems.forEach(item => {
         const prod = products.find(p => p.id === item.id);
         const curStock = prod && prod.stock !== 'Sin definir' && prod.stock != null
@@ -4856,8 +4865,13 @@ export const StoreProvider = ({ children }) => {
 
         if (!isNaN(curStock)) {
           const newStock = Math.max(0, curStock - (Number(item.quantity) || 1));
-          supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
-          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 }).then();
+          supabase.rpc('decrement_stock', { product_id: item.id, quantity: Number(item.quantity) || 1 })
+            .then(({ error }) => {
+              if (error) {
+                // Fallback de contingencia si la función RPC aún no estuviese presente
+                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+              }
+            });
         }
       });
     }
