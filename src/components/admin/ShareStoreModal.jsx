@@ -189,11 +189,6 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     return activeTemplate.buildText(customPromo.trim());
   }, [activeTemplate, customPromo]);
 
-  const activeTemplateIndex = useMemo(() => {
-    const idx = templates.findIndex(t => t.id === selectedTemplate);
-    return idx >= 0 ? idx : 0;
-  }, [templates, selectedTemplate]);
-
   // Manejadores de navegación del carrusel de plantillas (1 o 2 visibles a la vez)
   const handlePrev = () => {
     if (!carouselRef.current) return;
@@ -334,26 +329,21 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
         <div className="overflow-y-auto overscroll-contain custom-sidebar-scroll space-y-3.5 pr-0.5 sm:pr-1 flex-1">
           {/* Selector de Plantillas / Campañas en Carrusel Deslizante (1 o 2 opciones visibles) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2 px-0.5">
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-500">
-                  1. Selecciona la Campaña o Plantilla:
-                </label>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                  {activeTemplateIndex + 1} de {templates.length}
-                </span>
-              </div>
+            <div className="flex items-center justify-between gap-3 px-0.5">
+              <label className="text-xs sm:text-[13px] font-black uppercase tracking-wider text-slate-700">
+                1. Selecciona la Campaña o Plantilla:
+              </label>
 
               {/* Botones Flechas de Desplazamiento */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={handlePrev}
                   disabled={!canScrollLeft}
-                  className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                  className={`w-8 h-8 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                     canScrollLeft 
                       ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs hover:scale-105 active:scale-95' 
-                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-40'
+                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-35'
                   }`}
                   title="Ver opciones anteriores"
                   aria-label="Opción anterior"
@@ -364,10 +354,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   type="button"
                   onClick={handleNext}
                   disabled={!canScrollRight}
-                  className={`w-7 h-7 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                  className={`w-8 h-8 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
                     canScrollRight 
                       ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs hover:scale-105 active:scale-95' 
-                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-40'
+                      : 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed opacity-35'
                   }`}
                   title="Ver siguientes opciones"
                   aria-label="Siguiente opción"
@@ -395,31 +385,29 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                       setSelectedTemplate(tpl.id);
                       scrollToTemplateIndex(idx);
                     }}
-                    className={`snap-start shrink-0 w-[84%] sm:w-[calc(50%-5px)] relative p-3 sm:p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 select-none group ${
+                    className={`snap-start shrink-0 w-[86%] sm:w-[calc(50%-5px)] min-h-[105px] sm:min-h-[110px] relative p-3.5 sm:p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between gap-2.5 select-none group ${
                       isSelected 
-                        ? 'border-amber-500 bg-linear-to-br from-amber-50/95 via-amber-100/40 to-white shadow-md ring-2 ring-amber-400/40 scale-[1.005]' 
+                        ? 'border-amber-500 bg-linear-to-br from-amber-50/95 via-amber-100/40 to-white shadow-md ring-2 ring-amber-400/40' 
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs hover:shadow-xs'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full gap-2">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                        <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                           isSelected ? 'bg-amber-500 text-white shadow-xs shadow-amber-500/30' : 'bg-slate-100 text-slate-600'
                         }`}>
-                          <IconComponent className="w-4 h-4" />
+                          <IconComponent className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <span className={`text-xs sm:text-sm font-black tracking-tight truncate block ${
-                            isSelected ? 'text-amber-950' : 'text-slate-800'
-                          }`}>
-                            {tpl.title}
-                          </span>
-                        </div>
+                        <span className={`text-xs sm:text-sm font-black tracking-tight leading-snug ${
+                          isSelected ? 'text-amber-950' : 'text-slate-900'
+                        }`}>
+                          {tpl.title}
+                        </span>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0 ml-1">
                         {tpl.badge && (
-                          <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300/80 flex items-center gap-0.5 shadow-2xs">
+                          <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300/80 flex items-center gap-0.5 shadow-2xs">
                             <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-400" />
                             <span>{tpl.badge}</span>
                           </span>
@@ -430,8 +418,8 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    <p className={`text-[11px] leading-snug line-clamp-1 ${
-                      isSelected ? 'text-amber-900/80 font-medium' : 'text-slate-500'
+                    <p className={`text-[11px] sm:text-xs leading-relaxed ${
+                      isSelected ? 'text-amber-900/90 font-medium' : 'text-slate-600'
                     }`}>
                       {tpl.description}
                     </p>
