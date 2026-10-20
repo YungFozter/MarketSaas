@@ -264,6 +264,64 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
   };
 
+  // Control de visibilidad del botón flotante para volver arriba al Tablero Kanban
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'kanban') {
+      setShowScrollTop(false);
+      return;
+    }
+    const handleWindowScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, [activeTab]);
+
+  // Transmisión y Chaining fluido de Scroll para el Feed de Actividad:
+  // Al llegar al tope superior de la lista scrolleable del feed (scrollTop <= 0) y seguir subiendo
+  // (mediante deslizamiento táctil en móviles o rueda/trackpad), el evento transmite el scroll
+  // directamente a la página principal para volver al Tablero Kanban sin atascos ni zonas muertas.
+  useEffect(() => {
+    if (activeTab !== 'kanban') return;
+    const el = feedScrollRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches.length > 0) {
+        touchStartY = e.touches[0].clientY;
+      }
+    };
+
+    const handleTouchMove = (e) => {
+      if (!e.touches || e.touches.length === 0) return;
+      const currentY = e.touches[0].clientY;
+      const deltaY = touchStartY - currentY; // > 0: arrastre hacia arriba (bajar), < 0: arrastre hacia abajo (subir)
+
+      // Si el usuario desliza con el dedo hacia abajo para subir la página
+      // y la lista del Feed ya se encuentra en su tope superior (scrollTop <= 0)
+      if (deltaY < 0 && el.scrollTop <= 0) {
+        window.scrollBy({ top: deltaY, behavior: 'auto' });
+      }
+      // Si el usuario desliza hacia arriba para bajar la página y la lista ya llegó a su fin
+      else if (deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+        window.scrollBy({ top: deltaY, behavior: 'auto' });
+      }
+      touchStartY = currentY;
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [activeTab]);
+
   // Bloquear scroll de la página de fondo cuando el modal de Venta Rápida (POS) está activo
   useEffect(() => {
     if (isPosModalOpen) {
@@ -2268,12 +2326,31 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               {/* ========================================================================= */}
               <section className="space-y-3.5 pt-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <div>
-                      <h2 className="text-lg text-slate-900 font-bold tracking-tight">Feed de Actividad & Últimos Cobros</h2>
-                      <p className="text-xs text-slate-400">Auditoría en tiempo real de transacciones y pedidos registrados</p>
+                  <div className="flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <div>
+                        <h2 className="text-lg text-slate-900 font-bold tracking-tight">Feed de Actividad & Últimos Cobros</h2>
+                        <p className="text-xs text-slate-400">Auditoría en tiempo real de transacciones y pedidos registrados</p>
+                      </div>
                     </div>
+
+                    {/* Botón rápido para subir al Tablero Kanban */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (feedScrollRef.current) {
+                          feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shrink-0 sm:ml-2"
+                      title="Subir al Tablero Kanban"
+                    >
+                      <ChevronUp className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="hidden sm:inline">Subir al Tablero</span>
+                      <span className="sm:hidden">Subir</span>
+                    </button>
                   </div>
 
                   {/* Filtros rápidos: Todos, Mostrador, Domicilio, Eliminados/Omitidos */}
@@ -2329,7 +2406,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col">
                   <div 
                     ref={feedScrollRef}
-                    className="divide-y divide-slate-100 overflow-y-auto max-h-[560px] sm:max-h-[620px] overscroll-contain transition-all"
+                    className="divide-y divide-slate-100 overflow-y-auto max-h-[560px] sm:max-h-[620px] overscroll-y-auto touch-pan-y transition-all"
                   >
                   {recentTransactions.length === 0 ? (
                     <div className="p-8 text-center space-y-2">
@@ -2582,11 +2659,48 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           <span>Siguiente</span>
                           <ChevronRight className="w-4 h-4" />
                         </button>
+
+                        {/* Botón rápido para subir al Tablero Kanban */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            if (feedScrollRef.current) {
+                              feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
+                          className="min-h-[38px] px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 transition-all bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs cursor-pointer active:scale-95"
+                          title="Subir al Tablero Kanban"
+                        >
+                          <ChevronUp className="w-4 h-4 text-emerald-600" />
+                          <span className="hidden sm:inline">Subir al Tablero</span>
+                          <span className="sm:hidden">Subir</span>
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               </section>
+
+              {/* Botón Flotante para Volver al Tablero Kanban cuando se hace scroll hacia abajo */}
+              {showScrollTop && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (feedScrollRef.current) {
+                      feedScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                  }}
+                  className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-40 bg-slate-900/90 hover:bg-slate-900 text-white backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl shadow-slate-900/20 border border-slate-700/60 flex items-center gap-2 text-xs font-extrabold transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fadeIn"
+                  title="Subir al Tablero Kanban"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <ChevronUp className="w-4 h-4" />
+                  </div>
+                  <span>Subir al Tablero</span>
+                </button>
+              )}
 
             </div>
           )}
