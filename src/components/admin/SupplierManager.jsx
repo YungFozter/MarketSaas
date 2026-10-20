@@ -72,6 +72,10 @@ export const SupplierManager = () => {
   const [editingCategoryKey, setEditingCategoryKey] = useState(null);
   const [editingCategoryValue, setEditingCategoryValue] = useState('');
 
+  // Modal para Sugerencia Interactiva de Stock Bajo
+  const [suggestModalSupplier, setSuggestModalSupplier] = useState(null);
+  const [selectedLowStockProducts, setSelectedLowStockProducts] = useState({});
+
   // Estado para nuevo ítem en formulario inline por proveedor { [supplierId]: { productName: '', quantity: '' } }
   const [itemForms, setItemForms] = useState({});
 
@@ -256,41 +260,95 @@ export const SupplierManager = () => {
     window.open(`https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  // Sugerir e importar productos con stock bajo en la lista del proveedor
-  const handleSuggestLowStock = (supplier) => {
-    if (lowStockProducts.length === 0) {
-      alert('¡Excelente! No tienes productos con stock crítico en tu inventario actualmente.');
-      return;
-    }
+  // Sugerir e importar productos con stock bajo en la lista del proveedor (Modal interactivo estilizado)
+  const handleOpenSuggestModal = (supplier) => {
+    setSuggestModalSupplier(supplier);
 
-    // Filtrar los que coincidan con la categoría del proveedor (o si no coincide ninguno, mostrar los críticos)
-    let candidates = lowStockProducts.filter(p => {
-      if (!supplier.category || supplier.category === 'Otros') return true;
-      const catLower = supplier.category.toLowerCase();
-      const pCatLower = (p.category || '').toLowerCase();
-      return pCatLower.includes(catLower) || catLower.includes(pCatLower);
+    const existingNames = (supplier.orderItems || []).map(i => (i.productName || i.name || '').toLowerCase().trim());
+    
+    // Todos los productos con stock bajo en la tienda que aún no estén en el pedido de este proveedor
+    const available = (lowStockProducts || []).filter(p => {
+      const name = (p.name || '').toLowerCase().trim();
+      return !existingNames.includes(name);
     });
 
-    if (candidates.length === 0) {
-      candidates = lowStockProducts.slice(0, 4); // Tomar los primeros 4 más urgentes
-    }
+    const initialSelection = {};
+    available.forEach(p => {
+      const catLower = (supplier.category || '').toLowerCase();
+      const pCatLower = (p.category || '').toLowerCase();
+      const isMatchingCat = !supplier.category || supplier.category === 'Otros' || pCatLower.includes(catLower) || catLower.includes(pCatLower);
+      
+      const curStock = parseInt(p.stock, 10) || 0;
+      const minStock = parseInt(p.minStock || 5, 10);
+      const suggestedQty = Math.max(1, (minStock - curStock) > 0 ? (minStock - curStock) * 2 : 5);
 
-    // Evitar duplicar ítems ya existentes en la lista del proveedor
-    const existingNames = (supplier.orderItems || []).map(i => (i.productName || i.name || '').toLowerCase());
-    const toAdd = candidates.filter(c => !existingNames.includes((c.name || '').toLowerCase()));
+      initialSelection[p.id] = {
+        selected: isMatchingCat,
+        quantity: `${suggestedQty} u.`,
+        product: p,
+        isMatchingCat
+      };
+    });
 
-    if (toAdd.length === 0) {
-      alert('Los productos con stock bajo de este rubro ya están en tu lista de pedidos.');
-      return;
-    }
+    setSelectedLowStockProducts(initialSelection);
+  };
 
-    toAdd.forEach(p => {
-      addSupplierOrderItem(supplier.id, {
+  const handleToggleProductSelection = (productId) => {
+    setSelectedLowStockProducts(prev => {
+      const curr = prev[productId];
+      if (!curr) return prev;
+      return {
+        ...prev,
+        [productId]: {
+          ...curr,
+          selected: !curr.selected
+        }
+      };
+    });
+  };
+
+  const handleToggleAllSelection = (select) => {
+    setSelectedLowStockProducts(prev => {
+      const next = {};
+      Object.entries(prev).forEach(([id, item]) => {
+        next[id] = { ...item, selected: select };
+      });
+      return next;
+    });
+  };
+
+  const handleUpdateProductQuantity = (productId, qty) => {
+    setSelectedLowStockProducts(prev => {
+      const curr = prev[productId];
+      if (!curr) return prev;
+      return {
+        ...prev,
+        [productId]: {
+          ...curr,
+          quantity: qty
+        }
+      };
+    });
+  };
+
+  const handleConfirmAddLowStock = () => {
+    if (!suggestModalSupplier) return;
+    const selectedItems = Object.values(selectedLowStockProducts).filter(i => i.selected);
+    if (selectedItems.length === 0) return;
+
+    selectedItems.forEach(item => {
+      const p = item.product;
+      const curStock = parseInt(p.stock, 10) || 0;
+      const minStock = parseInt(p.minStock || 5, 10);
+      addSupplierOrderItem(suggestModalSupplier.id, {
+        productId: p.id,
         productName: p.name,
-        quantity: 'Reabastecer (Stock crítico)',
-        notes: `Stock actual: ${p.stock || 0} unidades`
+        quantity: item.quantity?.trim() || '1 paquete',
+        notes: `Stock actual: ${curStock} u. (Mín: ${minStock} u.)`
       });
     });
+
+    setSuggestModalSupplier(null);
   };
 
   // Operaciones de CRUD para Rubros / Categorías
@@ -850,9 +908,9 @@ export const SupplierManager = () => {
                     {/* Botones de acción inferior: Stock Bajo y WhatsApp */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
                       <button
-                        onClick={() => handleSuggestLowStock(supplier)}
+                        onClick={() => handleOpenSuggestModal(supplier)}
                         className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 bg-white hover:bg-emerald-50 px-3 py-2 rounded-xl border border-slate-200 hover:border-emerald-300 transition-all cursor-pointer w-full sm:w-auto"
-                        title="Importar productos del inventario con stock mínimo o agotado"
+                        title="Ver sugerencias de reposición de productos con stock bajo o agotado"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                         <span>Sugerir Stock Bajo</span>
@@ -1209,6 +1267,213 @@ export const SupplierManager = () => {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* 5. MODAL: SUGERENCIAS DE STOCK BAJO INTELIGENTE                           */}
+      {/* ========================================================================= */}
+      {suggestModalSupplier && (() => {
+        const existingNames = (suggestModalSupplier.orderItems || []).map(i => (i.productName || i.name || '').toLowerCase().trim());
+        const available = (lowStockProducts || []).filter(p => !existingNames.includes((p.name || '').toLowerCase().trim()));
+        const selectedCount = Object.values(selectedLowStockProducts).filter(i => i.selected).length;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-scaleUp">
+              
+              {/* Header Modal */}
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0 bg-gradient-to-r from-amber-50/80 to-emerald-50/60">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight truncate">
+                      Sugerir Reposición de Stock
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                      Para <strong className="text-slate-800">{suggestModalSupplier.name}</strong> • {suggestModalSupplier.category}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSuggestModalSupplier(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+                  title="Cerrar modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Contenido / Casos de Estado */}
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+                
+                {/* Caso 1: En toda la tienda no hay stock crítico */}
+                {lowStockProducts.length === 0 ? (
+                  <div className="py-8 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner border border-emerald-100">
+                      <CheckCircle2 className="w-9 h-9" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-extrabold text-slate-900">
+                        ¡Inventario en Óptimo Estado!
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto mt-1 leading-relaxed">
+                        No tienes productos con stock crítico en tu tienda actualmente. Todos tus artículos tienen existencias por encima de su nivel mínimo de seguridad.
+                      </p>
+                    </div>
+                  </div>
+                ) : available.length === 0 ? (
+                  /* Caso 2: Hay stock bajo pero todos ya están en la lista del proveedor */
+                  <div className="py-8 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-inner border border-blue-100">
+                      <ShoppingBag className="w-9 h-9" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-extrabold text-slate-900">
+                        Todos los productos críticos ya están agendados
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-sm mx-auto mt-1 leading-relaxed">
+                        Los productos de tu inventario que registran stock bajo ya fueron añadidos a la lista de compras de <strong>{suggestModalSupplier.name}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* Caso 3: Lista de candidatos disponibles */
+                  <div className="space-y-3">
+                    <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3 flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="text-xs text-amber-950 leading-relaxed">
+                        Detectamos <strong>{available.length} producto(s)</strong> en tu inventario que están por agotarse o alcanzaron su stock mínimo. Selecciona los que deseas pedir al proveedor:
+                      </div>
+                    </div>
+
+                    {/* Barra de selección rápida */}
+                    <div className="flex items-center justify-between text-xs font-bold pt-1">
+                      <span className="text-slate-500">
+                        Seleccionados: <strong className="text-emerald-700">{selectedCount}</strong> de {available.length}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAllSelection(true)}
+                          className="text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                        >
+                          Marcar todos
+                        </button>
+                        <span className="text-slate-300">•</span>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAllSelection(false)}
+                          className="text-slate-400 hover:text-slate-600 hover:underline cursor-pointer"
+                        >
+                          Desmarcar
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lista interactiva de productos */}
+                    <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+                      {available.map(product => {
+                        const selection = selectedLowStockProducts[product.id] || { selected: false, quantity: '1 paquete' };
+                        const curStock = parseInt(product.stock, 10) || 0;
+                        const minStock = parseInt(product.minStock || 5, 10);
+                        const isZero = curStock === 0;
+
+                        return (
+                          <div 
+                            key={product.id}
+                            onClick={() => handleToggleProductSelection(product.id)}
+                            className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 ${
+                              selection.selected 
+                                ? 'bg-emerald-50/50 border-emerald-300 shadow-2xs' 
+                                : 'bg-white border-slate-200 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={selection.selected}
+                                onChange={() => handleToggleProductSelection(product.id)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                              />
+
+                              <div className="min-w-0 flex-1">
+                                <p className="font-extrabold text-xs sm:text-sm text-slate-900 truncate">
+                                  {product.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
+                                    isZero 
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-200' 
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}>
+                                    {isZero ? 'Agotado (0 u.)' : `Quedan ${curStock} u.`}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400">
+                                    Mínimo sugerido: {minStock} u.
+                                  </span>
+                                  {product.category && (
+                                    <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                      {product.category}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Campo de cantidad editable */}
+                            <div 
+                              className="flex items-center gap-1.5 shrink-0 pl-6 sm:pl-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span className="text-[11px] font-bold text-slate-400">Pedir:</span>
+                              <input
+                                type="text"
+                                value={selection.quantity}
+                                onChange={(e) => handleUpdateProductQuantity(product.id, e.target.value)}
+                                className="w-24 px-2 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                placeholder="Cant."
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Footer Modal */}
+              <div className="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setSuggestModalSupplier(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs sm:text-sm min-h-[42px] transition-colors cursor-pointer"
+                >
+                  {available.length === 0 ? 'Cerrar' : 'Cancelar'}
+                </button>
+
+                {available.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmAddLowStock}
+                    disabled={selectedCount === 0}
+                    className="px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-extrabold text-xs sm:text-sm shadow-md shadow-emerald-600/20 transition-all active:scale-95 cursor-pointer min-h-[42px] flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Añadir {selectedCount} al Pedido</span>
+                  </button>
+                )}
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

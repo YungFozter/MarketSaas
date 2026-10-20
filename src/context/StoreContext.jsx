@@ -2194,31 +2194,83 @@ export const StoreProvider = ({ children }) => {
         ? ['matias-tiendatodo', 'default']
         : [activeSupplierTenant];
 
+    // Función de fusión inteligente para proveedores y sus listas de pedidos (evita perder ítems al recargar)
+    const mergeSuppliers = (localList = [], remoteList = []) => {
+      const map = new Map();
+
+      // 1. Agregar proveedores remotos
+      (remoteList || []).forEach(remote => {
+        if (remote && remote.id) {
+          map.set(remote.id, remote);
+        }
+      });
+
+      // 2. Fusionar con proveedores locales para conservar listas de pedidos y cambios recientes
+      (localList || []).forEach(local => {
+        if (!local || !local.id) return;
+        if (!map.has(local.id)) {
+          // Proveedor creado localmente que aún no está en Supabase: conservarlo intacto
+          map.set(local.id, local);
+        } else {
+          const remote = map.get(local.id);
+          const localOrderItems = Array.isArray(local.orderItems) ? local.orderItems : [];
+          const remoteOrderItems = Array.isArray(remote.orderItems) ? remote.orderItems : [];
+
+          // Fusión de listas de pedido: Si local tiene ítems y remoto no, o local tiene más ítems
+          let mergedOrderItems = remoteOrderItems;
+          if (localOrderItems.length > 0 && remoteOrderItems.length === 0) {
+            mergedOrderItems = localOrderItems;
+          } else if (localOrderItems.length > 0) {
+            const itemsMap = new Map();
+            remoteOrderItems.forEach(item => { if (item && item.id) itemsMap.set(item.id, item); });
+            localOrderItems.forEach(item => { if (item && item.id) itemsMap.set(item.id, item); });
+            mergedOrderItems = Array.from(itemsMap.values());
+          }
+
+          map.set(local.id, {
+            ...remote,
+            ...local,
+            orderItems: mergedOrderItems,
+            updatedAt: local.updatedAt || remote.updatedAt || new Date().toISOString()
+          });
+        }
+      });
+
+      return Array.from(map.values());
+    };
+
     supabase.from('suppliers')
       .select('*')
       .in('tenant_id', supTenantFilter)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
+        // Leer estado local actual y respaldo en caché
+        let localExisting = [];
+        try {
+          const raw = localStorage.getItem(`marketsaas_${activeSupplierTenant}_suppliers`) || 
+                      localStorage.getItem('marketsaas_default_suppliers') ||
+                      localStorage.getItem('marketsaas_matias-tiendatodo_suppliers');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) localExisting = parsed.map(normalizeSupplier).filter(Boolean);
+          }
+        } catch (e) {}
+
         if (!error && Array.isArray(data) && data.length > 0) {
-          const normalized = filterOutDemoSuppliers(data.map(normalizeSupplier)).filter(Boolean);
-          setSuppliers(normalized);
+          const remoteNormalized = filterOutDemoSuppliers(data.map(normalizeSupplier)).filter(Boolean);
+          const merged = mergeSuppliers(localExisting, remoteNormalized);
+          setSuppliers(merged);
           try {
-            localStorage.setItem(`marketsaas_${activeSupplierTenant}_suppliers`, JSON.stringify(normalized));
+            localStorage.setItem(`marketsaas_${activeSupplierTenant}_suppliers`, JSON.stringify(merged));
             localStorage.setItem(`marketsaas_${activeSupplierTenant}_suppliers_initialized`, 'true');
-            if (isDemoMatiasSup) localStorage.setItem('marketsaas_default_suppliers', JSON.stringify(normalized));
+            if (isDemoMatiasSup) localStorage.setItem('marketsaas_default_suppliers', JSON.stringify(merged));
           } catch (e) {}
         } else {
-          // Si Supabase devuelve 0 filas o hay error, revisar si el dueño ya guardó o borró proveedores localmente
-          const localSaved = localStorage.getItem(`marketsaas_${activeSupplierTenant}_suppliers`);
+          // Si Supabase devuelve 0 filas o hay error, revisar si el dueño ya guardó proveedores localmente
           const hasInit = localStorage.getItem(`marketsaas_${activeSupplierTenant}_suppliers_initialized`);
-          if (localSaved) {
-            try {
-              const parsed = JSON.parse(localSaved);
-              if (Array.isArray(parsed) && (parsed.length > 0 || hasInit)) {
-                setSuppliers(parsed.map(normalizeSupplier).filter(Boolean));
-                return;
-              }
-            } catch (e) {}
+          if (localExisting.length > 0 || hasInit) {
+            setSuppliers(localExisting);
+            return;
           }
           if (hasInit || (!isIanSup && !isDemoMatiasSup)) {
             setSuppliers([]);
@@ -4989,6 +5041,18 @@ export const StoreProvider = ({ children }) => {
             .eq('id', supplierId)
             .eq('tenant_id', targetTenant);
         }
+
+        // Respaldo resiliente en store_config
+        setSuppliers(curr => {
+          if (Array.isArray(curr) && curr.length > 0) {
+            supabase.from('store_config')
+              .update({ config: { ...storeConfig, suppliersBackup: curr } })
+              .eq('id', targetTenant)
+              .then(() => {})
+              .catch(() => {});
+          }
+          return curr;
+        });
       }
     } catch (e) {
       console.warn('Aviso sincronización proveedor en Supabase:', e);
