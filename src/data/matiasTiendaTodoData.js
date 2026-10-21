@@ -206,6 +206,267 @@ export const createMatiasHistoricalOrders = () => {
 
   return [
     {
+      id: 'POS-MIX-101',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-1', name: 'Coca-Cola Sabor Original 2L', price: 13.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 14.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-12', name: 'Papas Fritas Lays Clásicas', price: 10.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 8.5, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-7', name: 'Azúcar Blanca Refinada Guabirá 1kg', price: 7.0, quantity: 3 }
+      ],
+      subtotal: 75.0,
+      total: 75.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 40.0,
+          qr: 35.0,
+          card: 0,
+          cashGiven: 40.0,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 40.0,
+        qr: 35.0,
+        card: 0,
+        cashGiven: 40.0,
+        change: 0
+      },
+      splitPayment: {
+        cash: 40.0,
+        qr: 35.0,
+        card: 0,
+        cashGiven: 40.0,
+        change: 0
+      },
+      created_at: mins(15),
+      createdAt: mins(15)
+    },
+    {
+      id: 'POS-MIX-102',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-15', name: 'Detergente en Polvo Omo Multiacción 800g', price: 18.0, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-16', name: 'Shampoo Sedal Restauración 350ml', price: 22.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-17', name: 'Papel Higiénico Nacional Selecto 6u', price: 16.0, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-18', name: 'Crema Dental Colgate Triple Acción 75ml', price: 12.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-19', name: 'Jabón en Barra Bolívar Ropa Blanca 200g', price: 8.0, quantity: 1 }
+      ],
+      subtotal: 110.0,
+      total: 110.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 50.0,
+          qr: 0,
+          card: 60.0,
+          cashGiven: 100.0,
+          change: 50.0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 50.0,
+        qr: 0,
+        card: 60.0,
+        cashGiven: 100.0,
+        change: 50.0
+      },
+      splitPayment: {
+        cash: 50.0,
+        qr: 0,
+        card: 60.0,
+        cashGiven: 100.0,
+        change: 50.0
+      },
+      cashChangeFor: 100.0,
+      created_at: hours(1.2),
+      createdAt: hours(1.2)
+    },
+    {
+      id: 'ORD-MIX-103',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Valeria Soto',
+        phone: '+591 71234567',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'Paso por el local al mediodía'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-20', name: 'Cerveza Paceña Lata 440ml (Pack x6)', price: 55.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-21', name: 'Bebida Energizante Red Bull 250ml', price: 18.0, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-22', name: 'Carbón Vegetal Curupaú 4kg', price: 28.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-23', name: 'Chorizo Parrillero Sofía 1kg', price: 31.0, quantity: 1 }
+      ],
+      subtotal: 150.0,
+      total: 150.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 50.0,
+          qr: 70.0,
+          card: 30.0,
+          cashGiven: 50.0,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 50.0,
+        qr: 70.0,
+        card: 30.0,
+        cashGiven: 50.0,
+        change: 0
+      },
+      splitPayment: {
+        cash: 50.0,
+        qr: 70.0,
+        card: 30.0,
+        cashGiven: 50.0,
+        change: 0
+      },
+      created_at: hours(3.0),
+      createdAt: hours(3.0)
+    },
+    {
+      id: 'ORD-MIX-104',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Carlos Mendoza',
+        phone: '+591 76543210',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'Retiro confirmado ayer'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 14.5, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-24', name: 'Queso Chaqueño Criollo 500g', price: 22.5, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-26', name: 'Jugo Del Valle Fresh 3L', price: 10.0, quantity: 2 },
+        { id: 'matias-tiendatodo-prod-8', name: 'Arroz Grano de Oro Grano Largo 1kg', price: 7.5, quantity: 2 }
+      ],
+      subtotal: 85.0,
+      total: 85.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 35.0,
+          qr: 50.0,
+          card: 0,
+          cashGiven: 50.0,
+          change: 15.0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 35.0,
+        qr: 50.0,
+        card: 0,
+        cashGiven: 50.0,
+        change: 15.0
+      },
+      splitPayment: {
+        cash: 35.0,
+        qr: 50.0,
+        card: 0,
+        cashGiven: 50.0,
+        change: 15.0
+      },
+      cashChangeFor: 50.0,
+      created_at: days(1.1),
+      createdAt: days(1.1)
+    },
+    {
+      id: 'ORD-MIX-105',
+      tenant_id: 'matias-tiendatodo',
+      customer: {
+        name: 'Mariana Ríos',
+        phone: '+591 70011223',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'En camino a recoger al mostrador'
+      },
+      items: [
+        { id: 'matias-tiendatodo-prod-27', name: 'Café Clásico Nescafé Tradición 100g', price: 25.0, quantity: 1 },
+        { id: 'matias-tiendatodo-prod-28', name: 'Leche Evaporada Pil 410g', price: 10.0, quantity: 2 }
+      ],
+      subtotal: 45.0,
+      total: 45.0,
+      discount: 0,
+      delivery_fee: 0,
+      deliveryFee: 0,
+      delivery_type: 'pickup',
+      deliveryType: 'pickup',
+      status: 'on_the_way',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 20.0,
+          qr: 25.0,
+          card: 0,
+          cashGiven: 20.0,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 20.0,
+        qr: 25.0,
+        card: 0,
+        cashGiven: 20.0,
+        change: 0
+      },
+      splitPayment: {
+        cash: 20.0,
+        qr: 25.0,
+        card: 0,
+        cashGiven: 20.0,
+        change: 0
+      },
+      created_at: mins(8),
+      createdAt: mins(8)
+    },
+    {
       id: 'POS-1042',
       tenant_id: 'matias-tiendatodo',
       customer: {

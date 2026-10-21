@@ -242,6 +242,247 @@ export const getFernandoOrders = () => {
 
   return [
     {
+      id: 'POS-MIX-101',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-1', name: 'Coca-Cola 2 Litros', price: 13, quantity: 1 },
+        { id: 'minimarket-ian-prod-6', name: 'Aceite Vegetal Fino Clásico 900ml', price: 14, quantity: 1 },
+        { id: 'minimarket-ian-prod-12', name: 'Papas Fritas Lays 140g', price: 10, quantity: 1 },
+        { id: 'minimarket-ian-prod-8', name: 'Arroz Grano de Oro 1kg', price: 8.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-7', name: 'Azúcar Blanca Guabirá 1kg', price: 7, quantity: 3 }
+      ],
+      subtotal: 75,
+      total: 75,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 40,
+          qr: 35,
+          card: 0,
+          cashGiven: 40,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 40,
+        qr: 35,
+        card: 0,
+        cashGiven: 40,
+        change: 0
+      },
+      splitPayment: {
+        cash: 40,
+        qr: 35,
+        card: 0,
+        cashGiven: 40,
+        change: 0
+      },
+      created_at: mins(15),
+      createdAt: mins(15)
+    },
+    {
+      id: 'POS-MIX-102',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Cliente Mostrador (Venta Rápida)',
+        phone: '',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-15', name: 'Detergente Omo 800g', price: 18, quantity: 2 },
+        { id: 'minimarket-ian-prod-16', name: 'Shampoo Sedal 350ml', price: 22, quantity: 1 },
+        { id: 'minimarket-ian-prod-17', name: 'Papel Higiénico Nacional 6u', price: 16, quantity: 2 },
+        { id: 'minimarket-ian-prod-18', name: 'Crema Dental Colgate 75ml', price: 12, quantity: 1 },
+        { id: 'minimarket-ian-prod-19', name: 'Jabón en Barra Bolívar', price: 8, quantity: 1 }
+      ],
+      subtotal: 110,
+      total: 110,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 50,
+          qr: 0,
+          card: 60,
+          cashGiven: 100,
+          change: 50
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 50,
+        qr: 0,
+        card: 60,
+        cashGiven: 100,
+        change: 50
+      },
+      splitPayment: {
+        cash: 50,
+        qr: 0,
+        card: 60,
+        cashGiven: 100,
+        change: 50
+      },
+      cashChangeFor: 100,
+      created_at: hours(1.2),
+      createdAt: hours(1.2)
+    },
+    {
+      id: 'ORD-MIX-103',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Valeria Soto',
+        phone: '+591 71234567',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'Paso por el local al mediodía'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-20', name: 'Pack Cerveza Paceña 6 Latas', price: 55, quantity: 1 },
+        { id: 'minimarket-ian-prod-21', name: 'Bebida Energizante Red Bull 250ml', price: 18, quantity: 2 },
+        { id: 'minimarket-ian-prod-22', name: 'Carbón Vegetal Curupaú 4kg', price: 28, quantity: 1 },
+        { id: 'minimarket-ian-prod-23', name: 'Chorizo Parrillero Sofía 1kg', price: 31, quantity: 1 }
+      ],
+      subtotal: 150,
+      total: 150,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 50,
+          qr: 70,
+          card: 30,
+          cashGiven: 50,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 50,
+        qr: 70,
+        card: 30,
+        cashGiven: 50,
+        change: 0
+      },
+      splitPayment: {
+        cash: 50,
+        qr: 70,
+        card: 30,
+        cashGiven: 50,
+        change: 0
+      },
+      created_at: hours(3.0),
+      createdAt: hours(3.0)
+    },
+    {
+      id: 'ORD-MIX-104',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Carlos Mendoza',
+        phone: '+591 76543210',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'Retiro confirmado ayer'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-2', name: 'Leche Pil Natural Entera 1L', price: 6.5, quantity: 2 },
+        { id: 'minimarket-ian-prod-10', name: 'Mantequilla con Sal Pil 200g', price: 14.5, quantity: 1 },
+        { id: 'minimarket-ian-prod-24', name: 'Queso Chaqueño Criollo 500g', price: 22.5, quantity: 1 },
+        { id: 'minimarket-ian-prod-26', name: 'Jugo Del Valle Fresh 3L', price: 10, quantity: 2 },
+        { id: 'minimarket-ian-prod-8', name: 'Arroz Grano de Oro 1kg', price: 7.5, quantity: 2 }
+      ],
+      subtotal: 85,
+      total: 85,
+      deliveryType: 'pickup',
+      status: 'delivered',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 35,
+          qr: 50,
+          card: 0,
+          cashGiven: 50,
+          change: 15
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 35,
+        qr: 50,
+        card: 0,
+        cashGiven: 50,
+        change: 15
+      },
+      splitPayment: {
+        cash: 35,
+        qr: 50,
+        card: 0,
+        cashGiven: 50,
+        change: 15
+      },
+      cashChangeFor: 50,
+      created_at: days(1.1),
+      createdAt: days(1.1)
+    },
+    {
+      id: 'ORD-MIX-105',
+      tenant_id: 'minimarket-ian',
+      customer: {
+        name: 'Mariana Ríos',
+        phone: '+591 70011223',
+        address: 'Retiro en Tienda',
+        reference: 'Mostrador',
+        notes: 'En camino a recoger al mostrador'
+      },
+      items: [
+        { id: 'minimarket-ian-prod-27', name: 'Café Clásico Nescafé Tradición 100g', price: 25, quantity: 1 },
+        { id: 'minimarket-ian-prod-28', name: 'Leche Evaporada Pil 410g', price: 10, quantity: 2 }
+      ],
+      subtotal: 45,
+      total: 45,
+      deliveryType: 'pickup',
+      status: 'on_the_way',
+      payment_method: {
+        method: 'combined',
+        splitPayment: {
+          cash: 20,
+          qr: 25,
+          card: 0,
+          cashGiven: 20,
+          change: 0
+        }
+      },
+      paymentMethod: 'combined',
+      split_payment: {
+        cash: 20,
+        qr: 25,
+        card: 0,
+        cashGiven: 20,
+        change: 0
+      },
+      splitPayment: {
+        cash: 20,
+        qr: 25,
+        card: 0,
+        cashGiven: 20,
+        change: 0
+      },
+      created_at: mins(8),
+      createdAt: mins(8)
+    },
+    {
       id: 'POS-2010',
       tenant_id: 'minimarket-ian',
       customer: {

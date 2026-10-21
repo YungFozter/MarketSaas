@@ -4950,6 +4950,48 @@ export const StoreProvider = ({ children }) => {
     return normalizedPosOrder;
   };
 
+  // Inyección de ventas y pedidos de prueba para verificación de Pago Combinado
+  const injectSplitPaymentTestOrders = () => {
+    const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian');
+    const rawSeeds = isFernando ? getFernandoOrders() : getMatiasOrders();
+    const splitTestSeeds = rawSeeds
+      .filter(o => o.id && (String(o.id).startsWith('POS-MIX-') || String(o.id).startsWith('ORD-MIX-')))
+      .map(normalizeOrder);
+
+    if (splitTestSeeds.length === 0) {
+      showToast('No se encontraron plantillas de Pago Combinado.', 'warning');
+      return;
+    }
+
+    setOrders(prev => {
+      const cleanPrev = (prev || []).filter(o => !String(o.id).startsWith('POS-MIX-') && !String(o.id).startsWith('ORD-MIX-'));
+      const updated = [...splitTestSeeds, ...cleanPrev];
+      const activeSlug = tenantSlug || 'matias-tiendatodo';
+
+      try {
+        localStorage.setItem(`marketsaas_${activeSlug}_orders`, JSON.stringify(updated));
+        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (storeConfig?.tenant_id) {
+          localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
+        }
+        if (merchantStore?.id && merchantStore.id !== activeSlug) {
+          localStorage.setItem(`marketsaas_${merchantStore.id}_orders`, JSON.stringify(updated));
+        }
+      } catch (e) {}
+
+      return updated;
+    });
+
+    triggerConfetti?.();
+    showToast('¡5 ventas de prueba con Pago Combinado (Mixto) inyectadas con éxito! 🎉', 'success');
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.injectSplitPaymentTestOrders = injectSplitPaymentTestOrders;
+    }
+  }, [tenantSlug, storeConfig]);
+
   // Solicitar producto ("Pídelo si no está")
   const submitProductRequest = async (customerName, productName, notes, location = '') => {
     const trimmedProduct = productName?.trim();
@@ -6372,7 +6414,8 @@ export const StoreProvider = ({ children }) => {
         validateSplitPayment,
         calculateSplitPortions,
         formatPaymentBreakdownText,
-        roundMoney
+        roundMoney,
+        injectSplitPaymentTestOrders
       }}
     >
       {children}

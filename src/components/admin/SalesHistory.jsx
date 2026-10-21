@@ -40,7 +40,7 @@ import { SubscriptionBlockedModal } from './SubscriptionBlockedModal';
 import './SalesHistory.css';
 
 export const SalesHistory = () => {
-  const { orders = [], storeConfig, currentUser, isSubscriptionActive } = useStore();
+  const { orders = [], storeConfig, currentUser, isSubscriptionActive, injectSplitPaymentTestOrders } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
 
   // Filtros de búsqueda y estado
@@ -499,6 +499,19 @@ export const SalesHistory = () => {
             <MessageCircle className="w-4 h-4 text-emerald-600" />
             <span>Resumen WhatsApp</span>
           </button>
+
+          {/* Botón de Inyección Rápida de Ventas de Prueba con Pago Combinado */}
+          {injectSplitPaymentTestOrders && (
+            <button
+              type="button"
+              onClick={injectSplitPaymentTestOrders}
+              className="h-9 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 hover:border-purple-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+              title="Inyectar 5 ventas de prueba con Pago Combinado para verificar Historial, Reportes y Arqueo"
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              <span>Inyectar Ventas Mixtas</span>
+            </button>
+          )}
 
           {/* Botón Exportar Reporte Filtrado (Con bloqueo por suscripción) */}
           <button
