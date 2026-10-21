@@ -77,6 +77,12 @@ import { OrderNotificationBanner } from './OrderNotificationBanner/OrderNotifica
 import { playOrderNotificationSound, sendOrderNotification } from '../../services/orderNotificationService';
 import { useStore, filterOutDemoSuppliers } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
+import { 
+  roundMoney, 
+  calculateSplitPortions, 
+  formatPaymentBreakdownText,
+  PAYMENT_METHODS 
+} from '../../utils/paymentUtils';
 import './AdminHome.css';
 
 export const AdminHome = ({ onOpenAuthModal }) => {
@@ -362,8 +368,22 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     return str.length > 14 ? str.slice(-8) : str;
   };
 
-  const renderPaymentBadge = (method) => {
-    const m = String(method || 'cash').toLowerCase();
+  const renderPaymentBadge = (method, order = null) => {
+    const rawMethod = method || (order?.paymentMethod || order?.payment_method);
+    const m = String(rawMethod || 'cash').toLowerCase();
+
+    if (m === 'combined' || m === 'split' || order?.splitPayment || order?.split_payment) {
+      const breakdown = order ? formatPaymentBreakdownText(order, currency) : 'Efe + QR + POS';
+      return (
+        <span 
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-50 text-violet-800 text-[10px] font-black border border-violet-200/90 uppercase tracking-wide shadow-2xs"
+          title={`Pago Combinado: ${breakdown}`}
+        >
+          <Layers className="w-3 h-3 text-violet-600 shrink-0" />
+          <span>Combinado ({breakdown})</span>
+        </span>
+      );
+    }
     if (m === 'credit') {
       return (
         <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-200/80 uppercase tracking-wide">
@@ -406,20 +426,36 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   const totalSales = validOrders.reduce((acc, o) => acc + (o.total || 0), 0);
   const averageTicket = validOrders.length > 0 ? (totalSales / validOrders.length) : 0;
   
-  // Desglose por método de pago para Ventas y Cierre de Caja (soportando camelCase y snake_case)
+  // Desglose por método de pago para Ventas y Cierre de Caja (soportando camelCase, snake_case y Pago Combinado)
   const getOrderPaymentMethod = (o) => o?.paymentMethod || o?.payment_method || 'cash';
 
   const cashOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'cash');
   const qrOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'qr');
   const cardOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'card');
   const creditOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'credit');
+  const combinedOrders = validOrders.filter(o => getOrderPaymentMethod(o) === 'combined' || o?.splitPayment || o?.split_payment);
 
-  const totalCashSales = cashOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-  const totalQrSales = qrOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-  const totalCardSales = cardOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-  const totalCreditSales = creditOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-  const totalSalesCount = cashOrders.length + qrOrders.length + cardOrders.length + creditOrders.length;
-  const totalDaySales = totalCashSales + totalQrSales + totalCardSales;
+  // Totales acumulados exactos sumando porciones de órdenes simples y órdenes con Pago Combinado
+  let totalCashSales = 0;
+  let totalQrSales = 0;
+  let totalCardSales = 0;
+  let totalCreditSales = 0;
+
+  validOrders.forEach(o => {
+    const p = calculateSplitPortions(o);
+    totalCashSales += p.cash;
+    totalQrSales += p.qr;
+    totalCardSales += p.card;
+    totalCreditSales += p.credit;
+  });
+
+  totalCashSales = roundMoney(totalCashSales);
+  totalQrSales = roundMoney(totalQrSales);
+  totalCardSales = roundMoney(totalCardSales);
+  totalCreditSales = roundMoney(totalCreditSales);
+
+  const totalSalesCount = validOrders.length;
+  const totalDaySales = roundMoney(totalCashSales + totalQrSales + totalCardSales);
   const totalDeliveryCollected = validOrders
     .filter(o => (o?.deliveryType || o?.delivery_type) === 'delivery')
     .reduce((acc, o) => acc + (o.deliveryFee || o.delivery_fee || 0), 0);
@@ -689,12 +725,31 @@ export const AdminHome = ({ onOpenAuthModal }) => {
             </div>
             <div class="row" style="margin-top:4px;">
               <span>Método de Pago:</span>
-              <span class="bold">${order.paymentMethod.toUpperCase()}</span>
+              <span class="bold">${
+                (order.paymentMethod === 'combined' || order.splitPayment || order.split_payment)
+                  ? 'PAGO COMBINADO'
+                  : String(order.paymentMethod || 'cash').toUpperCase()
+              }</span>
             </div>
-            ${order.paymentMethod === 'cash' && order.cashChangeFor ? `
-              <div class="row"><span>Paga con:</span><span>Bs. ${order.cashChangeFor}</span></div>
-              <div class="row bold"><span>Vuelto:</span><span>Bs. ${(order.cashChangeFor - order.total).toFixed(2)}</span></div>
-            ` : ''}
+            ${(() => {
+              if (order.paymentMethod === 'combined' || order.splitPayment || order.split_payment) {
+                const sp = calculateSplitPortions(order);
+                const splitObj = order.splitPayment || order.split_payment;
+                let html = '';
+                if (sp.cash > 0) html += `<div class="row"><span>• Efectivo:</span><span>Bs. ${sp.cash.toFixed(2)}</span></div>`;
+                if (sp.qr > 0) html += `<div class="row"><span>• QR Simple:</span><span>Bs. ${sp.qr.toFixed(2)}</span></div>`;
+                if (sp.card > 0) html += `<div class="row"><span>• Tarjeta POS:</span><span>Bs. ${sp.card.toFixed(2)}</span></div>`;
+                if (Number(splitObj?.change) > 0) html += `<div class="row bold"><span>Cambio Efectivo:</span><span>Bs. ${Number(splitObj.change).toFixed(2)}</span></div>`;
+                return html;
+              }
+              if (order.paymentMethod === 'cash' && order.cashChangeFor) {
+                return `
+                  <div class="row"><span>Paga con:</span><span>Bs. ${order.cashChangeFor}</span></div>
+                  <div class="row bold"><span>Vuelto:</span><span>Bs. ${(order.cashChangeFor - order.total).toFixed(2)}</span></div>
+                `;
+              }
+              return '';
+            })()}
             <div class="divider"></div>
             <p class="center" style="font-size:11px; margin:4px 0;">Gracias por comprar en tu minimarket de confianza.</p>
           </body>
@@ -1930,11 +1985,13 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                             <span className="text-slate-400">{order.customer.phone}</span>
                           </div>
 
-                          <div className="mt-2">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-[10px]">
-                              <QrCode className="w-3 h-3 text-emerald-600" />
-                              {order.paymentMethod === 'qr' ? 'QR Simple (Digital)' : `Efectivo: Paga Bs. ${order.cashChangeFor || order.total}`}
-                            </span>
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            {renderPaymentBadge(order.paymentMethod, order)}
+                            {order.paymentMethod === 'cash' && order.cashChangeFor > order.total && (
+                              <span className="text-[10px] text-slate-500 font-bold">
+                                (Paga con {currency} {order.cashChangeFor} • Vuelto {currency} {(order.cashChangeFor - order.total).toFixed(2)})
+                              </span>
+                            )}
                           </div>
 
                           {/* Checklist de Artículos */}
@@ -2033,9 +2090,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                               <p className="text-xs text-slate-400">{order.customer?.name}</p>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
-                                {order.paymentMethod === 'qr' ? 'QR Pagado' : 'Efectivo'}
-                              </span>
+                              {renderPaymentBadge(order.paymentMethod, order)}
                               <button
                                 onClick={() => {
                                   if (window.confirm(`¿Deseas descartar/eliminar el pedido #${order.id}?`)) {
@@ -2182,14 +2237,20 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 <Store className="w-4 h-4 text-emerald-700 shrink-0" />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-bold text-emerald-950 truncate">
-                                    {order.paymentMethod === 'cash' 
+                                    {order.paymentMethod === 'combined' || order.splitPayment || order.split_payment
+                                      ? `Cobro Mostrador: Pago Combinado (${currency} ${order.total.toFixed(2)})`
+                                      : order.paymentMethod === 'cash' 
                                       ? `Cobrar en caja: ${currency} ${order.total.toFixed(2)}` 
                                       : order.paymentMethod === 'qr' 
                                       ? 'Pagado vía QR Digital' 
+                                      : order.paymentMethod === 'credit'
+                                      ? 'Cargado a Cuenta (Fiao Vecinal)'
                                       : 'Cobrar con Tarjeta en Tienda'}
                                   </p>
                                   <p className="text-[10px] text-emerald-700 truncate">
-                                    {order.paymentMethod === 'cash' && order.cashChangeFor 
+                                    {order.paymentMethod === 'combined' || order.splitPayment || order.split_payment
+                                      ? `Desglose: ${formatPaymentBreakdownText(order, currency)}`
+                                      : order.paymentMethod === 'cash' && order.cashChangeFor 
                                       ? `Paga con ${currency} ${order.cashChangeFor} (Vuelto: ${currency} ${(order.cashChangeFor - order.total).toFixed(2)})` 
                                       : 'Productos listos en mostrador'}
                                   </p>
@@ -2315,7 +2376,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                           </div>
 
                           <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
-                            {renderPaymentBadge(order.paymentMethod || order.payment_method)}
+                            {renderPaymentBadge(order.paymentMethod || order.payment_method, order)}
                             <span className="text-emerald-700 font-bold text-[11px] flex items-center gap-1 shrink-0">
                               <span className="text-amber-500">★</span>
                               <span>5.0 Exitoso</span>
@@ -2480,6 +2541,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 md:mt-0 ${
                               isOmitted
                                 ? 'bg-rose-100/80 text-rose-600 border border-rose-300/80'
+                                : (payMethod === 'combined' || tx.splitPayment || tx.split_payment)
+                                ? 'bg-violet-50 text-violet-700 border border-violet-200/80 shadow-2xs'
                                 : payMethod === 'cash' 
                                 ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/80'
                                 : payMethod === 'qr'
@@ -2492,10 +2555,11 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 <Ban className="w-5 h-5 text-rose-600" />
                               ) : (
                                 <>
-                                  {payMethod === 'cash' && <Banknote className="w-5 h-5" />}
-                                  {payMethod === 'qr' && <QrCode className="w-5 h-5" />}
-                                  {payMethod === 'card' && <CreditCard className="w-5 h-5" />}
-                                  {payMethod === 'credit' && <BookOpen className="w-5 h-5" />}
+                                  {(payMethod === 'combined' || tx.splitPayment || tx.split_payment) && <Layers className="w-5 h-5 text-violet-700" />}
+                                  {payMethod === 'cash' && !tx.splitPayment && !tx.split_payment && <Banknote className="w-5 h-5" />}
+                                  {payMethod === 'qr' && !tx.splitPayment && !tx.split_payment && <QrCode className="w-5 h-5" />}
+                                  {payMethod === 'card' && !tx.splitPayment && !tx.split_payment && <CreditCard className="w-5 h-5" />}
+                                  {payMethod === 'credit' && !tx.splitPayment && !tx.split_payment && <BookOpen className="w-5 h-5" />}
                                 </>
                               )}
                             </div>
@@ -2521,6 +2585,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                                 {isOmitted ? (
                                   <span className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-rose-100 text-rose-800 border border-rose-200">
                                     🚫 Eliminado / Omitido
+                                  </span>
+                                ) : (payMethod === 'combined' || tx.splitPayment || tx.split_payment) ? (
+                                  <span 
+                                    className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 bg-violet-100 text-violet-900 border border-violet-200 shadow-2xs"
+                                    title={`Pago Combinado: ${formatPaymentBreakdownText(tx, currency)}`}
+                                  >
+                                    <Layers className="w-3 h-3 text-violet-700 shrink-0" />
+                                    <span>Combinado ({formatPaymentBreakdownText(tx, currency)})</span>
                                   </span>
                                 ) : (
                                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${
@@ -2965,6 +3037,10 @@ export const AdminHome = ({ onOpenAuthModal }) => {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-medium">Pedido:</span>
                 <span className="font-mono font-bold text-slate-800">#{getDisplayOrderId(transactionToDelete.id)}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
+                <span className="text-slate-500 font-medium">Método de pago:</span>
+                {renderPaymentBadge(transactionToDelete.paymentMethod || transactionToDelete.payment_method, transactionToDelete)}
               </div>
               <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50">
                 <span className="text-slate-500 font-medium">Monto cobrado:</span>
