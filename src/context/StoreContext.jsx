@@ -3246,7 +3246,7 @@ export const StoreProvider = ({ children }) => {
         supabase.removeChannel(channel);
       }
     };
-  }, [currentUser, tenantSlug, storeConfig, isProPlan]);
+  }, [currentUser, tenantSlug, storeConfig]);
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio SOLO si el dueño está autenticado
   useEffect(() => {
