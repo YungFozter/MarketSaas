@@ -600,667 +600,851 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     const qrImage = storeConfig?.qrImageUrl;
 
     return (
-      <div className="max-w-xl mx-auto py-4 px-2 sm:px-4 space-y-5 animate-fadeIn">
-        {/* Cabecera del Cobro con botón Volver */}
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <button
-            type="button"
-            onClick={() => setStep('catalog')}
-            className="flex items-center gap-1.5 text-xs font-extrabold text-slate-600 hover:text-slate-900 px-3 py-1.5 rounded-xl hover:bg-slate-200/60 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Volver al Catálogo</span>
-          </button>
-
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Paso 2 de 2: Cobro
-          </span>
-        </div>
-
-        {/* Resumen Destacado de Total */}
-        <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-md flex items-center justify-between">
-          <div>
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total a Cobrar</span>
-            <p className="text-3xl font-black text-emerald-400 tracking-tight mt-0.5">
-              {currency} {subtotal.toFixed(2)}
-            </p>
-          </div>
-          <div className="text-right text-xs text-slate-300">
-            <span className="font-extrabold block text-sm text-white">{totalQty} {totalQty === 1 ? 'artículo' : 'artículos'}</span>
-            <span className="text-slate-400">{posCart.length} productos distintos</span>
-          </div>
-        </div>
-
-        {/* Selección de Forma de Cobro */}
-        <div className="space-y-3">
-          <label className="text-xs font-extrabold text-slate-800 block">
-            Selecciona la forma de pago del cliente:
-          </label>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
-            {/* Efectivo */}
+      <div className="max-w-6xl xl:max-w-7xl mx-auto py-3 sm:py-5 px-2 sm:px-4 lg:px-6 space-y-5 animate-fadeIn">
+        {/* Cabecera del Cobro con botón Volver y Migas de Pan */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setPaymentType('cash')}
-              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
-                paymentType === 'cash'
-                  ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-2 ring-emerald-500/20'
-                  : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
+              onClick={() => setStep('catalog')}
+              className="group flex items-center gap-2 text-xs sm:text-sm font-extrabold text-slate-700 hover:text-slate-900 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-all cursor-pointer"
             >
-              <div className={`p-2 rounded-xl ${paymentType === 'cash' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <Banknote className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-slate-900">Efectivo</p>
-                <p className="text-[10px] text-slate-400">Billetes</p>
-              </div>
+              <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:-translate-x-0.5 transition-transform" />
+              <span>Volver al Catálogo</span>
             </button>
-
-            {/* QR Digital */}
-            <button
-              type="button"
-              onClick={() => setPaymentType('qr')}
-              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
-                paymentType === 'qr'
-                  ? 'border-cyan-500 bg-cyan-50/80 shadow-xs ring-2 ring-cyan-500/20'
-                  : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
-            >
-              <div className={`p-2 rounded-xl ${paymentType === 'qr' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-slate-900">QR Simple</p>
-                <p className="text-[10px] text-slate-400">Transferencia</p>
-              </div>
-            </button>
-
-            {/* Tarjeta POS */}
-            <button
-              type="button"
-              onClick={() => setPaymentType('card')}
-              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
-                paymentType === 'card'
-                  ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/20'
-                  : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
-            >
-              <div className={`p-2 rounded-xl ${paymentType === 'card' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-slate-900">Tarjeta POS</p>
-                <p className="text-[10px] text-slate-400">POS físico</p>
-              </div>
-            </button>
-
-            {/* A Cuenta / Fiao */}
-            <button
-              type="button"
-              onClick={() => setPaymentType('credit')}
-              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
-                paymentType === 'credit'
-                  ? 'border-indigo-500 bg-indigo-50/80 shadow-xs ring-2 ring-indigo-500/20'
-                  : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
-            >
-              <div className={`p-2 rounded-xl ${paymentType === 'credit' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-slate-900">A Cuenta</p>
-                <p className="text-[10px] text-slate-400">Fiao Vecinal</p>
-              </div>
-            </button>
-
-            {/* Pago Combinado (Nuevo Método) */}
-            <button
-              type="button"
-              onClick={() => {
-                setPaymentType('combined');
-                // Si no hay valores asignados, sugerir 50% efectivo y resto en QR para agilizar
-                if (!splitAmounts.cash && !splitAmounts.qr && !splitAmounts.card) {
-                  const half = roundMoney(subtotal / 2);
-                  const rem = roundMoney(subtotal - half);
-                  setSplitAmounts({ cash: half > 0 ? half.toString() : '', qr: rem > 0 ? rem.toString() : '', card: '' });
-                }
-              }}
-              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center col-span-2 sm:col-span-1 ${
-                paymentType === 'combined'
-                  ? 'border-violet-500 bg-violet-50/80 shadow-xs ring-2 ring-violet-500/20'
-                  : 'border-slate-200 bg-white hover:bg-slate-50'
-              }`}
-            >
-              <div className={`p-2 rounded-xl ${paymentType === 'combined' ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'}`}>
-                <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <div>
-                <p className="font-extrabold text-xs sm:text-sm text-slate-900">Combinado</p>
-                <p className="text-[10px] text-violet-600 font-bold">Efe + QR + POS</p>
-              </div>
-            </button>
-          </div>
-
-          {/* Panel Interactivo: PAGO COMBINADO */}
-          {paymentType === 'combined' && (
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-violet-200/90 space-y-4 shadow-xs animate-fadeIn">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-xl bg-violet-100 text-violet-700">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-xs sm:text-sm text-slate-900">Desglose de Pago Combinado</h4>
-                    <p className="text-[11px] text-slate-400">Ingresa cuánto paga el cliente en cada modalidad</p>
-                  </div>
-                </div>
-
-                {/* Acciones Rápidas de Autocompletado */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const half = roundMoney(subtotal / 2);
-                      const rem = roundMoney(subtotal - half);
-                      setSplitAmounts({ cash: half.toString(), qr: rem.toString(), card: '' });
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-800 text-[11px] font-bold border border-violet-200 transition-colors cursor-pointer"
-                    title="Dividir 50% en efectivo y 50% en QR"
-                  >
-                    50% Efec / 50% QR
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const rem = Math.max(0, roundMoney(subtotal - parsedSplitCash - parsedSplitCard));
-                      setSplitAmounts(prev => ({ ...prev, qr: rem > 0 ? rem.toString() : '' }));
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-[11px] font-bold border border-cyan-200 transition-colors cursor-pointer"
-                    title="Asignar el saldo restante a QR"
-                  >
-                    Restante a QR
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const rem = Math.max(0, roundMoney(subtotal - parsedSplitQr - parsedSplitCard));
-                      setSplitAmounts(prev => ({ ...prev, cash: rem > 0 ? rem.toString() : '' }));
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200 transition-colors cursor-pointer"
-                    title="Asignar el saldo restante a Efectivo"
-                  >
-                    Restante a Efectivo
-                  </button>
-                </div>
-              </div>
-
-              {/* Grid de los 3 Métodos Combinables */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* 1. Porción Efectivo */}
-                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitCash > 0 ? 'bg-emerald-50/50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
-                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <Banknote className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Efectivo</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={splitAmounts.cash}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSplitAmounts(prev => ({ ...prev, cash: val }));
-                      }}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                {/* 2. Porción QR Simple */}
-                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitQr > 0 ? 'bg-cyan-50/50 border-cyan-300' : 'bg-slate-50 border-slate-200'}`}>
-                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <QrCode className="w-3.5 h-3.5 text-cyan-600" />
-                      <span>QR Simple</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={splitAmounts.qr}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSplitAmounts(prev => ({ ...prev, qr: val }));
-                      }}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-cyan-500 shadow-2xs"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Porción Tarjeta POS */}
-                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitCard > 0 ? 'bg-amber-50/50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
-                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
-                    <span className="flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Tarjeta POS</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={splitAmounts.card}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSplitAmounts(prev => ({ ...prev, card: val }));
-                      }}
-                      placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-amber-500 shadow-2xs"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Barra de Estado y Balance Matemático */}
-              <div className={`p-3.5 rounded-2xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                isSplitExact
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-2xs'
-                  : splitDifference > 0.009
-                    ? 'bg-amber-50 border-amber-300 text-amber-950'
-                    : 'bg-rose-50 border-rose-300 text-rose-950'
-              }`}>
-                <div className="flex items-center gap-2">
-                  {isSplitExact ? (
-                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                      <Check className="w-4 h-4 stroke-[3]" />
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-                      <AlertCircle className="w-4 h-4" />
-                    </div>
-                  )}
-                  <div>
-                    <span className="font-extrabold block">
-                      {isSplitExact 
-                        ? '¡Total cubierto al 100% con exactitud!'
-                        : splitDifference > 0.009
-                          ? `Faltan ${currency} ${splitDifference.toFixed(2)} para completar el pago`
-                          : `El desglose excede el total por ${currency} ${Math.abs(splitDifference).toFixed(2)}`}
-                    </span>
-                    <span className="text-[11px] opacity-75">
-                      Ingresado: {currency} {totalSplitCovered.toFixed(2)} de {currency} {subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-right sm:text-right shrink-0">
-                  <span className="font-mono text-sm font-black">
-                    {totalSplitCovered.toFixed(2)} / {subtotal.toFixed(2)} {currency}
-                  </span>
-                </div>
-              </div>
-
-              {/* Cálculo Opcional de Cambio en Efectivo si la porción en efectivo es > 0 */}
-              {parsedSplitCash > 0 && (
-                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      ¿Con cuánto billete paga la parte de efectivo ({currency} {parsedSplitCash.toFixed(2)})?:
-                    </label>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setSplitCashGiven(parsedSplitCash.toString())}
-                        className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[11px] font-bold hover:bg-slate-300 transition-colors cursor-pointer"
-                      >
-                        Exacto ({currency} {parsedSplitCash.toFixed(2)})
-                      </button>
-                      {[10, 20, 50, 100, 200].filter(a => a >= parsedSplitCash).slice(0, 3).map(amt => (
-                        <button
-                          key={`split-cash-${amt}`}
-                          type="button"
-                          onClick={() => setSplitCashGiven(amt.toString())}
-                          className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-bold hover:bg-emerald-200 transition-colors cursor-pointer"
-                        >
-                          {currency} {amt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-xs text-slate-500">{currency}</span>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={splitCashGiven}
-                      onChange={(e) => setSplitCashGiven(e.target.value)}
-                      placeholder={parsedSplitCash.toFixed(2)}
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-900 bg-white focus:outline-hidden focus:border-emerald-500"
-                    />
-                  </div>
-
-                  {parsedSplitCashGiven > parsedSplitCash && (
-                    <div className="p-2 rounded-xl bg-emerald-100/70 border border-emerald-300 text-xs font-bold text-emerald-950 flex items-center justify-between">
-                      <span>Cambio a devolver de la parte en efectivo:</span>
-                      <span className="font-black text-sm">{currency} {splitCashChange}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="hidden sm:block h-5 w-px bg-slate-200" />
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-semibold">
+              <span>Terminal POS</span>
+              <span>/</span>
+              <span className="text-slate-900 font-bold">Paso 2: Cobro y Cierre de Venta</span>
             </div>
-          )}
+          </div>
 
-          {/* Panel Específico según Método de Pago */}
-          {paymentType === 'cash' && (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
-              <label className="text-xs font-bold text-slate-700 block">
-                ¿Con cuánto paga el cliente? (Cálculo de cambio):
-              </label>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-black">
+              {totalQty} {totalQty === 1 ? 'artículo' : 'artículos'} ({posCart.length} {posCart.length === 1 ? 'producto' : 'productos'})
+            </span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden md:inline">
+              Paso 2 de 2
+            </span>
+          </div>
+        </div>
 
-              <div className="flex items-center gap-2">
-                <span className="font-black text-sm text-slate-500">{currency}</span>
-                <input
-                  type="number"
-                  step="any"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder={subtotal.toFixed(2)}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 font-black text-base text-slate-900 focus:outline-hidden focus:border-emerald-500"
-                />
+        {/* Cockpit Grid de Cobro: 2 Columnas en PC (lg:grid-cols-12), 1 Columna en Móvil */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+          
+          {/* ========================================================================= */}
+          {/* COLUMNA IZQUIERDA: Selector y Parámetros de Cobro (lg:col-span-7 xl:col-span-8) */}
+          {/* ========================================================================= */}
+          <div className="lg:col-span-7 xl:col-span-8 space-y-5">
+            {/* 1. Selector de Forma de Cobro */}
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-slate-900">
+                    Selecciona la forma de pago del cliente:
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Elige el medio con el que se efectuará el cobro en ventanilla
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100 px-2.5 py-1 rounded-lg">
+                  {paymentType === 'cash' ? 'Efectivo' :
+                   paymentType === 'qr' ? 'QR Simple' :
+                   paymentType === 'card' ? 'Tarjeta POS' :
+                   paymentType === 'credit' ? 'A Cuenta' : 'Combinado'}
+                </span>
               </div>
 
-              {/* Botones de Monto Rápido */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-bold text-slate-400 mr-1">Rápido:</span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3">
+                {/* Efectivo */}
                 <button
                   type="button"
-                  onClick={() => setCashReceived(subtotal.toString())}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                  onClick={() => setPaymentType('cash')}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
+                    paymentType === 'cash'
+                      ? 'border-emerald-500 bg-emerald-50/80 shadow-xs ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
                 >
-                  Exacto ({currency} {subtotal.toFixed(2)})
+                  <div className={`p-2 rounded-xl ${paymentType === 'cash' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    <Banknote className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-slate-900">Efectivo</p>
+                    <p className="text-[10px] text-slate-400">Billetes</p>
+                  </div>
                 </button>
-                {[10, 20, 50, 100, 200].filter(amount => amount >= subtotal).map((amt) => (
-                  <button
-                    key={`cash-fast-${amt}`}
-                    type="button"
-                    onClick={() => setCashReceived(amt.toString())}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition-colors"
-                  >
-                    {currency} {amt}
-                  </button>
-                ))}
-              </div>
 
-              {/* Resultado del Cambio / Vuelto */}
-              {parsedCash > 0 && (
-                <div className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-between ${
-                  parsedCash >= subtotal
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                    : 'bg-amber-50 border-amber-200 text-amber-900'
-                }`}>
-                  <span>{parsedCash >= subtotal ? 'Vuelto a entregar al cliente:' : 'Faltan para completar el pago:'}</span>
-                  <span className="text-sm font-black">
-                    {currency} {parsedCash >= subtotal ? changeToReturn : (subtotal - parsedCash).toFixed(2)}
-                  </span>
-                </div>
-              )}
+                {/* QR Digital */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('qr')}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
+                    paymentType === 'qr'
+                      ? 'border-cyan-500 bg-cyan-50/80 shadow-xs ring-2 ring-cyan-500/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${paymentType === 'qr' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-slate-900">QR Simple</p>
+                    <p className="text-[10px] text-slate-400">Transferencia</p>
+                  </div>
+                </button>
+
+                {/* Tarjeta POS */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('card')}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
+                    paymentType === 'card'
+                      ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${paymentType === 'card' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-slate-900">Tarjeta POS</p>
+                    <p className="text-[10px] text-slate-400">POS físico</p>
+                  </div>
+                </button>
+
+                {/* A Cuenta / Fiao */}
+                <button
+                  type="button"
+                  onClick={() => setPaymentType('credit')}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center ${
+                    paymentType === 'credit'
+                      ? 'border-indigo-500 bg-indigo-50/80 shadow-xs ring-2 ring-indigo-500/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${paymentType === 'credit' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-slate-900">A Cuenta</p>
+                    <p className="text-[10px] text-slate-400">Fiao Vecinal</p>
+                  </div>
+                </button>
+
+                {/* Pago Combinado (Nuevo Método) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentType('combined');
+                    // Si no hay valores asignados, sugerir 50% efectivo y resto en QR para agilizar
+                    if (!splitAmounts.cash && !splitAmounts.qr && !splitAmounts.card) {
+                      const half = roundMoney(subtotal / 2);
+                      const rem = roundMoney(subtotal - half);
+                      setSplitAmounts({ cash: half > 0 ? half.toString() : '', qr: rem > 0 ? rem.toString() : '', card: '' });
+                    }
+                  }}
+                  className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center col-span-2 sm:col-span-1 ${
+                    paymentType === 'combined'
+                      ? 'border-violet-500 bg-violet-50/80 shadow-xs ring-2 ring-violet-500/20'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${paymentType === 'combined' ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'}`}>
+                    <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+                  </div>
+                  <div>
+                    <p className="font-extrabold text-xs sm:text-sm text-slate-900">Combinado</p>
+                    <p className="text-[10px] text-violet-600 font-bold">Efe + QR + POS</p>
+                  </div>
+                </button>
+              </div>
             </div>
-          )}
 
-          {paymentType === 'qr' && (
-            <div className="bg-white p-5 rounded-3xl border border-slate-200 text-center space-y-3.5 shadow-xs">
-              <div className="space-y-1">
-                <p className="text-xs sm:text-sm font-extrabold text-slate-800">
-                  Muestra este código QR al cliente para que lo escanee desde su celular:
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Puedes hacer clic sobre el código para abrirlo a tamaño completo
-                </p>
-              </div>
+            {/* 2. Panel Interactivo según el Método Seleccionado */}
 
-              {qrImage ? (
-                <div className="flex flex-col items-center">
-                  <div
-                    onClick={() => setIsQrZoomOpen(true)}
-                    className="relative group cursor-pointer rounded-2xl overflow-hidden border-2 border-cyan-400 p-2 bg-white shadow-md hover:shadow-xl transition-all hover:scale-[1.01]"
-                    title="Haz clic para abrir el QR en tamaño grande"
-                  >
-                    <img
-                      src={qrImage}
-                      alt="Código QR de la tienda"
-                      className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-xl bg-white transition-transform"
-                    />
-                    <div className="absolute inset-0 bg-cyan-950/25 group-hover:bg-cyan-950/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-white font-black text-xs rounded-xl backdrop-blur-2xs">
-                      <div className="p-2.5 rounded-full bg-white/30 backdrop-blur-md shadow-lg">
-                        <Maximize2 className="w-6 h-6 text-white" />
+            {/* PAGO COMBINADO */}
+            {paymentType === 'combined' && (
+              <div className="bg-white p-4 sm:p-6 rounded-3xl border border-violet-200/90 space-y-4 shadow-xs animate-fadeIn">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-violet-100 text-violet-700">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-sm text-slate-900">Desglose de Pago Combinado</h4>
+                      <p className="text-xs text-slate-400">Distribuye el total a cobrar entre los métodos recibidos</p>
+                    </div>
+                  </div>
+
+                  {/* Acciones Rápidas de Distribución */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const half = roundMoney(subtotal / 2);
+                        const rem = roundMoney(subtotal - half);
+                        setSplitAmounts({ cash: half.toString(), qr: rem.toString(), card: '' });
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-800 text-xs font-bold border border-violet-200 transition-colors cursor-pointer"
+                      title="Dividir 50% en efectivo y 50% en QR"
+                    >
+                      50% Efec / 50% QR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rem = Math.max(0, roundMoney(subtotal - parsedSplitCash - parsedSplitCard));
+                        setSplitAmounts(prev => ({ ...prev, qr: rem > 0 ? rem.toString() : '' }));
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-xs font-bold border border-cyan-200 transition-colors cursor-pointer"
+                      title="Asignar el saldo restante a QR"
+                    >
+                      Restante a QR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rem = Math.max(0, roundMoney(subtotal - parsedSplitQr - parsedSplitCard));
+                        setSplitAmounts(prev => ({ ...prev, cash: rem > 0 ? rem.toString() : '' }));
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors cursor-pointer"
+                      title="Asignar el saldo restante a Efectivo"
+                    >
+                      Restante a Efectivo
+                    </button>
+                  </div>
+                </div>
+
+                {/* Grid de los 3 Métodos Combinables */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  {/* 1. Porción Efectivo */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${parsedSplitCash > 0 ? 'bg-emerald-50/50 border-emerald-300 ring-1 ring-emerald-500/20' : 'bg-slate-50 border-slate-200'}`}>
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-1.5 font-extrabold text-slate-800">
+                        <Banknote className="w-4 h-4 text-emerald-600" />
+                        <span>Efectivo</span>
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-bold">{currency}</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={splitAmounts.cash}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts(prev => ({ ...prev, cash: val }));
+                        }}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-base text-slate-900 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 2. Porción QR Simple */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${parsedSplitQr > 0 ? 'bg-cyan-50/50 border-cyan-300 ring-1 ring-cyan-500/20' : 'bg-slate-50 border-slate-200'}`}>
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-1.5 font-extrabold text-slate-800">
+                        <QrCode className="w-4 h-4 text-cyan-600" />
+                        <span>QR Simple</span>
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-bold">{currency}</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={splitAmounts.qr}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts(prev => ({ ...prev, qr: val }));
+                        }}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-base text-slate-900 focus:outline-hidden focus:border-cyan-500 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Porción Tarjeta POS */}
+                  <div className={`p-3.5 rounded-2xl border transition-all ${parsedSplitCard > 0 ? 'bg-amber-50/50 border-amber-300 ring-1 ring-amber-500/20' : 'bg-slate-50 border-slate-200'}`}>
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-1.5 font-extrabold text-slate-800">
+                        <CreditCard className="w-4 h-4 text-amber-600" />
+                        <span>Tarjeta POS</span>
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-bold">{currency}</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={splitAmounts.card}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSplitAmounts(prev => ({ ...prev, card: val }));
+                        }}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-base text-slate-900 focus:outline-hidden focus:border-amber-500 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Barra de Estado y Balance Matemático */}
+                <div className={`p-4 rounded-2xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  isSplitExact
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-2xs'
+                    : splitDifference > 0.009
+                      ? 'bg-amber-50 border-amber-300 text-amber-950'
+                      : 'bg-rose-50 border-rose-300 text-rose-950'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    {isSplitExact ? (
+                      <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <Check className="w-4 h-4 stroke-[3]" />
                       </div>
-                      <span className="bg-slate-900/80 px-3 py-1 rounded-full text-[11px] font-bold shadow-md">
-                        Toca para Ampliar
+                    ) : (
+                      <div className="w-7 h-7 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <AlertCircle className="w-4 h-4" />
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-extrabold text-xs sm:text-sm block">
+                        {isSplitExact 
+                          ? '¡Total cubierto al 100% con exactitud!'
+                          : splitDifference > 0.009
+                            ? `Faltan ${currency} ${splitDifference.toFixed(2)} para completar el total`
+                            : `El desglose excede el total por ${currency} ${Math.abs(splitDifference).toFixed(2)}`}
+                      </span>
+                      <span className="text-[11px] opacity-75">
+                        Ingresado: {currency} {totalSplitCovered.toFixed(2)} de {currency} {subtotal.toFixed(2)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsQrZoomOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 text-xs font-bold border border-cyan-200 shadow-2xs transition-colors cursor-pointer"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5 text-cyan-600" />
-                      <span>Ver QR en Grande</span>
-                    </button>
-                    <span className="text-xs text-slate-400">•</span>
-                    <span className="text-xs text-slate-600 font-bold">
-                      {storeConfig?.name || 'QR Oficial'}
+                  <div className="text-right sm:text-right shrink-0">
+                    <span className="font-mono text-sm sm:text-base font-black">
+                      {totalSplitCovered.toFixed(2)} / {subtotal.toFixed(2)} {currency}
                     </span>
                   </div>
                 </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-                  <p className="font-bold">Aún no has cargado tu imagen QR en la configuración de la tienda.</p>
-                  <p className="text-[11px] text-slate-500 mt-1">Puedes registrar la venta con QR y verificar el pago en tu aplicación bancaria.</p>
-                </div>
-              )}
-            </div>
-          )}
 
-          {paymentType === 'card' && (
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
-                <CreditCard className="w-6 h-6" />
-              </div>
-              <p className="text-xs font-bold text-slate-800">
-                Procesa el cobro de <strong className="text-emerald-700">{currency} {subtotal.toFixed(2)}</strong> en tu terminal inalámbrico POS.
-              </p>
-              <p className="text-[11px] text-slate-400">
-                Una vez impreso el comprobante del banco, presiona el botón inferior para sellar la venta.
-              </p>
-            </div>
-          )}
+                {/* Cálculo Opcional de Cambio en Efectivo si la porción en efectivo es > 0 */}
+                {parsedSplitCash > 0 && (
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-slate-700 block">
+                        ¿Con cuánto billete paga la parte de efectivo ({currency} {parsedSplitCash.toFixed(2)})?:
+                      </label>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setSplitCashGiven(parsedSplitCash.toString())}
+                          className="px-2.5 py-1 rounded-md bg-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-300 transition-colors cursor-pointer"
+                        >
+                          Exacto ({currency} {parsedSplitCash.toFixed(2)})
+                        </button>
+                        {[10, 20, 50, 100, 200].filter(a => a >= parsedSplitCash).slice(0, 4).map(amt => (
+                          <button
+                            key={`split-cash-${amt}`}
+                            type="button"
+                            onClick={() => setSplitCashGiven(amt.toString())}
+                            className="px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold hover:bg-emerald-200 transition-colors cursor-pointer"
+                          >
+                            {currency} {amt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-          {paymentType === 'credit' && (
-            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-200 space-y-3.5 shadow-xs animate-fadeIn">
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-xs font-bold text-slate-800 block">
-                  Selecciona al deudor a cuya cuenta se cargará:
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsQuickAddCustomerOpen(true)}
-                  className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center cursor-pointer transition-colors whitespace-nowrap shrink-0"
-                >
-                  <span>+ Nuevo Deudor</span>
-                </button>
-              </div>
-
-              {creditCustomers.length === 0 ? (
-                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-center space-y-2">
-                  <p className="text-xs text-slate-600 font-medium">Aún no tienes deudores registrados en tu libreta.</p>
-                  <button
-                    type="button"
-                    onClick={() => setIsQuickAddCustomerOpen(true)}
-                    className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
-                  >
-                    Registrar deudor ahora
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {/* Buscador interactivo de deudores */}
-                  {creditCustomers.length > 3 && (
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-sm text-slate-500">{currency}</span>
                       <input
-                        type="text"
-                        value={debtorSearchTerm}
-                        onChange={(e) => setDebtorSearchTerm(e.target.value)}
-                        placeholder="Buscar deudor por nombre o depto..."
-                        className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 font-medium"
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={splitCashGiven}
+                        onChange={(e) => setSplitCashGiven(e.target.value)}
+                        placeholder={parsedSplitCash.toFixed(2)}
+                        className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 font-bold text-sm text-slate-900 bg-white focus:outline-hidden focus:border-emerald-500 shadow-2xs"
                       />
                     </div>
-                  )}
 
-                  {/* Lista scrolleable de deudores adaptada al tamaño actual */}
-                  <div className="max-h-44 sm:max-h-48 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin border border-slate-100 rounded-2xl p-1.5 bg-slate-50/50">
-                    {filteredDebtors.map(c => {
-                      const isSelected = selectedCreditCustomerId === c.id;
-                      return (
-                        <div
-                          key={c.id}
-                          onClick={() => setSelectedCreditCustomerId(prev => prev === c.id ? '' : c.id)}
-                          title={isSelected ? 'Toca nuevamente para deseleccionar a este deudor' : 'Toca para seleccionar a este deudor'}
-                          className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2 select-none ${
-                            isSelected
-                              ? 'bg-indigo-50 border-indigo-500 shadow-2xs ring-1 ring-indigo-500/30'
-                              : 'bg-white border-slate-200/80 hover:bg-slate-50 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border ${
-                                isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'
-                              }`}>
-                                {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                              </span>
-                              <p className={`font-bold text-xs truncate ${isSelected ? 'text-indigo-950' : 'text-slate-800'}`}>
-                                {c.name}
-                              </p>
-                              {c.apartment && (
-                                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 shrink-0">
-                                  {c.apartment}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0">
-                            <span className={`text-xs font-black block ${
-                              (c.balance || 0) > 0 ? 'text-amber-700' : 'text-slate-500'
-                            }`}>
-                              {currency} {Number(c.balance || 0).toFixed(2)}
-                            </span>
-                            <span className="text-[9px] text-slate-400 block -mt-0.5">
-                              {(c.balance || 0) > 0 ? 'Deuda actual' : 'Sin deuda'}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {filteredDebtors.length === 0 && (
-                      <div className="p-3 text-center text-xs text-slate-400">
-                        No se encontró ningún deudor con "{debtorSearchTerm}"
+                    {parsedSplitCashGiven > parsedSplitCash && (
+                      <div className="p-3 rounded-xl bg-emerald-100/70 border border-emerald-300 text-xs font-bold text-emerald-950 flex items-center justify-between">
+                        <span>Cambio a devolver de la parte en efectivo:</span>
+                        <span className="font-black text-base">{currency} {splitCashChange}</span>
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+            )}
 
-                  {/* Detalle del Deudor Seleccionado */}
-                  {selectedCreditCustomerId && (() => {
-                    const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
-                    if (!cust) return null;
-                    const newBal = (cust.balance || 0) + subtotal;
-                    const exceedsLimit = cust.creditLimit > 0 && newBal > cust.creditLimit;
+            {/* PAGO EN EFECTIVO */}
+            {paymentType === 'cash' && (
+              <div className="bg-white p-5 rounded-3xl border border-slate-200 space-y-4 shadow-xs animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-extrabold text-slate-900 block">
+                    ¿Con cuánto paga el cliente? (Cálculo de cambio):
+                  </label>
+                  <span className="text-xs text-slate-400 font-semibold">Total: {currency} {subtotal.toFixed(2)}</span>
+                </div>
 
-                    return (
-                      <div className={`p-3 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/70 border-indigo-100'}`}>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Deudor seleccionado:</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-indigo-950">{cust.name} {cust.apartment ? `(${cust.apartment})` : ''}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCreditCustomerId('');
-                              }}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-200/80 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-[10px] font-bold transition-colors cursor-pointer"
-                              title="Deseleccionar / Quitar deudor"
-                            >
-                              <X className="w-3 h-3" />
-                              <span>Quitar</span>
-                            </button>
-                          </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-black text-base text-slate-500">{currency}</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={cashReceived}
+                    onChange={(e) => setCashReceived(e.target.value)}
+                    placeholder={subtotal.toFixed(2)}
+                    className="flex-1 px-4 py-3 rounded-2xl border border-slate-300 font-black text-lg text-slate-900 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                  />
+                </div>
+
+                {/* Botones de Monto Rápido */}
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-xs font-bold text-slate-400 mr-1">Rápido:</span>
+                  <button
+                    type="button"
+                    onClick={() => setCashReceived(subtotal.toString())}
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                  >
+                    Exacto ({currency} {subtotal.toFixed(2)})
+                  </button>
+                  {[10, 20, 50, 100, 200].filter(amount => amount >= subtotal).map((amt) => (
+                    <button
+                      key={`cash-fast-${amt}`}
+                      type="button"
+                      onClick={() => setCashReceived(amt.toString())}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer transition-colors"
+                    >
+                      {currency} {amt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Resultado del Cambio / Vuelto */}
+                {parsedCash > 0 && (
+                  <div className={`p-4 rounded-2xl border text-xs sm:text-sm font-bold flex items-center justify-between ${
+                    parsedCash >= subtotal
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-900 shadow-2xs'
+                      : 'bg-amber-50 border-amber-200 text-amber-900'
+                  }`}>
+                    <span>{parsedCash >= subtotal ? 'Vuelto a entregar al cliente:' : 'Faltan para completar el pago:'}</span>
+                    <span className="text-base sm:text-lg font-black">
+                      {currency} {parsedCash >= subtotal ? changeToReturn : (subtotal - parsedCash).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PAGO QR SIMPLE */}
+            {paymentType === 'qr' && (
+              <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 text-center space-y-4 shadow-xs animate-fadeIn">
+                <div className="space-y-1">
+                  <p className="text-sm font-black text-slate-900">
+                    Muestra este código QR al cliente para que lo escanee desde su celular:
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    Puedes hacer clic sobre el código para abrirlo a tamaño completo
+                  </p>
+                </div>
+
+                {qrImage ? (
+                  <div className="flex flex-col items-center">
+                    <div
+                      onClick={() => setIsQrZoomOpen(true)}
+                      className="relative group cursor-pointer rounded-3xl overflow-hidden border-2 border-cyan-400 p-3 bg-white shadow-md hover:shadow-xl transition-all hover:scale-[1.01]"
+                      title="Haz clic para abrir el QR en tamaño grande"
+                    >
+                      <img
+                        src={qrImage}
+                        alt="Código QR de la tienda"
+                        className="w-56 h-56 sm:w-64 sm:h-64 object-contain rounded-2xl bg-white transition-transform"
+                      />
+                      <div className="absolute inset-0 bg-cyan-950/25 group-hover:bg-cyan-950/45 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 text-white font-black text-xs rounded-2xl backdrop-blur-2xs">
+                        <div className="p-3 rounded-full bg-white/30 backdrop-blur-md shadow-lg">
+                          <Maximize2 className="w-6 h-6 text-white" />
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">Saldo actual del deudor:</span>
-                          <span className="font-bold text-slate-800">{currency} {(cust.balance || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-600 font-medium">+ Esta compra a cuenta:</span>
-                          <span className="font-bold text-indigo-700">+{currency} {subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="border-t border-slate-200/80 pt-1.5 flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-800">Nuevo saldo acumulado:</span>
-                          <span className="font-black text-rose-600 text-sm">{currency} {newBal.toFixed(2)}</span>
-                        </div>
-                        {exceedsLimit && (
-                          <p className="text-[11px] font-bold text-rose-600 pt-1">
-                            ⚠️ Aviso: Esta compra superará el límite de crédito fijado ({currency} {cust.creditLimit.toFixed(2)}).
-                          </p>
-                        )}
+                        <span className="bg-slate-900/80 px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                          Toca para Ampliar
+                        </span>
                       </div>
-                    );
-                  })()}
+                    </div>
+
+                    <div className="mt-3.5 flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsQrZoomOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 text-xs font-bold border border-cyan-200 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <Maximize2 className="w-4 h-4 text-cyan-600" />
+                        <span>Ver QR en Grande</span>
+                      </button>
+                      <span className="text-xs text-slate-300">•</span>
+                      <span className="text-xs text-slate-600 font-bold">
+                        {storeConfig?.name || 'QR Oficial'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs max-w-md mx-auto text-left">
+                    <p className="font-bold">Aún no has cargado tu imagen QR en la configuración de la tienda.</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Puedes registrar la venta con QR y verificar el pago en tu aplicación bancaria.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PAGO TARJETA POS */}
+            {paymentType === 'card' && (
+              <div className="bg-white p-6 rounded-3xl border border-slate-200 text-center space-y-3 shadow-xs animate-fadeIn">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto shadow-2xs">
+                  <CreditCard className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-black text-slate-900">Cobro por Terminal POS Físico</h4>
+                  <p className="text-xs text-slate-600">
+                    Procesa el cobro de <strong className="text-emerald-700 font-black">{currency} {subtotal.toFixed(2)}</strong> en tu equipo POS inalámbrico del banco.
+                  </p>
+                </div>
+                <p className="text-[11px] text-slate-400 max-w-md mx-auto">
+                  Una vez aprobado el comprobante de la tarjeta (débito/crédito), confirma la venta para registrarla en el sistema y descontar el inventario.
+                </p>
+              </div>
+            )}
+
+            {/* PAGO A CUENTA / FIAO VECINAL */}
+            {paymentType === 'credit' && (
+              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-200 space-y-3.5 shadow-xs animate-fadeIn">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-slate-800 block">
+                      Selecciona al deudor a cuya libreta se cargará la compra:
+                    </label>
+                    <p className="text-[11px] text-slate-400">El saldo se sumará a su cuenta corriente vecinal</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddCustomerOpen(true)}
+                    className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center cursor-pointer transition-colors whitespace-nowrap shrink-0 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100"
+                  >
+                    <span>+ Nuevo Deudor</span>
+                  </button>
+                </div>
+
+                {creditCustomers.length === 0 ? (
+                  <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-center space-y-2.5">
+                    <p className="text-xs text-slate-600 font-medium">Aún no tienes deudores registrados en tu libreta.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickAddCustomerOpen(true)}
+                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer shadow-xs transition-colors"
+                    >
+                      Registrar deudor ahora
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Buscador interactivo de deudores */}
+                    {creditCustomers.length > 2 && (
+                      <div className="relative">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={debtorSearchTerm}
+                          onChange={(e) => setDebtorSearchTerm(e.target.value)}
+                          placeholder="Buscar deudor por nombre o departamento/casa..."
+                          className="w-full pl-9 pr-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-500 font-medium shadow-2xs"
+                        />
+                      </div>
+                    )}
+
+                    {/* Lista scrolleable de deudores */}
+                    <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin border border-slate-100 rounded-2xl p-2 bg-slate-50/50">
+                      {filteredDebtors.map(c => {
+                        const isSelected = selectedCreditCustomerId === c.id;
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => setSelectedCreditCustomerId(prev => prev === c.id ? '' : c.id)}
+                            title={isSelected ? 'Toca nuevamente para deseleccionar a este deudor' : 'Toca para seleccionar a este deudor'}
+                            className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between gap-2 select-none ${
+                              isSelected
+                                ? 'bg-indigo-50 border-indigo-500 shadow-2xs ring-1 ring-indigo-500/30'
+                                : 'bg-white border-slate-200/80 hover:bg-slate-50 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border ${
+                                  isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300 bg-white'
+                                }`}>
+                                  {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                </span>
+                                <p className={`font-bold text-xs truncate ${isSelected ? 'text-indigo-950 font-black' : 'text-slate-800'}`}>
+                                  {c.name}
+                                </p>
+                                {c.apartment && (
+                                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
+                                    {c.apartment}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className={`text-xs font-black block ${
+                                (c.balance || 0) > 0 ? 'text-amber-700' : 'text-slate-500'
+                              }`}>
+                                {currency} {Number(c.balance || 0).toFixed(2)}
+                              </span>
+                              <span className="text-[9px] text-slate-400 block -mt-0.5">
+                                {(c.balance || 0) > 0 ? 'Deuda actual' : 'Sin deuda'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {filteredDebtors.length === 0 && (
+                        <div className="p-3 text-center text-xs text-slate-400">
+                          No se encontró ningún deudor con "{debtorSearchTerm}"
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Detalle del Deudor Seleccionado */}
+                    {selectedCreditCustomerId && (() => {
+                      const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
+                      if (!cust) return null;
+                      const newBal = (cust.balance || 0) + subtotal;
+                      const exceedsLimit = cust.creditLimit > 0 && newBal > cust.creditLimit;
+
+                      return (
+                        <div className={`p-3.5 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/70 border-indigo-100'}`}>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">Deudor seleccionado:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-extrabold text-indigo-950">{cust.name} {cust.apartment ? `(${cust.apartment})` : ''}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCreditCustomerId('');
+                                }}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-200/80 hover:bg-rose-100 text-slate-600 hover:text-rose-700 text-[10px] font-bold transition-colors cursor-pointer"
+                                title="Deseleccionar / Quitar deudor"
+                              >
+                                <X className="w-3 h-3" />
+                                <span>Quitar</span>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">Saldo actual del deudor:</span>
+                            <span className="font-bold text-slate-800">{currency} {(cust.balance || 0).toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">+ Esta compra a cuenta:</span>
+                            <span className="font-bold text-indigo-700">+{currency} {subtotal.toFixed(2)}</span>
+                          </div>
+                          <div className="border-t border-slate-200/80 pt-1.5 flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800">Nuevo saldo acumulado:</span>
+                            <span className="font-black text-rose-600 text-sm">{currency} {newBal.toFixed(2)}</span>
+                          </div>
+                          {exceedsLimit && (
+                            <p className="text-[11px] font-bold text-rose-600 pt-1">
+                              ⚠️ Aviso: Esta compra superará el límite de crédito fijado ({currency} {cust.creditLimit.toFixed(2)}).
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* COLUMNA DERECHA: Cockpit de Resumen, Ticket y Confirmación (lg:col-span-5 xl:col-span-4) */}
+          {/* ========================================================================= */}
+          <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-4 space-y-4">
+            {/* Tarjeta Oscura de Total a Cobrar */}
+            <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-lg border border-slate-800 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                <div>
+                  <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">
+                    Total a Cobrar
+                  </span>
+                  <div className="flex items-baseline gap-1 mt-0.5">
+                    <span className="text-sm font-black text-emerald-400">{currency}</span>
+                    <span className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">
+                      {subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Modalidad</span>
+                  <span className="inline-block mt-0.5 px-2.5 py-1 rounded-xl text-xs font-black bg-slate-800 text-white border border-slate-700 shadow-2xs">
+                    {paymentType === 'cash' && 'Efectivo'}
+                    {paymentType === 'qr' && 'QR Simple'}
+                    {paymentType === 'card' && 'Tarjeta POS'}
+                    {paymentType === 'credit' && 'A Cuenta'}
+                    {paymentType === 'combined' && 'Combinado'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Resumen dinámico según estado del método */}
+              {paymentType === 'cash' && (
+                <div className="text-xs space-y-1.5 pt-0.5 text-slate-300">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Paga con billete:</span>
+                    <span className="font-bold text-white">
+                      {parsedCash > 0 ? `${currency} ${parsedCash.toFixed(2)}` : 'Exacto'}
+                    </span>
+                  </div>
+                  {parsedCash >= subtotal && (
+                    <div className="flex justify-between text-emerald-400 font-black">
+                      <span>Vuelto a entregar:</span>
+                      <span>{currency} {changeToReturn}</span>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
-        </div>
 
-        {/* Botón de Confirmación Definitiva */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={handleFinishSale}
-            disabled={paymentType === 'combined' && !isSplitExact}
-            className={`w-full py-4 rounded-2xl font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
-              paymentType === 'combined' && !isSplitExact
-                ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
-            }`}
-          >
-            <Check className="w-5 h-5" />
-            <span>
-              {paymentType === 'combined' && !isSplitExact
-                ? (splitDifference > 0.009 
-                    ? `Faltan ${currency} ${splitDifference.toFixed(2)} por cubrir` 
-                    : `Monto excede por ${currency} ${Math.abs(splitDifference).toFixed(2)}`)
-                : `Confirmar y Finalizar Venta (${currency} ${subtotal.toFixed(2)})`}
-            </span>
-          </button>
+              {paymentType === 'combined' && (
+                <div className="text-xs space-y-1.5 pt-0.5 text-slate-300">
+                  <div className="flex justify-between text-[11px] text-slate-400 font-bold uppercase tracking-wider pb-0.5 border-b border-slate-800">
+                    <span>Desglose</span>
+                    <span>Monto</span>
+                  </div>
+                  {parsedSplitCash > 0 && (
+                    <div className="flex justify-between text-emerald-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Banknote className="w-3.5 h-3.5" /> Efectivo:
+                      </span>
+                      <span>{currency} {parsedSplitCash.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {parsedSplitQr > 0 && (
+                    <div className="flex justify-between text-cyan-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <QrCode className="w-3.5 h-3.5" /> QR Simple:
+                      </span>
+                      <span>{currency} {parsedSplitQr.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {parsedSplitCard > 0 && (
+                    <div className="flex justify-between text-amber-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <CreditCard className="w-3.5 h-3.5" /> Tarjeta POS:
+                      </span>
+                      <span>{currency} {parsedSplitCard.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-slate-800 pt-1.5 flex justify-between font-black text-xs">
+                    <span>Total cubierto:</span>
+                    <span className={isSplitExact ? 'text-emerald-400' : 'text-amber-400'}>
+                      {currency} {totalSplitCovered.toFixed(2)} / {subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {paymentType === 'credit' && selectedCreditCustomerId && (() => {
+                const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
+                if (!cust) return null;
+                return (
+                  <div className="text-xs space-y-1 pt-0.5 text-slate-300">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Cargar a:</span>
+                      <span className="font-bold text-white truncate max-w-[150px]">{cust.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Saldo posterior:</span>
+                      <span className="font-black text-rose-400">
+                        {currency} {((cust.balance || 0) + subtotal).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Mini Lista Resumen de Productos del Ticket */}
+            <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                <span className="flex items-center gap-1.5">
+                  <Receipt className="w-4 h-4 text-slate-400" />
+                  <span>Artículos en este Ticket ({totalQty})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStep('catalog')}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                >
+                  Editar
+                </button>
+              </div>
+
+              <div className="max-h-52 overflow-y-auto space-y-2 pr-1 scrollbar-thin divide-y divide-slate-100">
+                {posCart.map((item) => (
+                  <div key={item.id} className="pt-2 first:pt-0 flex items-center justify-between gap-2 text-xs">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-extrabold text-slate-800 truncate">{item.name}</p>
+                      <p className="text-[11px] text-slate-400">
+                        {item.quantity} x {currency} {item.price.toFixed(2)}
+                      </p>
+                    </div>
+                    <span className="font-black text-slate-900 shrink-0">
+                      {currency} {(item.price * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Botón Principal de Confirmación Definitiva */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={handleFinishSale}
+                disabled={paymentType === 'combined' && !isSplitExact}
+                className={`w-full py-4 px-4 rounded-2xl font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+                  paymentType === 'combined' && !isSplitExact
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:shadow-xl'
+                }`}
+              >
+                <Check className="w-5 h-5 stroke-[2.5]" />
+                <span className="text-center">
+                  {paymentType === 'combined' && !isSplitExact
+                    ? (splitDifference > 0.009 
+                        ? `Faltan ${currency} ${splitDifference.toFixed(2)} por cubrir` 
+                        : `Monto excede por ${currency} ${Math.abs(splitDifference).toFixed(2)}`)
+                    : `Confirmar y Finalizar Venta (${currency} ${subtotal.toFixed(2)})`}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep('catalog')}
+                className="w-full py-2.5 rounded-xl text-xs font-extrabold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer text-center"
+              >
+                ← Volver al Catálogo y seguir agregando productos
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* MODAL LIGHTBOX: QR AMPLIADO A TAMAÑO COMPLETO */}
