@@ -15,10 +15,13 @@ import {
   DollarSign,
   QrCode,
   Banknote,
-  ArrowUpRight
+  ArrowUpRight,
+  CreditCard,
+  Layers
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { escapeHtml } from '../../utils/formatters';
+import { calculateSplitPortions, roundMoney } from '../../utils/paymentUtils';
 
 export const WeeklySummaryModal = ({ isOpen, onClose }) => {
   const { orders = [], storeConfig, showToast } = useStore();
@@ -75,6 +78,9 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
     let totalRevenue = 0;
     let cashRevenue = 0;
     let qrRevenue = 0;
+    let cardRevenue = 0;
+    let combinedCount = 0;
+    let combinedRevenue = 0;
     const productCounts = {};
 
     // Agrupación por día de la semana
@@ -92,11 +98,15 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
       const total = Number(o.total) || 0;
       totalRevenue += total;
 
-      const method = (o.paymentMethod || o.payment_method || 'cash').toLowerCase();
-      if (method === 'qr' || method === 'transfer') {
-        qrRevenue += total;
-      } else {
-        cashRevenue += total;
+      const p = calculateSplitPortions(o);
+      cashRevenue += p.cash;
+      qrRevenue += p.qr;
+      cardRevenue += p.card;
+
+      const method = String(o.paymentMethod || o.payment_method || '').toLowerCase();
+      if (method === 'combined' || p.isSplit) {
+        combinedCount++;
+        combinedRevenue += total;
       }
 
       // Conteo de productos
@@ -119,6 +129,12 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
       }
     });
 
+    cashRevenue = roundMoney(cashRevenue);
+    qrRevenue = roundMoney(qrRevenue);
+    cardRevenue = roundMoney(cardRevenue);
+    combinedRevenue = roundMoney(combinedRevenue);
+    totalRevenue = roundMoney(totalRevenue);
+
     // Producto estrella más vendido
     const sortedProducts = Object.entries(productCounts)
       .map(([name, qty]) => ({ name, qty }))
@@ -139,6 +155,9 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
       totalRevenue,
       cashRevenue,
       qrRevenue,
+      cardRevenue,
+      combinedCount,
+      combinedRevenue,
       orderCount: validOrders.length,
       avgTicket,
       topProduct,
@@ -155,6 +174,7 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
   const whatsappReportMessage = useMemo(() => {
     const cashPct = weeklyStats.totalRevenue > 0 ? Math.round((weeklyStats.cashRevenue / weeklyStats.totalRevenue) * 100) : 0;
     const qrPct = weeklyStats.totalRevenue > 0 ? Math.round((weeklyStats.qrRevenue / weeklyStats.totalRevenue) * 100) : 0;
+    const cardPct = weeklyStats.totalRevenue > 0 ? Math.round((weeklyStats.cardRevenue / weeklyStats.totalRevenue) * 100) : 0;
 
     return `📊 *RESUMEN SEMANAL DE VENTAS*
 🏪 *${storeName.toUpperCase()}*
@@ -162,7 +182,7 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
 
 💰 *Facturación Total:* ${currency} ${weeklyStats.totalRevenue.toFixed(2)}
 💵 *Efectivo:* ${currency} ${weeklyStats.cashRevenue.toFixed(2)} (${cashPct}%)
-📱 *QR / Digital:* ${currency} ${weeklyStats.qrRevenue.toFixed(2)} (${qrPct}%)
+📱 *QR / Digital:* ${currency} ${weeklyStats.qrRevenue.toFixed(2)} (${qrPct}%)${weeklyStats.cardRevenue > 0 ? `\n💳 *Tarjetas POS:* ${currency} ${weeklyStats.cardRevenue.toFixed(2)} (${cardPct}%)` : ''}${weeklyStats.combinedCount > 0 ? `\n🔀 *Pagos Combinados:* ${weeklyStats.combinedCount} compras (${currency} ${weeklyStats.combinedRevenue.toFixed(2)})` : ''}
 
 📦 *Pedidos Atendidos:* ${weeklyStats.orderCount} compras
 🎯 *Ticket Promedio:* ${currency} ${weeklyStats.avgTicket.toFixed(2)} por compra
@@ -231,6 +251,18 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
             <span>Ventas por QR / Banco:</span>
             <span>${currency} ${weeklyStats.qrRevenue.toFixed(2)}</span>
           </div>
+          ${weeklyStats.cardRevenue > 0 ? `
+          <div class="row">
+            <span>Ventas Tarjetas POS:</span>
+            <span>${currency} ${weeklyStats.cardRevenue.toFixed(2)}</span>
+          </div>
+          ` : ''}
+          ${weeklyStats.combinedCount > 0 ? `
+          <div class="row">
+            <span>Pagos Combinados:</span>
+            <span>${weeklyStats.combinedCount} (${currency} ${weeklyStats.combinedRevenue.toFixed(2)})</span>
+          </div>
+          ` : ''}
           <div class="divider"></div>
           <div class="row">
             <span>Total Pedidos:</span>
@@ -317,8 +349,8 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
               </p>
             </div>
 
-            {/* Desglose Efectivo vs QR */}
-            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-white/20">
+            {/* Desglose Efectivo vs QR vs Tarjetas */}
+            <div className={`grid ${weeklyStats.cardRevenue > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-2.5 pt-3 border-t border-white/20`}>
               <div className="bg-black/15 p-2.5 rounded-2xl">
                 <div className="flex items-center gap-1.5 text-xs text-emerald-200">
                   <Banknote className="w-3.5 h-3.5 text-amber-300" />
@@ -338,7 +370,32 @@ export const WeeklySummaryModal = ({ isOpen, onClose }) => {
                   {currency} {weeklyStats.qrRevenue.toFixed(2)}
                 </div>
               </div>
+
+              {weeklyStats.cardRevenue > 0 && (
+                <div className="bg-black/15 p-2.5 rounded-2xl">
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-200">
+                    <CreditCard className="w-3.5 h-3.5 text-purple-300" />
+                    <span>Tarjeta POS</span>
+                  </div>
+                  <div className="font-mono text-sm sm:text-base font-black text-white mt-0.5">
+                    {currency} {weeklyStats.cardRevenue.toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Sub-badge informativo de cobros combinados */}
+            {weeklyStats.combinedCount > 0 && (
+              <div className="bg-black/20 backdrop-blur-xs px-3.5 py-2 rounded-2xl flex items-center justify-between text-xs text-emerald-100 border border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span>Pagos Combinados integrados:</span>
+                </div>
+                <span className="font-mono font-black text-white bg-white/10 px-2 py-0.5 rounded-lg text-[11px]">
+                  {weeklyStats.combinedCount} compras ({currency} {weeklyStats.combinedRevenue.toFixed(2)})
+                </span>
+              </div>
+            )}
           </div>
 
           {/* 2. Producto Estrella & Día Más Fuerte */}

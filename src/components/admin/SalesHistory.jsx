@@ -22,10 +22,17 @@ import {
   User,
   SlidersHorizontal,
   MessageCircle,
-  Lock
+  Lock,
+  Layers
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
+import { 
+  roundMoney, 
+  calculateSplitPortions, 
+  formatPaymentBreakdownText, 
+  PAYMENT_METHODS 
+} from '../../utils/paymentUtils';
 import { ExportSalesReportModal } from './ExportSalesReportModal';
 import { CashRegisterModal } from './CashRegisterModal';
 import { WeeklySummaryModal } from './WeeklySummaryModal';
@@ -196,30 +203,58 @@ export const SalesHistory = () => {
       });
   }, [orders, selectedPeriod, selectedChannel, searchTerm]);
 
-  // Totales de las tarjetas basados en baseSales (para que los valores en las 4 tarjetas permanezcan visibles y reales)
+  // Totales de las tarjetas basados en baseSales
   const totalRevenue = useMemo(() => {
     return baseSales.reduce((acc, order) => acc + (Number(order.total) || 0), 0);
   }, [baseSales]);
 
-  const getOrderPaymentMethod = (o) => o?.paymentMethod || o?.payment_method || 'cash';
+  const getOrderPaymentMethod = (o) => {
+    const raw = typeof o?.paymentMethod === 'object' ? o?.paymentMethod?.method : o?.paymentMethod;
+    const m = String(raw || o?.payment_method || 'cash').toLowerCase();
+    if (m === 'combined' || m === 'split' || o?.splitPayment || o?.split_payment) return 'combined';
+    if (m === 'qr' || m === 'transfer') return 'qr';
+    if (m === 'card' || m === 'pos') return 'card';
+    if (m === 'credit' || m === 'fiao' || m === 'cuenta') return 'credit';
+    return 'cash';
+  };
 
-  const cashTotal = useMemo(() => {
-    return baseSales
-      .filter(o => getOrderPaymentMethod(o) === 'cash')
-      .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+  const paymentTotals = useMemo(() => {
+    let cash = 0;
+    let qr = 0;
+    let card = 0;
+    let credit = 0;
+    let combined = 0;
+    let combinedCount = 0;
+
+    baseSales.forEach(order => {
+      const p = calculateSplitPortions(order);
+      cash += p.cash;
+      qr += p.qr;
+      card += p.card;
+      credit += p.credit;
+
+      const m = getOrderPaymentMethod(order);
+      if (m === 'combined') {
+        combined += (Number(order.total) || 0);
+        combinedCount++;
+      }
+    });
+
+    return {
+      cash: roundMoney(cash),
+      qr: roundMoney(qr),
+      card: roundMoney(card),
+      credit: roundMoney(credit),
+      combined: roundMoney(combined),
+      combinedCount
+    };
   }, [baseSales]);
 
-  const qrTotal = useMemo(() => {
-    return baseSales
-      .filter(o => getOrderPaymentMethod(o) === 'qr')
-      .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-  }, [baseSales]);
-
-  const cardTotal = useMemo(() => {
-    return baseSales
-      .filter(o => getOrderPaymentMethod(o) === 'card')
-      .reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-  }, [baseSales]);
+  const cashTotal = paymentTotals.cash;
+  const qrTotal = paymentTotals.qr;
+  const cardTotal = paymentTotals.card;
+  const combinedTotal = paymentTotals.combined;
+  const combinedOrdersCount = paymentTotals.combinedCount;
 
   // 2. Ventas filtradas específicamente por el Método de Pago seleccionado (para la tabla/lista de ventas)
   const filteredSales = useMemo(() => {
@@ -242,6 +277,8 @@ export const SalesHistory = () => {
         return 'QR Simple';
       case 'card':
         return 'Tarjeta POS';
+      case 'combined':
+        return 'Pago Combinado';
       default:
         return 'Recaudación Total';
     }
@@ -378,8 +415,26 @@ export const SalesHistory = () => {
           </div>
           <div class="row" style="font-size:11px;">
             <span>Método de Cobro:</span>
-            <span class="bold">${paymentLabel}</span>
+            <span class="bold">${
+              getOrderPaymentMethod(sale) === 'combined'
+                ? 'PAGO COMBINADO'
+                : sale.paymentMethod === 'qr' ? 'QR SIMPLE (DIGITAL)' :
+                  sale.paymentMethod === 'card' ? 'TARJETA POS' : 'EFECTIVO'
+            }</span>
           </div>
+          ${(() => {
+            if (getOrderPaymentMethod(sale) === 'combined') {
+              const sp = calculateSplitPortions(sale);
+              const splitObj = sale.splitPayment || sale.split_payment;
+              let html = '';
+              if (sp.cash > 0) html += `<div class="row" style="font-size:11px;"><span>• Efectivo:</span><span>${currency} ${sp.cash.toFixed(2)}</span></div>`;
+              if (sp.qr > 0) html += `<div class="row" style="font-size:11px;"><span>• QR Simple:</span><span>${currency} ${sp.qr.toFixed(2)}</span></div>`;
+              if (sp.card > 0) html += `<div class="row" style="font-size:11px;"><span>• Tarjeta POS:</span><span>${currency} ${sp.card.toFixed(2)}</span></div>`;
+              if (Number(splitObj?.change) > 0) html += `<div class="row bold" style="font-size:11px;"><span>Cambio Efectivo:</span><span>${currency} ${Number(splitObj.change).toFixed(2)}</span></div>`;
+              return html;
+            }
+            return '';
+          })()}
 
           <div class="divider"></div>
           <div class="center" style="margin-top: 16px;">
@@ -467,7 +522,7 @@ export const SalesHistory = () => {
             <span>Exportar Reporte</span>
             {isSubscriptionActive && selectedPaymentMethod !== 'all' && (
               <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-emerald-500 text-slate-950 uppercase tracking-wider">
-                {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : 'POS'}
+                {selectedPaymentMethod === 'cash' ? 'Efectivo' : selectedPaymentMethod === 'qr' ? 'QR' : selectedPaymentMethod === 'card' ? 'POS' : 'Combinado'}
               </span>
             )}
           </button>
@@ -480,7 +535,7 @@ export const SalesHistory = () => {
       </div>
 
       {/* 2. Tarjetas de Resumen KPI (Interactivas: Clic para filtrar/desfiltrar por Método de Pago) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Recaudado (Muestra todas las ventas) */}
         <button
           type="button"
@@ -597,7 +652,7 @@ export const SalesHistory = () => {
             {currency} {qrTotal.toFixed(2)}
           </p>
           <div className="text-[11px] text-cyan-700 mt-0.5 font-medium flex items-center justify-between">
-            <span>Transferencias electrónicas</span>
+            <span>Transferencias digitales</span>
             <span className="text-[10px] font-bold">
               {selectedPaymentMethod === 'qr' ? '✕ Quitar filtro' : 'Filtrar'}
             </span>
@@ -636,9 +691,48 @@ export const SalesHistory = () => {
             {currency} {cardTotal.toFixed(2)}
           </p>
           <div className="text-[11px] text-amber-700 mt-0.5 font-medium flex items-center justify-between">
-            <span>Ticket prom: {currency} {averageTicket.toFixed(2)}</span>
+            <span>Terminal POS</span>
             <span className="text-[10px] font-bold">
               {selectedPaymentMethod === 'card' ? '✕ Quitar filtro' : 'Filtrar'}
+            </span>
+          </div>
+        </button>
+
+        {/* Pago Combinado (Nuevo Método) */}
+        <button
+          type="button"
+          onClick={() => handleTogglePaymentMethod('combined')}
+          className={`sales-kpi-card p-4 rounded-2xl border-2 text-left transition-none cursor-pointer relative group ${
+            selectedPaymentMethod === 'combined'
+              ? 'bg-violet-100 border-violet-600 shadow-sm'
+              : 'bg-violet-50/40 border-violet-200/80 hover:border-violet-300'
+          }`}
+          title={selectedPaymentMethod === 'combined' ? 'Clic para quitar filtro de Pago Combinado' : 'Clic para filtrar solo ventas con Pago Combinado'}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-xs font-semibold ${selectedPaymentMethod === 'combined' ? 'text-violet-950 font-bold' : 'text-violet-800'}`}>
+              Combinado 🔀
+            </span>
+            <div className="flex items-center gap-1.5">
+              {selectedPaymentMethod === 'combined' && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-violet-600 text-white shadow-2xs">
+                  Filtrando
+                </span>
+              )}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold ${
+                selectedPaymentMethod === 'combined' ? 'bg-violet-600 text-white' : 'bg-violet-100/80 text-violet-700'
+              }`}>
+                <Layers className="w-4 h-4" />
+              </div>
+            </div>
+          </div>
+          <p className="text-xl sm:text-2xl font-black text-violet-950 mt-1">
+            {currency} {combinedTotal.toFixed(2)}
+          </p>
+          <div className="text-[11px] text-violet-700 mt-0.5 font-medium flex items-center justify-between">
+            <span>Efe + QR + POS ({combinedOrdersCount})</span>
+            <span className="text-[10px] font-bold">
+              {selectedPaymentMethod === 'combined' ? '✕ Quitar filtro' : 'Filtrar'}
             </span>
           </div>
         </button>
@@ -725,7 +819,8 @@ export const SalesHistory = () => {
                 { id: 'all', label: 'Todos' },
                 { id: 'cash', label: 'Efectivo' },
                 { id: 'qr', label: 'QR' },
-                { id: 'card', label: 'Tarjeta' }
+                { id: 'card', label: 'Tarjeta' },
+                { id: 'combined', label: 'Combinado' }
               ].map(m => (
                 <button
                   key={m.id}
@@ -938,22 +1033,43 @@ export const SalesHistory = () => {
 
                       {/* Método de Cobro */}
                       <td className="py-3 px-4">
-                        {sale.paymentMethod === 'qr' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-800 font-extrabold text-[11px]">
-                            <QrCode className="w-3 h-3 text-cyan-600" />
-                            <span>QR Simple</span>
-                          </span>
-                        ) : sale.paymentMethod === 'card' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 font-extrabold text-[11px]">
-                            <CreditCard className="w-3 h-3 text-amber-600" />
-                            <span>Tarjeta POS</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 font-extrabold text-[11px]">
-                            <Banknote className="w-3 h-3 text-emerald-600" />
-                            <span>Efectivo</span>
-                          </span>
-                        )}
+                        {(() => {
+                          const m = getOrderPaymentMethod(sale);
+                          if (m === 'combined') {
+                            const breakdown = formatPaymentBreakdownText(sale, currency);
+                            return (
+                              <span 
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-50 text-violet-800 font-extrabold text-[11px] border border-violet-200/90 shadow-2xs"
+                                title={`Pago Combinado: ${breakdown}`}
+                              >
+                                <Layers className="w-3.5 h-3.5 text-violet-600 shrink-0" />
+                                <span>Combinado ({breakdown})</span>
+                              </span>
+                            );
+                          }
+                          if (m === 'qr') {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-800 font-extrabold text-[11px] border border-cyan-200">
+                                <QrCode className="w-3.5 h-3.5 text-cyan-600" />
+                                <span>QR Simple</span>
+                              </span>
+                            );
+                          }
+                          if (m === 'card') {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 font-extrabold text-[11px] border border-amber-200">
+                                <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Tarjeta POS</span>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-extrabold text-[11px] border border-emerald-200">
+                              <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Efectivo</span>
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Total Cobrado */}
@@ -1170,10 +1286,46 @@ export const SalesHistory = () => {
                 <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
                   <span>Forma de Pago:</span>
                   <span className="font-bold text-slate-200 uppercase">
-                    {selectedSale.paymentMethod === 'qr' ? '📲 QR Simple' :
+                    {getOrderPaymentMethod(selectedSale) === 'combined' ? '🔀 Pago Combinado' :
+                     selectedSale.paymentMethod === 'qr' ? '📲 QR Simple' :
                      selectedSale.paymentMethod === 'card' ? '💳 Tarjeta POS' : '💵 Efectivo'}
                   </span>
                 </div>
+                {getOrderPaymentMethod(selectedSale) === 'combined' && (() => {
+                  const sp = calculateSplitPortions(selectedSale);
+                  const splitObj = selectedSale.splitPayment || selectedSale.split_payment;
+                  return (
+                    <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs space-y-1 mt-1">
+                      <span className="text-[10px] text-violet-300 font-extrabold uppercase tracking-wider block">
+                        Desglose de Cobro Combinado:
+                      </span>
+                      {sp.cash > 0 && (
+                        <div className="flex justify-between text-emerald-300">
+                          <span>• Efectivo:</span>
+                          <span className="font-bold">{currency} {sp.cash.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {sp.qr > 0 && (
+                        <div className="flex justify-between text-cyan-300">
+                          <span>• QR Simple:</span>
+                          <span className="font-bold">{currency} {sp.qr.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {sp.card > 0 && (
+                        <div className="flex justify-between text-amber-300">
+                          <span>• Tarjeta POS:</span>
+                          <span className="font-bold">{currency} {sp.card.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {Number(splitObj?.change) > 0 && (
+                        <div className="flex justify-between text-slate-300 border-t border-slate-700 pt-1">
+                          <span>Cambio entregado:</span>
+                          <span className="font-bold text-emerald-400">{currency} {Number(splitObj.change).toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

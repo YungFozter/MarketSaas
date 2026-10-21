@@ -24,6 +24,11 @@ import {
 import { useStore } from '../../context/StoreContext';
 import { getBoliviaTime } from '../../utils/scheduleUtils';
 import { escapeHtml } from '../../utils/formatters';
+import { 
+  roundMoney, 
+  calculateSplitPortions, 
+  formatPaymentBreakdownText 
+} from '../../utils/paymentUtils';
 
 export const CashRegisterModal = ({ isOpen, onClose }) => {
   const { orders = [], storeConfig, tenantSlug, currentUser, showToast, isSubscriptionActive } = useStore();
@@ -129,32 +134,41 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
     let cashTotal = 0;
     let qrTotal = 0;
     let cardTotal = 0;
+    let creditTotal = 0;
     let cashCount = 0;
+    let combinedCount = 0;
+    let combinedTotal = 0;
 
     validOrders.forEach(o => {
-      const total = Number(o.total) || 0;
-      const method = (o.paymentMethod || o.payment_method || 'cash').toLowerCase();
-      if (method === 'cash' || method === 'efectivo') {
-        cashTotal += total;
-        cashCount++;
-      } else if (method === 'qr' || method === 'transfer') {
-        qrTotal += total;
-      } else if (method === 'card' || method === 'pos') {
-        cardTotal += total;
-      } else {
-        cashTotal += total;
-        cashCount++;
+      const p = calculateSplitPortions(o);
+      cashTotal += p.cash;
+      qrTotal += p.qr;
+      cardTotal += p.card;
+      creditTotal += p.credit;
+      if (p.cash > 0) cashCount++;
+
+      const m = String(o.paymentMethod || o.payment_method || '').toLowerCase();
+      if (m === 'combined' || o.splitPayment || o.split_payment) {
+        combinedCount++;
+        combinedTotal += (Number(o.total) || 0);
       }
     });
 
+    cashTotal = roundMoney(cashTotal);
+    qrTotal = roundMoney(qrTotal);
+    cardTotal = roundMoney(cardTotal);
+
     const totalExpenses = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
-    const expectedCashInDrawer = (Number(openingCash) || 0) + cashTotal - totalExpenses;
+    const expectedCashInDrawer = roundMoney((Number(openingCash) || 0) + cashTotal - totalExpenses);
 
     return {
       cashTotal,
       qrTotal,
       cardTotal,
+      creditTotal,
       cashCount,
+      combinedCount,
+      combinedTotal: roundMoney(combinedTotal),
       totalOrders: validOrders.length,
       totalExpenses,
       expectedCashInDrawer
@@ -267,6 +281,9 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
       cashSales: cashStats.cashTotal,
       cashSalesCount: cashStats.cashCount,
       qrSales: cashStats.qrTotal,
+      cardSales: cashStats.cardTotal,
+      combinedCount: cashStats.combinedCount,
+      combinedTotal: cashStats.combinedTotal,
       expenses: expenses,
       totalExpenses: cashStats.totalExpenses,
       expectedCash: cashStats.expectedCashInDrawer,
@@ -355,11 +372,22 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
             <span>RESULTADO:</span>
             <span>${diffText}</span>
           </div>
-          <div class="divider"></div>
           <div class="row" style="font-size:11px;">
             <span>Ventas QR (Banco):</span>
             <span>${currency} ${record.qrSales.toFixed(2)}</span>
           </div>
+          ${record.cardSales > 0 ? `
+            <div class="row" style="font-size:11px;">
+              <span>Ventas Tarjeta POS (Banco):</span>
+              <span>${currency} ${record.cardSales.toFixed(2)}</span>
+            </div>
+          ` : ''}
+          ${record.combinedCount > 0 ? `
+            <div class="row" style="font-size:11px;">
+              <span>Cobros Combinados:</span>
+              <span>${record.combinedCount} (${currency} ${Number(record.combinedTotal || 0).toFixed(2)})</span>
+            </div>
+          ` : ''}
           ${record.notes ? `<div style="font-size:11px; margin-top:6px;">Nota: ${escapeHtml(record.notes)}</div>` : ''}
           <div class="signature">
             Firma Cajero / Responsable
@@ -638,6 +666,30 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
                     </span>
                   </div>
                 </div>
+
+                {/* Sub-barra informativa de canales electrónicos y cobros combinados */}
+                {(cashStats.qrTotal > 0 || cashStats.cardTotal > 0 || cashStats.combinedCount > 0) && (
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-slate-500 font-bold text-[11px]">Otros canales:</span>
+                      {cashStats.qrTotal > 0 && (
+                        <span className="font-bold text-cyan-900 bg-cyan-100/70 px-2 py-0.5 rounded-lg border border-cyan-200 text-[11px]">
+                          QR Digital: {currency} {cashStats.qrTotal.toFixed(2)}
+                        </span>
+                      )}
+                      {cashStats.cardTotal > 0 && (
+                        <span className="font-bold text-amber-900 bg-amber-100/70 px-2 py-0.5 rounded-lg border border-amber-200 text-[11px]">
+                          Tarjeta POS: {currency} {cashStats.cardTotal.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {cashStats.combinedCount > 0 && (
+                      <span className="font-bold text-violet-900 bg-violet-100/80 px-2 py-0.5 rounded-lg border border-violet-200 text-[11px]">
+                        {cashStats.combinedCount} {cashStats.combinedCount === 1 ? 'venta combinada' : 'ventas combinadas'} integradas
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* 2. Registro de Salidas / Gastos Menores */}
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">

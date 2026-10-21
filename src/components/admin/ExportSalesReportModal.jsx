@@ -106,6 +106,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
   const getOrderPaymentCategory = (order) => {
     const raw = typeof order.paymentMethod === 'object' ? order.paymentMethod?.method : order.paymentMethod;
     const p = String(raw || '').toLowerCase();
+    if (p === 'combined' || order.split_payment || order.splitPayment) return 'combined';
     if (p === 'cash' || p.includes('efectivo')) return 'cash';
     if (p === 'qr' || p.includes('qr')) return 'qr';
     if (p === 'card' || p.includes('tarjeta') || p.includes('pos')) return 'card';
@@ -158,15 +159,16 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
 
   // Conteo de órdenes por método de pago para badges de los chips
   const paymentCounts = useMemo(() => {
-    let cash = 0, qr = 0, card = 0, credit = 0;
+    let cash = 0, qr = 0, card = 0, credit = 0, combined = 0;
     completedBaseOrders.forEach(o => {
       const cat = getOrderPaymentCategory(o);
       if (cat === 'cash') cash++;
       else if (cat === 'qr') qr++;
       else if (cat === 'card') card++;
       else if (cat === 'credit') credit++;
+      else if (cat === 'combined') combined++;
     });
-    return { all: completedBaseOrders.length, cash, qr, card, credit };
+    return { all: completedBaseOrders.length, cash, qr, card, credit, combined };
   }, [completedBaseOrders]);
 
   // Cálculos contables de la selección activa
@@ -181,6 +183,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
     else if (paymentFilter === 'qr') parts.push('Solo QR Simple');
     else if (paymentFilter === 'card') parts.push('Solo Tarjetas');
     else if (paymentFilter === 'credit') parts.push('Solo A Cuenta');
+    else if (paymentFilter === 'combined') parts.push('Solo Pagos Combinados');
 
     if (periodFilter === 'today') parts.push('Hoy');
     else if (periodFilter === 'yesterday') parts.push('Ayer');
@@ -316,11 +319,12 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                 {paymentFilter === 'cash' ? '💵 Solo Efectivo en mano' :
                  paymentFilter === 'qr' ? '📱 Solo transferencias QR' :
                  paymentFilter === 'card' ? '💳 Solo datáfono POS' :
-                 paymentFilter === 'credit' ? '📒 Solo ventas a cuenta' : 'Todos los métodos'}
+                 paymentFilter === 'credit' ? '📒 Solo ventas a cuenta' :
+                 paymentFilter === 'combined' ? '🔀 Solo Pagos Combinados' : 'Todos los métodos'}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
               <button
                 type="button"
                 onClick={() => setPaymentFilter('all')}
@@ -381,6 +385,22 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                 <span className="truncate">💳 Tarjetas</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${paymentFilter === 'card' ? 'bg-purple-700 text-white' : 'bg-purple-200/80 text-purple-900'}`}>
                   {paymentCounts.card}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentFilter('combined')}
+                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-between col-span-2 sm:col-span-1 ${
+                  paymentFilter === 'combined'
+                    ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
+                    : 'bg-violet-50/50 text-violet-900 border-violet-200/80 hover:bg-violet-100/60'
+                }`}
+                title="Ventas con pago dividido (Efectivo + QR + Tarjeta)"
+              >
+                <span className="truncate">🔀 Combinado</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${paymentFilter === 'combined' ? 'bg-violet-700 text-white' : 'bg-violet-200/80 text-violet-900'}`}>
+                  {paymentCounts.combined}
                 </span>
               </button>
             </div>
@@ -505,6 +525,12 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 rounded-full bg-purple-500"></span>
                     <span>Tarjetas: <strong>{currency} {summary.cardTotal}</strong></span>
+                  </span>
+                )}
+                {summary.combinedCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-violet-500"></span>
+                    <span>Combinados: <strong>{summary.combinedCount} ({currency} {summary.combinedTotal})</strong></span>
                   </span>
                 )}
               </div>

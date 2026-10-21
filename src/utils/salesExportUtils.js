@@ -1,3 +1,9 @@
+import { 
+  calculateSplitPortions, 
+  formatPaymentBreakdownText, 
+  roundMoney 
+} from './paymentUtils';
+
 /**
  * Normaliza y formatea las órdenes para reportes contables
  */
@@ -50,7 +56,11 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
     }
 
     const payMethodRaw = typeof o.paymentMethod === 'object' ? o.paymentMethod?.method : o.paymentMethod;
+    const isCombined = payMethodRaw === 'combined' || Boolean(o.split_payment || o.splitPayment);
+    const splitDetails = isCombined ? formatPaymentBreakdownText(o) : '';
+
     const paymentMethodLabel = 
+      isCombined ? (splitDetails ? `Combinado (${splitDetails})` : 'Pago Combinado') :
       payMethodRaw === 'qr' ? 'QR Simple (Digital)' :
       payMethodRaw === 'card' ? 'Tarjeta POS' :
       payMethodRaw === 'credit' ? 'A Cuenta (Fiao)' :
@@ -74,6 +84,8 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       details: details,
       deliveryType,
       paymentMethod: paymentMethodLabel,
+      isCombined,
+      splitDetails,
       total: totalVal,
       totalFormatted: totalVal.toFixed(2),
       status: statusLabel,
@@ -84,10 +96,34 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
 
   const totalAmount = formattedRows.reduce((acc, r) => acc + r.total, 0);
   const totalCount = formattedRows.length;
-  const cashTotal = formattedRows.filter(r => r.paymentMethod.includes('Efectivo')).reduce((acc, r) => acc + r.total, 0);
-  const qrTotal = formattedRows.filter(r => r.paymentMethod.includes('QR')).reduce((acc, r) => acc + r.total, 0);
-  const cardTotal = formattedRows.filter(r => r.paymentMethod.includes('Tarjeta')).reduce((acc, r) => acc + r.total, 0);
-  const creditTotal = formattedRows.filter(r => r.paymentMethod.includes('Cuenta') || r.paymentMethod.includes('Fiao')).reduce((acc, r) => acc + r.total, 0);
+
+  // Cálculo contable canónico de porciones reales (incluso en órdenes con pago combinado)
+  let cashTotal = 0;
+  let qrTotal = 0;
+  let cardTotal = 0;
+  let creditTotal = 0;
+  let combinedTotal = 0;
+  let combinedCount = 0;
+
+  completedOrders.forEach(o => {
+    const p = calculateSplitPortions(o);
+    cashTotal += p.cash;
+    qrTotal += p.qr;
+    cardTotal += p.card;
+    creditTotal += p.credit;
+
+    const raw = typeof o.paymentMethod === 'object' ? o.paymentMethod?.method : o.paymentMethod;
+    if (raw === 'combined' || p.isSplit) {
+      combinedCount++;
+      combinedTotal += (Number(o.total) || 0);
+    }
+  });
+
+  cashTotal = roundMoney(cashTotal);
+  qrTotal = roundMoney(qrTotal);
+  cardTotal = roundMoney(cardTotal);
+  creditTotal = roundMoney(creditTotal);
+  combinedTotal = roundMoney(combinedTotal);
 
   const posRows = formattedRows.filter(r => r.isPos);
   const onlineRows = formattedRows.filter(r => !r.isPos);
@@ -105,6 +141,8 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       qrTotal: qrTotal.toFixed(2),
       cardTotal: cardTotal.toFixed(2),
       creditTotal: creditTotal.toFixed(2),
+      combinedTotal: combinedTotal.toFixed(2),
+      combinedCount,
       posCount: posRows.length,
       posTotalFormatted: posTotal.toFixed(2),
       onlineCount: onlineRows.length,
@@ -129,7 +167,7 @@ export const exportSalesToXLSX = async (orders, storeConfig, formatBoliviaDateTi
   // Estructura en matriz para SheetJS
   const data = [
     [reportTitle],
-    [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total: ${currency} ${summary.totalAmountFormatted} (Mostrador: ${currency} ${summary.posTotalFormatted} [${summary.posCount}] | Online: ${currency} ${summary.onlineTotalFormatted} [${summary.onlineCount}])`],
+    [`Generado: ${new Date().toLocaleString('es-BO')}`, '', '', '', '', '', '', `Total: ${currency} ${summary.totalAmountFormatted} (Mostrador: ${currency} ${summary.posTotalFormatted} [${summary.posCount}] | Online: ${currency} ${summary.onlineTotalFormatted} [${summary.onlineCount}] | Efec: ${currency} ${summary.cashTotal} | QR: ${currency} ${summary.qrTotal}${Number(summary.cardTotal) > 0 ? ` | Tarjeta: ${currency} ${summary.cardTotal}` : ''}${summary.combinedCount > 0 ? ` | Combinado: ${currency} ${summary.combinedTotal} [${summary.combinedCount}]` : ''})`],
     [], // Fila en blanco
     ['#', 'ID Pedido', 'Fecha y Hora', 'Cliente', 'Teléfono', 'Dirección de Entrega', 'Punto de Referencia', 'Modalidad', 'Método de Pago', `Total (${currency})`, 'Estado']
   ];
@@ -166,7 +204,7 @@ export const exportSalesToXLSX = async (orders, storeConfig, formatBoliviaDateTi
     { wch: 24 },  // Dirección
     { wch: 16 },  // Referencia
     { wch: 20 },  // Modalidad
-    { wch: 20 },  // Método
+    { wch: 30 },  // Método de Pago
     { wch: 14 },  // Total
     { wch: 18 }   // Estado
   ];
@@ -242,7 +280,7 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
               <b>Fecha de Emisión:</b> ${new Date().toLocaleString('es-BO')} &nbsp;|&nbsp; <b>Zona Horaria:</b> Bolivia (UTC-04:00) ${titleSuffix ? `&nbsp;|&nbsp; <b>Filtro:</b> ${titleSuffix}` : ''}
             </td>
             <td colspan="6" style="background-color: #ecfdf5; color: #065f46; font-size: 11px; padding: 8px; text-align: right;">
-              <b>Total Recaudado:</b> ${currency} ${summary.totalAmountFormatted} (${summary.totalCount} ops) &nbsp;|&nbsp; 🏪 <b>Mostrador:</b> ${currency} ${summary.posTotalFormatted} (${summary.posCount}) &nbsp;|&nbsp; 🛵 <b>Online:</b> ${currency} ${summary.onlineTotalFormatted} (${summary.onlineCount})
+              <b>Total Recaudado:</b> ${currency} ${summary.totalAmountFormatted} (${summary.totalCount} ops) &nbsp;|&nbsp; 🏪 <b>Mostrador:</b> ${currency} ${summary.posTotalFormatted} (${summary.posCount}) &nbsp;|&nbsp; 🛵 <b>Online:</b> ${currency} ${summary.onlineTotalFormatted} (${summary.onlineCount}) &nbsp;|&nbsp; 💵 <b>Efectivo:</b> ${currency} ${summary.cashTotal} &nbsp;|&nbsp; 📱 <b>QR:</b> ${currency} ${summary.qrTotal}${Number(summary.cardTotal) > 0 ? ` &nbsp;|&nbsp; 💳 <b>Tarjetas:</b> ${currency} ${summary.cardTotal}` : ''}${summary.combinedCount > 0 ? ` &nbsp;|&nbsp; 🔀 <b>Combinado:</b> ${summary.combinedCount} ops (${currency} ${summary.combinedTotal})` : ''}
             </td>
           </tr>
           <tr><td colspan="11" style="height: 10px;"></td></tr>
@@ -256,7 +294,7 @@ export const exportSalesToStyledExcel = (orders, storeConfig, formatBoliviaDateT
               <th style="width: 160px;">Dirección de Entrega</th>
               <th style="width: 120px;">Punto de Referencia</th>
               <th style="width: 140px;">Modalidad</th>
-              <th style="width: 140px;">Método de Pago</th>
+              <th style="width: 180px;">Método de Pago</th>
               <th style="width: 110px;">Total (${currency})</th>
               <th style="width: 140px;">Estado</th>
             </tr>
@@ -414,7 +452,7 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
           }
           .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
             gap: 10px;
             margin-bottom: 18px;
           }
@@ -567,13 +605,25 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
             <div class="kpi-val">${currency} ${summary.onlineTotalFormatted} <span style="font-size: 10px; font-weight: normal; color: #64748b;">(${summary.onlineCount})</span></div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Cobros QR Simple</div>
-            <div class="kpi-val">${currency} ${summary.qrTotal}</div>
-          </div>
-          <div class="kpi-card">
             <div class="kpi-label">Cobros en Efectivo</div>
             <div class="kpi-val">${currency} ${summary.cashTotal}</div>
           </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cobros QR Simple</div>
+            <div class="kpi-val">${currency} ${summary.qrTotal}</div>
+          </div>
+          ${Number(summary.cardTotal) > 0 ? `
+          <div class="kpi-card">
+            <div class="kpi-label">Tarjetas POS</div>
+            <div class="kpi-val">${currency} ${summary.cardTotal}</div>
+          </div>
+          ` : ''}
+          ${summary.combinedCount > 0 ? `
+          <div class="kpi-card">
+            <div class="kpi-label">🔀 Pagos Combinados</div>
+            <div class="kpi-val" style="color: #7c3aed;">${currency} ${summary.combinedTotal} <span style="font-size: 10px; font-weight: normal; color: #64748b;">(${summary.combinedCount})</span></div>
+          </div>
+          ` : ''}
         </div>
 
         <table>
