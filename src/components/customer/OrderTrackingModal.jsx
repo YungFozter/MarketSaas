@@ -56,6 +56,10 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
     return null;
   });
 
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
   // 1. Sincronización continua de orden en memoria reactiva
   useEffect(() => {
     const memory = (orders || []).find(o => o.id === orderId);
@@ -230,9 +234,6 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
 
   const currentIndex = getStageIndex(order.status);
   const isCancelled = order.status === 'cancelled';
-  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
-  const [isCancelling, setIsCancelling] = useState(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const qrImage = storeConfig?.qrImageUrl || selectedStore?.qrImageUrl || '';
   const isSplitPayment = order.paymentMethod === 'combined' || Boolean(order.splitPayment || order.split_payment);

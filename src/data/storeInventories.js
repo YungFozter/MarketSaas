@@ -639,12 +639,67 @@ const calculateVaryingPrice = (basePrice, zoneType, hashOffset) => {
   return Number(finalPrice.toFixed(2));
 };
 
+// Tiendas predefinidas del directorio/mapa de Santa Cruz (Anillos 1 al 6) y Semillas Oficiales
+export const PREDEFINED_MAP_STORE_SLUGS = new Set([
+  'matias-tiendatodo',
+  'minimarket-ian',
+  'tiendita-fernando',
+  'fernando',
+  'minimarket-el-casco-viejo',
+  'bodega-la-pascana',
+  'almacen-sucre-central',
+  'minimarket-monsenor-rivero',
+  'comercial-san-lorenzo',
+  'bodega-calle-libertad',
+  'minimarket-el-trompillo',
+  'market-parque-urbano',
+  'bodega-las-americas',
+  'minimarket-busch-express',
+  'almacen-canal-isuto',
+  'bodega-avenida-brasil',
+  'minimarket-grigota-2do',
+  'almacen-canoto-central',
+  'sirari-market-deli',
+  'bodega-guembe-equipetrol',
+  'minimarket-los-tajibos',
+  'almacen-urbari-central',
+  'minimarket-hamacas-3ro',
+  'bodega-alto-san-pedro',
+  'market-mutualista-express',
+  'almacen-santos-dumont-3ro',
+  'minimarket-virgen-de-cotoca',
+  'market-paragua-express',
+  'equipetrol-norte-market',
+  'ambassador-mini-market',
+  'minimarket-las-brisas-4to',
+  'almacen-petrolero-4to',
+  'bodega-don-memo-dumont',
+  'minimarket-villa-1ro-de-mayo',
+  'market-guapay-4to-anillo',
+  'almacen-las-palmas-radial',
+  'almacen-radial-17-medio',
+  'minimarket-los-sauces-5to',
+  'bodega-san-jose-5to',
+  'market-montecristo-5to',
+  'almacen-la-morita-5to',
+  'minimarket-cumavi-5to',
+  'almacen-norte-real-6to',
+  'market-radial-26-6to',
+  'minimarket-sevilla-6to'
+]);
+
 export const getStoreCatalog = (storeSlug = 'default') => {
-  if (storeSlug === 'default') {
+  if (!storeSlug || storeSlug === 'default') {
     return [];
   }
 
   const resolvedSlug = (storeSlug === 'tiendita-fernando' || storeSlug === 'fernando') ? 'minimarket-ian' : storeSlug;
+
+  // Si la tienda es una creada/registrada por un comerciante (no está en las 43 del mapa), debe retornar []
+  if (!PREDEFINED_MAP_STORE_SLUGS.has(resolvedSlug)) {
+    return [];
+  }
+
   const seedHash = getHashFromString(resolvedSlug);
   const zone = getZoneCategory(resolvedSlug);
 
