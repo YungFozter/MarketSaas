@@ -23,10 +23,20 @@ import {
   Maximize2,
   BookOpen,
   Send,
-  UserCheck
+  UserCheck,
+  Layers,
+  AlertCircle,
+  ArrowLeftRight,
+  Coins
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
+import { 
+  roundMoney, 
+  validateSplitPayment, 
+  normalizeSplitPayment, 
+  calculateSplitPortions 
+} from '../../utils/paymentUtils';
 import './PosTerminal.css';
 
 export const PosTerminal = ({ onClose, onSaleCompleted }) => {
@@ -51,8 +61,11 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const [posCart, setPosCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
-  const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'qr' | 'card' | 'credit'
+  const [paymentType, setPaymentType] = useState('cash'); // 'cash' | 'qr' | 'card' | 'credit' | 'combined'
   const [cashReceived, setCashReceived] = useState('');
+  // Estado para desglose de Pago Combinado
+  const [splitAmounts, setSplitAmounts] = useState({ cash: '', qr: '', card: '' });
+  const [splitCashGiven, setSplitCashGiven] = useState('');
   const [lastCompletedSale, setLastCompletedSale] = useState(null);
   const [isQrZoomOpen, setIsQrZoomOpen] = useState(false);
   const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
@@ -133,6 +146,17 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const parsedCash = parseFloat(cashReceived) || 0;
   const changeToReturn = parsedCash > subtotal ? (parsedCash - subtotal).toFixed(2) : '0.00';
 
+  // Cálculos matemáticos reactivos para Pago Combinado
+  const parsedSplitCash = Math.max(0, parseFloat(splitAmounts.cash) || 0);
+  const parsedSplitQr = Math.max(0, parseFloat(splitAmounts.qr) || 0);
+  const parsedSplitCard = Math.max(0, parseFloat(splitAmounts.card) || 0);
+  const totalSplitCovered = roundMoney(parsedSplitCash + parsedSplitQr + parsedSplitCard);
+  const splitDifference = roundMoney(subtotal - totalSplitCovered);
+  const isSplitExact = Math.abs(splitDifference) < 0.01 && (parsedSplitCash > 0 || parsedSplitQr > 0 || parsedSplitCard > 0);
+
+  const parsedSplitCashGiven = Math.max(0, parseFloat(splitCashGiven) || 0);
+  const splitCashChange = parsedSplitCashGiven > parsedSplitCash ? (parsedSplitCashGiven - parsedSplitCash).toFixed(2) : '0.00';
+
   const handleFinishSale = () => {
     if (posCart.length === 0) {
       showToast('Agrega al menos un producto al ticket de venta', 'warning');
@@ -158,13 +182,32 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
       };
     }
 
-    const createdOrder = completePosSale(posCart, paymentType, creditOptions);
+    // Validación rigurosa de Pago Combinado
+    let splitOptions = null;
+    if (paymentType === 'combined') {
+      splitOptions = {
+        cash: parsedSplitCash,
+        qr: parsedSplitQr,
+        card: parsedSplitCard,
+        cashGiven: parsedSplitCashGiven > 0 ? parsedSplitCashGiven : parsedSplitCash,
+        change: parseFloat(splitCashChange) || 0
+      };
+      const validation = validateSplitPayment(splitOptions, subtotal);
+      if (!validation.isValid) {
+        showToast(validation.error || 'El desglose del pago combinado no cubre exactamente el total.', 'warning');
+        return;
+      }
+    }
+
+    const createdOrder = completePosSale(posCart, paymentType, creditOptions, splitOptions);
     const effectiveOrder = createdOrder || {
       id: `${storeConfig?.id || 'POS'}-${Date.now().toString().slice(-4)}`,
       items: posCart,
       subtotal,
       total: subtotal,
       paymentMethod: paymentType,
+      splitPayment: splitOptions,
+      split_payment: splitOptions,
       customer: paymentType === 'credit' ? { name: creditOptions.customerName, phone: creditOptions.customerPhone } : undefined,
       createdAt: new Date().toISOString()
     };
@@ -180,6 +223,8 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
   const handleNewSale = () => {
     setPosCart([]);
     setCashReceived('');
+    setSplitAmounts({ cash: '', qr: '', card: '' });
+    setSplitCashGiven('');
     setLastCompletedSale(null);
     setPaymentType('cash');
     setSelectedCreditCustomerId('');
@@ -306,10 +351,16 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
     }
 
     const d = new Date(sale.createdAt || Date.now());
-    const fullDate = d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const formatted = d.toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const fullDate = formatted;
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const items = Array.isArray(sale.items) ? sale.items : [];
+    
+    // Desglose de cobro en comanda térmica
+    const isSaleCombined = sale.paymentMethod === 'combined' || sale.splitPayment || sale.split_payment;
+    const splitData = isSaleCombined ? calculateSplitPortions(sale) : null;
     const paymentLabel = 
+      isSaleCombined ? 'Pago Combinado' :
       sale.paymentMethod === 'credit' ? 'A Cuenta / Fiao' :
       sale.paymentMethod === 'qr' ? 'QR Simple (Digital)' :
       sale.paymentMethod === 'card' ? 'Tarjeta POS' : 'Efectivo';
@@ -378,6 +429,13 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             <span>Método de Cobro:</span>
             <span class="bold">${paymentLabel}</span>
           </div>
+          ${isSaleCombined && splitData ? `
+            <div style="font-size:10px; margin: 3px 0 6px 6px; color:#222; border-left: 2px solid #000; padding-left: 6px;">
+              ${splitData.cash > 0 ? `<div>• Efectivo: ${currency} ${splitData.cash.toFixed(2)}${sale.splitPayment?.cashGiven > splitData.cash ? ` (Entregó ${currency} ${Number(sale.splitPayment.cashGiven).toFixed(2)} / Cambio ${currency} ${Number(sale.splitPayment.change).toFixed(2)})` : ''}</div>` : ''}
+              ${splitData.qr > 0 ? `<div>• QR Simple: ${currency} ${splitData.qr.toFixed(2)}</div>` : ''}
+              ${splitData.card > 0 ? `<div>• Tarjeta POS: ${currency} ${splitData.card.toFixed(2)}</div>` : ''}
+            </div>
+          ` : ''}
 
           <div class="divider"></div>
           <div class="center" style="margin-top: 16px;">
@@ -414,10 +472,47 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 font-medium">
             Ticket #{lastCompletedSale.id} • Cobrado en {
+              lastCompletedSale.paymentMethod === 'combined' ? 'Pago Combinado' :
               lastCompletedSale.paymentMethod === 'qr' ? 'QR Simple' :
-              lastCompletedSale.paymentMethod === 'card' ? 'Tarjeta POS' : 'Efectivo'
+              lastCompletedSale.paymentMethod === 'card' ? 'Tarjeta POS' :
+              lastCompletedSale.paymentMethod === 'credit' ? 'A Cuenta (Fiao)' : 'Efectivo'
             }
           </p>
+
+          {/* Desglose visual de Pago Combinado en pantalla de éxito */}
+          {lastCompletedSale.paymentMethod === 'combined' && (
+            <div className="bg-violet-50 border border-violet-200/90 p-3.5 rounded-2xl text-xs text-violet-950 font-bold space-y-2 max-w-md mx-auto">
+              <span className="text-[10px] uppercase tracking-wider text-violet-700 font-black block">
+                Desglose de Pago Combinado Cobrado:
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {(lastCompletedSale.splitPayment?.cash > 0 || lastCompletedSale.split_payment?.cash > 0) && (
+                  <span className="px-2.5 py-1 rounded-xl bg-emerald-100/90 text-emerald-950 font-extrabold flex items-center gap-1 border border-emerald-300">
+                    <Banknote className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Efectivo: {currency} {Number(lastCompletedSale.splitPayment?.cash || lastCompletedSale.split_payment?.cash).toFixed(2)}</span>
+                  </span>
+                )}
+                {(lastCompletedSale.splitPayment?.qr > 0 || lastCompletedSale.split_payment?.qr > 0) && (
+                  <span className="px-2.5 py-1 rounded-xl bg-cyan-100/90 text-cyan-950 font-extrabold flex items-center gap-1 border border-cyan-300">
+                    <QrCode className="w-3.5 h-3.5 text-cyan-700" />
+                    <span>QR: {currency} {Number(lastCompletedSale.splitPayment?.qr || lastCompletedSale.split_payment?.qr).toFixed(2)}</span>
+                  </span>
+                )}
+                {(lastCompletedSale.splitPayment?.card > 0 || lastCompletedSale.split_payment?.card > 0) && (
+                  <span className="px-2.5 py-1 rounded-xl bg-amber-100/90 text-amber-950 font-extrabold flex items-center gap-1 border border-amber-300">
+                    <CreditCard className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Tarjeta: {currency} {Number(lastCompletedSale.splitPayment?.card || lastCompletedSale.split_payment?.card).toFixed(2)}</span>
+                  </span>
+                )}
+              </div>
+              {(Number(lastCompletedSale.splitPayment?.change || lastCompletedSale.split_payment?.change) > 0) && (
+                <p className="text-[11px] text-emerald-800 pt-0.5 font-extrabold">
+                  Cambio entregado de efectivo: {currency} {Number(lastCompletedSale.splitPayment?.change || lastCompletedSale.split_payment?.change).toFixed(2)}
+                </p>
+              )}
+            </div>
+          )}
+
           {lastCompletedSale.paymentMethod === 'cash' && parsedCash > subtotal && (
             <p className="text-xs font-bold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-lg inline-block mt-2">
               Vuelto entregado al cliente: {currency} {changeToReturn}
@@ -542,7 +637,7 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             Selecciona la forma de pago del cliente:
           </label>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
             {/* Efectivo */}
             <button
               type="button"
@@ -618,7 +713,256 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                 <p className="text-[10px] text-slate-400">Fiao Vecinal</p>
               </div>
             </button>
+
+            {/* Pago Combinado (Nuevo Método) */}
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentType('combined');
+                // Si no hay valores asignados, sugerir 50% efectivo y resto en QR para agilizar
+                if (!splitAmounts.cash && !splitAmounts.qr && !splitAmounts.card) {
+                  const half = roundMoney(subtotal / 2);
+                  const rem = roundMoney(subtotal - half);
+                  setSplitAmounts({ cash: half > 0 ? half.toString() : '', qr: rem > 0 ? rem.toString() : '', card: '' });
+                }
+              }}
+              className={`p-3 sm:p-3.5 rounded-2xl border-2 transition-all flex flex-col items-center gap-1.5 cursor-pointer text-center col-span-2 sm:col-span-1 ${
+                paymentType === 'combined'
+                  ? 'border-violet-500 bg-violet-50/80 shadow-xs ring-2 ring-violet-500/20'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className={`p-2 rounded-xl ${paymentType === 'combined' ? 'bg-violet-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600'}`}>
+                <Layers className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div>
+                <p className="font-extrabold text-xs sm:text-sm text-slate-900">Combinado</p>
+                <p className="text-[10px] text-violet-600 font-bold">Efe + QR + POS</p>
+              </div>
+            </button>
           </div>
+
+          {/* Panel Interactivo: PAGO COMBINADO */}
+          {paymentType === 'combined' && (
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-violet-200/90 space-y-4 shadow-xs animate-fadeIn">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-xl bg-violet-100 text-violet-700">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-xs sm:text-sm text-slate-900">Desglose de Pago Combinado</h4>
+                    <p className="text-[11px] text-slate-400">Ingresa cuánto paga el cliente en cada modalidad</p>
+                  </div>
+                </div>
+
+                {/* Acciones Rápidas de Autocompletado */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const half = roundMoney(subtotal / 2);
+                      const rem = roundMoney(subtotal - half);
+                      setSplitAmounts({ cash: half.toString(), qr: rem.toString(), card: '' });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-800 text-[11px] font-bold border border-violet-200 transition-colors cursor-pointer"
+                    title="Dividir 50% en efectivo y 50% en QR"
+                  >
+                    50% Efec / 50% QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rem = Math.max(0, roundMoney(subtotal - parsedSplitCash - parsedSplitCard));
+                      setSplitAmounts(prev => ({ ...prev, qr: rem > 0 ? rem.toString() : '' }));
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-800 text-[11px] font-bold border border-cyan-200 transition-colors cursor-pointer"
+                    title="Asignar el saldo restante a QR"
+                  >
+                    Restante a QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rem = Math.max(0, roundMoney(subtotal - parsedSplitQr - parsedSplitCard));
+                      setSplitAmounts(prev => ({ ...prev, cash: rem > 0 ? rem.toString() : '' }));
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200 transition-colors cursor-pointer"
+                    title="Asignar el saldo restante a Efectivo"
+                  >
+                    Restante a Efectivo
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid de los 3 Métodos Combinables */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. Porción Efectivo */}
+                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitCash > 0 ? 'bg-emerald-50/50 border-emerald-300' : 'bg-slate-50 border-slate-200'}`}>
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Efectivo</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={splitAmounts.cash}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSplitAmounts(prev => ({ ...prev, cash: val }));
+                      }}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-emerald-500 shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. Porción QR Simple */}
+                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitQr > 0 ? 'bg-cyan-50/50 border-cyan-300' : 'bg-slate-50 border-slate-200'}`}>
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>QR Simple</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={splitAmounts.qr}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSplitAmounts(prev => ({ ...prev, qr: val }));
+                      }}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-cyan-500 shadow-2xs"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Porción Tarjeta POS */}
+                <div className={`p-3 rounded-2xl border transition-all ${parsedSplitCard > 0 ? 'bg-amber-50/50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Tarjeta POS</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold">{currency}</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={splitAmounts.card}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSplitAmounts(prev => ({ ...prev, card: val }));
+                      }}
+                      placeholder="0.00"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-black text-sm text-slate-900 focus:outline-hidden focus:border-amber-500 shadow-2xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Barra de Estado y Balance Matemático */}
+              <div className={`p-3.5 rounded-2xl border transition-all text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                isSplitExact
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-950 shadow-2xs'
+                  : splitDifference > 0.009
+                    ? 'bg-amber-50 border-amber-300 text-amber-950'
+                    : 'bg-rose-50 border-rose-300 text-rose-950'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {isSplitExact ? (
+                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                      <Check className="w-4 h-4 stroke-[3]" />
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-extrabold block">
+                      {isSplitExact 
+                        ? '¡Total cubierto al 100% con exactitud!'
+                        : splitDifference > 0.009
+                          ? `Faltan ${currency} ${splitDifference.toFixed(2)} para completar el pago`
+                          : `El desglose excede el total por ${currency} ${Math.abs(splitDifference).toFixed(2)}`}
+                    </span>
+                    <span className="text-[11px] opacity-75">
+                      Ingresado: {currency} {totalSplitCovered.toFixed(2)} de {currency} {subtotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right sm:text-right shrink-0">
+                  <span className="font-mono text-sm font-black">
+                    {totalSplitCovered.toFixed(2)} / {subtotal.toFixed(2)} {currency}
+                  </span>
+                </div>
+              </div>
+
+              {/* Cálculo Opcional de Cambio en Efectivo si la porción en efectivo es > 0 */}
+              {parsedSplitCash > 0 && (
+                <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <label className="text-xs font-bold text-slate-700 block">
+                      ¿Con cuánto billete paga la parte de efectivo ({currency} {parsedSplitCash.toFixed(2)})?:
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setSplitCashGiven(parsedSplitCash.toString())}
+                        className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[11px] font-bold hover:bg-slate-300 transition-colors cursor-pointer"
+                      >
+                        Exacto ({currency} {parsedSplitCash.toFixed(2)})
+                      </button>
+                      {[10, 20, 50, 100, 200].filter(a => a >= parsedSplitCash).slice(0, 3).map(amt => (
+                        <button
+                          key={`split-cash-${amt}`}
+                          type="button"
+                          onClick={() => setSplitCashGiven(amt.toString())}
+                          className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-bold hover:bg-emerald-200 transition-colors cursor-pointer"
+                        >
+                          {currency} {amt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-xs text-slate-500">{currency}</span>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0"
+                      value={splitCashGiven}
+                      onChange={(e) => setSplitCashGiven(e.target.value)}
+                      placeholder={parsedSplitCash.toFixed(2)}
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 font-bold text-sm text-slate-900 bg-white focus:outline-hidden focus:border-emerald-500"
+                    />
+                  </div>
+
+                  {parsedSplitCashGiven > parsedSplitCash && (
+                    <div className="p-2 rounded-xl bg-emerald-100/70 border border-emerald-300 text-xs font-bold text-emerald-950 flex items-center justify-between">
+                      <span>Cambio a devolver de la parte en efectivo:</span>
+                      <span className="font-black text-sm">{currency} {splitCashChange}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Panel Específico según Método de Pago */}
           {paymentType === 'cash' && (
@@ -901,10 +1245,21 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
           <button
             type="button"
             onClick={handleFinishSale}
-            className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+            disabled={paymentType === 'combined' && !isSplitExact}
+            className={`w-full py-4 rounded-2xl font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+              paymentType === 'combined' && !isSplitExact
+                ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30'
+            }`}
           >
             <Check className="w-5 h-5" />
-            <span>Confirmar y Finalizar Venta ({currency} {subtotal.toFixed(2)})</span>
+            <span>
+              {paymentType === 'combined' && !isSplitExact
+                ? (splitDifference > 0.009 
+                    ? `Faltan ${currency} ${splitDifference.toFixed(2)} por cubrir` 
+                    : `Monto excede por ${currency} ${Math.abs(splitDifference).toFixed(2)}`)
+                : `Confirmar y Finalizar Venta (${currency} ${subtotal.toFixed(2)})`}
+            </span>
           </button>
         </div>
 
