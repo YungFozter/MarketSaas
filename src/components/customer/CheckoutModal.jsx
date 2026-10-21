@@ -21,11 +21,18 @@ import {
   CloudRain,
   Bike,
   AlertTriangle,
-  Check
+  Check,
+  Layers
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { calculateDistanceKm, calculateDeliveryFee, MAX_DELIVERY_DISTANCE_KM, RAIN_SURCHARGE_BS } from '../../utils/deliveryFeeUtils';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
+import {
+  roundMoney,
+  validateSplitPayment,
+  normalizeSplitPayment,
+  formatPaymentBreakdownText
+} from '../../utils/paymentUtils';
 import './CheckoutModal.css';
 
 export const CheckoutModal = ({ isOpen, onClose }) => {
@@ -75,9 +82,15 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
   const [isDetectingGps, setIsDetectingGps] = useState(false);
 
   // Método de pago
-  const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card'
+  const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' | 'qr' | 'card' | 'combined'
   const [cashAmount, setCashAmount] = useState('50.00');
   const [copiedBank, setCopiedBank] = useState(false);
+
+  // Estados específicos para Pago Combinado (Solo Retiro en Tienda)
+  const [splitCash, setSplitCash] = useState('');
+  const [splitQr, setSplitQr] = useState('');
+  const [splitCard, setSplitCard] = useState('');
+  const [splitCashGiven, setSplitCashGiven] = useState('');
 
   // Coordenadas de la tienda
   const storeLat = (storeConfig?.latitude !== '' && storeConfig?.latitude != null)
@@ -120,6 +133,54 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   const finalTotal = Math.max(0, cartSubtotal + finalDeliveryFee - (appliedCoupon ? appliedCoupon.discount : 0));
   const changeToReturn = parseFloat(cashAmount) > finalTotal ? (parseFloat(cashAmount) - finalTotal).toFixed(2) : '0.00';
+
+  // Cálculos matemáticos y validación estricta de Pago Combinado
+  const numSplitCash = Math.max(0, parseFloat(splitCash) || 0);
+  const numSplitQr = Math.max(0, parseFloat(splitQr) || 0);
+  const numSplitCard = Math.max(0, parseFloat(splitCard) || 0);
+  const splitTotalAssigned = roundMoney(numSplitCash + numSplitQr + numSplitCard);
+  const splitDiff = roundMoney(finalTotal - splitTotalAssigned);
+  const isSplitBalanced = Math.abs(splitDiff) < 0.01 && splitTotalAssigned > 0;
+
+  // Cálculo de cambio por porción en efectivo
+  const numSplitCashGiven = parseFloat(splitCashGiven) || 0;
+  const splitCashChange = numSplitCashGiven > numSplitCash ? roundMoney(numSplitCashGiven - numSplitCash) : 0;
+
+  // REGLA DE ALCANCE ESTRICTA: Pago Combinado es EXCLUSIVO para Retiro en Tienda
+  useEffect(() => {
+    if (effectiveDeliveryType === 'delivery' && paymentMethod === 'combined') {
+      setPaymentMethod('cash');
+    }
+  }, [effectiveDeliveryType, paymentMethod]);
+
+  const handleSplit5050 = () => {
+    const half = roundMoney(finalTotal / 2);
+    const rest = roundMoney(finalTotal - half);
+    setSplitCash(half.toFixed(2));
+    setSplitQr(rest.toFixed(2));
+    setSplitCard('0.00');
+  };
+
+  const handleSplitRestToQr = () => {
+    const remaining = Math.max(0, roundMoney(finalTotal - numSplitCash - numSplitCard));
+    setSplitQr(remaining.toFixed(2));
+  };
+
+  const handleSplitRestToCash = () => {
+    const remaining = Math.max(0, roundMoney(finalTotal - numSplitQr - numSplitCard));
+    setSplitCash(remaining.toFixed(2));
+  };
+
+  const handleSelectCombined = () => {
+    setPaymentMethod('combined');
+    if (splitTotalAssigned === 0 || !isSplitBalanced) {
+      const half = roundMoney(finalTotal / 2);
+      const rest = roundMoney(finalTotal - half);
+      setSplitCash(half.toFixed(2));
+      setSplitQr(rest.toFixed(2));
+      setSplitCard('0.00');
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -332,7 +393,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
     const isPickup = effectiveDeliveryType === 'pickup';
 
+    if (paymentMethod === 'combined') {
+      const validation = validateSplitPayment({ cash: numSplitCash, qr: numSplitQr, card: numSplitCard }, finalTotal);
+      if (!validation.isValid) {
+        showToast(validation.error || 'La suma de los montos combinados debe coincidir con el total.', 'warning');
+        return;
+      }
+    }
+
     // 1. Crear el pedido en el sistema
+    const splitPaymentData = paymentMethod === 'combined' ? {
+      cash: numSplitCash,
+      qr: numSplitQr,
+      card: numSplitCard,
+      cashGiven: numSplitCashGiven > numSplitCash ? numSplitCashGiven : numSplitCash,
+      change: splitCashChange
+    } : null;
+
     const newOrder = createCustomerOrder({
       name: customerName,
       phone: customerPhone,
@@ -345,7 +422,10 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
       deliveryFee: finalDeliveryFee,
       deliveryType: effectiveDeliveryType,
       paymentMethod,
-      cashChangeFor: paymentMethod === 'cash' ? parseFloat(cashAmount) : null
+      splitPayment: splitPaymentData,
+      cashChangeFor: paymentMethod === 'cash' 
+        ? parseFloat(cashAmount) 
+        : (paymentMethod === 'combined' && numSplitCashGiven > numSplitCash ? numSplitCashGiven : null)
     });
 
     // 2. Extraer número de WhatsApp / Teléfono de la tienda
@@ -397,6 +477,23 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
         waText = `🛒 *NUEVO PEDIDO #${orderNum}*\n🏪 *Tienda:* ${storeDisplayName}\n\n👤 *Cliente:* ${customerName}\n📱 *Teléfono:* ${customerPhone}\n\n${deliveryDetails}\n\n${paymentLines.join('\n')}\n\n📦 *Productos:* \n${itemsList}\n\n💰 *Subtotal:* ${currency} ${cartSubtotal.toFixed(2)}${appliedCoupon ? `\n🏷 *Cupón Descuento:* -${currency} ${appliedCoupon.discount.toFixed(2)} (${appliedCoupon.code})` : ''}\n🛵 *Envío:* ${finalDeliveryFee === 0 ? 'GRATIS' : `${currency} ${finalDeliveryFee.toFixed(2)}`}\n💵 *TOTAL FINAL:* ${currency} ${finalTotal.toFixed(2)}`;
       } else if (paymentMethod === 'qr') {
         waText = `🛒 *NUEVO PEDIDO #${orderNum}*\n🏪 *Tienda:* ${storeDisplayName}\n\n👤 *Cliente:* ${customerName}\n📱 *Teléfono:* ${customerPhone}\n\n${deliveryDetails}\n\n📱 *Forma de Pago:* Transferencia QR Digital\n✨ *Estado Pago:* Adjunto mi comprobante de pago por este medio\n\n📦 *Productos:* \n${itemsList}\n\n💰 *Subtotal:* ${currency} ${cartSubtotal.toFixed(2)}${appliedCoupon ? `\n🏷 *Cupón Descuento:* -${currency} ${appliedCoupon.discount.toFixed(2)} (${appliedCoupon.code})` : ''}\n🛵 *Envío:* ${finalDeliveryFee === 0 ? 'GRATIS' : `${currency} ${finalDeliveryFee.toFixed(2)}`}\n💵 *TOTAL PAGADO:* ${currency} ${finalTotal.toFixed(2)}`;
+      } else if (paymentMethod === 'combined') {
+        const breakdownLines = [
+          `🔀 *Forma de Pago:* Pago Combinado (Retiro en Mostrador)`,
+          `   • 💵 Efectivo en caja: ${currency} ${numSplitCash.toFixed(2)}`,
+          `   • 📱 QR Simple Digital: ${currency} ${numSplitQr.toFixed(2)}`
+        ];
+        if (numSplitCard > 0) {
+          breakdownLines.push(`   • 💳 Tarjeta POS en caja: ${currency} ${numSplitCard.toFixed(2)}`);
+        }
+        if (numSplitCash > 0 && numSplitCashGiven > numSplitCash) {
+          breakdownLines.push(`   • 🪙 Pagaré parte efectivo con: ${currency} ${numSplitCashGiven.toFixed(2)} (Vuelto: ${currency} ${splitCashChange.toFixed(2)})`);
+        }
+        if (numSplitQr > 0) {
+          breakdownLines.push(`   • ✨ Transferiré ${currency} ${numSplitQr.toFixed(2)} por QR y adjunto mi comprobante`);
+        }
+
+        waText = `🛒 *NUEVO PEDIDO #${orderNum}*\n🏪 *Tienda:* ${storeDisplayName}\n\n👤 *Cliente:* ${customerName}\n📱 *Teléfono:* ${customerPhone}\n\n${deliveryDetails}\n\n${breakdownLines.join('\n')}\n\n📦 *Productos:* \n${itemsList}\n\n💰 *Subtotal:* ${currency} ${cartSubtotal.toFixed(2)}${appliedCoupon ? `\n🏷 *Cupón Descuento:* -${currency} ${appliedCoupon.discount.toFixed(2)} (${appliedCoupon.code})` : ''}\n🛵 *Envío:* GRATIS (Retiro en Tienda)\n💵 *TOTAL FINAL:* ${currency} ${finalTotal.toFixed(2)}`;
       } else {
         waText = `🛒 *NUEVO PEDIDO #${orderNum}*\n🏪 *Tienda:* ${storeDisplayName}\n\n👤 *Cliente:* ${customerName}\n📱 *Teléfono:* ${customerPhone}\n\n${deliveryDetails}\n\n💳 *Forma de Pago:* Tarjeta Débito/Crédito (POS Móvil)\n\n📦 *Productos:* \n${itemsList}\n\n💰 *Subtotal:* ${currency} ${cartSubtotal.toFixed(2)}${appliedCoupon ? `\n🏷 *Cupón Descuento:* -${currency} ${appliedCoupon.discount.toFixed(2)} (${appliedCoupon.code})` : ''}\n🛵 *Envío:* ${finalDeliveryFee === 0 ? 'GRATIS' : `${currency} ${finalDeliveryFee.toFixed(2)}`}\n💵 *TOTAL FINAL:* ${currency} ${finalTotal.toFixed(2)}`;
       }
@@ -874,6 +971,225 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Opción 4: Pago Combinado (Exclusivo Retiro en Mostrador) */}
+                  {effectiveDeliveryType === 'pickup' && (
+                    <div
+                      onClick={handleSelectCombined}
+                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                        paymentMethod === 'combined'
+                          ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-500/20'
+                          : 'border-slate-200 bg-white hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${paymentMethod === 'combined' ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          <Layers className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
+                              Pago Combinado (Mixto)
+                            </p>
+                            <span className="checkout-split-badge-pill">
+                              Solo en Mostrador
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Paga una parte en efectivo y otra por QR o tarjeta al retirar
+                          </p>
+                        </div>
+                      </div>
+
+                      {paymentMethod === 'combined' && (
+                        <div className="mt-3 pt-3 border-t border-purple-200/70 space-y-3" onClick={(e) => e.stopPropagation()}>
+                          {/* Barra de Balance / Cuadre Matemático */}
+                          <div
+                            className={`checkout-split-balance-bar ${
+                              isSplitBalanced
+                                ? 'checkout-split-balance-balanced'
+                                : splitDiff > 0
+                                ? 'checkout-split-balance-under'
+                                : 'checkout-split-balance-over'
+                            }`}
+                          >
+                            <span>
+                              {isSplitBalanced
+                                ? '✅ Montos equilibrados al 100%'
+                                : splitDiff > 0
+                                ? `⚠️ Falta asignar: ${currency} ${splitDiff.toFixed(2)}`
+                                : `⚠️ Excede el total por: ${currency} ${Math.abs(splitDiff).toFixed(2)}`}
+                            </span>
+                            <span className="text-[11px] font-mono">
+                              {currency} {splitTotalAssigned.toFixed(2)} / {currency} {finalTotal.toFixed(2)}
+                            </span>
+                          </div>
+
+                          {/* Botones de reparto rápido */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">
+                              Reparto Rápido:
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleSplit5050}
+                              className="checkout-split-quick-btn"
+                            >
+                              50% Efec / 50% QR
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSplitRestToQr}
+                              className="checkout-split-quick-btn"
+                            >
+                              Restante a QR
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSplitRestToCash}
+                              className="checkout-split-quick-btn"
+                            >
+                              Restante a Efectivo
+                            </button>
+                          </div>
+
+                          {/* Campos de distribución por método */}
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            {/* Efectivo */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>En Efectivo</span>
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                  {currency}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max={finalTotal}
+                                  value={splitCash}
+                                  onChange={(e) => setSplitCash(e.target.value)}
+                                  placeholder="0.00"
+                                  className="checkout-split-input"
+                                />
+                              </div>
+                            </div>
+
+                            {/* QR */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                                <span>En QR Simple</span>
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                  {currency}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max={finalTotal}
+                                  value={splitQr}
+                                  onChange={(e) => setSplitQr(e.target.value)}
+                                  placeholder="0.00"
+                                  className="checkout-split-input"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Tarjeta */}
+                            <div className="space-y-1">
+                              <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                                <CreditCard className="w-3.5 h-3.5 text-purple-600" />
+                                <span>En Tarjeta POS</span>
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                  {currency}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max={finalTotal}
+                                  value={splitCard}
+                                  onChange={(e) => setSplitCard(e.target.value)}
+                                  placeholder="0.00"
+                                  className="checkout-split-input"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Campo adicional: Vuelto para la porción de efectivo si aplica */}
+                          {numSplitCash > 0 && (
+                            <div className="p-2.5 rounded-xl bg-white/80 border border-slate-200 flex items-center justify-between gap-3 text-xs">
+                              <div className="flex-1">
+                                <label className="text-[11px] font-bold text-slate-700 block">
+                                  ¿Con cuánto pagarás la parte en efectivo ({currency} {numSplitCash.toFixed(2)})?
+                                </label>
+                                <span className="text-[10px] text-slate-500">
+                                  Para tener listo tu cambio al retirar
+                                </span>
+                              </div>
+                              <div className="relative w-28 shrink-0">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                  {currency}
+                                </span>
+                                <input
+                                  type="number"
+                                  step="5"
+                                  min={numSplitCash}
+                                  value={splitCashGiven}
+                                  onChange={(e) => setSplitCashGiven(e.target.value)}
+                                  placeholder={numSplitCash.toFixed(2)}
+                                  className="w-full pl-8 pr-2 py-1 rounded-lg border border-slate-200 text-xs font-bold bg-white focus:outline-purple-500"
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Preview del QR si hay monto asignado a QR */}
+                          {numSplitQr > 0 && (
+                            <div className="p-3 bg-white rounded-xl border border-blue-200 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                                  <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                                  <span>Transferir por QR: {currency} {numSplitQr.toFixed(2)}</span>
+                                </span>
+                                {qrImage && (
+                                  <button
+                                    type="button"
+                                    onClick={handleDownloadQr}
+                                    className="text-[10px] font-bold text-blue-700 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    <span>Descargar QR</span>
+                                  </button>
+                                )}
+                              </div>
+                              {qrImage && (
+                                <div className="text-center py-1">
+                                  <img
+                                    src={qrImage}
+                                    alt="QR de Cobro"
+                                    className="w-28 h-28 mx-auto object-contain rounded-lg border border-slate-100 shadow-2xs"
+                                  />
+                                </div>
+                              )}
+                              <p className="text-[10px] text-slate-500 text-center">
+                                Puedes transferir ahora o al momento de retirar tu pedido en caja.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -909,16 +1225,32 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
                     <span>{currency} {changeToReturn}</span>
                   </div>
                 )}
+
+                {paymentMethod === 'combined' && numSplitCash > 0 && splitCashChange > 0 && (
+                  <div className="text-[11px] text-purple-900 bg-purple-50 p-2 rounded-lg font-bold flex justify-between">
+                    <span>Vuelto en mostrador (por efectivo):</span>
+                    <span>{currency} {splitCashChange.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
 
               {/* Botón de Confirmación por WhatsApp */}
               <button
                 type="button"
                 onClick={handleConfirmAndSendWhatsApp}
-                className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base shadow-xl shadow-emerald-950/20 active:scale-98 transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                disabled={paymentMethod === 'combined' && !isSplitBalanced}
+                className={`w-full py-4 rounded-2xl font-black text-sm sm:text-base shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer ${
+                  paymentMethod === 'combined' && !isSplitBalanced
+                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-950/20 active:scale-98'
+                }`}
               >
                 <MessageCircle className="w-5 h-5" />
-                <span>Confirmar y Enviar Pedido por WhatsApp</span>
+                <span>
+                  {paymentMethod === 'combined' && !isSplitBalanced
+                    ? `Equilibra los montos (${splitDiff > 0 ? `Falta ${currency} ${splitDiff.toFixed(2)}` : `Sobra ${currency} ${Math.abs(splitDiff).toFixed(2)}`})`
+                    : 'Confirmar y Enviar Pedido por WhatsApp'}
+                </span>
               </button>
             </div>
           )}

@@ -10,9 +10,15 @@ import {
   Sparkles, 
   PackageCheck,
   AlertCircle,
-  Ban
+  Ban,
+  Banknote,
+  QrCode,
+  CreditCard,
+  Layers,
+  Download
 } from 'lucide-react';
 import { useStore, normalizeOrder } from '../../context/StoreContext';
+import { calculateSplitPortions, formatPaymentBreakdownText } from '../../utils/paymentUtils';
 import './OrderTrackingModal.css';
 
 export const OrderTrackingModal = ({ orderId, onClose }) => {
@@ -226,6 +232,30 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
   const isCancelled = order.status === 'cancelled';
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  const qrImage = storeConfig?.qrImageUrl || selectedStore?.qrImageUrl || '';
+  const isSplitPayment = order.paymentMethod === 'combined' || Boolean(order.splitPayment || order.split_payment);
+  const splitPortions = calculateSplitPortions(order);
+
+  const handleDownloadQr = async () => {
+    if (!qrImage) return;
+    try {
+      const response = await fetch(qrImage, { mode: 'cors' });
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `QR_Cobro_${(storeConfig?.name || 'Tienda').replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      showToast?.('¡Imagen QR descargada!', 'success');
+    } catch (err) {
+      window.open(qrImage, '_blank');
+    }
+  };
 
   // El vecino puede cancelar/anular si el pedido está en pending, preparing o on_the_way (antes de entregado)
   const canCancel = order && ['pending', 'preparing', 'on_the_way'].includes(order.status);
@@ -429,6 +459,91 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
             </div>
           </div>
 
+          {/* Forma de Pago y Desglose */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-black uppercase text-slate-500 tracking-wider">
+                Método de Pago
+              </h4>
+              {isSplitPayment ? (
+                <span className="tracking-split-badge">
+                  <Layers className="w-3 h-3" />
+                  <span>Pago Combinado</span>
+                </span>
+              ) : (
+                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-200/70 text-slate-700">
+                  {order.paymentMethod === 'qr' ? '📱 QR Simple' : order.paymentMethod === 'card' ? '💳 Tarjeta POS' : '💵 Efectivo'}
+                </span>
+              )}
+            </div>
+
+            {isSplitPayment ? (
+              <div className="tracking-split-card space-y-2">
+                <p className="text-[11px] font-bold text-purple-950">
+                  Desglose a pagar/coordinar al retirar en mostrador:
+                </p>
+                <div className="space-y-1.5">
+                  {splitPortions.cash > 0 && (
+                    <div className="tracking-split-item">
+                      <span className="flex items-center gap-1.5 text-slate-700">
+                        <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Efectivo en caja:</span>
+                      </span>
+                      <span className="font-extrabold text-emerald-700">
+                        {currency} {splitPortions.cash.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {splitPortions.qr > 0 && (
+                    <div className="tracking-split-item">
+                      <span className="flex items-center gap-1.5 text-slate-700">
+                        <QrCode className="w-3.5 h-3.5 text-blue-600" />
+                        <span>QR Simple Digital:</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-blue-700">
+                          {currency} {splitPortions.qr.toFixed(2)}
+                        </span>
+                        {qrImage && order.status !== 'delivered' && (
+                          <button
+                            type="button"
+                            onClick={() => setIsQrModalOpen(true)}
+                            className="text-[10px] text-blue-600 hover:text-blue-800 underline font-bold cursor-pointer"
+                          >
+                            Ver QR
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {splitPortions.card > 0 && (
+                    <div className="tracking-split-item">
+                      <span className="flex items-center gap-1.5 text-slate-700">
+                        <CreditCard className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Tarjeta POS en caja:</span>
+                      </span>
+                      <span className="font-extrabold text-purple-700">
+                        {currency} {splitPortions.card.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {order.cashChangeFor && order.cashChangeFor > splitPortions.cash && (
+                  <p className="text-[10px] text-purple-800 font-medium pt-0.5">
+                    * Informaste pago con {currency} {Number(order.cashChangeFor).toFixed(2)} (Vuelto a recibir: {currency} {(order.cashChangeFor - splitPortions.cash).toFixed(2)})
+                  </p>
+                )}
+              </div>
+            ) : order.paymentMethod === 'cash' && order.cashChangeFor && order.cashChangeFor > order.total ? (
+              <p className="text-xs text-slate-600 font-medium">
+                Pagarás con {currency} {Number(order.cashChangeFor).toFixed(2)} (Vuelto: {currency} {(order.cashChangeFor - order.total).toFixed(2)})
+              </p>
+            ) : null}
+          </div>
+
           {/* Botones de Acción */}
           <div className="space-y-2.5 pt-1">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -500,6 +615,49 @@ export const OrderTrackingModal = ({ orderId, onClose }) => {
                   {isCancelling ? 'Anulando...' : 'Sí, anular'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Código QR de la Tienda si el vecino desea transferir */}
+        {isQrModalOpen && qrImage && (
+          <div 
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn"
+            onClick={() => setIsQrModalOpen(false)}
+          >
+            <div 
+              className="relative w-full max-w-xs bg-white rounded-3xl p-5 shadow-2xl border border-slate-100 text-center space-y-3.5 animate-scaleUp"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="text-xs font-black text-slate-900">QR Oficial de Cobro</span>
+                <button
+                  type="button"
+                  onClick={() => setIsQrModalOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <img 
+                src={qrImage} 
+                alt="QR de la Tienda" 
+                className="w-48 h-48 mx-auto object-contain rounded-2xl border border-slate-100 shadow-sm"
+              />
+
+              <p className="text-[11px] text-slate-600 font-medium">
+                Monto QR correspondiente: <strong className="text-blue-700 font-bold">{currency} {splitPortions.qr.toFixed(2)}</strong>
+              </p>
+
+              <button
+                type="button"
+                onClick={handleDownloadQr}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Descargar Imagen QR</span>
+              </button>
             </div>
           </div>
         )}
