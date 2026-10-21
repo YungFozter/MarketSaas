@@ -2,7 +2,7 @@ import {
   calculateSplitPortions, 
   formatPaymentBreakdownText, 
   roundMoney 
-} from './paymentUtils';
+} from './paymentUtils.js';
 
 /**
  * Normaliza y formatea las órdenes para reportes contables
@@ -55,12 +55,25 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
       deliveryType = o.deliveryType === 'delivery' ? 'Delivery a Domicilio' : 'Retiro en Tienda';
     }
 
-    const payMethodRaw = typeof o.paymentMethod === 'object' ? o.paymentMethod?.method : o.paymentMethod;
-    const isCombined = payMethodRaw === 'combined' || Boolean(o.split_payment || o.splitPayment);
+    const payMethodRaw = 
+      (typeof o.paymentMethod === 'object' ? (o.paymentMethod?.method || o.paymentMethod?.type) : o.paymentMethod) ||
+      (typeof o.payment_method === 'object' ? (o.payment_method?.method || o.payment_method?.type) : o.payment_method) ||
+      'cash';
+
+    const hasExplicitSplit = Boolean(
+      o.split_payment || 
+      o.splitPayment || 
+      o.customer?.split_payment || 
+      o.customer?.splitPayment || 
+      o.payment_method?.splitPayment || 
+      o.paymentMethod?.splitPayment
+    );
+
+    const isCombined = payMethodRaw === 'combined' || payMethodRaw === 'split' || hasExplicitSplit;
     const splitDetails = isCombined ? formatPaymentBreakdownText(o) : '';
 
     const paymentMethodLabel = 
-      isCombined ? (splitDetails ? `Pago Combinado (${splitDetails})` : 'Pago Combinado') :
+      isCombined ? (splitDetails && splitDetails !== 'Pago Combinado' ? `Pago Combinado (${splitDetails})` : 'Pago Combinado') :
       payMethodRaw === 'qr' ? 'QR Simple (Digital)' :
       payMethodRaw === 'card' ? 'Tarjeta POS' :
       payMethodRaw === 'credit' ? 'A Cuenta (Fiao)' :
@@ -398,7 +411,7 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
       <td class="cell text-slate-600 text-xs">${r.phone}</td>
       <td class="cell text-slate-700 text-xs">${r.location}${r.details && r.details !== '—' ? ` <span class="text-slate-400 text-[10px]">(${r.details})</span>` : ''}</td>
       <td class="cell-center text-xs text-slate-700 font-medium">${r.deliveryType}</td>
-      <td class="cell-center text-xs font-semibold text-slate-800">${r.paymentMethod}</td>
+      <td class="cell-center text-xs font-semibold text-slate-800" style="white-space: normal; line-height: 1.35; padding: 6px 8px;">${r.paymentMethod}</td>
       <td class="cell-right font-black text-slate-900 text-xs">${currency} ${r.totalFormatted}</td>
       <td class="cell-center text-xs">
         <span class="badge ${r.status.includes('Entregado') ? 'badge-success' : 'badge-warning'}">
@@ -636,7 +649,7 @@ export const exportSalesToPDF = (orders, storeConfig, formatBoliviaDateTime, tit
               <th style="width: 100px;">Teléfono</th>
               <th style="width: 160px;">Ubicación</th>
               <th class="center" style="width: 110px;">Modalidad</th>
-              <th class="center" style="width: 110px;">Método Pago</th>
+              <th class="center" style="width: 155px; min-width: 140px;">Método de Pago</th>
               <th class="right" style="width: 90px;">Total (${currency})</th>
               <th class="center" style="width: 100px;">Estado</th>
             </tr>

@@ -145,50 +145,89 @@ export const validateSplitPayment = (split, total) => {
  */
 export const calculateSplitPortions = (order) => {
   if (!order || typeof order !== 'object') {
-    return { cash: 0, qr: 0, card: 0, credit: 0, total: 0 };
+    return { cash: 0, qr: 0, card: 0, credit: 0, total: 0, isSplit: false };
   }
 
   const total = roundMoney(order.total || 0);
-  const method = String(
-    order.paymentMethod || 
-    order.payment_method || 
-    (typeof order.payment_method === 'object' ? order.payment_method?.method : '') || 
-    'cash'
-  ).toLowerCase().trim();
+
+  // Extracción canónica e inmune a objetos de la categoría de método de pago
+  let method = 'cash';
+  if (typeof order.paymentMethod === 'string') {
+    method = order.paymentMethod.toLowerCase().trim();
+  } else if (order.paymentMethod && typeof order.paymentMethod === 'object') {
+    method = String(order.paymentMethod.type || order.paymentMethod.method || '').toLowerCase().trim();
+  } else if (typeof order.payment_method === 'string') {
+    method = order.payment_method.toLowerCase().trim();
+  } else if (order.payment_method && typeof order.payment_method === 'object') {
+    method = String(order.payment_method.type || order.payment_method.method || '').toLowerCase().trim();
+  }
+
+  // Búsqueda exhaustiva del desglose de Pago Combinado en todas las propiedades posibles
+  let rawSplit = 
+    order.splitPayment || 
+    order.split_payment || 
+    (typeof order.paymentMethod === 'object' ? (order.paymentMethod?.splitPayment || order.paymentMethod?.split_payment) : null) ||
+    (typeof order.payment_method === 'object' ? (order.payment_method?.splitPayment || order.payment_method?.split_payment) : null) ||
+    order.customer?.splitPayment || 
+    order.customer?.split_payment ||
+    (order.metadata?.splitPayment || order.metadata?.split_payment);
+
+  // Fallback si payment_method fue serializado como string JSON
+  if (!rawSplit && typeof order.payment_method === 'string' && order.payment_method.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(order.payment_method);
+      rawSplit = parsed.splitPayment || parsed.split_payment || parsed;
+    } catch {}
+  }
+
+  const isCombined = method === PAYMENT_METHODS.COMBINED || method === 'split' || Boolean(rawSplit);
 
   // Caso: Pago Combinado
-  if (method === PAYMENT_METHODS.COMBINED || method === 'split' || order.splitPayment || order.split_payment) {
-    const split = normalizeSplitPayment(order.splitPayment || order.split_payment, total);
-    if (split) {
+  if (isCombined) {
+    const split = normalizeSplitPayment(rawSplit, total);
+    if (split && (split.cash > 0 || split.qr > 0 || split.card > 0)) {
       return {
         cash: split.cash,
         qr: split.qr,
         card: split.card,
         credit: 0,
-        total: total
+        total: total,
+        isSplit: true
       };
     }
+
+    // Si está marcado como combinado pero se perdió el detalle numérico exacto,
+    // NO asignar 100% a efectivo de forma arbitraria para no engañar los arqueos.
+    return {
+      cash: 0,
+      qr: 0,
+      card: 0,
+      credit: 0,
+      total: total,
+      isSplit: true,
+      isUnknownBreakdown: true
+    };
   }
 
   // Casos simples directos
   if (method === PAYMENT_METHODS.QR || method === 'transfer') {
-    return { cash: 0, qr: total, card: 0, credit: 0, total };
+    return { cash: 0, qr: total, card: 0, credit: 0, total, isSplit: false };
   }
 
   if (method === PAYMENT_METHODS.CARD || method === 'pos') {
-    return { cash: 0, qr: 0, card: total, credit: 0, total };
+    return { cash: 0, qr: 0, card: total, credit: 0, total, isSplit: false };
   }
 
   if (method === PAYMENT_METHODS.CREDIT || method === 'fiao' || method === 'cuenta') {
-    return { cash: 0, qr: 0, card: 0, credit: total, total };
+    return { cash: 0, qr: 0, card: 0, credit: total, total, isSplit: false };
   }
 
   // Por defecto: Efectivo
-  return { cash: total, qr: 0, card: 0, credit: 0, total };
+  return { cash: total, qr: 0, card: 0, credit: 0, total, isSplit: false };
 };
 
 /**
- * Devuelve un texto descriptivo y resumido del pago para badges y comprobantes.
+ * Devuelve un texto descriptivo y resumido del pago para badges, reportes y comprobantes.
  * Ej: "Bs. 30.00 Efec. + Bs. 20.00 QR" o "Efectivo"
  * 
  * @param {Object} order 
@@ -197,9 +236,29 @@ export const calculateSplitPortions = (order) => {
  */
 export const formatPaymentBreakdownText = (order, currency = 'Bs.') => {
   if (!order) return 'Efectivo';
-  const method = String(order.paymentMethod || order.payment_method || 'cash').toLowerCase();
 
-  if (method === PAYMENT_METHODS.COMBINED || order.splitPayment || order.split_payment) {
+  let method = 'cash';
+  if (typeof order.paymentMethod === 'string') {
+    method = order.paymentMethod.toLowerCase().trim();
+  } else if (order.paymentMethod && typeof order.paymentMethod === 'object') {
+    method = String(order.paymentMethod.type || order.paymentMethod.method || '').toLowerCase().trim();
+  } else if (typeof order.payment_method === 'string') {
+    method = order.payment_method.toLowerCase().trim();
+  } else if (order.payment_method && typeof order.payment_method === 'object') {
+    method = String(order.payment_method.type || order.payment_method.method || '').toLowerCase().trim();
+  }
+
+  const rawSplit = 
+    order.splitPayment || 
+    order.split_payment || 
+    (typeof order.paymentMethod === 'object' ? (order.paymentMethod?.splitPayment || order.paymentMethod?.split_payment) : null) ||
+    (typeof order.payment_method === 'object' ? (order.payment_method?.splitPayment || order.payment_method?.split_payment) : null) ||
+    order.customer?.splitPayment || 
+    order.customer?.split_payment;
+
+  const isCombined = method === PAYMENT_METHODS.COMBINED || method === 'split' || Boolean(rawSplit);
+
+  if (isCombined) {
     const p = calculateSplitPortions(order);
     const parts = [];
     if (p.cash > 0) parts.push(`${currency} ${p.cash.toFixed(2)} Efec.`);
@@ -208,8 +267,8 @@ export const formatPaymentBreakdownText = (order, currency = 'Bs.') => {
     return parts.length > 0 ? parts.join(' + ') : 'Pago Combinado';
   }
 
-  if (method === PAYMENT_METHODS.QR) return 'QR Simple';
-  if (method === PAYMENT_METHODS.CARD) return 'Tarjeta POS';
-  if (method === PAYMENT_METHODS.CREDIT) return 'A Cuenta (Fiao)';
+  if (method === PAYMENT_METHODS.QR || method === 'transfer') return 'QR Simple';
+  if (method === PAYMENT_METHODS.CARD || method === 'pos') return 'Tarjeta POS';
+  if (method === PAYMENT_METHODS.CREDIT || method === 'fiao' || method === 'cuenta') return 'A Cuenta (Fiao)';
   return 'Efectivo';
 };

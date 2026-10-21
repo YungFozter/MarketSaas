@@ -618,7 +618,22 @@ export const normalizeOrder = (o) => {
 
   // Soporte canónico y robusto para Pago Combinado (Split Payment)
   const rawTotal = Number(o.total || 0);
-  const rawSplit = o.split_payment || o.splitPayment || (typeof o.payment_method === 'object' ? o.payment_method?.splitPayment : null) || (typeof o.paymentMethod === 'object' ? o.paymentMethod?.splitPayment : null);
+  let rawSplit = 
+    o.split_payment || 
+    o.splitPayment || 
+    o.customer?.split_payment || 
+    o.customer?.splitPayment || 
+    (typeof o.payment_method === 'object' ? (o.payment_method?.splitPayment || o.payment_method?.split_payment) : null) || 
+    (typeof o.paymentMethod === 'object' ? (o.paymentMethod?.splitPayment || o.paymentMethod?.split_payment) : null) ||
+    o.metadata?.split_payment ||
+    o.metadata?.splitPayment;
+
+  if (!rawSplit && typeof o.payment_method === 'string' && o.payment_method.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(o.payment_method);
+      rawSplit = parsed.splitPayment || parsed.split_payment || parsed;
+    } catch {}
+  }
 
   let normalizedSplit = null;
   if (payMethod === 'combined' || payMethod === 'split' || rawSplit) {
@@ -644,7 +659,9 @@ export const normalizeOrder = (o) => {
     coordinates: rawCust.coordinates || null,
     notes: rawCust.notes || '',
     distance_km: dDist,
-    is_rain_surcharge: isRain
+    is_rain_surcharge: isRain,
+    split_payment: normalizedSplit,
+    splitPayment: normalizedSplit
   };
 
   return {
@@ -920,14 +937,19 @@ export const StoreProvider = ({ children }) => {
   // Identificador de Tienda Multi-Tenant (ej. ?store=donpepe o ?tenant=central)
   const getInitialTenantSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    const raw = params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || null;
+    const raw = params.get('store') || params.get('tenant') || localStorage.getItem('marketsaas_active_tenant') || 'matias-tiendatodo';
     if (raw === 'tiendita-fernando' || raw === 'fernando') return 'minimarket-ian';
+    if (raw === 'default') return 'matias-tiendatodo';
     return raw;
   };
   const [tenantSlugState, setTenantSlugState] = useState(getInitialTenantSlug);
-  const tenantSlug = (tenantSlugState === 'tiendita-fernando' || tenantSlugState === 'fernando') ? 'minimarket-ian' : tenantSlugState;
+  const tenantSlug = (tenantSlugState === 'tiendita-fernando' || tenantSlugState === 'fernando') 
+    ? 'minimarket-ian' 
+    : (tenantSlugState === 'default' || !tenantSlugState ? 'matias-tiendatodo' : tenantSlugState);
   const setTenantSlug = (slug) => {
-    const resolved = (slug === 'tiendita-fernando' || slug === 'fernando') ? 'minimarket-ian' : slug;
+    const resolved = (slug === 'tiendita-fernando' || slug === 'fernando') 
+      ? 'minimarket-ian' 
+      : (slug === 'default' || !slug ? 'matias-tiendatodo' : slug);
     setTenantSlugState(resolved);
   };
 
@@ -1533,23 +1555,35 @@ export const StoreProvider = ({ children }) => {
           const cleaned = filterOutGhostOrders(parsed.map(normalizeOrder));
           if (cleaned.length > 0) {
             const seedOrders = isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder);
-            const existingIds = new Set(cleaned.map(o => o.id));
-            let hasNewSeed = false;
+            const seedMap = new Map(seedOrders.map(so => [so.id, so]));
+            let hasUpdate = false;
+            const healed = cleaned.map(o => {
+              if (seedMap.has(o.id)) {
+                const fresh = seedMap.get(o.id);
+                if (fresh.paymentMethod === 'combined' && (!o.splitPayment || (!o.splitPayment.qr && !o.splitPayment.card))) {
+                  hasUpdate = true;
+                  return { ...o, ...fresh };
+                }
+              }
+              return o;
+            });
+
+            const existingIds = new Set(healed.map(o => o.id));
             seedOrders.forEach(so => {
               if (!existingIds.has(so.id)) {
-                cleaned.unshift(so);
-                hasNewSeed = true;
+                healed.unshift(so);
+                hasUpdate = true;
               }
             });
-            if (hasNewSeed) {
+            if (hasUpdate) {
               try {
-                localStorage.setItem(`marketsaas_${activeSlug}_orders`, JSON.stringify(cleaned));
+                localStorage.setItem(`marketsaas_${activeSlug}_orders`, JSON.stringify(healed));
                 if (isMatias) {
-                  localStorage.setItem('marketsaas_default_orders', JSON.stringify(cleaned));
+                  localStorage.setItem('marketsaas_default_orders', JSON.stringify(healed));
                 }
               } catch (e) {}
             }
-            return cleaned;
+            return healed;
           }
         }
       }
@@ -2053,20 +2087,32 @@ export const StoreProvider = ({ children }) => {
               const parsed = JSON.parse(localOrders);
               const isFernando = isFernandoSeedStore(tenantSlug);
               const seedOrders = isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder);
-              const existingIds = new Set(parsed.map(o => o.id));
-              let hasNewSeed = false;
+              const seedMap = new Map(seedOrders.map(so => [so.id, so]));
+              let hasUpdate = false;
+              const healed = parsed.map(o => {
+                if (seedMap.has(o.id)) {
+                  const fresh = seedMap.get(o.id);
+                  if (fresh.paymentMethod === 'combined' && (!o.splitPayment || (!o.splitPayment.qr && !o.splitPayment.card))) {
+                    hasUpdate = true;
+                    return { ...o, ...fresh };
+                  }
+                }
+                return o;
+              });
+
+              const existingIds = new Set(healed.map(o => o.id));
               seedOrders.forEach(so => {
                 if (!existingIds.has(so.id)) {
-                  parsed.unshift(so);
-                  hasNewSeed = true;
+                  healed.unshift(so);
+                  hasUpdate = true;
                 }
               });
-              if (hasNewSeed) {
+              if (hasUpdate) {
                 try {
-                  localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(parsed));
+                  localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(healed));
                 } catch (e) {}
               }
-              setOrders(parsed.map(normalizeOrder));
+              setOrders(healed.map(normalizeOrder));
             } catch {
               setOrders(JSON.parse(localOrders));
             }
@@ -2375,11 +2421,35 @@ export const StoreProvider = ({ children }) => {
 
           let normalized = filterOutGhostOrders(data.map(normalizeOrder));
           if (isFernandoSeedStore(tenantSlug)) {
-            if (normalized.length === 0) {
-              normalized = filterOutGhostOrders(getFernandoOrders().map(normalizeOrder));
-            }
+            const seedOrders = getFernandoOrders().map(normalizeOrder);
+            const seedMap = new Map(seedOrders.map(so => [so.id, so]));
+            normalized = normalized.map(o => {
+              if (seedMap.has(o.id)) {
+                const fresh = seedMap.get(o.id);
+                if (fresh.paymentMethod === 'combined' && (!o.splitPayment || (!o.splitPayment.qr && !o.splitPayment.card))) {
+                  return { ...o, ...fresh };
+                }
+              }
+              return o;
+            });
+            const existingIds = new Set(normalized.map(o => o.id));
+            seedOrders.forEach(so => {
+              if (!existingIds.has(so.id)) {
+                normalized.push(so);
+              }
+            });
           } else if (isMatiasSeedStore(tenantSlug)) {
             const seedOrders = getMatiasOrders().map(normalizeOrder);
+            const seedMap = new Map(seedOrders.map(so => [so.id, so]));
+            normalized = normalized.map(o => {
+              if (seedMap.has(o.id)) {
+                const fresh = seedMap.get(o.id);
+                if (fresh.paymentMethod === 'combined' && (!o.splitPayment || (!o.splitPayment.qr && !o.splitPayment.card))) {
+                  return { ...o, ...fresh };
+                }
+              }
+              return o;
+            });
             const existingIds = new Set(normalized.map(o => o.id));
             seedOrders.forEach(so => {
               if (!existingIds.has(so.id)) {
@@ -4233,6 +4303,11 @@ export const StoreProvider = ({ children }) => {
       ? Boolean(storeConfig?.isRainActive) 
       : false;
 
+    const isCombinedOrder = orderData.paymentMethod === 'combined';
+    const validatedCustomerSplit = isCombinedOrder 
+      ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
+      : null;
+
     const dbPayload = {
       id: orderId,
       tenant_id: tenantSlug,
@@ -4245,7 +4320,8 @@ export const StoreProvider = ({ children }) => {
         coordinates: orderData.coordinates || (orderData.latitude && orderData.longitude ? { lat: orderData.latitude, lng: orderData.longitude } : null),
         notes: orderData.notes || '',
         distance_km: distanceKmValue,
-        is_rain_surcharge: isRainSurchargeValue
+        is_rain_surcharge: isRainSurchargeValue,
+        ...(isCombinedOrder && validatedCustomerSplit ? { split_payment: validatedCustomerSplit, splitPayment: validatedCustomerSplit } : {})
       },
       items: cart.map(item => ({
         id: item.id,
@@ -4261,14 +4337,12 @@ export const StoreProvider = ({ children }) => {
         ? Math.max(0, cartSubtotal + deliveryFeeValue - discountAmount) 
         : Math.max(0, cartSubtotal - discountAmount),
       status: 'pending',
-      payment_method: orderData.paymentMethod === 'combined'
-        ? { method: 'combined', splitPayment: normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount)) }
+      payment_method: isCombinedOrder
+        ? { method: 'combined', splitPayment: validatedCustomerSplit }
         : orderData.cashChangeFor 
           ? { method: orderData.paymentMethod, cashChangeFor: orderData.cashChangeFor }
           : { method: orderData.paymentMethod },
-      split_payment: orderData.paymentMethod === 'combined'
-        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
-        : null,
+      split_payment: validatedCustomerSplit,
       coupon_code: appliedCoupon ? appliedCoupon.code : null,
       created_at: new Date().toISOString()
     };
@@ -4282,12 +4356,8 @@ export const StoreProvider = ({ children }) => {
       is_rain_surcharge: isRainSurchargeValue,
       isRainSurcharge: isRainSurchargeValue,
       paymentMethod: orderData.paymentMethod,
-      splitPayment: orderData.paymentMethod === 'combined'
-        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
-        : null,
-      split_payment: orderData.paymentMethod === 'combined'
-        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
-        : null,
+      splitPayment: validatedCustomerSplit,
+      split_payment: validatedCustomerSplit,
       cashChangeFor: orderData.cashChangeFor || null,
       couponCode: dbPayload.coupon_code,
       createdAt: dbPayload.created_at
@@ -4418,7 +4488,18 @@ export const StoreProvider = ({ children }) => {
 
       supabase.from('orders').insert([dbPayload]).then(({ error }) => {
         if (error) {
-          console.error('Error insertando pedido en Supabase:', error);
+          if (error.code === '42703' || error.message?.includes('split_payment')) {
+            const { split_payment, ...safePayload } = dbPayload;
+            supabase.from('orders').insert([safePayload]).then(({ error: retryErr }) => {
+              if (retryErr) {
+                console.error('Error insertando pedido en Supabase (reintento seguro):', retryErr);
+              } else {
+                console.log('Pedido insertado con éxito en Supabase (modo compatible):', orderId);
+              }
+            });
+          } else {
+            console.error('Error insertando pedido en Supabase:', error);
+          }
         } else {
           console.log('Pedido insertado con éxito en Supabase:', orderId);
         }
@@ -5074,7 +5155,7 @@ export const StoreProvider = ({ children }) => {
 
     // 2. Si el cobro es "A Cuenta / Fiao", registrar el cargo al cliente en su libreta
     const isCredit = paymentType === 'credit';
-    const customerInfo = isCredit && creditOptions?.customerId ? {
+    const baseCustomer = isCredit && creditOptions?.customerId ? {
       name: creditOptions.customerName || 'Cliente a Cuenta',
       phone: creditOptions.customerPhone || '',
       address: creditOptions.customerAddress || 'En Tienda (POS)',
@@ -5086,6 +5167,11 @@ export const StoreProvider = ({ children }) => {
       address: 'En Tienda (POS)',
       reference: 'Mostrador',
       notes: ''
+    };
+
+    const customerInfo = {
+      ...baseCustomer,
+      ...(isCombined && validatedSplit ? { split_payment: validatedSplit, splitPayment: validatedSplit } : {})
     };
 
     if (isCredit && creditOptions?.customerId) {
@@ -5109,7 +5195,9 @@ export const StoreProvider = ({ children }) => {
       delivery_type: 'pickup',
       total: subtotal,
       status: 'delivered',
-      payment_method: paymentType,
+      payment_method: isCombined
+        ? { method: 'combined', splitPayment: validatedSplit }
+        : paymentType,
       split_payment: validatedSplit,
       coupon_code: null,
       created_at: nowIso
