@@ -95,7 +95,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         {
           step: 3,
           action: 'Elige el método de pago en el lado derecho',
-          desc: 'Si te paga en Efectivo, haz clic en el billete que te entregó (ej. Bs. 50) y el sistema te calculará el cambio/vuelto exacto en segundos. Si paga con QR, presiona "QR" para mostrar tu código.'
+          desc: 'Si te paga en Efectivo, haz clic en el billete que te entregó (ej. Bs. 50) y el sistema te calculará el cambio/vuelto exacto en segundos. Si paga con QR, presiona "QR". Si paga parte en efectivo y parte en QR o tarjeta, pulsa el botón violeta "Combinado".'
         },
         {
           step: 4,
@@ -104,6 +104,37 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         }
       ],
       tip: 'Puedes conectar una lectora de código de barras USB a tu computadora y pasar los productos directamente sin tocar el teclado.'
+    },
+    {
+      id: 'cobro-combinado',
+      title: '¿Cómo realizar un Pago Combinado (Efectivo + QR + Tarjeta)?',
+      badge: 'Cobro Multicanal',
+      badgeColor: 'violet',
+      icon: DollarSign,
+      targetTab: 'pos',
+      steps: [
+        {
+          step: 1,
+          action: 'Selecciona el método "Combinado" en el Punto de Venta',
+          desc: 'Al armar la venta de mostrador, haz clic en el botón violeta "Combinado" en las opciones de cobro.'
+        },
+        {
+          step: 2,
+          action: 'Reparte los montos entre Efectivo, QR y Tarjeta',
+          desc: 'Escribe cuánto te entrega en cada método o usa los botones inteligentes [50/50] o [Restante a QR] para cuadrar el total al instante sin calculadora.'
+        },
+        {
+          step: 3,
+          action: 'Calcula el cambio sobre el efectivo sin alterar lo digital',
+          desc: 'Si en la porción de efectivo el cliente te entrega un billete mayor (ej. debía Bs. 20 en efectivo y te da Bs. 50), el sistema te indica el vuelto exacto (Bs. 30).'
+        },
+        {
+          step: 4,
+          action: 'Finaliza la venta y revisa tu comanda con desglose',
+          desc: 'El ticket impreso reflejará exactamente cada canal de pago. En tu Cierre de Caja diario, solo la fracción en billetes se sumará a la gaveta física, garantizando un arqueo perfecto sin descuadres.'
+        }
+      ],
+      tip: 'Los pedidos web donde el vecino elija recoger en mostrador con Pago Combinado también mostrarán este desglose en la tarjeta de Pedidos y en el Historial de Ventas.'
     },
     {
       id: 'abrir-cerrar',
@@ -245,7 +276,7 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         {
           step: 2,
           action: 'Revisa las ventas en efectivo y registra si hubo salidas',
-          desc: 'El sistema calcula el Efectivo Esperado sumando el fondo inicial y las ventas en efectivo, y restando las salidas de dinero (ej. compra de hielo o pan).'
+          desc: 'El sistema calcula el Efectivo Esperado sumando el fondo inicial y las ventas en efectivo (incluyendo la fracción física exacta de los pagos combinados sin mezclar lo cobrado por QR o tarjeta) y restando las salidas de dinero (ej. compra de hielo o pan).'
         },
         {
           step: 3,
@@ -373,6 +404,10 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
           desc: 'Muestra los pedidos recién emitidos por los vecinos. Cada tarjeta incluye número de orden, hora, nombre, dirección/torre, teléfono, método de pago y lista detallada de productos.'
         },
         {
+          name: 'Gestión de Órdenes con Pago Combinado (Mostrador)',
+          desc: 'Los pedidos web con retiro en tienda donde el cliente eligió Pago Combinado muestran una etiqueta violeta [Combinado: Efec + QR]. Al entregar el pedido en mostrador, el sistema te desglosa exactamente cuánto cobrar en billetes y cuánto por transferencia QR o datáfono para no cometer errores de caja.'
+        },
+        {
           name: 'Botón [Aceptar Pedido]',
           desc: 'Mueve el pedido a preparación y actualiza en tiempo real la pantalla de seguimiento del vecino indicándole que su compra fue aceptada.'
         },
@@ -427,6 +462,10 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
           desc: 'Muestra el código QR bancario de tu tienda en pantalla para que el cliente lo escanee con su aplicación bancaria móvil.'
         },
         {
+          name: 'Método de Cobro: Pago Combinado (Multicanal)',
+          desc: 'Permite fraccionar el importe de la compra entre Efectivo, QR Simple y Tarjeta POS en una sola operación. Dispone de atajos de cálculo rápido [50/50] y [Restante a QR/Efectivo], calculando además el cambio sobre la fracción en billetes sin afectar los importes digitales.'
+        },
+        {
           name: 'Método de Cobro: Al Fiado (Cargar a Deuda)',
           desc: 'Permite seleccionar a un vecino de la Libreta de Deudas para entregarle los productos a cuenta sin exigir dinero en ese momento.'
         },
@@ -447,6 +486,10 @@ export const StoreUserGuide = ({ onNavigateTab }) => {
         {
           name: 'Tarjetas de Facturación Acumulada',
           desc: 'Muestra el total recaudado en el período, desglosado entre cobros en efectivo y cobros digitales (QR/Transferencia).'
+        },
+        {
+          name: 'Filtro y Auditoría de Pagos Combinados',
+          desc: 'Tarjeta KPI dedicada que totaliza el volumen recaudado mediante pagos mixtos, botón de filtro rápido "Combinado" en la tabla, badges con el desglose exacto (Efec / QR / Tarjeta) y reimpresión de tickets térmicos con el detalle contable completo.'
         },
         {
           name: 'Buscador de Recibos y Filtros de Fecha',

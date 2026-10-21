@@ -1038,13 +1038,18 @@ export const SalesHistory = () => {
                           if (m === 'combined') {
                             const breakdown = formatPaymentBreakdownText(sale, currency);
                             return (
-                              <span 
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-violet-50 text-violet-800 font-extrabold text-[11px] border border-violet-200/90 shadow-2xs"
-                                title={`Pago Combinado: ${breakdown}`}
-                              >
-                                <Layers className="w-3.5 h-3.5 text-violet-600 shrink-0" />
-                                <span>Combinado ({breakdown})</span>
-                              </span>
+                              <div className="flex flex-col items-start gap-0.5">
+                                <span 
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-violet-100 text-violet-900 font-extrabold text-[11px] border border-violet-300/80 shadow-2xs"
+                                  title={`Pago Combinado: ${breakdown}`}
+                                >
+                                  <span className="text-[11px]">🔀</span>
+                                  <span>Combinado</span>
+                                </span>
+                                <span className="text-[10px] text-violet-700 font-bold pl-0.5 whitespace-nowrap">
+                                  {breakdown}
+                                </span>
+                              </div>
                             );
                           }
                           if (m === 'qr') {

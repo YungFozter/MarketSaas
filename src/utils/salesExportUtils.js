@@ -60,7 +60,7 @@ export const prepareSalesData = (orders = [], formatBoliviaDateTime) => {
     const splitDetails = isCombined ? formatPaymentBreakdownText(o) : '';
 
     const paymentMethodLabel = 
-      isCombined ? (splitDetails ? `Combinado (${splitDetails})` : 'Pago Combinado') :
+      isCombined ? (splitDetails ? `Pago Combinado (${splitDetails})` : 'Pago Combinado') :
       payMethodRaw === 'qr' ? 'QR Simple (Digital)' :
       payMethodRaw === 'card' ? 'Tarjeta POS' :
       payMethodRaw === 'credit' ? 'A Cuenta (Fiao)' :
