@@ -24,6 +24,25 @@ import {
   MAX_DELIVERY_DISTANCE_KM,
   RAIN_SURCHARGE_BS
 } from '../utils/deliveryFeeUtils';
+import { 
+  PAYMENT_METHODS, 
+  PAYMENT_METHOD_LABELS, 
+  normalizeSplitPayment, 
+  validateSplitPayment, 
+  calculateSplitPortions, 
+  formatPaymentBreakdownText,
+  roundMoney
+} from '../utils/paymentUtils';
+
+export {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  normalizeSplitPayment,
+  validateSplitPayment,
+  calculateSplitPortions,
+  formatPaymentBreakdownText,
+  roundMoney
+};
 
 const StoreContext = createContext();
 
@@ -597,6 +616,16 @@ export const normalizeOrder = (o) => {
     cashChange = o.paymentMethod.cashChangeFor || o.paymentMethod.cash_change_for || null;
   }
 
+  // Soporte canónico y robusto para Pago Combinado (Split Payment)
+  const rawTotal = Number(o.total || 0);
+  const rawSplit = o.split_payment || o.splitPayment || (typeof o.payment_method === 'object' ? o.payment_method?.splitPayment : null) || (typeof o.paymentMethod === 'object' ? o.paymentMethod?.splitPayment : null);
+
+  let normalizedSplit = null;
+  if (payMethod === 'combined' || payMethod === 'split' || rawSplit) {
+    payMethod = 'combined';
+    normalizedSplit = normalizeSplitPayment(rawSplit, rawTotal);
+  }
+
   const rawCust = o.customer || {};
   const dType = o.delivery_type || o.deliveryType || 'pickup';
   const dFee = o.delivery_fee != null ? Number(o.delivery_fee) : (o.deliveryFee != null ? Number(o.deliveryFee) : 0);
@@ -640,6 +669,8 @@ export const normalizeOrder = (o) => {
     isRainSurcharge: isRain,
     payment_method: payMethod,
     paymentMethod: payMethod,
+    split_payment: normalizedSplit,
+    splitPayment: normalizedSplit,
     cashChangeFor: cashChange || o.cashChangeFor || o.cash_change_for || null,
     cash_change_for: cashChange || o.cashChangeFor || o.cash_change_for || null,
     coupon_code: cCode,
@@ -3965,9 +3996,14 @@ export const StoreProvider = ({ children }) => {
         ? Math.max(0, cartSubtotal + deliveryFeeValue - discountAmount) 
         : Math.max(0, cartSubtotal - discountAmount),
       status: 'pending',
-      payment_method: orderData.cashChangeFor 
-        ? { method: orderData.paymentMethod, cashChangeFor: orderData.cashChangeFor }
-        : { method: orderData.paymentMethod },
+      payment_method: orderData.paymentMethod === 'combined'
+        ? { method: 'combined', splitPayment: normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount)) }
+        : orderData.cashChangeFor 
+          ? { method: orderData.paymentMethod, cashChangeFor: orderData.cashChangeFor }
+          : { method: orderData.paymentMethod },
+      split_payment: orderData.paymentMethod === 'combined'
+        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
+        : null,
       coupon_code: appliedCoupon ? appliedCoupon.code : null,
       created_at: new Date().toISOString()
     };
@@ -3981,6 +4017,12 @@ export const StoreProvider = ({ children }) => {
       is_rain_surcharge: isRainSurchargeValue,
       isRainSurcharge: isRainSurchargeValue,
       paymentMethod: orderData.paymentMethod,
+      splitPayment: orderData.paymentMethod === 'combined'
+        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
+        : null,
+      split_payment: orderData.paymentMethod === 'combined'
+        ? normalizeSplitPayment(orderData.splitPayment, Math.max(0, cartSubtotal - discountAmount))
+        : null,
       cashChangeFor: orderData.cashChangeFor || null,
       couponCode: dbPayload.coupon_code,
       createdAt: dbPayload.created_at
@@ -4720,12 +4762,24 @@ export const StoreProvider = ({ children }) => {
     showToast(`✓ Se importaron ${createdCount} productos nuevos y se actualizaron ${updatedCount}.`, 'success');
   };
 
-  // Venta en POS de Mostrador (Dueño)
-  const completePosSale = (posItems, paymentType = 'cash', creditOptions = {}) => {
+  // Venta en POS de Mostrador (Dueño) con soporte para Efectivo, QR, Tarjeta, Fiao y Pago Combinado
+  const completePosSale = (posItems, paymentType = 'cash', creditOptions = {}, splitPaymentDetails = null) => {
     const subtotal = posItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const saleNum = Math.floor(1000 + Math.random() * 9000);
     const saleEntropy = Math.random().toString(36).substring(2, 6).toUpperCase();
     const saleId = `${tenantSlug}-POS-${saleNum}-${saleEntropy}`;
+
+    // Validación y blindaje estricto de Pago Combinado
+    const isCombined = paymentType === 'combined';
+    let validatedSplit = null;
+    if (isCombined) {
+      const validation = validateSplitPayment(splitPaymentDetails, subtotal);
+      if (!validation.isValid) {
+        showToast(validation.error || 'El desglose del pago combinado no coincide exactamente con el total.', 'error');
+        return null;
+      }
+      validatedSplit = normalizeSplitPayment(splitPaymentDetails, subtotal);
+    }
 
     // 1. Descontar inventario de forma segura
     let nextProducts = [];
@@ -4791,6 +4845,7 @@ export const StoreProvider = ({ children }) => {
       total: subtotal,
       status: 'delivered',
       payment_method: paymentType,
+      split_payment: validatedSplit,
       coupon_code: null,
       created_at: nowIso
     };
@@ -4800,6 +4855,8 @@ export const StoreProvider = ({ children }) => {
       deliveryFee: 0,
       deliveryType: 'pickup',
       paymentMethod: paymentType,
+      splitPayment: validatedSplit,
+      split_payment: validatedSplit,
       createdAt: nowIso
     });
 
@@ -4850,10 +4907,17 @@ export const StoreProvider = ({ children }) => {
       window.dispatchEvent(new CustomEvent('marketsaas:new_order', { detail: normalizedPosOrder }));
     } catch (e) {}
 
-    // Persistir en Supabase con los nombres de columna canónicos
+    // Persistir en Supabase con los nombres de columna canónicos y fallback de resiliencia
     if (supabase && effectiveTenant && effectiveTenant !== 'default') {
       supabase.from('orders').insert([dbPayload]).then(({ error }) => {
-        if (error) console.error('Error insertando venta POS en Supabase:', error);
+        if (error) {
+          if (error.code === '42703' || error.message?.includes('split_payment')) {
+            const { split_payment, ...safePayload } = dbPayload;
+            supabase.from('orders').insert([safePayload]).then();
+          } else {
+            console.error('Error insertando venta POS en Supabase:', error);
+          }
+        }
       });
 
       // Descontar inventario de forma atómica y persistente en Supabase (Previene condiciones de carrera)
@@ -6301,7 +6365,14 @@ export const StoreProvider = ({ children }) => {
         saveSystemBroadcast,
         formatBoliviaDateTime,
         TRIAL_DURATION_MINUTES,
-        BOLIVIA_TIMEZONE_OFFSET_HOURS
+        BOLIVIA_TIMEZONE_OFFSET_HOURS,
+        PAYMENT_METHODS,
+        PAYMENT_METHOD_LABELS,
+        normalizeSplitPayment,
+        validateSplitPayment,
+        calculateSplitPortions,
+        formatPaymentBreakdownText,
+        roundMoney
       }}
     >
       {children}
