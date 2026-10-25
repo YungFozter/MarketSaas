@@ -121,7 +121,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     stopImpersonating,
     systemBroadcast,
     storeOpenStatus,
-    toggleStoreOpenStatus
+    toggleStoreOpenStatus,
+    restoreMerchantAdminSession
   } = useStore();
 
   const [activeTab, setActiveTabState] = useState(() => {
@@ -142,6 +143,25 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     }
     return 'kanban';
   });
+
+  // Blindaje de Sesión Activa de Dueño:
+  // Si un comerciante navegó a otra tienda en Vista Vecino (ej. Bodega La Pascana)
+  // y entra al Panel Minimarket, asegurar de inmediato que tenantSlug y storeConfig
+  // pertenezcan a su propia tienda y no a la tienda ajena.
+  useEffect(() => {
+    if (isImpersonating || isSuperAdmin) return;
+    const targetStore = merchantStore || (() => {
+      try {
+        const raw = localStorage.getItem('marketsaas_merchant_store');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    })();
+    if (!targetStore) return;
+    const targetSlug = targetStore.slug || targetStore.id || targetStore.tenant_id;
+    if (targetSlug && (tenantSlug !== targetSlug || (storeConfig?.id && storeConfig.id !== targetSlug && storeConfig.tenant_id !== targetSlug))) {
+      restoreMerchantAdminSession?.(targetStore);
+    }
+  }, [tenantSlug, storeConfig?.id, storeConfig?.tenant_id, merchantStore, isImpersonating, isSuperAdmin, restoreMerchantAdminSession]);
 
   const setActiveTab = (tab) => {
     setActiveTabState(tab);

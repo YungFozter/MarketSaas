@@ -959,7 +959,29 @@ export const StoreProvider = ({ children }) => {
 
   // Estados de Autenticación de Dueño
   const [currentUser, setCurrentUser] = useState(null);
-  const [merchantStore, setMerchantStore] = useState(null);
+  const [merchantStore, setMerchantStoreState] = useState(() => {
+    try {
+      const saved = localStorage.getItem('marketsaas_merchant_store');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
+
+  const setMerchantStore = (store) => {
+    setMerchantStoreState(store);
+    try {
+      if (store) {
+        localStorage.setItem('marketsaas_merchant_store', JSON.stringify(store));
+        localStorage.setItem('marketsaas_merchant_store_id', store.id || store.slug || '');
+      } else {
+        localStorage.removeItem('marketsaas_merchant_store');
+        localStorage.removeItem('marketsaas_merchant_store_id');
+      }
+    } catch (e) {}
+  };
+
+  // Referencia mutable a restoreMerchantAdminSession para permitir invocación segura dentro de setViewMode
+  const restoreMerchantAdminSessionRef = useRef(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
@@ -1015,20 +1037,35 @@ export const StoreProvider = ({ children }) => {
       return;
     }
     setViewModeState(newMode);
-    // Si cambiamos a Vista Dueño (admin), asegurar que tenantSlug corresponda a la tienda del dueño (a menos que esté en modo soporte impersonación)
-    if (newMode === 'admin' && merchantStore?.id && !isImpersonating) {
-      setTenantSlug(merchantStore.id);
-      try {
-        localStorage.setItem('marketsaas_active_tenant', merchantStore.id);
-      } catch (e) {}
+    
+    // Si cambiamos a Vista Dueño (admin), restaurar de forma completa e instantánea
+    // la tienda del comerciante autenticado (a menos que esté en modo soporte impersonación de SuperAdmin)
+    if (newMode === 'admin' && !isImpersonating) {
+      if (restoreMerchantAdminSessionRef.current) {
+        restoreMerchantAdminSessionRef.current();
+      } else if (merchantStore?.id) {
+        setTenantSlug(merchantStore.id);
+        try {
+          localStorage.setItem('marketsaas_active_tenant', merchantStore.id);
+        } catch (e) {}
+      }
     }
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('marketsaas_active_view_mode', newMode);
         const url = new URL(window.location.href);
         url.searchParams.set('view', newMode);
-        if (newMode === 'admin' && merchantStore?.id && !isImpersonating) {
-          url.searchParams.set('store', merchantStore.id);
+        if (newMode === 'admin' && !isImpersonating) {
+          const activeMerchant = merchantStore || (() => {
+            try {
+              const raw = localStorage.getItem('marketsaas_merchant_store');
+              return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+          })();
+          const activeSlug = activeMerchant?.slug || activeMerchant?.id;
+          if (activeSlug) {
+            url.searchParams.set('store', activeSlug);
+          }
         }
         window.history.replaceState({}, '', url.toString());
       } catch (e) {
@@ -1807,8 +1844,191 @@ export const StoreProvider = ({ children }) => {
     });
   };
 
-  // 11. Toast notification
-  const [toast, setToast] = useState(null);
+  // 11. Restauración de Sesión de Dueño / Comerciante
+  // Garantiza que cuando un comerciante autenticado esté explorando otras tiendas en Vista Vecino
+  // (ej. Bodega La Pascana) y decida regresar a su "Panel Minimarket", se restauren de forma
+  // íntegra e inmediata todos los datos propios de su minimarket (tenantSlug, storeConfig, catálogo de productos,
+  // pedidos, libreta de créditos, proveedores y pedidos de vecinos) sin quedar atrapado como dueño de la tienda ajena.
+  const restoreMerchantAdminSession = useCallback((storeOverride = null) => {
+    const targetStore = storeOverride || merchantStore || (() => {
+      try {
+        const raw = localStorage.getItem('marketsaas_merchant_store');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
+    })();
+
+    if (!targetStore) {
+      return false;
+    }
+
+    const merchantSlug = targetStore.slug || targetStore.id || targetStore.tenant_id;
+    if (!merchantSlug) return false;
+
+    // 1. Restaurar tenantSlug activo del comerciante
+    setTenantSlug(merchantSlug);
+    try {
+      localStorage.setItem('marketsaas_active_tenant', merchantSlug);
+    } catch (e) {}
+
+    // 2. Restaurar storeConfig aislada del comerciante
+    let restoredConfig = null;
+    try {
+      const rawConfig = localStorage.getItem(`marketsaas_${merchantSlug}_store_config`) 
+        || localStorage.getItem(`marketsaas_${merchantSlug}_config`)
+        || (targetStore.id ? localStorage.getItem(`marketsaas_${targetStore.id}_store_config`) : null)
+        || (targetStore.id ? localStorage.getItem(`marketsaas_${targetStore.id}_config`) : null);
+      if (rawConfig) {
+        restoredConfig = JSON.parse(rawConfig);
+      }
+    } catch (e) {}
+
+    if (!restoredConfig) {
+      if (targetStore.config && typeof targetStore.config === 'object') {
+        restoredConfig = { ...targetStore.config };
+      } else {
+        const matchInStores = (stores || []).find(s => s.slug === merchantSlug || s.id === merchantSlug);
+        if (matchInStores) {
+          restoredConfig = {
+            ...initialStoreConfig,
+            id: matchInStores.id || matchInStores.slug,
+            tenant_id: matchInStores.slug || matchInStores.id,
+            name: matchInStores.name,
+            tagline: matchInStores.tagline || '',
+            address: matchInStores.address || '',
+            phone: matchInStores.phone || '',
+            whatsapp: matchInStores.whatsapp || matchInStores.phone || '',
+            schedule: normalizeStoreSchedule(matchInStores.schedule || initialStoreConfig.schedule),
+            deliverySchedule: normalizeDeliverySchedule(matchInStores.deliverySchedule || initialStoreConfig.deliverySchedule),
+            subscription: matchInStores.subscription || createDefaultSubscription()
+          };
+        } else {
+          restoredConfig = {
+            ...initialStoreConfig,
+            id: targetStore.id || merchantSlug,
+            tenant_id: merchantSlug,
+            name: targetStore.name || 'Mi Tienda',
+            address: targetStore.address || '',
+            phone: targetStore.phone || '',
+            whatsapp: targetStore.whatsapp || '',
+            schedule: normalizeStoreSchedule(targetStore.schedule || initialStoreConfig.schedule),
+            deliverySchedule: normalizeDeliverySchedule(targetStore.deliverySchedule || initialStoreConfig.deliverySchedule),
+            subscription: targetStore.subscription || createDefaultSubscription()
+          };
+        }
+      }
+    }
+
+    if (restoredConfig) {
+      const statusCalc = calculateStoreOpenStatus(restoredConfig);
+      restoredConfig.isOpen = targetStore.is_open !== undefined 
+        ? targetStore.is_open 
+        : (restoredConfig.isOpen !== undefined ? restoredConfig.isOpen : statusCalc.isOpen);
+      setStoreConfigState(restoredConfig);
+      try {
+        localStorage.setItem(`marketsaas_${merchantSlug}_store_config`, JSON.stringify(restoredConfig));
+        localStorage.setItem(`marketsaas_${merchantSlug}_config`, JSON.stringify(restoredConfig));
+      } catch (e) {}
+    }
+
+    // 3. Restaurar productos del comerciante
+    try {
+      const localProds = localStorage.getItem(`marketsaas_${merchantSlug}_products`);
+      if (localProds) {
+        const parsed = JSON.parse(localProds);
+        if (Array.isArray(parsed)) {
+          setProducts(deduplicateProducts(filterOutLegacyDemoProducts(parsed.map(normalizeProduct), merchantSlug)));
+        } else {
+          setProducts([]);
+        }
+      } else if (hasPredefinedCatalog(merchantSlug)) {
+        const baseCatalog = merchantSlug === 'default'
+          ? initialProducts.map(normalizeProduct)
+          : getStoreCatalog(merchantSlug).map(normalizeProduct);
+        const deletedIds = getDeletedProductIds(merchantSlug);
+        setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
+      } else {
+        setProducts([]);
+      }
+    } catch (e) {
+      setProducts([]);
+    }
+
+    // 4. Restaurar pedidos del comerciante
+    try {
+      const localOrders = localStorage.getItem(`marketsaas_${merchantSlug}_orders`);
+      if (localOrders) {
+        const parsed = JSON.parse(localOrders);
+        setOrders(Array.isArray(parsed) ? filterOutGhostOrders(parsed.map(normalizeOrder)) : []);
+      } else if (isOfficialSeedStore(merchantSlug)) {
+        const isFernando = isFernandoSeedStore(merchantSlug);
+        setOrders(isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder));
+      } else {
+        setOrders([]);
+      }
+    } catch (e) {
+      setOrders([]);
+    }
+
+    // 5. Restaurar selectedStore al objeto de tienda del comerciante
+    const merchantStoreObj = (stores || []).find(s => s.slug === merchantSlug || s.id === merchantSlug) || targetStore;
+    setSelectedStore(merchantStoreObj);
+
+    // 6. Restaurar solicitudes de productos
+    try {
+      const localReqs = localStorage.getItem(`marketsaas_${merchantSlug}_requests`);
+      if (localReqs) {
+        const parsed = JSON.parse(localReqs);
+        setProductRequests(Array.isArray(parsed) ? filterOutTestRequests(parsed.map(normalizeProductRequest)) : []);
+      } else if (isMatiasSeedStore(merchantSlug)) {
+        setProductRequests(matiasProductRequests.map(normalizeProductRequest));
+      } else {
+        setProductRequests([]);
+      }
+    } catch (e) {}
+
+    // 7. Restaurar proveedores
+    try {
+      const localSuppliers = localStorage.getItem(`marketsaas_${merchantSlug}_suppliers`);
+      if (localSuppliers) {
+        setSuppliers(JSON.parse(localSuppliers));
+      } else if (isFernandoSeedStore(merchantSlug)) {
+        setSuppliers(fernandoSuppliers.map(normalizeSupplier));
+      } else if (isMatiasSeedStore(merchantSlug)) {
+        setSuppliers(matiasSuppliers.map(normalizeSupplier));
+      } else {
+        setSuppliers([]);
+      }
+    } catch (e) {}
+
+    // 8. Restaurar libreta de créditos
+    try {
+      const localCredits = localStorage.getItem(`marketsaas_${merchantSlug}_credits`);
+      if (localCredits) {
+        setCreditCustomers(JSON.parse(localCredits));
+      } else if (isFernandoSeedStore(merchantSlug)) {
+        setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
+      } else if (isMatiasSeedStore(merchantSlug)) {
+        setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
+      } else {
+        setCreditCustomers([]);
+      }
+    } catch (e) {}
+
+    // 9. Sincronizar URL para reflejar la tienda del dueño
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', 'admin');
+        url.searchParams.set('store', merchantSlug);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+    }
+
+    return true;
+  }, [merchantStore, stores]);
+
+  restoreMerchantAdminSessionRef.current = restoreMerchantAdminSession;
 
   // Función para buscar y cargar la tienda asociada al dueño
   const fetchStoreForUser = async (userId, userEmail = null, userObj = null) => {
@@ -2137,9 +2357,12 @@ export const StoreProvider = ({ children }) => {
           }
         }
 
-        const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_config`);
+        const localCfg = localStorage.getItem(`marketsaas_${tenantSlug}_store_config`) 
+          || localStorage.getItem(`marketsaas_${tenantSlug}_config`);
         if (localCfg) {
-          setStoreConfigState(JSON.parse(localCfg));
+          try {
+            setStoreConfigState(JSON.parse(localCfg));
+          } catch (e) {}
         }
 
         const localReqs = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
@@ -6538,6 +6761,8 @@ export const StoreProvider = ({ children }) => {
       setCart([]);
 
       try {
+        localStorage.setItem(`marketsaas_${cleanSlug}_store_config`, JSON.stringify(newConfig));
+        localStorage.setItem(`marketsaas_${cleanSlug}_config`, JSON.stringify(newConfig));
         localStorage.setItem(`marketsaas_${cleanSlug}_products`, JSON.stringify([]));
         localStorage.setItem(`marketsaas_${cleanSlug}_orders`, JSON.stringify([]));
         localStorage.setItem(`marketsaas_${cleanSlug}_suppliers`, JSON.stringify([]));
@@ -6661,6 +6886,10 @@ export const StoreProvider = ({ children }) => {
         };
       }
     }
+    try {
+      const saved = localStorage.getItem('marketsaas_merchant_store');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
     return null;
   }, [merchantStore, isImpersonating, currentUser, tenantSlug, stores, storeConfig]);
 
@@ -6673,6 +6902,7 @@ export const StoreProvider = ({ children }) => {
         isSuperAdmin: isSuperAdminUser(currentUser),
         isSuperAdminUser,
         merchantStore: effectiveMerchantStore,
+        restoreMerchantAdminSession,
         isAuthLoading,
         signUpMerchant,
         signInMerchant,

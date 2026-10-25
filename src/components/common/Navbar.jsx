@@ -44,6 +44,7 @@ export const Navbar = ({
     orders,
     currentUser,
     merchantStore,
+    restoreMerchantAdminSession,
     signOutMerchant
   } = useStore();
 
@@ -143,7 +144,14 @@ export const Navbar = ({
 
               <button
                 onClick={() => {
-                  if (currentUser && merchantStore) {
+                  const activeMerchant = merchantStore || (() => {
+                    try {
+                      const raw = localStorage.getItem('marketsaas_merchant_store');
+                      return raw ? JSON.parse(raw) : null;
+                    } catch (e) { return null; }
+                  })();
+                  if (currentUser || activeMerchant) {
+                    restoreMerchantAdminSession?.(activeMerchant);
                     setViewMode('admin');
                   } else {
                     if (onOpenAuthModal) onOpenAuthModal('login');
@@ -155,11 +163,11 @@ export const Navbar = ({
                     ? 'bg-amber-400 text-slate-950 shadow-xs font-black'
                     : 'text-slate-300 hover:text-white'
                 }`}
-                title={currentUser && merchantStore ? 'Panel de administración del comerciante' : 'Iniciar sesión para acceder al panel de tu minimarket'}
+                title={currentUser || merchantStore ? 'Panel de administración del comerciante' : 'Iniciar sesión para acceder al panel de tu minimarket'}
               >
                 <span>🏪</span>
                 <span>Panel Minimarket</span>
-                {(!currentUser || !merchantStore) && (
+                {(!currentUser && !merchantStore) && (
                   <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700/90 text-amber-300 font-bold ml-0.5">
                     Login
                   </span>
@@ -311,7 +319,14 @@ export const Navbar = ({
                 {/* Botón Principal de Acceso Dueños */}
                 <button
                   onClick={() => {
-                    if (currentUser && merchantStore) {
+                    const activeMerchant = merchantStore || (() => {
+                      try {
+                        const raw = localStorage.getItem('marketsaas_merchant_store');
+                        return raw ? JSON.parse(raw) : null;
+                      } catch (e) { return null; }
+                    })();
+                    if (currentUser || activeMerchant) {
+                      restoreMerchantAdminSession?.(activeMerchant);
                       setViewMode('admin');
                     } else if (onOpenAuthModal) {
                       onOpenAuthModal('login');
@@ -320,11 +335,11 @@ export const Navbar = ({
                     }
                   }}
                   className="relative group overflow-hidden px-2.5 py-1.5 sm:px-4 sm:py-2.5 rounded-xl font-bold sm:font-extrabold text-[11px] sm:text-xs md:text-sm text-white bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 hover:from-emerald-950 hover:to-slate-900 border border-slate-700/80 shadow-xs hover:shadow-md hover:shadow-emerald-950/20 active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer whitespace-nowrap"
-                  title={currentUser && merchantStore ? 'Ir a panel de administración' : 'Iniciar sesión en tu panel de minimarket'}
+                  title={currentUser || merchantStore ? 'Ir a panel de administración' : 'Iniciar sesión en tu panel de minimarket'}
                 >
                   <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
-                  <span>{currentUser && merchantStore ? 'Mi Panel' : 'Acceso Dueños'}</span>
+                  <span>{currentUser || merchantStore ? 'Mi Panel' : 'Acceso Dueños'}</span>
                 </button>
               </div>
             ) : viewMode === 'customer' ? (

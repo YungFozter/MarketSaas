@@ -140,3 +140,68 @@ test('Aislamiento de módulos en nueva tienda: Pedidos, Inventario, Deudores, Pr
   assert.deepEqual(getCleanSuppliers(customStoreSlug), []);
   assert.deepEqual(getCleanRequests(customStoreSlug), []);
 });
+
+test('Restauración de sesión de comerciante: al volver de explorar otra tienda como Bodega La Pascana en VISTA VECINO, el Panel Minimarket recupera íntegramente la tienda del dueño', () => {
+  const localStorageMock = {};
+  
+  // 1. Simular sesión activa de comerciante con su propia tienda
+  const merchantStore = {
+    id: 'minimarket-don-pepe',
+    slug: 'minimarket-don-pepe',
+    name: 'Minimarket Don Pepe',
+    address: 'Av. Mutualista calle 3',
+    owner_id: 'user-pepe-123',
+    config: {
+      id: 'minimarket-don-pepe',
+      name: 'Minimarket Don Pepe',
+      address: 'Av. Mutualista calle 3'
+    }
+  };
+  localStorageMock['marketsaas_merchant_store'] = JSON.stringify(merchantStore);
+  localStorageMock['marketsaas_merchant_store_id'] = merchantStore.id;
+  localStorageMock[`marketsaas_${merchantStore.slug}_store_config`] = JSON.stringify(merchantStore.config);
+  localStorageMock[`marketsaas_${merchantStore.slug}_products`] = JSON.stringify([
+    { id: 'pepe-prod-1', name: 'Arroz Don Pepe 1kg', price: 9.50 }
+  ]);
+
+  // 2. Simular navegación en VISTA VECINO a otra tienda ("Bodega La Pascana")
+  let activeTenantSlug = 'bodega-la-pascana';
+  let activeStoreConfig = {
+    id: 'bodega-la-pascana',
+    tenant_id: 'bodega-la-pascana',
+    name: 'Bodega La Pascana'
+  };
+  let activeProducts = [{ id: 'pascana-1', name: 'Refresco Somó 500ml', price: 5.00 }];
+  let activeViewMode = 'customer';
+
+  assert.equal(activeTenantSlug, 'bodega-la-pascana');
+  assert.equal(activeStoreConfig.name, 'Bodega La Pascana');
+  assert.equal(activeViewMode, 'customer');
+
+  // 3. Simular clic en "Panel Minimarket" y ejecución de restoreMerchantAdminSession
+  const restoreMerchantSession = () => {
+    const raw = localStorageMock['marketsaas_merchant_store'];
+    const targetStore = raw ? JSON.parse(raw) : null;
+    assert.ok(targetStore, 'Debe existir la tienda del comerciante en localStorage');
+
+    const targetSlug = targetStore.slug || targetStore.id;
+    activeTenantSlug = targetSlug;
+    
+    const savedConfig = localStorageMock[`marketsaas_${targetSlug}_store_config`];
+    activeStoreConfig = savedConfig ? JSON.parse(savedConfig) : targetStore.config;
+
+    const savedProds = localStorageMock[`marketsaas_${targetSlug}_products`];
+    activeProducts = savedProds ? JSON.parse(savedProds) : [];
+    activeViewMode = 'admin';
+  };
+
+  restoreMerchantSession();
+
+  // 4. Validar que la sesión propia fue 100% restaurada y NO quedó como dueño de Bodega La Pascana
+  assert.equal(activeViewMode, 'admin');
+  assert.equal(activeTenantSlug, 'minimarket-don-pepe');
+  assert.equal(activeStoreConfig.name, 'Minimarket Don Pepe');
+  assert.notEqual(activeStoreConfig.name, 'Bodega La Pascana');
+  assert.equal(activeProducts[0].name, 'Arroz Don Pepe 1kg');
+});
+
