@@ -1178,11 +1178,20 @@ export const StoreProvider = ({ children }) => {
           )
         );
 
-        const storeSchedule = normalizeStoreSchedule(
-          localStoreConfig?.schedule || foundStore.schedule || (isCurrentOwner ? prev?.schedule : initialStoreConfig.schedule)
+        const isSameStore = Boolean(
+          prev && (
+            prev.id === foundStore.id || 
+            prev.id === foundStore.slug || 
+            prev.tenant_id === foundStore.slug ||
+            prev.tenant_id === foundStore.id
+          )
         );
 
-        const baseConfig = localStoreConfig || (isCurrentOwner ? prev : initialStoreConfig);
+        const storeSchedule = normalizeStoreSchedule(
+          localStoreConfig?.schedule || foundStore.schedule || (isCurrentOwner && isSameStore ? prev?.schedule : initialStoreConfig.schedule)
+        );
+
+        const baseConfig = localStoreConfig || (isCurrentOwner && isSameStore ? prev : initialStoreConfig);
         const resolved = {
           ...initialStoreConfig,
           ...baseConfig,
@@ -1192,9 +1201,12 @@ export const StoreProvider = ({ children }) => {
           tagline: foundStore.tagline || baseConfig?.tagline,
           address: foundStore.address || baseConfig?.address,
           owner_id: foundStore.owner_id || baseConfig?.owner_id,
+          logoUrl: foundStore.logoUrl || baseConfig?.logoUrl || '',
+          bannerUrl: foundStore.bannerUrl || baseConfig?.bannerUrl || presetBanners[0].url,
+          qrImageUrl: foundStore.qrImageUrl || baseConfig?.qrImageUrl || '',
           schedule: storeSchedule,
-          storeOpenMode: localStoreConfig?.storeOpenMode || foundStore.storeOpenMode || (isCurrentOwner ? prev?.storeOpenMode : 'auto') || 'auto',
-          scheduleClosedMessage: localStoreConfig?.scheduleClosedMessage || foundStore.scheduleClosedMessage || (isCurrentOwner ? prev?.scheduleClosedMessage : '') || '',
+          storeOpenMode: localStoreConfig?.storeOpenMode || foundStore.storeOpenMode || (isCurrentOwner && isSameStore ? prev?.storeOpenMode : 'auto') || 'auto',
+          scheduleClosedMessage: localStoreConfig?.scheduleClosedMessage || foundStore.scheduleClosedMessage || (isCurrentOwner && isSameStore ? prev?.scheduleClosedMessage : '') || '',
           deliverySchedule: normalizeDeliverySchedule(localStoreConfig?.deliverySchedule || foundStore.deliverySchedule || baseConfig?.deliverySchedule)
         };
         const statusCalc = calculateStoreOpenStatus(resolved);
@@ -1449,6 +1461,8 @@ export const StoreProvider = ({ children }) => {
           config: safeConfig,
           coupons: safeConfig.coupons || [],
           owner_id: ownerId,
+          logo_url: safeConfig.logoUrl || null,
+          banner_url: safeConfig.bannerUrl || null,
           qr_image_url: safeConfig.qrImageUrl || null,
           updated_at: new Date().toISOString()
         };
@@ -1898,6 +1912,9 @@ export const StoreProvider = ({ children }) => {
             address: matchInStores.address || '',
             phone: matchInStores.phone || '',
             whatsapp: matchInStores.whatsapp || matchInStores.phone || '',
+            logoUrl: matchInStores.logoUrl || matchInStores.logo_url || '',
+            bannerUrl: matchInStores.bannerUrl || matchInStores.banner_url || presetBanners[0].url,
+            qrImageUrl: matchInStores.qrImageUrl || matchInStores.qr_image_url || '',
             schedule: normalizeStoreSchedule(matchInStores.schedule || initialStoreConfig.schedule),
             deliverySchedule: normalizeDeliverySchedule(matchInStores.deliverySchedule || initialStoreConfig.deliverySchedule),
             subscription: matchInStores.subscription || createDefaultSubscription()
@@ -1911,6 +1928,9 @@ export const StoreProvider = ({ children }) => {
             address: targetStore.address || '',
             phone: targetStore.phone || '',
             whatsapp: targetStore.whatsapp || '',
+            logoUrl: targetStore.logoUrl || targetStore.logo_url || '',
+            bannerUrl: targetStore.bannerUrl || targetStore.banner_url || presetBanners[0].url,
+            qrImageUrl: targetStore.qrImageUrl || targetStore.qr_image_url || '',
             schedule: normalizeStoreSchedule(targetStore.schedule || initialStoreConfig.schedule),
             deliverySchedule: normalizeDeliverySchedule(targetStore.deliverySchedule || initialStoreConfig.deliverySchedule),
             subscription: targetStore.subscription || createDefaultSubscription()
@@ -2366,6 +2386,23 @@ export const StoreProvider = ({ children }) => {
           try {
             setStoreConfigState(JSON.parse(localCfg));
           } catch (e) {}
+        } else {
+          // Reset reactivo limpio para evitar arrastrar imágenes o datos de otra tienda
+          const matchedStore = (stores || []).find(s => s.slug === tenantSlug || s.id === tenantSlug);
+          if (matchedStore) {
+            setStoreConfigState({
+              ...initialStoreConfig,
+              id: matchedStore.id || tenantSlug,
+              tenant_id: tenantSlug,
+              name: matchedStore.name,
+              logoUrl: matchedStore.logoUrl || '',
+              bannerUrl: matchedStore.bannerUrl || presetBanners[0].url,
+              qrImageUrl: matchedStore.qrImageUrl || '',
+              address: matchedStore.address || '',
+              phone: matchedStore.phone || '',
+              whatsapp: matchedStore.whatsapp || matchedStore.phone || ''
+            });
+          }
         }
 
         const localReqs = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
@@ -2593,17 +2630,25 @@ export const StoreProvider = ({ children }) => {
           ? configData.categories
           : (Array.isArray(data.categories) && data.categories.length > 0 ? data.categories : undefined);
         setStoreConfigState(prev => {
-          const effectiveLogo = configData.logoUrl || data.logo_url || (prev?.logoUrl || '');
-          const effectiveBanner = configData.bannerUrl || data.banner_url || (prev?.bannerUrl || presetBanners[0].url);
-          const effectiveQr = configData.qrImageUrl || data.qr_image_url || (prev?.qrImageUrl || '');
-          const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || prev?.subscription, data.created_at);
-          const storeSchedule = normalizeStoreSchedule(configData.schedule || data.schedule || prev?.schedule || initialStoreConfig.schedule);
-          const storeMode = configData.storeOpenMode || data.store_open_mode || prev?.storeOpenMode || 'auto';
-          const storeClosedMsg = configData.scheduleClosedMessage || prev?.scheduleClosedMessage || '';
+          const isSameStore = Boolean(
+            prev && (
+              prev.id === tenantSlug || 
+              prev.tenant_id === tenantSlug || 
+              (data && (prev.id === data.id || prev.tenant_id === data.id))
+            )
+          );
+          const effectiveLogo = configData.logoUrl || data.logo_url || (isSameStore ? prev?.logoUrl : '') || '';
+          const effectiveBanner = configData.bannerUrl || data.banner_url || (isSameStore ? prev?.bannerUrl : presetBanners[0].url);
+          const effectiveQr = configData.qrImageUrl || data.qr_image_url || (isSameStore ? prev?.qrImageUrl : '') || '';
+          const effectiveSubscription = normalizeSubscription(configData.subscription || data.subscription || (isSameStore ? prev?.subscription : null), data.created_at);
+          const storeSchedule = normalizeStoreSchedule(configData.schedule || data.schedule || (isSameStore ? prev?.schedule : initialStoreConfig.schedule));
+          const storeMode = configData.storeOpenMode || data.store_open_mode || (isSameStore ? prev?.storeOpenMode : 'auto') || 'auto';
+          const storeClosedMsg = configData.scheduleClosedMessage || (isSameStore ? prev?.scheduleClosedMessage : '') || '';
 
+          const baseForStore = isSameStore ? prev : {};
           const merged = {
             ...initialStoreConfig,
-            ...prev,
+            ...baseForStore,
             ...configData,
             id: data.id || tenantSlug,
             tenant_id: data.tenant_id || tenantSlug,
@@ -2616,8 +2661,8 @@ export const StoreProvider = ({ children }) => {
             scheduleClosedMessage: storeClosedMsg,
             ...(loadedCategories ? { categories: loadedCategories } : {}),
             coupons: loadedCoupons,
-            deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || data.delivery_schedule || prev?.deliverySchedule),
-            name: data.name || configData.name || prev?.name || 'Mi Tienda'
+            deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || data.delivery_schedule || (isSameStore ? prev?.deliverySchedule : null)),
+            name: data.name || configData.name || (isSameStore ? prev?.name : 'Mi Tienda')
           };
 
           const openStatus = calculateStoreOpenStatus(merged);

@@ -233,3 +233,76 @@ test('Aislamiento de pedidos Realtime/Broadcast: pedidos de Tienda A jamás se m
   assert.equal(evaluateIsOurStore(orderDemo, 'default', null, null), true);
 });
 
+test('Aislamiento y permanencia de Imagen de Portada (Banner) y Logo entre dueños: Tienda B no hereda imágenes de Tienda A', () => {
+  const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
+  const CUSTOM_BANNER_A = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD_BANNER_TIENDA_A';
+  const CUSTOM_LOGO_A = 'https://cdn.example.com/logo-tienda-a.png';
+  const PRESET_BANNER_B = 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=1200&auto=format&fit=crop&q=80';
+
+  // 1. Simulación de resolución de banner y logo con lógica isSameStore
+  const resolveStoreImages = (prevConfig, remoteRecord, currentTenantSlug) => {
+    const configData = remoteRecord?.config || {};
+    const isSameStore = Boolean(
+      prevConfig && (
+        prevConfig.id === currentTenantSlug ||
+        prevConfig.tenant_id === currentTenantSlug ||
+        (remoteRecord && (prevConfig.id === remoteRecord.id || prevConfig.tenant_id === remoteRecord.id))
+      )
+    );
+
+    const effectiveLogo = configData.logoUrl || remoteRecord?.logo_url || (isSameStore ? prevConfig?.logoUrl : '') || '';
+    const effectiveBanner = configData.bannerUrl || remoteRecord?.banner_url || (isSameStore ? prevConfig?.bannerUrl : DEFAULT_BANNER);
+    const effectiveQr = configData.qrImageUrl || remoteRecord?.qr_image_url || (isSameStore ? prevConfig?.qrImageUrl : '') || '';
+
+    return {
+      id: currentTenantSlug,
+      logoUrl: effectiveLogo,
+      bannerUrl: effectiveBanner,
+      qrImageUrl: effectiveQr
+    };
+  };
+
+  // Tienda A (Don Pepe) guarda su propio banner cargado y logo
+  const storeA_Record = {
+    id: 'minimarket-don-pepe',
+    config: {
+      id: 'minimarket-don-pepe',
+      name: 'Minimarket Don Pepe',
+      bannerUrl: CUSTOM_BANNER_A,
+      logoUrl: CUSTOM_LOGO_A
+    }
+  };
+
+  const storeA_Resolved = resolveStoreImages(null, storeA_Record, 'minimarket-don-pepe');
+  assert.equal(storeA_Resolved.bannerUrl, CUSTOM_BANNER_A, 'Tienda A debe preservar su banner personalizado');
+  assert.equal(storeA_Resolved.logoUrl, CUSTOM_LOGO_A, 'Tienda A debe preservar su logo');
+
+  // Ahora el usuario o la vista cambia a Tienda B (Doña María), que acaba de ser registrada y no tiene banner personalizado
+  const storeB_Record = {
+    id: 'tienda-dona-maria',
+    config: {
+      id: 'tienda-dona-maria',
+      name: 'Tienda Doña María',
+      // bannerUrl no fue configurado aún por María
+    }
+  };
+
+  // Se evalúa pasando el estado anterior (que era de Tienda A)
+  const storeB_Resolved = resolveStoreImages(storeA_Resolved, storeB_Record, 'tienda-dona-maria');
+
+  // Comprobación crítica: Tienda B JAMÁS debe recibir el banner ni logo de Tienda A
+  assert.notEqual(storeB_Resolved.bannerUrl, CUSTOM_BANNER_A, 'Tienda B NO debe heredar el banner de Tienda A');
+  assert.notEqual(storeB_Resolved.logoUrl, CUSTOM_LOGO_A, 'Tienda B NO debe heredar el logo de Tienda A');
+  assert.equal(storeB_Resolved.bannerUrl, DEFAULT_BANNER, 'Tienda B debe tener el banner predeterminado neutro');
+  assert.equal(storeB_Resolved.logoUrl, '', 'Tienda B debe tener logo vacío');
+
+  // Si Doña María elige el Preset de Panadería, su banner debe persistir para Tienda B
+  storeB_Record.config.bannerUrl = PRESET_BANNER_B;
+  const storeB_WithPreset = resolveStoreImages(storeB_Resolved, storeB_Record, 'tienda-dona-maria');
+  assert.equal(storeB_WithPreset.bannerUrl, PRESET_BANNER_B, 'Tienda B debe preservar su banner de panadería elegido');
+
+  // Y Tienda A sigue intacta con su propio banner
+  assert.equal(storeA_Resolved.bannerUrl, CUSTOM_BANNER_A);
+});
+
+
