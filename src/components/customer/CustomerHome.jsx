@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ChevronUp } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -110,16 +110,6 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     }
   };
 
-  // Control de visibilidad del botón flotante para volver arriba a la tienda
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const handleWindowScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
-    };
-    window.addEventListener('scroll', handleWindowScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleWindowScroll);
-  }, []);
 
   // Transmisión y Chaining fluido de Scroll para el Catálogo de Productos (VISTA VECINO):
   // Al llegar al tope superior de la lista scrolleable del catálogo (scrollTop <= 0) y seguir subiendo
@@ -634,25 +624,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
       {/* Banner PWA: Instalar en el Celular con 1 Clic */}
       <PwaInstallBanner storeName={storeConfig?.name || 'tu tienda'} />
 
-      {/* Botón Flotante para Volver a la Tienda cuando se hace scroll hacia abajo */}
-      {showScrollTop && (
-        <button
-          type="button"
-          onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (catalogGridRef.current) {
-              catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          }}
-          className="fixed bottom-5 right-5 sm:bottom-7 sm:right-7 z-40 bg-slate-900/90 hover:bg-slate-900 text-white backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-xl shadow-slate-900/20 border border-slate-700/60 flex items-center gap-2 text-xs font-extrabold transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fadeIn select-none"
-          title="Subir a la Tienda"
-        >
-          <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <ChevronUp className="w-4 h-4" />
-          </div>
-          <span>Subir a la Tienda</span>
-        </button>
-      )}
+
     </main>
   );
 };
