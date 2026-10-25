@@ -973,14 +973,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       {/* 1. MODERN VERTICAL LEFT SIDEBAR (Desktop/Media Pantalla: sticky, Mobile: drawer) */}
       {/* ========================================================================= */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 flex flex-col h-screen max-h-screen overflow-hidden
-        transition-all duration-300 ease-in-out md:static md:sticky md:top-0 shrink-0 shadow-xl md:shadow-none
+        fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 flex flex-col admin-sidebar-container
+        transition-all duration-300 ease-in-out md:sticky md:top-0 shrink-0 shadow-xl md:shadow-none
         ${isSidebarCollapsed ? 'md:w-16' : 'md:w-56 lg:w-64'}
         w-64
         ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        {/* Top Brand & Store Selector (Fijo arriba: shrink-0) */}
-        <div className={`shrink-0 p-3 sm:p-4 border-b border-slate-100 bg-white ${isSidebarCollapsed ? 'md:px-2 md:py-3' : ''}`}>
+        {/* Top Brand & Store Selector (Fijo arriba: shrink-0, nunca se desplaza con scroll o zoom) */}
+        <div className={`shrink-0 p-3 sm:p-4 border-b border-slate-100 bg-white z-10 ${isSidebarCollapsed ? 'md:px-2 md:py-3' : ''}`}>
           <div className="flex items-center justify-between gap-2">
             <div 
               onClick={() => {
@@ -1158,8 +1158,8 @@ export const AdminHome = ({ onOpenAuthModal }) => {
           })}
         </nav>
 
-        {/* Bottom Store Info & User Profile (Fijo abajo: shrink-0, siempre 100% visible) */}
-        <div className={`shrink-0 p-3 border-t border-slate-100 bg-white space-y-2 ${isSidebarCollapsed ? 'md:p-2' : ''}`}>
+        {/* Bottom Store Info & User Profile (Fijo abajo: shrink-0 mt-auto, siempre 100% visible sin importar zoom o navegador) */}
+        <div className={`shrink-0 mt-auto p-3 border-t border-slate-100 bg-white space-y-2 z-10 ${isSidebarCollapsed ? 'md:p-2' : ''}`}>
           {!isSidebarCollapsed && (
             <>
               {/* Header de la sección de herramientas / accesos con botón desplegable */}

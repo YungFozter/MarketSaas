@@ -40,3 +40,25 @@
 .custom-sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8;
 }
+
+/* ==========================================================================
+   Contenedor del panel lateral izquierdo fijo y responsivo (Zoom y Viewports)
+   ========================================================================== */
+.admin-sidebar-container {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .admin-sidebar-container {
+    position: sticky !important;
+    top: 0 !important;
+    align-self: flex-start;
+  }
+}
+
