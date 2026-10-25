@@ -2030,6 +2030,9 @@ export const StoreProvider = ({ children }) => {
 
   restoreMerchantAdminSessionRef.current = restoreMerchantAdminSession;
 
+  // 12. Toast notification
+  const [toast, setToast] = useState(null);
+
   // Función para buscar y cargar la tienda asociada al dueño
   const fetchStoreForUser = async (userId, userEmail = null, userObj = null) => {
     if (!supabase || (!userId && !userEmail)) return null;
