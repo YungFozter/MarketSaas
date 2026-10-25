@@ -3025,11 +3025,13 @@ export const StoreProvider = ({ children }) => {
       }, payload => {
         if (payload.eventType === 'INSERT' && payload.new) {
           const normalized = normalizeOrder(payload.new);
+          const activeStoreSlug = merchantStore?.id || tenantSlug;
           const isOurStore = 
-            normalized.tenant_id === tenantSlug || 
-            (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
-            (currentUser && normalized.owner_id === currentUser.id) ||
-            (!tenantSlug || tenantSlug === 'default');
+            (activeStoreSlug && normalized.tenant_id === activeStoreSlug) || 
+            (merchantStore && (normalized.tenant_id === merchantStore.id || (merchantStore.owner_id && normalized.owner_id === merchantStore.owner_id))) ||
+            (currentUser && currentUser.id && normalized.owner_id === currentUser.id) ||
+            ((!activeStoreSlug || activeStoreSlug === 'default' || activeStoreSlug === 'matias-tiendatodo') && 
+              (normalized.tenant_id === 'default' || normalized.tenant_id === 'matias-tiendatodo'));
 
           if (isOurStore) {
             setOrders(prev => {
@@ -3065,11 +3067,13 @@ export const StoreProvider = ({ children }) => {
       .on('broadcast', { event: 'new_order' }, payload => {
         if (payload?.payload) {
           const normalized = normalizeOrder(payload.payload);
+          const activeStoreSlug = merchantStore?.id || tenantSlug;
           const isOurStore = 
-            normalized.tenant_id === tenantSlug || 
-            (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
-            (currentUser && normalized.owner_id === currentUser.id) ||
-            (!tenantSlug || tenantSlug === 'default');
+            (activeStoreSlug && normalized.tenant_id === activeStoreSlug) || 
+            (merchantStore && (normalized.tenant_id === merchantStore.id || (merchantStore.owner_id && normalized.owner_id === merchantStore.owner_id))) ||
+            (currentUser && currentUser.id && normalized.owner_id === currentUser.id) ||
+            ((!activeStoreSlug || activeStoreSlug === 'default' || activeStoreSlug === 'matias-tiendatodo') && 
+              (normalized.tenant_id === 'default' || normalized.tenant_id === 'matias-tiendatodo'));
 
           if (isOurStore) {
             setOrders(prev => {
@@ -3226,11 +3230,13 @@ export const StoreProvider = ({ children }) => {
     const handleCrossTabOrder = (incomingOrder) => {
       if (!incomingOrder || !incomingOrder.id) return;
       const normalized = normalizeOrder(incomingOrder);
+      const activeStoreSlug = merchantStore?.id || tenantSlug;
       const isOurStore = 
-        normalized.tenant_id === tenantSlug || 
-        (merchantStore && (normalized.tenant_id === merchantStore.id || normalized.owner_id === merchantStore.owner_id)) ||
-        (currentUser && normalized.owner_id === currentUser.id) ||
-        (!tenantSlug || tenantSlug === 'default');
+        (activeStoreSlug && normalized.tenant_id === activeStoreSlug) || 
+        (merchantStore && (normalized.tenant_id === merchantStore.id || (merchantStore.owner_id && normalized.owner_id === merchantStore.owner_id))) ||
+        (currentUser && currentUser.id && normalized.owner_id === currentUser.id) ||
+        ((!activeStoreSlug || activeStoreSlug === 'default' || activeStoreSlug === 'matias-tiendatodo') && 
+          (normalized.tenant_id === 'default' || normalized.tenant_id === 'matias-tiendatodo'));
 
       if (isOurStore) {
         setOrders(prev => {
@@ -4651,7 +4657,9 @@ export const StoreProvider = ({ children }) => {
       const updated = [newOrder, ...prev.filter(o => o.id !== newOrder.id)];
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
-        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (isOfficialSeedStore(tenantSlug)) {
+          localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        }
         if (storeConfig?.tenant_id) {
           localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
         }
@@ -4662,7 +4670,9 @@ export const StoreProvider = ({ children }) => {
     try {
       localStorage.setItem('marketsaas_active_order_obj', JSON.stringify(newOrder));
       localStorage.setItem(`marketsaas_${tenantSlug}_active_order`, orderId);
-      localStorage.setItem('marketsaas_default_active_order', orderId);
+      if (isOfficialSeedStore(tenantSlug)) {
+        localStorage.setItem('marketsaas_default_active_order', orderId);
+      }
       localStorage.setItem('marketsaas_last_order_event', JSON.stringify({ order: newOrder, timestamp: Date.now() }));
     } catch (e) {}
 
@@ -4759,7 +4769,7 @@ export const StoreProvider = ({ children }) => {
             .then(({ error }) => {
               if (error) {
                 // Fallback de contingencia si la función RPC aún no estuviese presente
-                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).eq('tenant_id', tenantSlug).then();
               }
             });
         }
@@ -4796,7 +4806,12 @@ export const StoreProvider = ({ children }) => {
     );
     if (supabase) {
       const updatePayload = { status: newStatus };
-      supabase.from('orders').update(updatePayload).eq('id', orderId).then(({ error }) => {
+      const targetTenant = tenantSlug || merchantStore?.id;
+      let q = supabase.from('orders').update(updatePayload).eq('id', orderId);
+      if (targetTenant && targetTenant !== 'default') {
+        q = q.eq('tenant_id', targetTenant);
+      }
+      q.then(({ error }) => {
         if (error) console.error('Error actualizando pedido en Supabase:', error);
       });
     }
@@ -4811,7 +4826,7 @@ export const StoreProvider = ({ children }) => {
               if (error) {
                 const prod = products.find(p => p.id === item.id);
                 if (prod && typeof prod.stock === 'number') {
-                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id);
+                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id).eq('tenant_id', tenantSlug);
                 }
               }
             });
@@ -4863,7 +4878,7 @@ export const StoreProvider = ({ children }) => {
               if (error) {
                 const prod = products.find(p => p.id === item.id);
                 if (prod && typeof prod.stock === 'number') {
-                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id);
+                  supabase.from('products').update({ stock: prod.stock + qty }).eq('id', item.id).eq('tenant_id', tenantSlug);
                 }
               }
             });
@@ -4897,7 +4912,9 @@ export const StoreProvider = ({ children }) => {
       });
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
-        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (isOfficialSeedStore(tenantSlug)) {
+          localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        }
         if (storeConfig?.tenant_id) {
           localStorage.setItem(`marketsaas_${storeConfig.tenant_id}_orders`, JSON.stringify(updated));
         }
@@ -4909,10 +4926,15 @@ export const StoreProvider = ({ children }) => {
     });
 
     if (supabase) {
-      supabase.from('orders').update({
+      const targetTenant = tenantSlug || merchantStore?.id;
+      let q = supabase.from('orders').update({
         status: 'omitted',
         deleted_at: nowIso
-      }).eq('id', orderId).then(({ error }) => {
+      }).eq('id', orderId);
+      if (targetTenant && targetTenant !== 'default') {
+        q = q.eq('tenant_id', targetTenant);
+      }
+      q.then(({ error }) => {
         if (error) console.error('Error marcando pedido como omitido en Supabase:', error);
       });
     }
@@ -4946,16 +4968,23 @@ export const StoreProvider = ({ children }) => {
       });
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(updated));
-        localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        if (isOfficialSeedStore(tenantSlug)) {
+          localStorage.setItem('marketsaas_default_orders', JSON.stringify(updated));
+        }
       } catch (e) {}
       return updated;
     });
 
     if (supabase) {
-      supabase.from('orders').update({
+      const targetTenant = tenantSlug || merchantStore?.id;
+      let q = supabase.from('orders').update({
         status: restoredStatus,
         deleted_at: null
-      }).eq('id', orderId).then(({ error }) => {
+      }).eq('id', orderId);
+      if (targetTenant && targetTenant !== 'default') {
+        q = q.eq('tenant_id', targetTenant);
+      }
+      q.then(({ error }) => {
         if (error) console.error('Error restaurando pedido en Supabase:', error);
       });
     }
@@ -4972,12 +5001,19 @@ export const StoreProvider = ({ children }) => {
       const filtered = prev.filter(ord => ord.id !== orderId);
       try {
         localStorage.setItem(`marketsaas_${tenantSlug}_orders`, JSON.stringify(filtered));
-        localStorage.setItem('marketsaas_default_orders', JSON.stringify(filtered));
+        if (isOfficialSeedStore(tenantSlug)) {
+          localStorage.setItem('marketsaas_default_orders', JSON.stringify(filtered));
+        }
       } catch (e) {}
       return filtered;
     });
     if (supabase) {
-      supabase.from('orders').delete().eq('id', orderId).then(({ error }) => {
+      const targetTenant = tenantSlug || merchantStore?.id;
+      let q = supabase.from('orders').delete().eq('id', orderId);
+      if (targetTenant && targetTenant !== 'default') {
+        q = q.eq('tenant_id', targetTenant);
+      }
+      q.then(({ error }) => {
         if (error) console.error('Error purgando pedido en Supabase:', error);
       });
     }
@@ -5529,7 +5565,7 @@ export const StoreProvider = ({ children }) => {
             .then(({ error }) => {
               if (error) {
                 // Fallback de contingencia si la función RPC aún no estuviese presente
-                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).then();
+                supabase.from('products').update({ stock: String(newStock), updated_at: new Date().toISOString() }).eq('id', item.id).eq('tenant_id', effectiveTenant).then();
               }
             });
         }
@@ -5667,7 +5703,7 @@ export const StoreProvider = ({ children }) => {
       try {
         const { data, error: rpcErr } = await supabase.rpc('vote_product_request', { p_request_id: requestId });
         if (rpcErr) {
-          await supabase.from('product_requests').update({ votes: nextVotes }).eq('id', requestId);
+          await supabase.from('product_requests').update({ votes: nextVotes }).eq('id', requestId).eq('tenant_id', tenantSlug);
         } else if (typeof data === 'number') {
           setProductRequests(prev =>
             prev.map(r => (r.id === requestId ? { ...r, votes: data } : r))
@@ -5691,7 +5727,7 @@ export const StoreProvider = ({ children }) => {
 
     if (supabase && tenantSlug && tenantSlug !== 'default') {
       try {
-        const { error } = await supabase.from('product_requests').update({ status }).eq('id', requestId);
+        const { error } = await supabase.from('product_requests').update({ status }).eq('id', requestId).eq('tenant_id', tenantSlug);
         if (error) console.error('Error actualizando solicitud de producto en Supabase:', error);
       } catch (err) {
         console.error('Excepción al actualizar estado de solicitud:', err);
@@ -5715,7 +5751,7 @@ export const StoreProvider = ({ children }) => {
 
     if (supabase && tenantSlug && tenantSlug !== 'default') {
       try {
-        const { error } = await supabase.from('product_requests').delete().eq('id', requestId);
+        const { error } = await supabase.from('product_requests').delete().eq('id', requestId).eq('tenant_id', tenantSlug);
         if (error) console.error('Error eliminando solicitud en Supabase:', error);
       } catch (err) {
         console.error('Excepción al eliminar solicitud:', err);
@@ -5743,22 +5779,17 @@ export const StoreProvider = ({ children }) => {
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
     try {
       if (supabase) {
-        const { error } = await supabase.from('suppliers')
+        let q = supabase.from('suppliers')
           .update({
             order_items: updatedItems,
             updated_at: new Date().toISOString()
           })
           .eq('id', supplierId);
 
-        if (error) {
-          await supabase.from('suppliers')
-            .update({
-              order_items: updatedItems,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', supplierId)
-            .eq('tenant_id', targetTenant);
+        if (targetTenant && targetTenant !== 'default') {
+          q = q.eq('tenant_id', targetTenant);
         }
+        const { error } = await q;
 
         // Respaldo resiliente en store_config
         setSuppliers(curr => {
@@ -5874,9 +5905,13 @@ export const StoreProvider = ({ children }) => {
         if (updatedFields.orderItems !== undefined) payload.order_items = updatedFields.orderItems;
         payload.updated_at = new Date().toISOString();
 
-        await supabase.from('suppliers')
+        let q = supabase.from('suppliers')
           .update(payload)
           .eq('id', supplierId);
+        if (targetTenant && targetTenant !== 'default') {
+          q = q.eq('tenant_id', targetTenant);
+        }
+        await q;
 
         supabase.from('store_config')
           .update({ config: { ...storeConfig, suppliersBackup: updatedList } })
@@ -5909,9 +5944,13 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase && targetTenant) {
-        await supabase.from('suppliers')
+        let q = supabase.from('suppliers')
           .delete()
           .eq('id', supplierId);
+        if (targetTenant && targetTenant !== 'default') {
+          q = q.eq('tenant_id', targetTenant);
+        }
+        await q;
 
         supabase.from('store_config')
           .update({ config: { ...storeConfig, suppliersBackup: remaining } })
@@ -6038,6 +6077,7 @@ export const StoreProvider = ({ children }) => {
                 .from('products')
                 .update({ stock: String(newStock), updated_at: new Date().toISOString() })
                 .eq('id', p.id)
+                .eq('tenant_id', tenantSlug)
                 .then();
             }
 
@@ -6386,9 +6426,13 @@ export const StoreProvider = ({ children }) => {
 
     try {
       if (supabase) {
-        await supabase.from('credit_customers')
+        let q = supabase.from('credit_customers')
           .delete()
           .eq('id', customerId);
+        if (targetTenant && targetTenant !== 'default') {
+          q = q.eq('tenant_id', targetTenant);
+        }
+        await q;
 
         if (targetTenant && targetTenant !== 'default') {
           supabase.from('store_config')

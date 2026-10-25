@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ChevronUp } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck, ChevronUp } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -245,13 +245,15 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         <button
           type="button"
           onClick={goToDirectory}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 hover:text-emerald-700 transition-colors cursor-pointer group"
-          title="Regresar al mapa y directorio de tiendas"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition-all cursor-pointer font-bold text-xs sm:text-sm group shadow-2xs"
+          title="Volver a la lista de minimarkets y mapa del barrio"
         >
-          <span className="p-1 rounded-lg bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100 transition-colors">
-            🗺️
+          <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-emerald-600 group-hover:-translate-x-0.5 transition-transform" />
+          <span className="sm:hidden">Volver</span>
+          <span className="hidden sm:inline">Volver a Tiendas</span>
+          <span className="hidden md:inline-block text-[11px] font-semibold text-slate-400 group-hover:text-emerald-600/80">
+            (Mapa)
           </span>
-          <span className="group-hover:underline">Cambiar de Tienda / Ver Mapa</span>
         </button>
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">

@@ -205,3 +205,31 @@ test('Restauración de sesión de comerciante: al volver de explorar otra tienda
   assert.equal(activeProducts[0].name, 'Arroz Don Pepe 1kg');
 });
 
+test('Aislamiento de pedidos Realtime/Broadcast: pedidos de Tienda A jamás se mezclan con Tienda B ni con tienda default', () => {
+  // Simular la lógica de discriminación de pedidos entrantes en StoreContext
+  const evaluateIsOurStore = (incomingOrder, currentTenant, currentMerchantStore, currentUser) => {
+    const activeStoreSlug = currentMerchantStore?.id || currentTenant;
+    return Boolean(
+      (activeStoreSlug && incomingOrder.tenant_id === activeStoreSlug) || 
+      (currentMerchantStore && (incomingOrder.tenant_id === currentMerchantStore.id || (currentMerchantStore.owner_id && incomingOrder.owner_id === currentMerchantStore.owner_id))) ||
+      (currentUser && currentUser.id && incomingOrder.owner_id === currentUser.id) ||
+      ((!activeStoreSlug || activeStoreSlug === 'default' || activeStoreSlug === 'matias-tiendatodo') && 
+        (incomingOrder.tenant_id === 'default' || incomingOrder.tenant_id === 'matias-tiendatodo'))
+    );
+  };
+
+  const orderStoreA = { id: 'ORD-101', tenant_id: 'minimarket-don-pepe', owner_id: 'owner-pepe', total: 50 };
+  const orderStoreB = { id: 'ORD-202', tenant_id: 'minimarket-dona-maria', owner_id: 'owner-maria', total: 75 };
+  const orderDemo = { id: 'ORD-303', tenant_id: 'matias-tiendatodo', owner_id: null, total: 30 };
+
+  // Caso 1: Tienda Pepe no debe aceptar pedidos de Tienda Maria
+  assert.equal(evaluateIsOurStore(orderStoreB, 'minimarket-don-pepe', { id: 'minimarket-don-pepe', owner_id: 'owner-pepe' }, { id: 'owner-pepe' }), false);
+  // Caso 2: Tienda Pepe debe aceptar sus propios pedidos
+  assert.equal(evaluateIsOurStore(orderStoreA, 'minimarket-don-pepe', { id: 'minimarket-don-pepe', owner_id: 'owner-pepe' }, { id: 'owner-pepe' }), true);
+  // Caso 3: Usuario visitante en landing/demo ('default') JAMÁS debe aceptar pedidos reales de Pepe o Maria
+  assert.equal(evaluateIsOurStore(orderStoreA, 'default', null, null), false);
+  assert.equal(evaluateIsOurStore(orderStoreB, 'default', null, null), false);
+  // Caso 4: Usuario visitante en landing/demo sí recibe pedidos demo propios
+  assert.equal(evaluateIsOurStore(orderDemo, 'default', null, null), true);
+});
+
