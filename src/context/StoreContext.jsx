@@ -821,18 +821,22 @@ export const deduplicateStoreList = (storeList) => {
 };
 
 // Invalidación automática de versión de catálogo para asegurar sincronización de imágenes y productos
-export const CURRENT_SCHEMA_VER = '2026-09-19-v21-batch5-hires-sync';
+export const CURRENT_SCHEMA_VER = '2026-10-25-v22-injected-catalogs-sync';
 
 import { 
   isFernandoSeedStore, 
   isMatiasSeedStore, 
-  isOfficialSeedStore 
+  isOfficialSeedStore,
+  isPredefinedMapStore,
+  hasPredefinedCatalog
 } from '../utils/storeTenantUtils';
 
 export {
   isFernandoSeedStore,
   isMatiasSeedStore,
-  isOfficialSeedStore
+  isOfficialSeedStore,
+  isPredefinedMapStore,
+  hasPredefinedCatalog
 };
 
 // Auto-sanitización síncrona en el navegador: purga versiones viejas y limpia residuos mock en tiendas de comerciantes
@@ -1164,8 +1168,12 @@ export const StoreProvider = ({ children }) => {
       // Pre-cargar productos de la tienda seleccionada
       try {
         const localProds = localStorage.getItem(`marketsaas_${foundStore.slug}_products`);
-        const isSeed = isOfficialSeedStore(foundStore.slug);
-        const baseCatalog = isSeed ? getStoreCatalog(foundStore.slug).map(normalizeProduct) : [];
+        const hasCatalog = hasPredefinedCatalog(foundStore.slug);
+        const baseCatalog = hasCatalog
+          ? (foundStore.slug === 'default' 
+              ? initialProducts.map(normalizeProduct) 
+              : getStoreCatalog(foundStore.slug).map(normalizeProduct))
+          : [];
         const deletedIds = getDeletedProductIds(foundStore.slug);
         if (localProds) {
           const parsed = JSON.parse(localProds);
@@ -1186,8 +1194,13 @@ export const StoreProvider = ({ children }) => {
           setProducts(baseCatalog.filter(bp => !deletedIds.has(String(bp.id))));
         }
       } catch {
-        const isSeed = isOfficialSeedStore(foundStore.slug);
-        setProducts(isSeed ? getStoreCatalog(foundStore.slug).map(normalizeProduct) : []);
+        const hasCatalog = hasPredefinedCatalog(foundStore.slug);
+        const baseCatalog = hasCatalog
+          ? (foundStore.slug === 'default' 
+              ? initialProducts.map(normalizeProduct) 
+              : getStoreCatalog(foundStore.slug).map(normalizeProduct))
+          : [];
+        setProducts(baseCatalog);
       }
     }
     setCustomerSubView('storefront');
@@ -1217,8 +1230,8 @@ export const StoreProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     if (!tenantSlug) return [];
 
-    // Si NO es tienda semilla oficial: NUNCA inyectar catálogo determinista ni productos demo
-    if (!isOfficialSeedStore(tenantSlug)) {
+    // Si NO es tienda con catálogo predefinido (tienda nueva creada por comerciante): NUNCA inyectar catálogo determinista ni productos demo
+    if (!hasPredefinedCatalog(tenantSlug)) {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
       if (saved) {
         try {
@@ -1231,7 +1244,7 @@ export const StoreProvider = ({ children }) => {
       return [];
     }
 
-    // Tiendas semilla oficiales (Matías TiendaTodo o Tiendita Fernando)
+    // Tiendas inyectadas del mapa o semillas oficiales
     const baseCatalog = tenantSlug === 'default' 
       ? initialProducts.map(normalizeProduct) 
       : getStoreCatalog(tenantSlug).map(normalizeProduct);
@@ -2028,7 +2041,7 @@ export const StoreProvider = ({ children }) => {
     try {
       if (tenantSlug !== 'default') {
         const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
-        if (!isOfficialSeedStore(tenantSlug)) {
+        if (!hasPredefinedCatalog(tenantSlug)) {
           // Tiendas de comerciantes: jamás mezclar con baseCatalog ni inyectar productos demo
           if (localProds) {
             try {
@@ -2045,8 +2058,10 @@ export const StoreProvider = ({ children }) => {
             setProducts([]);
           }
         } else {
-          // Tiendas semilla oficiales
-          const baseCatalog = getStoreCatalog(tenantSlug).map(normalizeProduct);
+          // Tiendas inyectadas del mapa o semillas oficiales
+          const baseCatalog = tenantSlug === 'default'
+            ? initialProducts.map(normalizeProduct)
+            : getStoreCatalog(tenantSlug).map(normalizeProduct);
           const deletedIds = getDeletedProductIds(tenantSlug);
           if (localProds) {
             const parsed = JSON.parse(localProds);
@@ -2261,7 +2276,7 @@ export const StoreProvider = ({ children }) => {
 
     productQuery.then(async ({ data, error }) => {
       if (!error && Array.isArray(data)) {
-        if (!isOfficialSeedStore(tenantSlug)) {
+        if (!hasPredefinedCatalog(tenantSlug)) {
           // Tiendas de comerciantes reales: solo cargar lo que realmente está en la BD o en localStorage
           const localProdsRaw = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
           let localItems = [];
@@ -2286,7 +2301,7 @@ export const StoreProvider = ({ children }) => {
           return;
         }
 
-        // Tiendas semilla oficiales (Matías TiendaTodo o Tiendita Fernando)
+        // Tiendas inyectadas del mapa o semillas oficiales
         const baseCatalog = tenantSlug === 'default'
           ? initialProducts.map(normalizeProduct)
           : getStoreCatalog(tenantSlug).map(normalizeProduct);

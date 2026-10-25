@@ -8,6 +8,8 @@
  * - TODAS las demás tiendas de comerciantes creadas o registradas inician 100% limpias.
  */
 
+import { PREDEFINED_MAP_STORE_SLUGS } from '../data/storeInventories.js';
+
 export const isFernandoSeedStore = (slug) => {
   if (!slug) return false;
   const s = String(slug).toLowerCase().trim();
@@ -23,3 +25,17 @@ export const isMatiasSeedStore = (slug) => {
 export const isOfficialSeedStore = (slug) => {
   return isMatiasSeedStore(slug) || isFernandoSeedStore(slug);
 };
+
+export const isPredefinedMapStore = (slug) => {
+  if (!slug) return false;
+  const s = String(slug).toLowerCase().trim();
+  const resolved = (s === 'tiendita-fernando' || s === 'fernando') ? 'minimarket-ian' : s;
+  return PREDEFINED_MAP_STORE_SLUGS.has(resolved);
+};
+
+export const hasPredefinedCatalog = (slug) => {
+  if (!slug) return false;
+  if (slug === 'default') return true;
+  return isPredefinedMapStore(slug);
+};
+

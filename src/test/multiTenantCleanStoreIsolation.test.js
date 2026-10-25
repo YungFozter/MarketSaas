@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { 
   isOfficialSeedStore, 
   isFernandoSeedStore, 
-  isMatiasSeedStore 
+  isMatiasSeedStore,
+  hasPredefinedCatalog,
+  isPredefinedMapStore 
 } from '../utils/storeTenantUtils.js';
 import { 
   getStoreCatalog, 
@@ -52,6 +54,22 @@ test('getStoreCatalog preserva catálogo para marcadores del mapa de VISTA VECIN
   assert.ok(PREDEFINED_MAP_STORE_SLUGS.has('minimarket-el-casco-viejo'));
   assert.ok(PREDEFINED_MAP_STORE_SLUGS.has('bodega-la-pascana'));
   assert.ok(PREDEFINED_MAP_STORE_SLUGS.has('sirari-market-deli'));
+
+  // hasPredefinedCatalog debe retornar true para todas las tiendas inyectadas
+  assert.equal(hasPredefinedCatalog('minimarket-el-casco-viejo'), true);
+  assert.equal(hasPredefinedCatalog('bodega-la-pascana'), true);
+  assert.equal(hasPredefinedCatalog('sirari-market-deli'), true);
+  assert.equal(hasPredefinedCatalog('matias-tiendatodo'), true);
+  assert.equal(hasPredefinedCatalog('default'), true);
+  assert.equal(hasPredefinedCatalog('minimarket-ian'), true);
+  assert.equal(hasPredefinedCatalog('tiendita-fernando'), true);
+
+  // hasPredefinedCatalog debe retornar false para tiendas de comerciantes creadas por usuarios
+  assert.equal(hasPredefinedCatalog('don-pepe'), false);
+  assert.equal(hasPredefinedCatalog('tienda-maria'), false);
+  assert.equal(hasPredefinedCatalog('nueva-tienda-limpia'), false);
+  assert.equal(hasPredefinedCatalog(''), false);
+  assert.equal(hasPredefinedCatalog(null), false);
 
   const cascovCatalog = getStoreCatalog('minimarket-el-casco-viejo');
   assert.ok(cascovCatalog.length > 0, 'Las tiendas del mapa cruceño deben tener catálogo para Vista Vecino');
