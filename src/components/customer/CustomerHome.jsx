@@ -558,7 +558,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             {/* Contenedor scrolleable del catálogo para no alargar la pantalla */}
             <div 
               ref={catalogGridRef}
-              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto overscroll-y-auto touch-pan-y pr-1 sm:pr-2 pb-2 scroll-smooth rounded-2xl focus:outline-none catalog-scroll-container"
+              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto overscroll-y-auto touch-pan-y pr-1 sm:pr-2 pb-2 rounded-2xl focus:outline-none catalog-scroll-container"
               tabIndex={0}
               aria-label="Lista de productos del catálogo"
             >

@@ -115,7 +115,7 @@ export const StorePrintKitModal = ({ isOpen, onClose }) => {
 
   return createPortal(
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn print-kit-modal-overlay"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 animate-fadeIn print-kit-modal-overlay"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

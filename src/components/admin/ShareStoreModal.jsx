@@ -38,16 +38,29 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  // Control del carrusel deslizante en móvil / tablet (< lg)
+  // Control del carrusel deslizante en móvil / tablet (< lg) con rAF throttling sin re-renders innecesarios
   const carouselRef = useRef(null);
+  const scrollTickRef = useRef(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
   const checkScrollability = () => {
     if (!carouselRef.current) return;
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) return;
     const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-    setCanScrollLeft(scrollLeft > 6);
-    setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+    const nextLeft = scrollLeft > 6;
+    const nextRight = scrollLeft + clientWidth < scrollWidth - 10;
+    setCanScrollLeft(prev => (prev !== nextLeft ? nextLeft : prev));
+    setCanScrollRight(prev => (prev !== nextRight ? nextRight : prev));
+  };
+
+  const handleCarouselScroll = () => {
+    if (scrollTickRef.current) return;
+    scrollTickRef.current = true;
+    window.requestAnimationFrame(() => {
+      checkScrollability();
+      scrollTickRef.current = false;
+    });
   };
 
   useEffect(() => {
@@ -304,14 +317,12 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
 
   return createPortal(
     <div
-      className="share-store-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 lg:p-6 bg-slate-950/65 backdrop-blur-xs select-none"
+      className="share-store-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 lg:p-6 bg-slate-950/70 select-none"
       onClick={onClose}
-      onWheel={(e) => e.stopPropagation()}
     >
       <div
         className="share-store-modal-card relative w-full max-w-2xl lg:max-w-5xl xl:max-w-6xl bg-white border border-slate-200/90 rounded-3xl overflow-hidden text-slate-900 max-h-[94dvh] sm:max-h-[92vh] flex flex-col select-auto"
         onClick={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-store-modal-title"
@@ -434,8 +445,8 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                 {/* Contenedor Híbrido: Carrusel horizontal en móvil/tablet (`flex overflow-x-auto`) y Cuadrícula completa en PC (`lg:grid lg:grid-cols-2`) */}
                 <div
                   ref={carouselRef}
-                  onScroll={checkScrollability}
-                  className="share-store-carousel flex lg:grid lg:grid-cols-2 items-stretch gap-2.5 sm:gap-3 overflow-x-auto lg:overflow-visible scroll-smooth snap-x snap-mandatory lg:snap-none py-1 px-0.5 touch-pan-x"
+                  onScroll={handleCarouselScroll}
+                  className="share-store-carousel flex lg:grid lg:grid-cols-2 items-stretch gap-2.5 sm:gap-3 overflow-x-auto lg:overflow-visible snap-x snap-mandatory lg:snap-none py-1 px-0.5 touch-pan-x"
                 >
                   {templates.map((tpl, idx) => {
                     const IconComponent = tpl.icon;

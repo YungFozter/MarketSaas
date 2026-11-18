@@ -405,7 +405,7 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overscroll-contain select-none animate-fadeIn"
+      className="fixed inset-0 z-50 bg-slate-950/75 flex items-center justify-center p-3 sm:p-4 overscroll-contain select-none animate-fadeIn"
       onClick={onClose}
     >
       <div 

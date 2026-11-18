@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Store, 
   ShoppingBag, 
@@ -50,7 +50,7 @@ export const Navbar = ({
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const progressBarRef = useRef(null);
 
   useEffect(() => {
     let ticking = false;
@@ -60,17 +60,20 @@ export const Navbar = ({
         window.requestAnimationFrame(() => {
           const scrollY = window.scrollY;
 
-          // Histéresis calibrada: se activa justo al pasar la barra de anuncios (> 35px)
-          // y se desactiva suavemente al retornar cerca del inicio (< 20px).
+          // Histéresis calibrada: solo re-renderiza cuando cruza el umbral (35px / 20px),
+          // NUNCA en cada pixel del scroll.
           setIsScrolled((prev) => {
             if (!prev && scrollY > 35) return true;
             if (prev && scrollY < 20) return false;
             return prev;
           });
 
-          const winHeight = document.documentElement.scrollHeight - window.innerHeight;
-          if (winHeight > 0) {
-            setScrollProgress(Math.min(100, Math.max(0, (scrollY / winHeight) * 100)));
+          // Actualizar la barra de progreso directamente en el DOM (transform: scaleX)
+          // sin provocar re-renders de React en cada frame del scroll (60/120fps puros)
+          if (progressBarRef.current) {
+            const winHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const ratio = winHeight > 0 ? Math.min(1, Math.max(0, scrollY / winHeight)) : 0;
+            progressBarRef.current.style.transform = `scaleX(${ratio})`;
           }
           ticking = false;
         });
@@ -192,7 +195,7 @@ export const Navbar = ({
           <div 
             className={`relative pointer-events-auto transition-all duration-300 ${
               isScrolled
-                ? 'bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
+                ? 'bg-white rounded-2xl border border-slate-200/90 shadow-xl shadow-slate-950/8 px-3 sm:px-6 ring-1 ring-black/5'
                 : 'bg-white border-b border-slate-100 shadow-none px-3 sm:px-6 lg:px-8'
             }`}
           >
@@ -489,12 +492,13 @@ export const Navbar = ({
           </div>
         )}
 
-        {/* Indicador de brillo y progreso dinámico al scrollear */}
+        {/* Indicador de brillo y progreso dinámico al scrollear (GPU Composite scaleX sin re-renders) */}
         {isScrolled && (
           <div className="absolute bottom-0 left-4 right-4 h-[2px] bg-slate-100/60 overflow-hidden pointer-events-none rounded-full">
             <div 
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500 transition-all duration-150 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-              style={{ width: `${scrollProgress}%` }}
+              ref={progressBarRef}
+              className="h-full w-full origin-left bg-gradient-to-r from-emerald-500 via-teal-400 to-sky-500"
+              style={{ transform: 'scaleX(0)' }}
             />
           </div>
         )}

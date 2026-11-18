@@ -41,7 +41,7 @@ export const SpectatorDeliveryModal = ({ isOpen, onClose, whatsappNumber = '5917
 
   return createPortal(
     <div 
-      className="spectator-delivery-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
+      className="spectator-delivery-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 overflow-y-auto"
       onClick={onClose}
     >
       <div 

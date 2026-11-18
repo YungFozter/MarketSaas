@@ -5,8 +5,13 @@
     -webkit-tap-highlight-color: transparent !important;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   }
+  html {
+    /* Respuesta inmediata a la rueda del mouse y al gesto táctil sin interpolación pesada */
+    scroll-behavior: auto;
+  }
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
@@ -16,6 +21,16 @@
     -webkit-tap-highlight-color: transparent !important;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
   }
+}
+
+/* ==========================================================================
+   Optimización Global de Rendimiento de Scroll (60/120fps)
+   - Evita scroll-behavior: smooth en contenedores con rueda/dedo (que genera
+     sensación de retraso o pesadez al scrollear con mouse).
+   - Elimina backdrop-filter pesados en modales full-screen durante scroll.
+   ========================================================================== */
+.scroll-smooth {
+  scroll-behavior: auto !important;
 }
 
 /* Custom styles and smooth animations */
@@ -91,16 +106,12 @@
   background: #94a3b8;
 }
 
-/* Glassmorphism helpers */
+/* Glassmorphism helpers (optimizados con opacidad sólida para evitar lag de GPU en scroll) */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.85);
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.97);
 }

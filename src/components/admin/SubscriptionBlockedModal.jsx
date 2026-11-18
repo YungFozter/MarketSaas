@@ -89,7 +89,7 @@ export const SubscriptionBlockedModal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overscroll-contain select-none animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 overscroll-contain select-none animate-fade-in"
       onClick={onClose}
     >
       <div 

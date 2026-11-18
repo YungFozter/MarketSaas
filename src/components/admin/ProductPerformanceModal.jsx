@@ -229,7 +229,7 @@ export const ProductPerformanceModal = ({ product, isOpen, onClose, onEditProduc
   const isLowStock = isStockDefined && isMinStockDefined && product.stock <= product.minStock;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 animate-fadeIn">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Cabecera de la Ficha */}

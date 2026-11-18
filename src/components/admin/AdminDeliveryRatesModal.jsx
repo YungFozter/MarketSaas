@@ -69,14 +69,12 @@ export const AdminDeliveryRatesModal = ({
 
   return createPortal(
     <div
-      className="admin-rates-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs overscroll-contain select-none"
+      className="admin-rates-modal-overlay fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 overscroll-contain select-none"
       onClick={onClose}
-      onWheel={(e) => e.stopPropagation()}
     >
       <div
         className="admin-rates-modal-card relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[92vh] flex flex-col my-auto text-left overscroll-contain select-auto"
         onClick={(e) => e.stopPropagation()}
-        onWheel={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-700 via-teal-800 to-slate-900 text-white flex items-center justify-between shrink-0">

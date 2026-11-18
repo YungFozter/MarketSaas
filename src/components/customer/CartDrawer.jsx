@@ -73,7 +73,7 @@ export const CartDrawer = ({ isOpen, onClose, onProceedCheckout }) => {
     <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-contain animate-fadeIn">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity touch-none"
+        className="absolute inset-0 bg-slate-950/65 transition-opacity touch-none"
         onClick={onClose}
         onTouchMove={(e) => e.preventDefault()}
       />

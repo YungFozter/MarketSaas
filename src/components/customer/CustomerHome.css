@@ -57,6 +57,6 @@
   scrollbar-color: #cbd5e1 #f1f5f9;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: auto;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 

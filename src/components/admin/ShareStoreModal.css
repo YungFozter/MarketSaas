@@ -1,29 +1,31 @@
 /* ==========================================================================
    ShareStoreModal.css - Marketing & Difusión Vecinal (Vista Dueño)
-   Diseño Responsive:
-   - Vista PC (lg+): Widescreen 2 Columnas (Configuración a la izq / Vista Previa y Envío a la der)
+   Diseño Responsive y Scroll de Alto Rendimiento (60/120fps sin repaints):
+   - Vista PC (lg+): Widescreen 2 Columnas
    - Vista Tablet & Móvil: Stack Vertical Fluido con Carrusel Táctil
    ========================================================================== */
 
-/* Overlay con entrada suave y bloqueo de overscroll */
+/* Overlay ligero sin backdrop-filter para evitar recomposición pesada de GPU al scrollear */
 .share-store-modal-overlay {
-  animation: shareStoreOverlayIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: shareStoreOverlayIn 0.16s ease-out forwards;
   overscroll-behavior: contain;
 }
 
-/* Tarjeta principal del modal con curva física suave */
+/* Tarjeta principal del modal con aislamiento de layout/paint */
 .share-store-modal-card {
-  animation: shareStoreCardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: shareStoreCardIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overscroll-behavior: contain;
+  contain: layout paint;
   box-shadow:
-    0 24px 52px -12px rgba(15, 23, 42, 0.32),
-    0 4px 16px -2px rgba(15, 23, 42, 0.08);
+    0 20px 40px -12px rgba(15, 23, 42, 0.28),
+    0 4px 14px -2px rgba(15, 23, 42, 0.08);
 }
 
-/* Cuerpo desplazable interno con scroll suave y aislado */
+/* Cuerpo desplazable interno con scroll nativo instantáneo */
 .share-store-modal-body {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
@@ -50,6 +52,7 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
 }
 
 .share-store-carousel::-webkit-scrollbar {
@@ -67,13 +70,12 @@
   display: none;
 }
 
-/* Tarjeta de plantilla individual */
+/* Tarjeta de plantilla individual (solo propiedades ligeras, sin animar box-shadow en scroll) */
 .share-template-card {
   transition:
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.18s ease,
-    background-color 0.18s ease;
+    transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.14s ease,
+    background-color 0.14s ease;
 }
 
 .share-template-card:hover {
@@ -85,20 +87,15 @@
 }
 
 .share-template-card--active {
-  box-shadow:
-    0 10px 22px -6px rgba(245, 158, 11, 0.2),
-    0 2px 6px -1px rgba(245, 158, 11, 0.12);
+  box-shadow: 0 6px 16px -4px rgba(245, 158, 11, 0.18);
 }
 
-/* Superficie realista de previsualización de chat de WhatsApp */
+/* Superficie de previsualización de chat de WhatsApp (color sólido #efeae2 sin gradientes repetitivos que ralenticen el scroll) */
 .share-wa-chat-viewport {
   background-color: #efeae2;
-  background-image:
-    radial-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 0),
-    radial-gradient(rgba(5, 150, 105, 0.04) 1px, transparent 0);
-  background-size: 20px 20px;
-  background-position: 0 0, 10px 10px;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
 }
@@ -126,7 +123,7 @@
   background-color: #d9fdd3;
   color: #111b21;
   border-radius: 14px 4px 14px 14px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -143,7 +140,7 @@
   border-right: 8px solid transparent;
 }
 
-/* Keyframes de entrada */
+/* Keyframes de entrada (solo opacity y transform) */
 @keyframes shareStoreOverlayIn {
   from {
     opacity: 0;
@@ -156,7 +153,7 @@
 @keyframes shareStoreCardIn {
   from {
     opacity: 0;
-    transform: translateY(16px) scale(0.97);
+    transform: translateY(10px) scale(0.985);
   }
   to {
     opacity: 1;

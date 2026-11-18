@@ -507,7 +507,7 @@ export const CheckoutModal = ({ isOpen, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto overscroll-contain"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 animate-fadeIn overflow-y-auto overscroll-contain"
       onClick={onClose}
     >
       <div 

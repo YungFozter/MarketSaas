@@ -291,6 +291,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
   };
 
   // Control de visibilidad del botón flotante para volver arriba al Tablero Kanban
+  // (Con guarda de igualdad previa para no disparar re-renders en cada píxel de scroll)
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
@@ -298,8 +299,16 @@ export const AdminHome = ({ onOpenAuthModal }) => {
       setShowScrollTop(false);
       return;
     }
+    let ticking = false;
     const handleWindowScroll = () => {
-      setShowScrollTop(window.scrollY > 400);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldShow = window.scrollY > 400;
+          setShowScrollTop(prev => (prev !== shouldShow ? shouldShow : prev));
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', handleWindowScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleWindowScroll);
@@ -1359,7 +1368,7 @@ export const AdminHome = ({ onOpenAuthModal }) => {
         )}
 
         {/* Top Workspace Sub-Header Bar */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-5 py-2.5 select-none shadow-2xs">
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 px-3 sm:px-5 py-2.5 select-none shadow-2xs">
           <div className="flex flex-col gap-2.5">
             
             {/* Fila 1: Identidad del Negocio y Estados Globales */}

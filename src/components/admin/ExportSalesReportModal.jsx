@@ -227,7 +227,7 @@ export const ExportSalesReportModal = ({ isOpen, onClose, customOrders = null, t
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/65 backdrop-blur-xs overscroll-contain select-none animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 overscroll-contain select-none animate-fadeIn"
       onClick={onClose}
     >
       <div 

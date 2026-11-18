@@ -15,7 +15,7 @@
 /* Riel de filtros con desplazamiento táctil y barra suave */
 .store-filters-ribbon {
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 185, 129, 0.35) transparent;
 }
