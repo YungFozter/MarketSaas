@@ -1,6 +1,8 @@
 /* ==========================================================================
    ShareStoreModal.css - Marketing & Difusión Vecinal (Vista Dueño)
-   Diseño Responsive (PC Desktop, Tablet y Móvil), Animaciones y Estética
+   Diseño Responsive:
+   - Vista PC (lg+): Widescreen 2 Columnas (Configuración a la izq / Vista Previa y Envío a la der)
+   - Vista Tablet & Móvil: Stack Vertical Fluido con Carrusel Táctil
    ========================================================================== */
 
 /* Overlay con entrada suave y bloqueo de overscroll */
@@ -14,7 +16,7 @@
   animation: shareStoreCardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overscroll-behavior: contain;
   box-shadow:
-    0 24px 48px -12px rgba(15, 23, 42, 0.28),
+    0 24px 52px -12px rgba(15, 23, 42, 0.32),
     0 4px 16px -2px rgba(15, 23, 42, 0.08);
 }
 
@@ -43,7 +45,7 @@
   background-color: #94a3b8;
 }
 
-/* Carrusel horizontal de plantillas sin barra de scroll visible */
+/* Carrusel horizontal de plantillas en móvil/tablet; Grid en PC */
 .share-store-carousel {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -54,7 +56,7 @@
   display: none;
 }
 
-/* Chips de sugerencias rápidas sin barra de scroll */
+/* Chips de sugerencias rápidas */
 .share-store-chips-row {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -68,10 +70,10 @@
 /* Tarjeta de plantilla individual */
 .share-template-card {
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.2s ease,
-    background-color 0.2s ease;
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.18s ease,
+    background-color 0.18s ease;
 }
 
 .share-template-card:hover {
@@ -84,16 +86,16 @@
 
 .share-template-card--active {
   box-shadow:
-    0 10px 22px -6px rgba(245, 158, 11, 0.18),
-    0 2px 6px -1px rgba(245, 158, 11, 0.1);
+    0 10px 22px -6px rgba(245, 158, 11, 0.2),
+    0 2px 6px -1px rgba(245, 158, 11, 0.12);
 }
 
 /* Superficie realista de previsualización de chat de WhatsApp */
 .share-wa-chat-viewport {
   background-color: #efeae2;
   background-image:
-    radial-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 0),
-    radial-gradient(rgba(5, 150, 105, 0.035) 1px, transparent 0);
+    radial-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 0),
+    radial-gradient(rgba(5, 150, 105, 0.04) 1px, transparent 0);
   background-size: 20px 20px;
   background-position: 0 0, 10px 10px;
   overscroll-behavior: contain;
