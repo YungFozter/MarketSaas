@@ -1,0 +1,181 @@
+/* ==========================================================================
+   ShareStoreModal.css - Marketing & Difusión Vecinal (Vista Dueño)
+   Diseño Responsive (PC Desktop, Tablet y Móvil), Animaciones y Estética
+   ========================================================================== */
+
+/* Overlay con entrada suave y bloqueo de overscroll */
+.share-store-modal-overlay {
+  animation: shareStoreOverlayIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overscroll-behavior: contain;
+}
+
+/* Tarjeta principal del modal con curva física suave */
+.share-store-modal-card {
+  animation: shareStoreCardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  overscroll-behavior: contain;
+  box-shadow:
+    0 24px 48px -12px rgba(15, 23, 42, 0.28),
+    0 4px 16px -2px rgba(15, 23, 42, 0.08);
+}
+
+/* Cuerpo desplazable interno con scroll suave y aislado */
+.share-store-modal-body {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.share-store-modal-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.share-store-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.share-store-modal-body::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.share-store-modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+/* Carrusel horizontal de plantillas sin barra de scroll visible */
+.share-store-carousel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.share-store-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Chips de sugerencias rápidas sin barra de scroll */
+.share-store-chips-row {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.share-store-chips-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tarjeta de plantilla individual */
+.share-template-card {
+  transition:
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.share-template-card:hover {
+  transform: translateY(-1px);
+}
+
+.share-template-card:active {
+  transform: scale(0.985);
+}
+
+.share-template-card--active {
+  box-shadow:
+    0 10px 22px -6px rgba(245, 158, 11, 0.18),
+    0 2px 6px -1px rgba(245, 158, 11, 0.1);
+}
+
+/* Superficie realista de previsualización de chat de WhatsApp */
+.share-wa-chat-viewport {
+  background-color: #efeae2;
+  background-image:
+    radial-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(5, 150, 105, 0.035) 1px, transparent 0);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
+}
+
+.share-wa-chat-viewport::-webkit-scrollbar {
+  width: 5px;
+}
+
+.share-wa-chat-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.share-wa-chat-viewport::-webkit-scrollbar-thumb {
+  background-color: rgba(15, 23, 42, 0.22);
+  border-radius: 9999px;
+}
+
+.share-wa-chat-viewport::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(15, 23, 42, 0.38);
+}
+
+/* Burbuja de mensaje saliente estilo WhatsApp */
+.share-wa-bubble {
+  position: relative;
+  background-color: #d9fdd3;
+  color: #111b21;
+  border-radius: 14px 4px 14px 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Pestaña superior derecha de la burbuja de WhatsApp */
+.share-wa-bubble::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid #d9fdd3;
+  border-right: 8px solid transparent;
+}
+
+/* Keyframes de entrada */
+@keyframes shareStoreOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shareStoreCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Adaptación en móviles pequeños (< 640px) */
+@media (max-width: 639px) {
+  .share-store-modal-card {
+    max-height: 94dvh;
+    border-radius: 24px;
+  }
+}
+
+/* Respeto a preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .share-store-modal-overlay,
+  .share-store-modal-card,
+  .share-template-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
