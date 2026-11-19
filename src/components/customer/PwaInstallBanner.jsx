@@ -12,8 +12,9 @@ import {
   Info,
   ExternalLink
 } from 'lucide-react';
+import './PwaInstallBanner.css';
 
-export const PwaInstallBanner = ({ storeName = 'tu tienda de barrio' }) => {
+export const PwaInstallBanner = ({ storeName = 'tu tienda de barrio', suppressFloating = false }) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showBanner, setShowBanner] = useState(true);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
@@ -103,14 +104,14 @@ export const PwaInstallBanner = ({ storeName = 'tu tienda de barrio' }) => {
   return (
     <>
       {/* ========================================================================= */}
-      {/* 1. BANNER FLOTANTE (Visible en Móvil y Desktop)                          */}
+      {/* 1. BANNER FLOTANTE (Oculto cuando hay barra activa que pueda solapar)    */}
       {/* ========================================================================= */}
-      {showBanner && (
+      {showBanner && !suppressFloating && (
         <aside 
           aria-label="Instalación de la aplicación"
           className="fixed bottom-20 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-40 animate-slideUp"
         >
-          <div className="bg-slate-900/95 backdrop-blur-md text-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3">
+          <div className="pwa-install-floating text-white p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25">
                 <Smartphone className="w-5 h-5 text-white" />
@@ -158,7 +159,7 @@ export const PwaInstallBanner = ({ storeName = 'tu tienda de barrio' }) => {
       {/* 2. MODAL GUÍA DE INSTALACIÓN MULTI-DISPOSITIVO                           */}
       {/* ========================================================================= */}
       {isInstallModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-50 pwa-install-modal-backdrop flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-md w-full space-y-4 text-slate-900 shadow-2xl border border-slate-200 animate-slideUp">
             {/* Header del Modal */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">

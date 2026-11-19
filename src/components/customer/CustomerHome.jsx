@@ -7,7 +7,7 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, Crown, CheckCircle2, PackageCheck } from 'lucide-react';
+import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, CheckCircle2, PackageCheck } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -153,7 +153,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     };
   }, [currentPage, itemsPerPage, selectedCategory, filteredProducts]);
 
-  const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(true);
+  const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(false);
 
   // Pedidos entregados legítimos del vecino (en este dispositivo o activos)
   const neighborDeliveredOrders = useMemo(() => {
@@ -229,13 +229,13 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 sm:pb-24">
-      {/* Barra de Retorno al Directorio de Tiendas */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-white px-3.5 py-2.5 rounded-2xl border border-slate-200 shadow-2xs">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 pb-20 sm:pb-24">
+      {/* Barra de Retorno y Acciones Directas de la Tienda */}
+      <div className="customer-store-topbar mb-3.5 bg-white px-3 sm:px-3.5 py-2 rounded-2xl border border-slate-200 shadow-2xs">
         <button
           type="button"
           onClick={goToDirectory}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition-all cursor-pointer font-bold text-xs sm:text-sm group shadow-2xs"
+          className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 transition-all cursor-pointer font-bold text-xs sm:text-sm group shadow-2xs shrink-0"
           title="Volver a la lista de minimarkets y mapa del barrio"
         >
           <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-emerald-600 group-hover:-translate-x-0.5 transition-transform" />
@@ -246,50 +246,31 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           </span>
         </button>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-          <span className="hidden sm:inline">Comprando en:</span>
-          <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-            {storeConfig?.logoUrl ? (
-              <img 
-                src={storeConfig.logoUrl} 
-                alt={storeConfig.name} 
-                className="w-4 h-4 rounded-md object-contain bg-white shrink-0 border border-slate-200"
-              />
-            ) : (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            )}
-            <span className="truncate max-w-[140px] sm:max-w-[200px]">{storeConfig.name}</span>
-            {isProStore && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-amber-900 bg-amber-200/90 border border-amber-400 px-1.5 py-0.2 rounded-md shadow-2xs ml-0.5 shrink-0" title="Tienda Oficial con Plan PRO">
-                <Crown className="w-2.5 h-2.5 text-amber-800 fill-amber-500" />
-                <span>PRO</span>
-              </span>
-            )}
-          </span>
+        <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
           {(storeConfig.whatsapp || storeConfig.phone) && (
             <a
               href={`https://wa.me/${(storeConfig.whatsapp || storeConfig.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`¡Hola ${storeConfig.name}! Tengo una consulta sobre los productos de la tienda.`)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap"
               title="Consultar por WhatsApp a la tienda"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span className="hidden sm:inline">Consultar a la tienda</span>
               <span className="sm:hidden">WhatsApp</span>
             </a>
           )}
 
-          {/* Botón PWA para Instalar la App del Minimarket */}
+          {/* Acceso único para Instalar la App del Minimarket */}
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
             title="Instalar la aplicación en tu celular o PC"
           >
-            <Smartphone className="w-3.5 h-3.5" />
+            <Smartphone className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Instalar App</span>
-            <span className="sm:hidden">App 📲</span>
+            <span className="sm:hidden">Instalar App</span>
           </button>
         </div>
       </div>
@@ -317,10 +298,10 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
 
       {/* Banner de Pedido en Curso o Pedido Recién Entregado */}
       {activeOrder && (
-        <div className={`mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-3xl text-white shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 relative ${
+        <div className={`mb-5 sm:mb-6 p-3.5 sm:p-4 rounded-3xl text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 relative ${
           isDeliveredActive 
             ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 animate-fadeIn border border-emerald-400/40' 
-            : 'bg-gradient-to-r from-emerald-500 to-teal-600 animate-pulse-glow'
+            : 'bg-gradient-to-r from-emerald-600 to-teal-600 border border-emerald-400/30'
         }`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/20 flex items-center justify-center font-bold shrink-0">
@@ -621,8 +602,11 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         />
       )}
 
-      {/* Banner PWA: Instalar en el Celular con 1 Clic */}
-      <PwaInstallBanner storeName={storeConfig?.name || 'tu tienda'} />
+      {/* Banner PWA: oculto flotante cuando existe pedido activo para no tapar seguimiento */}
+      <PwaInstallBanner
+        storeName={storeConfig?.name || 'tu tienda'}
+        suppressFloating={Boolean(activeOrder)}
+      />
 
 
     </main>
