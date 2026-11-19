@@ -4060,7 +4060,7 @@ export const StoreProvider = ({ children }) => {
   const activePlanName = useMemo(() => {
     if (!isSubscriptionActive) return 'Suscripción Vencida';
     if (activePlanType === 'pro') return 'Plan PRO (Bs. 129)';
-    if (activePlanType === 'trial') return 'Prueba Gratuita (15 Días)';
+    if (activePlanType === 'trial') return 'Prueba Gratuita (5 Días)';
     return 'Plan Básico (Bs. 75)';
   }, [isSubscriptionActive, activePlanType]);
 

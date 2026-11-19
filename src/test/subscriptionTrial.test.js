@@ -7,13 +7,13 @@ import {
   calculateSubscriptionTimeRemaining 
 } from '../utils/subscriptionUtils.js';
 
-test('TRIAL_DURATION_MINUTES debe ser exactamente 21,600 minutos (15 días)', () => {
-  const expectedMinutes = 15 * 24 * 60; // 21600
-  assert.equal(TRIAL_DURATION_MINUTES, expectedMinutes, 'Debe equivaler exactamente a 15 días en minutos');
-  assert.equal(TRIAL_DURATION_MINUTES, 21600);
+test('TRIAL_DURATION_MINUTES debe ser exactamente 7,200 minutos (5 días)', () => {
+  const expectedMinutes = 5 * 24 * 60; // 7200
+  assert.equal(TRIAL_DURATION_MINUTES, expectedMinutes, 'Debe equivaler exactamente a 5 días en minutos');
+  assert.equal(TRIAL_DURATION_MINUTES, 7200);
 });
 
-test('createDefaultSubscription genera suscripción inicial en estado trial por 15 días', () => {
+test('createDefaultSubscription genera suscripción inicial en estado trial por 5 días', () => {
   const beforeMs = Date.now();
   const sub = createDefaultSubscription();
   const afterMs = Date.now();
@@ -30,13 +30,13 @@ test('createDefaultSubscription genera suscripción inicial en estado trial por 
   assert.equal(endMs, expMs, 'trialEndsAt y subscriptionExpiresAt deben coincidir');
 
   const diffMinutes = Math.round((endMs - startMs) / (60 * 1000));
-  assert.equal(diffMinutes, 21600, 'La duración entre inicio y fin debe ser de 21600 minutos (15 días)');
+  assert.equal(diffMinutes, 7200, 'La duración entre inicio y fin debe ser de 7200 minutos (5 días)');
 });
 
-test('normalizeSubscription asigna exactamente 15 días desde la fecha de creación en base de datos si no tiene suscripción previa', () => {
-  // Tienda creada hace 3 días
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const normalized = normalizeSubscription(null, threeDaysAgo);
+test('normalizeSubscription asigna exactamente 5 días desde la fecha de creación en base de datos si no tiene suscripción previa', () => {
+  // Tienda creada hace 2 días
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const normalized = normalizeSubscription(null, twoDaysAgo);
 
   assert.equal(normalized.status, 'trial');
   assert.equal(normalized.plan, 'trial_free');
@@ -45,29 +45,29 @@ test('normalizeSubscription asigna exactamente 15 días desde la fecha de creaci
   const endMs = new Date(normalized.trialEndsAt).getTime();
   const diffMinutes = Math.round((endMs - startMs) / (60 * 1000));
 
-  assert.equal(diffMinutes, 21600, 'Debe calcular exactamente 15 días');
+  assert.equal(diffMinutes, 7200, 'Debe calcular exactamente 5 días');
   
-  // Tiempo restante debe ser de 11d 23h o 12d
+  // Tiempo restante debe ser de 2d 23h o 3d
   const remaining = calculateSubscriptionTimeRemaining(normalized.subscriptionExpiresAt);
-  assert.ok(remaining.days === 11 || remaining.days === 12, 'Deben restar 11 o 12 días completos');
+  assert.ok(remaining.days === 2 || remaining.days === 3, 'Deben restar 2 o 3 días completos');
   assert.equal(remaining.isExpired, false);
 });
 
-test('normalizeSubscription marca expirada una tienda creada hace más de 15 días', () => {
-  // Tienda creada hace 16 días
-  const sixteenDaysAgo = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000).toISOString();
-  const normalized = normalizeSubscription(null, sixteenDaysAgo);
+test('normalizeSubscription marca expirada una tienda creada hace más de 5 días', () => {
+  // Tienda creada hace 6 días
+  const sixDaysAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+  const normalized = normalizeSubscription(null, sixDaysAgo);
 
-  assert.equal(normalized.status, 'expired', 'Una tienda creada hace 16 días debe estar expirada');
+  assert.equal(normalized.status, 'expired', 'Una tienda creada hace 6 días debe estar expirada');
   const remaining = calculateSubscriptionTimeRemaining(normalized.subscriptionExpiresAt);
   assert.equal(remaining.isExpired, true);
   assert.equal(remaining.days, 0);
 });
 
-test('normalizeSubscription preserva la permanencia de una tienda existente sin reiniciar los 15 días', () => {
-  // Simular tienda existente en Supabase creada hace 5 días con fecha de expiración fijada
-  const creationIso = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
-  const existingExpiresIso = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
+test('normalizeSubscription preserva la permanencia de una tienda existente sin reiniciar los 5 días', () => {
+  // Simular tienda existente en Supabase creada hace 2 días con fecha de expiración fijada
+  const creationIso = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const existingExpiresIso = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const existingSub = {
     status: 'trial',

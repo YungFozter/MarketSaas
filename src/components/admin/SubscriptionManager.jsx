@@ -180,7 +180,7 @@ export const SubscriptionManager = () => {
                     : isProPlan
                       ? 'Plan PRO Activo ⭐'
                       : isTrial 
-                        ? 'Período de Prueba (15 Días)' 
+                        ? 'Período de Prueba (5 Días)' 
                         : 'Plan Básico Activo (Bs. 75)'}
                 </span>
               </span>

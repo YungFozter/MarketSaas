@@ -1482,7 +1482,7 @@ export const SuperAdminHome = () => {
                     </span>
                   ) : (sub.plan === 'trial_free' || (!sub.plan && !sub.subscriptionExpiresAt)) ? (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
-                      ⏳ Período de Prueba (15 Días)
+                      ⏳ Período de Prueba (5 Días)
                     </span>
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
@@ -1551,10 +1551,10 @@ export const SuperAdminHome = () => {
                     ⚡ +5 Minutos (Test)
                   </button>
                   <button
-                    onClick={() => handleAddTimeToSelectedStore(21600)}
+                    onClick={() => handleAddTimeToSelectedStore(7200)}
                     className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 hover:text-white font-bold text-xs transition-colors cursor-pointer text-center"
                   >
-                    🗓️ +15 Días
+                    🗓️ +5 Días
                   </button>
                   <button
                     onClick={() => handleAddTimeToSelectedStore(43200)}

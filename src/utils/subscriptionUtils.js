@@ -2,14 +2,14 @@
  * Módulo Canónico de Gestión de Suscripciones y Período de Prueba (MarketSaaS)
  * 
  * Reglas de negocio:
- * 1. El período de prueba gratuito al registrar/crear una tienda es de 15 DÍAS (21,600 minutos).
+ * 1. El período de prueba gratuito al registrar/crear una tienda es de 5 DÍAS (7,200 minutos).
  * 2. Zona horaria canónica oficial: Bolivia (America/La_Paz, UTC-04:00).
  * 3. Permanencia y consistencia: Se preserva la fecha exacta de creación y vencimiento sin reiniciar días indebidos.
  * 4. Blindaje contra fugas: Las tiendas expiradas se resuelven a 'expired' y los planes de pago ('basic' / 'pro') no se degradan.
  */
 
-// Duración oficial del período de prueba gratuito: 15 días = 21,600 minutos
-export const TRIAL_DURATION_MINUTES = 21600; // 15 días (21,600 minutos)
+// Duración oficial del período de prueba gratuito: 5 días = 7,200 minutos
+export const TRIAL_DURATION_MINUTES = 7200; // 5 días (7,200 minutos)
 
 // Offset oficial para La Paz - Bolivia (UTC -04:00)
 export const BOLIVIA_TIMEZONE_OFFSET_HOURS = -4;
@@ -98,7 +98,7 @@ export const normalizeSubscription = (sub, fallbackCreatedAt = null) => {
 
   // Si no existe objeto de suscripción previo:
   if (!sub || typeof sub !== 'object') {
-    // Si conocemos la fecha real de creación de la tienda en Supabase, calculamos los 15 días gratis a partir de dicha fecha
+    // Si conocemos la fecha real de creación de la tienda en Supabase, calculamos los 5 días gratis a partir de dicha fecha
     if (fallbackCreatedAt) {
       const createdTime = new Date(fallbackCreatedAt).getTime();
       if (!isNaN(createdTime)) {
@@ -117,7 +117,7 @@ export const normalizeSubscription = (sub, fallbackCreatedAt = null) => {
     return createDefaultSubscription();
   }
 
-  // 1. Determinar fecha de inicio del período de prueba (15 días)
+  // 1. Determinar fecha de inicio del período de prueba (5 días)
   const trialStartIso = sub.trialStartedAt || sub.trialStarted || fallbackCreatedAt || new Date().toISOString();
   const trialStartTime = new Date(trialStartIso).getTime();
 
@@ -161,7 +161,7 @@ export const normalizeSubscription = (sub, fallbackCreatedAt = null) => {
 
 // ==============================================================================
 // MATRIZ DE PERMISOS Y CARACTERÍSTICAS POR PLAN DE SUSCRIPCIÓN
-// Plan Básico (Bs. 75/mes) vs Plan PRO (Bs. 129/mes) vs Prueba Gratuita (15 días)
+// Plan Básico (Bs. 75/mes) vs Plan PRO (Bs. 129/mes) vs Prueba Gratuita (5 días)
 // ==============================================================================
 
 export const SUBSCRIPTION_PLANS = {
@@ -183,7 +183,7 @@ export const SUBSCRIPTION_PLANS = {
     id: 'trial',
     name: 'Prueba Gratuita',
     priceBolivianos: 0,
-    badgeText: 'Prueba Gratuita (15 Días)',
+    badgeText: 'Prueba Gratuita (5 Días)',
     color: 'indigo'
   }
 };
