@@ -30,6 +30,7 @@ import {
   Truck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { resolveIsolatedStoreShareData } from '../../utils/storeTenantUtils';
 import './ShareStoreModal.css';
 
 const QUICK_PROMO_SUGGESTIONS = [
@@ -40,97 +41,36 @@ const QUICK_PROMO_SUGGESTIONS = [
 ];
 
 export const ShareStoreModal = ({ isOpen, onClose }) => {
-  const { storeConfig, stores = [], selectedStore, merchantStore, tenantSlug, showToast, isProPlan } = useStore();
+  const { storeConfig, setStoreConfig, stores = [], selectedStore, merchantStore, tenantSlug, showToast, isProPlan } = useStore();
   const [selectedTemplate, setSelectedTemplate] = useState('weekend');
   const [customPromo, setCustomPromo] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  const storeName = storeConfig?.name || 'Mi Minimarket';
   const tenant = tenantSlug || 'default';
 
-  // 1. Enlace directo a la tienda
+  // 1. Enlace directo a la tienda (estrictamente del tenant activo)
   const storeUrl = typeof window !== 'undefined'
     ? `${window.location.origin}${window.location.pathname}?view=customer&store=${tenant}`
     : `https://marketsaas.com/?view=customer&store=${tenant}`;
 
-  // 2. Ubicación en texto y teléfono
-  const addressText = storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Dirección de la tienda';
-  const storePhone = (storeConfig?.whatsapp || storeConfig?.phone || '').trim();
-
-  // 3. Enlace oficial de Google Maps con Pin Exacto (Marker) de las coordenadas GPS de la tienda
-  const { mapsUrl, hasExactCoordinates, resolvedLat, resolvedLng } = useMemo(() => {
-    const matchedDirectoryStore = (stores || []).find(
-      s => s && (
-        s.slug === tenant ||
-        s.id === tenant ||
-        s.slug === storeConfig?.id ||
-        s.id === storeConfig?.id ||
-        (Array.isArray(s.aliases) && s.aliases.includes(tenant))
-      )
-    );
-
-    const candidateLat = [
-      storeConfig?.latitude,
-      storeConfig?.googleMapsCoordinates?.lat,
-      merchantStore?.latitude,
-      merchantStore?.config?.latitude,
-      merchantStore?.config?.googleMapsCoordinates?.lat,
-      selectedStore?.latitude,
-      selectedStore?.googleMapsCoordinates?.lat,
-      matchedDirectoryStore?.latitude,
-      matchedDirectoryStore?.googleMapsCoordinates?.lat
-    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
-
-    const candidateLng = [
-      storeConfig?.longitude,
-      storeConfig?.googleMapsCoordinates?.lng,
-      merchantStore?.longitude,
-      merchantStore?.config?.longitude,
-      merchantStore?.config?.googleMapsCoordinates?.lng,
-      selectedStore?.longitude,
-      selectedStore?.googleMapsCoordinates?.lng,
-      matchedDirectoryStore?.longitude,
-      matchedDirectoryStore?.googleMapsCoordinates?.lng
-    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
-
-    const numLat = candidateLat != null ? Number(candidateLat) : null;
-    const numLng = candidateLng != null ? Number(candidateLng) : null;
-
-    if (numLat != null && numLng != null) {
-      const cleanLat = Number(numLat.toFixed(6));
-      const cleanLng = Number(numLng.toFixed(6));
-      return {
-        mapsUrl: `https://maps.google.com/?q=${cleanLat},${cleanLng}`,
-        hasExactCoordinates: true,
-        resolvedLat: cleanLat,
-        resolvedLng: cleanLng
-      };
-    }
-
-    const cleanQuery = [
-      addressText !== 'Dirección de la tienda' ? addressText : storeName,
-      'Santa Cruz de la Sierra, Bolivia'
-    ].filter(Boolean).join(', ');
-
-    return {
-      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(cleanQuery)}`,
-      hasExactCoordinates: false,
-      resolvedLat: null,
-      resolvedLng: null
-    };
-  }, [
-    stores,
+  // 2 & 3. Datos de tienda, ubicación, contacto y Google Maps aislados por dueño/tenant
+  const {
+    scopedConfig,
+    storeName,
+    addressText,
+    storePhone,
+    mapsUrl,
+    hasExactCoordinates,
+    resolvedLat,
+    resolvedLng
+  } = useMemo(() => resolveIsolatedStoreShareData({
     tenant,
-    storeConfig?.id,
-    storeConfig?.latitude,
-    storeConfig?.longitude,
-    storeConfig?.googleMapsCoordinates,
+    storeConfig,
     merchantStore,
     selectedStore,
-    addressText,
-    storeName
-  ]);
+    stores
+  }), [tenant, storeConfig, merchantStore, selectedStore, stores]);
 
   // Mensaje base predeterminado para la plantilla personalizada
   const buildDefaultCustomTemplate = () =>
@@ -140,35 +80,101 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     `📍 *Dirección:* ${addressText}\n` +
     `🗺️ *Ubicación GPS (Google Maps):*\n${mapsUrl}`;
 
-  // Estado persistido por tienda para la Plantilla Personalizada
+  // Estado persistido por tienda (localStorage + Supabase store_config + Realtime) para la Plantilla Personalizada
   const customStorageKey = `marketsaas_${tenant}_custom_marketing_tpl`;
   const [customTemplateText, setCustomTemplateText] = useState(() => {
+    if (typeof scopedConfig?.customMarketingTemplate === 'string') {
+      return scopedConfig.customMarketingTemplate;
+    }
     try {
       const saved = localStorage.getItem(customStorageKey);
-      if (saved && saved.trim()) return saved;
-    } catch {}
+      if (saved !== null) return saved;
+    } catch { }
     return '';
   });
 
-  // Inicializar texto por defecto si está vacío cuando cambia la tienda
+  const syncTimerRef = useRef(null);
+  const lastLocalEditTsRef = useRef(0);
+  const lastLoadedTenantRef = useRef(tenant);
+  const scopedConfigRef = useRef(scopedConfig);
+  scopedConfigRef.current = scopedConfig;
+
+  // Limpiar estados transitorios y cargar la plantilla aislada cuando cambia de tienda
   useEffect(() => {
+    if (syncTimerRef.current) {
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = null;
+    }
+
+    const isTenantChange = lastLoadedTenantRef.current !== tenant;
+    if (isTenantChange) {
+      lastLoadedTenantRef.current = tenant;
+      lastLocalEditTsRef.current = 0;
+      setCustomPromo('');
+      setCopiedMessage(false);
+      setCopiedUrl(false);
+    }
+
+    const cloudTpl = typeof scopedConfig?.customMarketingTemplate === 'string'
+      ? scopedConfig.customMarketingTemplate
+      : null;
+
+    let localTpl = null;
     try {
-      const saved = localStorage.getItem(customStorageKey);
-      if (saved && saved.trim()) {
-        setCustomTemplateText(saved);
-      } else {
-        setCustomTemplateText(buildDefaultCustomTemplate());
-      }
-    } catch {
+      localTpl = localStorage.getItem(customStorageKey);
+    } catch { }
+
+    if (cloudTpl !== null) {
+      setCustomTemplateText(cloudTpl);
+      try { localStorage.setItem(customStorageKey, cloudTpl); } catch { }
+    } else if (localTpl !== null) {
+      setCustomTemplateText(localTpl);
+    } else {
       setCustomTemplateText(buildDefaultCustomTemplate());
     }
-  }, [tenant, storeName, storeUrl, addressText, mapsUrl]);
+  }, [tenant]);
+
+  // Sincronización en tiempo real desde la nube / otra pestaña sin interrumpir escritura activa
+  useEffect(() => {
+    const cloudTpl = scopedConfig?.customMarketingTemplate;
+    if (typeof cloudTpl !== 'string') return;
+    if (Date.now() - lastLocalEditTsRef.current < 1600) return;
+
+    setCustomTemplateText(prev => (prev !== cloudTpl ? cloudTpl : prev));
+    try {
+      localStorage.setItem(customStorageKey, cloudTpl);
+    } catch { }
+  }, [scopedConfig?.customMarketingTemplate, customStorageKey]);
+
+  useEffect(() => {
+    return () => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    };
+  }, []);
 
   const handleUpdateCustomTemplateText = (newVal) => {
+    const activeTenantAtEdit = tenant;
+    lastLocalEditTsRef.current = Date.now();
     setCustomTemplateText(newVal);
+
     try {
-      localStorage.setItem(customStorageKey, newVal);
-    } catch {}
+      localStorage.setItem(`marketsaas_${activeTenantAtEdit}_custom_marketing_tpl`, newVal);
+    } catch { }
+
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    if (typeof setStoreConfig === 'function') {
+      syncTimerRef.current = setTimeout(() => {
+        if (lastLoadedTenantRef.current !== activeTenantAtEdit) return;
+        const latestCfg = scopedConfigRef.current || {};
+        if (latestCfg.customMarketingTemplate === newVal) return;
+        setStoreConfig({
+          ...latestCfg,
+          id: latestCfg.id || activeTenantAtEdit,
+          tenant_id: latestCfg.tenant_id || activeTenantAtEdit,
+          customMarketingTemplate: newVal
+        });
+      }, 650);
+    }
   };
 
   const customTextareaRef = useRef(null);
@@ -612,11 +618,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                         type="button"
                         onClick={handlePrev}
                         disabled={!canScrollLeft}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border transition-colors flex items-center justify-center ${
-                          canScrollLeft
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border transition-colors flex items-center justify-center ${canScrollLeft
                             ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 cursor-pointer active:scale-95'
                             : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                        }`}
+                          }`}
                         title="Ver plantillas anteriores"
                         aria-label="Plantilla anterior"
                       >
@@ -626,11 +631,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                         type="button"
                         onClick={handleNext}
                         disabled={!canScrollRight}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border transition-colors flex items-center justify-center ${
-                          canScrollRight
+                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl border transition-colors flex items-center justify-center ${canScrollRight
                             ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 cursor-pointer active:scale-95'
                             : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
-                        }`}
+                          }`}
                         title="Ver siguientes plantillas"
                         aria-label="Siguiente plantilla"
                       >
@@ -659,53 +663,49 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                           setSelectedTemplate(tpl.id);
                           scrollToTemplateIndex(idx);
                         }}
-                        className={`share-template-card snap-start shrink-0 w-[82%] sm:w-[calc(50%-5px)] lg:w-auto relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left cursor-pointer flex flex-col justify-between gap-1 sm:gap-1.5 select-none group ${
-                          isSelected
+                        className={`share-template-card snap-start shrink-0 w-[82%] sm:w-[calc(50%-5px)] lg:w-auto relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left cursor-pointer flex flex-col justify-between gap-1 sm:gap-1.5 select-none group ${isSelected
                             ? isCustomCard
                               ? 'share-template-card--custom-active border-emerald-500 bg-emerald-50/75 ring-2 ring-emerald-400/35'
                               : 'share-template-card--active border-amber-500 bg-amber-50/75 ring-2 ring-amber-400/35'
                             : isCustomCard
                               ? 'border-emerald-200/90 bg-emerald-50/25 hover:border-emerald-300 hover:bg-emerald-50/50'
                               : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/70'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-start justify-between w-full gap-1.5">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
                             <div
-                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${
-                                isSelected
+                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${isSelected
                                   ? isCustomCard
                                     ? 'bg-emerald-600 text-white'
                                     : 'bg-amber-500 text-white'
                                   : isCustomCard
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/70'
-                              }`}
+                                }`}
                             >
                               <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                             <div className="min-w-0 flex-1">
                               <span
-                                className={`text-xs sm:text-sm font-black tracking-tight block truncate ${
-                                  isSelected
+                                className={`text-xs sm:text-sm font-black tracking-tight block truncate ${isSelected
                                     ? isCustomCard
                                       ? 'text-emerald-950'
                                       : 'text-amber-950'
                                     : 'text-slate-900'
-                                }`}
+                                  }`}
                               >
                                 {tpl.title}
                               </span>
                               <span
-                                className={`text-[9.5px] sm:text-[10px] font-bold block truncate ${
-                                  isSelected
+                                className={`text-[9.5px] sm:text-[10px] font-bold block truncate ${isSelected
                                     ? isCustomCard
                                       ? 'text-emerald-700'
                                       : 'text-amber-700'
                                     : isCustomCard
                                       ? 'text-emerald-600'
                                       : 'text-slate-400'
-                                }`}
+                                  }`}
                               >
                                 {tpl.tag}
                               </span>
@@ -715,11 +715,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                           <div className="flex items-center gap-1 shrink-0">
                             {tpl.badge && (
                               <span
-                                className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 ${
-                                  isCustomCard
+                                className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 ${isCustomCard
                                     ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
                                     : 'bg-amber-100 text-amber-900 border-amber-300/80'
-                                }`}
+                                  }`}
                               >
                                 {isCustomCard ? (
                                   <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
@@ -731,9 +730,8 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                             )}
                             {isSelected && (
                               <span
-                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-white flex items-center justify-center shrink-0 ${
-                                  isCustomCard ? 'bg-emerald-600' : 'bg-amber-500'
-                                }`}
+                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-white flex items-center justify-center shrink-0 ${isCustomCard ? 'bg-emerald-600' : 'bg-amber-500'
+                                  }`}
                                 title="Plantilla activa"
                               >
                                 <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -743,13 +741,12 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                         </div>
 
                         <p
-                          className={`text-[10.5px] sm:text-[11px] leading-snug line-clamp-2 ${
-                            isSelected
+                          className={`text-[10.5px] sm:text-[11px] leading-snug line-clamp-2 ${isSelected
                               ? isCustomCard
                                 ? 'text-emerald-950/90 font-semibold'
                                 : 'text-amber-950/90 font-semibold'
                               : 'text-slate-600'
-                          }`}
+                            }`}
                         >
                           {tpl.description}
                         </p>
@@ -770,11 +767,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                           setSelectedTemplate(tpl.id);
                           scrollToTemplateIndex(idx);
                         }}
-                        className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-                          isSelected
+                        className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${isSelected
                             ? tpl.isCustomBuilder ? 'w-6 bg-emerald-600' : 'w-6 bg-amber-500'
                             : 'w-1.5 bg-slate-300 hover:bg-slate-400'
-                        }`}
+                          }`}
                         title={`Seleccionar ${tpl.title}`}
                         aria-label={`Seleccionar plantilla ${tpl.title}`}
                       />
@@ -904,11 +900,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                           key={suggestion}
                           type="button"
                           onClick={() => setCustomPromo(isApplied ? '' : suggestion)}
-                          className={`text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                            isApplied
+                          className={`text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${isApplied
                               ? 'bg-amber-500 text-white border-amber-600'
                               : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-900 border-slate-200'
-                          }`}
+                            }`}
                         >
                           + {suggestion}
                         </button>
@@ -943,11 +938,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={handleCopyFullMessage}
-                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0 border active:scale-95 ${
-                      copiedMessage
+                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl font-extrabold text-[11px] sm:text-xs flex items-center gap-1 cursor-pointer transition-colors shrink-0 border active:scale-95 ${copiedMessage
                         ? 'bg-emerald-600 text-white border-emerald-600'
                         : 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}
+                      }`}
                   >
                     {copiedMessage ? (
                       <>
@@ -1038,11 +1032,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   <button
                     type="button"
                     onClick={handleCopyUrlOnly}
-                    className={`min-h-[38px] px-2.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-95 ${
-                      copiedUrl
+                    className={`min-h-[38px] px-2.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-95 ${copiedUrl
                         ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                         : 'border-slate-200/90 bg-white hover:bg-slate-100 text-slate-700'
-                    }`}
+                      }`}
                     title="Copiar únicamente el enlace directo de la tienda"
                   >
                     {copiedUrl ? (
@@ -1098,11 +1091,10 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={handleCopyUrlOnly}
-                className={`min-h-[36px] sm:min-h-[40px] px-2 py-1.5 rounded-xl border font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95 ${
-                  copiedUrl
+                className={`min-h-[36px] sm:min-h-[40px] px-2 py-1.5 rounded-xl border font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors active:scale-95 ${copiedUrl
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
                     : 'border-slate-200/90 bg-white hover:bg-slate-100 text-slate-700'
-                }`}
+                  }`}
                 title="Copiar únicamente el enlace directo de la tienda"
               >
                 {copiedUrl ? (

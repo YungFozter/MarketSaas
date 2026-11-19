@@ -5,7 +5,10 @@ import {
   isFernandoSeedStore, 
   isMatiasSeedStore,
   hasPredefinedCatalog,
-  isPredefinedMapStore 
+  isPredefinedMapStore,
+  isSameTenantStore,
+  isOwnedRemoteStoreRecord,
+  resolveIsolatedStoreShareData
 } from '../utils/storeTenantUtils.js';
 import { 
   getStoreCatalog, 
@@ -303,6 +306,100 @@ test('Aislamiento y permanencia de Imagen de Portada (Banner) y Logo entre dueñ
 
   // Y Tienda A sigue intacta con su propio banner
   assert.equal(storeA_Resolved.bannerUrl, CUSTOM_BANNER_A);
+});
+
+test('isOwnedRemoteStoreRecord y isSameTenantStore previenen mezclas por undefined === undefined o campos vacios', () => {
+  const currentUser = { id: 'user-carlos' };
+  const merchantWithoutTenantId = { id: 'tienda-carlos', slug: 'tienda-carlos' }; // tenant_id undefined
+
+  const anotherOwnerRowWithoutTenantId = {
+    id: 'tienda-maria',
+    owner_id: 'user-maria',
+    config: { owner_id: 'user-maria', zone: 'Equipetrol' }
+    // tenant_id undefined también!
+  };
+
+  assert.equal(
+    isOwnedRemoteStoreRecord(anotherOwnerRowWithoutTenantId, currentUser, merchantWithoutTenantId),
+    false,
+    'No debe marcar como propia otra tienda cuando ambos tenant_id son undefined'
+  );
+
+  const ownRow = {
+    id: 'tienda-carlos',
+    tenant_id: 'tienda-carlos',
+    owner_id: 'user-carlos',
+    config: { id: 'tienda-carlos' }
+  };
+  assert.equal(isOwnedRemoteStoreRecord(ownRow, currentUser, merchantWithoutTenantId), true);
+
+  assert.equal(isSameTenantStore({ id: '', slug: undefined }, undefined), false);
+  assert.equal(isSameTenantStore({ id: 'tienda-maria' }, 'tienda-carlos'), false);
+  assert.equal(isSameTenantStore({ id: 'minimarket-ian' }, 'tiendita-fernando'), true);
+  assert.equal(isSameTenantStore({ id: 'matias-tiendatodo' }, 'minimarket-ian'), false);
+});
+
+test('resolveIsolatedStoreShareData no filtra coordenadas ni config de selectedStore u otro dueno', () => {
+  const selectedStoreDeOtroDueno = {
+    id: 'matias-tiendatodo',
+    slug: 'matias-tiendatodo',
+    name: 'Matías TiendaTodo',
+    address: 'Calle 3, Casa 27',
+    latitude: -17.758782,
+    longitude: -63.104158,
+    googleMapsCoordinates: { lat: -17.758782, lng: -63.104158 }
+  };
+
+  const storeConfigDeTiendaA = {
+    id: 'matias-tiendatodo',
+    name: 'Matías TiendaTodo',
+    address: 'Calle 3, Casa 27',
+    whatsapp: '70011122',
+    latitude: -17.758782,
+    longitude: -63.104158,
+    customMarketingTemplate: 'Plantilla secreta de Matias'
+  };
+
+  // Dueño de Tienda B (sin GPS configurado aún) abre el modal después de visitar Tienda A en Vista Vecino
+  const merchantB = {
+    id: 'tienda-dona-maria',
+    slug: 'tienda-dona-maria',
+    name: 'Tienda Doña María',
+    address: 'Av. Banzer Km 5'
+  };
+
+  const resolvedB = resolveIsolatedStoreShareData({
+    tenant: 'tienda-dona-maria',
+    storeConfig: storeConfigDeTiendaA, // Simula un storeConfig aún desfasado de Tienda A
+    merchantStore: merchantB,
+    selectedStore: selectedStoreDeOtroDueno,
+    stores: [selectedStoreDeOtroDueno, merchantB]
+  });
+
+  assert.equal(resolvedB.storeName, 'Tienda Doña María');
+  assert.equal(resolvedB.addressText, 'Av. Banzer Km 5');
+  assert.equal(resolvedB.hasExactCoordinates, false, 'Tienda B NO debe heredar coordenadas GPS de Tienda A');
+  assert.equal(resolvedB.resolvedLat, null);
+  assert.equal(resolvedB.resolvedLng, null);
+  assert.equal(resolvedB.scopedConfig.customMarketingTemplate, undefined, 'No debe heredar plantilla custom de Tienda A');
+
+  // Cuando Tienda B guarda sus propias coordenadas exactas, genera pin exacto en Google Maps
+  const resolvedBWithGps = resolveIsolatedStoreShareData({
+    tenant: 'tienda-dona-maria',
+    storeConfig: {
+      id: 'tienda-dona-maria',
+      name: 'Tienda Doña María',
+      address: 'Av. Banzer Km 5',
+      latitude: -17.741234,
+      longitude: -63.175678
+    },
+    merchantStore: merchantB,
+    selectedStore: selectedStoreDeOtroDueno,
+    stores: [selectedStoreDeOtroDueno, merchantB]
+  });
+
+  assert.equal(resolvedBWithGps.hasExactCoordinates, true);
+  assert.equal(resolvedBWithGps.mapsUrl, 'https://maps.google.com/?q=-17.741234,-63.175678');
 });
 
 

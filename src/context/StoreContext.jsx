@@ -828,7 +828,10 @@ import {
   isMatiasSeedStore, 
   isOfficialSeedStore,
   isPredefinedMapStore,
-  hasPredefinedCatalog
+  hasPredefinedCatalog,
+  normalizeTenantId,
+  isSameTenantStore,
+  isOwnedRemoteStoreRecord
 } from '../utils/storeTenantUtils';
 
 export {
@@ -1385,17 +1388,28 @@ export const StoreProvider = ({ children }) => {
     };
   });
 
+  // Referencias vivas para callbacks en tiempo real y sincronización cross-tab sin recrear canales WebSocket
+  const storeConfigRef = useRef(storeConfig);
+  storeConfigRef.current = storeConfig;
+  const tenantSlugRef = useRef(tenantSlug);
+  tenantSlugRef.current = tenantSlug;
+  const merchantStoreRef = useRef(merchantStore);
+  merchantStoreRef.current = merchantStore;
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+  const lastLocalConfigWriteRef = useRef({ tenant: '', ts: 0, mutationId: '' });
+  const clientTabIdRef = useRef(`tab_${Math.random().toString(36).slice(2, 10)}`);
+
   const setStoreConfig = async (newConfigData) => {
-    const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfig) : newConfigData;
+    const rawUpdated = typeof newConfigData === 'function' ? newConfigData(storeConfigRef.current) : newConfigData;
     const { adminPassword, admin_pin, ...safeConfig } = rawUpdated;
     if (Array.isArray(safeConfig.coupons)) {
       safeConfig.coupons = safeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511');
     }
-    safeConfig.subscription = safeConfig.subscription ? normalizeSubscription(safeConfig.subscription) : (storeConfig?.subscription || createDefaultSubscription());
+    safeConfig.subscription = safeConfig.subscription ? normalizeSubscription(safeConfig.subscription) : (storeConfigRef.current?.subscription || createDefaultSubscription());
     safeConfig.schedule = normalizeStoreSchedule(safeConfig.schedule);
     const calculatedStatus = calculateStoreOpenStatus(safeConfig);
     safeConfig.isOpen = calculatedStatus.isOpen;
-    setStoreConfigState(safeConfig);
 
     const effectiveTenant = (tenantSlug && tenantSlug !== 'default' ? tenantSlug : null)
       || merchantStore?.slug
@@ -1405,11 +1419,31 @@ export const StoreProvider = ({ children }) => {
       || (localStorage.getItem('marketsaas_active_tenant') && localStorage.getItem('marketsaas_active_tenant') !== 'default' ? localStorage.getItem('marketsaas_active_tenant') : null)
       || 'minimarket-ian';
 
+    // Sellar identidad estricta del tenant en la configuración para evitar cruces entre dueños
+    safeConfig.id = effectiveTenant;
+    safeConfig.tenant_id = effectiveTenant;
+    const mutationId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    safeConfig._clientMutationId = mutationId;
+    lastLocalConfigWriteRef.current = { tenant: effectiveTenant, ts: Date.now(), mutationId };
+
+    storeConfigRef.current = safeConfig;
+    setStoreConfigState(safeConfig);
+
     try {
       localStorage.setItem(`marketsaas_${effectiveTenant}_store_config`, JSON.stringify(safeConfig));
       localStorage.setItem(`marketsaas_${effectiveTenant}_config`, JSON.stringify(safeConfig));
       if (effectiveTenant !== 'default') {
         localStorage.setItem('marketsaas_active_tenant', effectiveTenant);
+      }
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('marketsaas_store_config_sync');
+        bc.postMessage({
+          type: 'STORE_CONFIG_UPDATED',
+          tenant: effectiveTenant,
+          config: safeConfig,
+          sourceTabId: clientTabIdRef.current
+        });
+        bc.close();
       }
     } catch (err) {
       console.warn('Aviso guardando store_config en localStorage:', err);
@@ -3403,8 +3437,67 @@ export const StoreProvider = ({ children }) => {
     }
   }, [currentUser, tenantSlug]);
 
-  // Cargar tiendas registradas en Supabase y fusionarlas reactivamente con initialStores
+  // Cargar tiendas registradas en Supabase, sincronizar en tiempo real y aislar por dueño/tenant
   useEffect(() => {
+    const applyIncomingTenantConfig = (remoteRow) => {
+      if (!remoteRow) return;
+      const activeSlug = tenantSlugRef.current;
+      if (!activeSlug || !isSameTenantStore({ id: remoteRow.id, tenant_id: remoteRow.tenant_id }, activeSlug)) {
+        return;
+      }
+
+      const conf = remoteRow.config || {};
+      const recentWrite = lastLocalConfigWriteRef.current;
+      if (
+        conf._clientMutationId &&
+        recentWrite.mutationId &&
+        conf._clientMutationId === recentWrite.mutationId
+      ) {
+        return;
+      }
+
+      const normalizedMerged = {
+        ...initialStoreConfig,
+        ...storeConfigRef.current,
+        ...conf,
+        id: remoteRow.tenant_id || remoteRow.id || activeSlug,
+        tenant_id: remoteRow.tenant_id || remoteRow.id || activeSlug,
+        name: conf.name || remoteRow.name || storeConfigRef.current?.name || initialStoreConfig.name,
+        address: conf.address ?? remoteRow.address ?? storeConfigRef.current?.address ?? initialStoreConfig.address,
+        tagline: conf.tagline ?? remoteRow.slogan ?? storeConfigRef.current?.tagline ?? initialStoreConfig.tagline,
+        phone: conf.phone ?? remoteRow.phone ?? storeConfigRef.current?.phone ?? '',
+        whatsapp: conf.whatsapp ?? remoteRow.whatsapp ?? storeConfigRef.current?.whatsapp ?? '',
+        logoUrl: conf.logoUrl ?? remoteRow.logo_url ?? storeConfigRef.current?.logoUrl ?? null,
+        bannerUrl: conf.bannerUrl ?? remoteRow.banner_url ?? storeConfigRef.current?.bannerUrl ?? null,
+        qrImageUrl: conf.qrImageUrl ?? remoteRow.qr_image_url ?? storeConfigRef.current?.qrImageUrl ?? '',
+        schedule: normalizeStoreSchedule(conf.schedule || remoteRow.schedule || storeConfigRef.current?.schedule),
+        subscription: normalizeSubscription(conf.subscription || remoteRow.subscription || storeConfigRef.current?.subscription, remoteRow.created_at),
+        storeOpenMode: conf.storeOpenMode || remoteRow.store_open_mode || storeConfigRef.current?.storeOpenMode || 'auto'
+      };
+      const statusCalc = calculateStoreOpenStatus(normalizedMerged);
+      normalizedMerged.isOpen = remoteRow.is_open !== undefined
+        ? (remoteRow.is_open !== false && normalizedMerged.isOpen !== false)
+        : statusCalc.isOpen;
+
+      storeConfigRef.current = normalizedMerged;
+      setStoreConfigState(normalizedMerged);
+
+      try {
+        localStorage.setItem(`marketsaas_${activeSlug}_store_config`, JSON.stringify(normalizedMerged));
+        localStorage.setItem(`marketsaas_${activeSlug}_config`, JSON.stringify(normalizedMerged));
+      } catch (e) {}
+
+      if (merchantStoreRef.current && isSameTenantStore(merchantStoreRef.current, activeSlug)) {
+        setMerchantStore(prev => prev ? {
+          ...prev,
+          name: normalizedMerged.name,
+          address: normalizedMerged.address,
+          config: normalizedMerged,
+          subscription: normalizedMerged.subscription
+        } : prev);
+      }
+    };
+
     const fetchRemoteStores = async () => {
       if (!supabase) return;
       try {
@@ -3416,38 +3509,52 @@ export const StoreProvider = ({ children }) => {
           return;
         }
         if (remoteStores && remoteStores.length > 0) {
+          const activeUser = currentUserRef.current;
+          const activeMerchant = merchantStoreRef.current;
+          const activeSlug = tenantSlugRef.current;
+          const liveConfig = storeConfigRef.current;
+
           setStores(prev => {
             const remoteMapped = remoteStores.map((rs, idx) => {
               const conf = rs.config || {};
-              const isCurrentOwner = Boolean(
-                currentUser && (
-                  rs.owner_id === currentUser.id || 
-                  conf.owner_id === currentUser.id ||
-                  merchantStore?.id === rs.id ||
-                  merchantStore?.tenant_id === rs.tenant_id
+              const isCurrentOwner = isOwnedRemoteStoreRecord(rs, activeUser, activeMerchant);
+              const matchesActiveTenant = Boolean(
+                activeSlug && isSameTenantStore({ id: rs.id, tenant_id: rs.tenant_id }, activeSlug)
+              );
+              const configBelongsToRow = Boolean(
+                liveConfig && (
+                  !liveConfig.id ||
+                  isSameTenantStore(liveConfig, rs.tenant_id || rs.id)
                 )
               );
+              const useLiveOwnerConfig = Boolean(isCurrentOwner && matchesActiveTenant && configBelongsToRow);
 
-              // Si es la tienda del dueño actual conectada, storeConfig es la fuente de verdad prioritaria
-              const effectiveName = (isCurrentOwner && storeConfig?.name && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
-                ? storeConfig.name 
+              // Si es la tienda del dueño actual conectada Y coincide estrictamente con el tenant activo,
+              // liveConfig es la fuente de verdad prioritaria sin mezclarse con otros dueños
+              const effectiveName = (useLiveOwnerConfig && liveConfig?.name)
+                ? liveConfig.name
                 : (conf.name || rs.name || 'Minimarket Registrado');
 
-              const effectiveTagline = (isCurrentOwner && storeConfig?.tagline && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
-                ? storeConfig.tagline 
+              const effectiveTagline = (useLiveOwnerConfig && liveConfig?.tagline)
+                ? liveConfig.tagline
                 : (conf.tagline || rs.slogan || 'Tienda oficial registrada');
 
-              // La dirección configurada en config tiene prioridad absoluta sobre la columna de tabla antigua rs.address
-              const effectiveAddress = (isCurrentOwner && storeConfig?.address && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
-                ? storeConfig.address 
+              const effectiveAddress = (useLiveOwnerConfig && liveConfig?.address)
+                ? liveConfig.address
                 : (conf.address || rs.address || 'Ubicación registrada');
 
-              const isDeliveryActive = (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id)) 
-                ? (storeConfig.enableDelivery === true) 
+              const isDeliveryActive = useLiveOwnerConfig
+                ? (liveConfig.enableDelivery === true)
                 : (conf.enableDelivery === true || rs.enable_delivery === true);
 
-              const coords = (isCurrentOwner && storeConfig?.googleMapsCoordinates && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                ? storeConfig.googleMapsCoordinates
+              const liveLat = liveConfig?.latitude !== '' && liveConfig?.latitude != null ? parseFloat(liveConfig.latitude) : null;
+              const liveLng = liveConfig?.longitude !== '' && liveConfig?.longitude != null ? parseFloat(liveConfig.longitude) : null;
+              const liveCoords = (liveLat != null && !isNaN(liveLat) && liveLng != null && !isNaN(liveLng))
+                ? { lat: liveLat, lng: liveLng }
+                : liveConfig?.googleMapsCoordinates;
+
+              const coords = (useLiveOwnerConfig && liveCoords)
+                ? liveCoords
                 : (conf.googleMapsCoordinates || (conf.latitude && conf.longitude ? {
                     lat: parseFloat(conf.latitude),
                     lng: parseFloat(conf.longitude)
@@ -3459,61 +3566,66 @@ export const StoreProvider = ({ children }) => {
                     lng: -63.18214 - ((idx + 1) * 0.004)
                   })));
 
-                const effectiveSchedule = normalizeStoreSchedule(
-                  (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                    ? storeConfig.schedule
-                    : (conf.schedule || rs.schedule || initialStoreConfig.schedule)
-                );
+              const effectiveSchedule = normalizeStoreSchedule(
+                useLiveOwnerConfig
+                  ? liveConfig.schedule
+                  : (conf.schedule || rs.schedule || initialStoreConfig.schedule)
+              );
 
-                const targetConf = (isCurrentOwner && storeConfig && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? storeConfig
-                  : { 
-                      ...conf, 
-                      schedule: effectiveSchedule,
-                      storeOpenMode: conf.storeOpenMode || rs.store_open_mode || 'auto',
-                      isOpen: rs.is_open !== false && conf.isOpen !== false 
-                    };
-                const openStatusCalc = calculateStoreOpenStatus(targetConf);
-                return {
-                  id: rs.id || `remote-${idx}`,
-                  slug: rs.tenant_id || rs.id,
-                  name: effectiveName,
-                  tagline: effectiveTagline,
-                  address: effectiveAddress,
-                  phone: conf.phone || conf.whatsapp || rs.phone || '',
-                  whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
-                  qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
-                  bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
-                  zone: (isCurrentOwner && storeConfig?.zone)
-                    ? storeConfig.zone
-                    : (conf.zone || 'Santa Cruz'),
-                  reference: (isCurrentOwner && storeConfig?.reference !== undefined)
-                    ? storeConfig.reference
-                    : (conf.reference || ''),
-                  distance: `A ${(idx + 1) * 180}m`,
-                  distanceMeters: (idx + 1) * 180,
-                  reviewsCount: 24 + idx * 8,
-                  ordersCount: 24 + idx * 8,
-                  isOpen: openStatusCalc.isOpen,
-                  statusBadge: openStatusCalc.statusBadge,
-                  schedule: effectiveSchedule,
-                  storeOpenMode: targetConf.storeOpenMode,
-                logoUrl: (isCurrentOwner && storeConfig?.logoUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? storeConfig.logoUrl
+              const targetConf = useLiveOwnerConfig
+                ? liveConfig
+                : {
+                    ...conf,
+                    schedule: effectiveSchedule,
+                    storeOpenMode: conf.storeOpenMode || rs.store_open_mode || 'auto',
+                    isOpen: rs.is_open !== false && conf.isOpen !== false
+                  };
+              const openStatusCalc = calculateStoreOpenStatus(targetConf);
+              const subNormalized = useLiveOwnerConfig && liveConfig?.subscription
+                ? liveConfig.subscription
+                : normalizeSubscription(conf.subscription || rs.subscription, rs.created_at);
+              const rowIsPro = Boolean(String(subNormalized?.plan || '').toLowerCase().includes('pro'));
+
+              return {
+                id: rs.id || `remote-${idx}`,
+                slug: rs.tenant_id || rs.id,
+                name: effectiveName,
+                tagline: effectiveTagline,
+                address: effectiveAddress,
+                phone: conf.phone || conf.whatsapp || rs.phone || '',
+                whatsapp: conf.whatsapp || conf.phone || rs.whatsapp || '',
+                qrImageUrl: conf.qrImageUrl || rs.qr_image_url || '',
+                bankDetails: (conf.bankDetails && conf.bankDetails.accountNumber !== '1000-2495-8120' && conf.bankDetails.holder !== 'Minimarket Saas S.R.L.') ? conf.bankDetails : null,
+                zone: (useLiveOwnerConfig && liveConfig?.zone)
+                  ? liveConfig.zone
+                  : (conf.zone || 'Santa Cruz'),
+                reference: (useLiveOwnerConfig && liveConfig?.reference !== undefined)
+                  ? liveConfig.reference
+                  : (conf.reference || ''),
+                distance: `A ${(idx + 1) * 180}m`,
+                distanceMeters: (idx + 1) * 180,
+                reviewsCount: 24 + idx * 8,
+                ordersCount: 24 + idx * 8,
+                isOpen: openStatusCalc.isOpen,
+                statusBadge: openStatusCalc.statusBadge,
+                schedule: effectiveSchedule,
+                storeOpenMode: targetConf.storeOpenMode,
+                logoUrl: (useLiveOwnerConfig && liveConfig?.logoUrl)
+                  ? liveConfig.logoUrl
                   : (conf.logoUrl || rs.logo_url || null),
-                bannerUrl: (isCurrentOwner && storeConfig?.bannerUrl && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? storeConfig.bannerUrl
+                bannerUrl: (useLiveOwnerConfig && liveConfig?.bannerUrl)
+                  ? liveConfig.bannerUrl
                   : (conf.bannerUrl || rs.banner_url || null),
-                imageUrl: (isCurrentOwner && (storeConfig?.bannerUrl || storeConfig?.logoUrl) && (tenantSlug === rs.id || tenantSlug === rs.tenant_id))
-                  ? (storeConfig.bannerUrl || storeConfig.logoUrl)
+                imageUrl: (useLiveOwnerConfig && (liveConfig?.bannerUrl || liveConfig?.logoUrl))
+                  ? (liveConfig.bannerUrl || liveConfig.logoUrl)
                   : (conf.bannerUrl || rs.banner_url || conf.logoUrl || rs.logo_url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80'),
-                deliveryTime: isDeliveryActive 
-                  ? ((isCurrentOwner && storeConfig?.deliveryTime) ? storeConfig.deliveryTime : (conf.deliveryTime || '10-20 min'))
+                deliveryTime: isDeliveryActive
+                  ? ((useLiveOwnerConfig && liveConfig?.deliveryTime) ? liveConfig.deliveryTime : (conf.deliveryTime || '10-20 min'))
                   : 'Retiro en Tienda',
-                freeDeliveryThreshold: (isCurrentOwner && storeConfig?.freeDeliveryThreshold !== undefined)
-                  ? storeConfig.freeDeliveryThreshold
+                freeDeliveryThreshold: (useLiveOwnerConfig && liveConfig?.freeDeliveryThreshold !== undefined)
+                  ? liveConfig.freeDeliveryThreshold
                   : (conf.freeDeliveryThreshold || null),
-                hasFreeDelivery: isDeliveryActive && (isCurrentOwner && storeConfig?.freeDeliveryThreshold ? true : !!conf.freeDeliveryThreshold),
+                hasFreeDelivery: isDeliveryActive && ((useLiveOwnerConfig && liveConfig?.freeDeliveryThreshold) ? true : !!conf.freeDeliveryThreshold),
                 acceptsQr: true,
                 hasPickup: true,
                 hasFastDelivery: isDeliveryActive,
@@ -3522,11 +3634,9 @@ export const StoreProvider = ({ children }) => {
                 isRegisteredStore: true,
                 isVerified: true,
                 isCurrentOwnerStore: Boolean(isCurrentOwner),
-                isProStore: isCurrentOwner 
-                  ? Boolean(isProPlan || String(storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'))
-                  : Boolean(String(conf.subscription?.plan || rs.subscription?.plan || '').toLowerCase().includes('pro')),
-                plan: isCurrentOwner ? (storeConfig?.subscription?.plan || (isProPlan ? 'pro' : 'basic')) : (conf.subscription?.plan || rs.subscription?.plan || 'basic'),
-                subscription: (isCurrentOwner && storeConfig?.subscription) ? storeConfig.subscription : normalizeSubscription(conf.subscription || rs.subscription, rs.created_at),
+                isProStore: rowIsPro,
+                plan: subNormalized?.plan || 'basic',
+                subscription: subNormalized,
                 owner_id: rs.owner_id || conf.owner_id || null,
                 totalStockItems: 120,
                 perks: [
@@ -3536,6 +3646,8 @@ export const StoreProvider = ({ children }) => {
                 ],
                 featuredProducts: [],
                 googleMapsCoordinates: coords,
+                latitude: coords?.lat,
+                longitude: coords?.lng,
                 googleMapsQuery: `${effectiveName}, ${effectiveAddress}, Santa Cruz de la Sierra`,
                 mapPosition: {
                   leftPercent: 40 + ((idx * 18) % 45),
@@ -3547,7 +3659,7 @@ export const StoreProvider = ({ children }) => {
             });
 
             // Si no hay tenantSlug activo, sincronizar con la primera tienda registrada legítima
-            if (!tenantSlug && remoteMapped.length > 0) {
+            if (!activeSlug && remoteMapped.length > 0) {
               setTenantSlug(remoteMapped[0].slug);
             }
 
@@ -3564,8 +3676,8 @@ export const StoreProvider = ({ children }) => {
     };
     fetchRemoteStores();
 
-    // Suscribirse a cambios en tiempo real en store_config para que si otro dueño registra o actualiza su ubicación,
-    // se refleje al instante en el mapa de todos los vecinos sin recargar la página
+    // Suscribirse a cambios en tiempo real en store_config para que cualquier actualización
+    // (mapa, horario, difusión personalizada, datos) se refleje al instante entre dispositivos sin mezclar dueños
     let channel = null;
     if (supabase) {
       try {
@@ -3574,8 +3686,11 @@ export const StoreProvider = ({ children }) => {
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'store_config' },
-            () => {
+            (payload) => {
               fetchRemoteStores();
+              if (payload?.new) {
+                applyIncomingTenantConfig(payload.new);
+              }
             }
           )
           .subscribe();
@@ -3584,12 +3699,33 @@ export const StoreProvider = ({ children }) => {
       }
     }
 
+    // Sincronización instantánea entre pestañas del mismo navegador (aislada por tenant)
+    let bc = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('marketsaas_store_config_sync');
+        bc.onmessage = (event) => {
+          const msg = event?.data;
+          if (!msg || msg.type !== 'STORE_CONFIG_UPDATED') return;
+          if (msg.sourceTabId === clientTabIdRef.current) return;
+          if (!msg.tenant || !isSameTenantStore({ id: msg.tenant }, tenantSlugRef.current)) return;
+          if (msg.config) {
+            storeConfigRef.current = msg.config;
+            setStoreConfigState(msg.config);
+          }
+        };
+      } catch (e) {}
+    }
+
     return () => {
       if (channel && supabase) {
         supabase.removeChannel(channel);
       }
+      if (bc) {
+        try { bc.close(); } catch (e) {}
+      }
     };
-  }, [currentUser, tenantSlug, storeConfig]);
+  }, [currentUser?.id, tenantSlug, merchantStore?.id]);
 
   // Sincronizar reactivamente la tienda del dueño actual en la lista de tiendas del directorio SOLO si el dueño está autenticado
   useEffect(() => {
@@ -3695,6 +3831,8 @@ export const StoreProvider = ({ children }) => {
   }, [products, tenantSlug]);
 
   useEffect(() => {
+    if (!tenantSlug) return;
+    if (storeConfig?.id && !isSameTenantStore(storeConfig, tenantSlug)) return;
     localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(storeConfig));
   }, [storeConfig, tenantSlug]);
 
@@ -3715,6 +3853,9 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     try {
       const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
+      if (merchantStore?.id && tenantSlug && !isSameTenantStore(merchantStore, tenantSlug)) {
+        return;
+      }
       localStorage.setItem(`marketsaas_${activeSlug}_suppliers`, JSON.stringify(suppliers));
       localStorage.setItem(`marketsaas_${activeSlug}_suppliers_initialized`, 'true');
       if (activeSlug === 'minimarket-ian' || activeSlug === 'tiendita-fernando' || activeSlug === 'default') {
@@ -3722,11 +3863,14 @@ export const StoreProvider = ({ children }) => {
         localStorage.setItem('marketsaas_minimarket-ian_suppliers', JSON.stringify(suppliers));
         localStorage.setItem('marketsaas_tiendita-fernando_suppliers', JSON.stringify(suppliers));
       }
-      // Backup en Supabase store_config para persistencia permanente en la nube
+      // Backup en Supabase store_config para persistencia permanente en la nube (solo del tenant activo)
       if (supabase && activeSlug && activeSlug !== 'default' && Array.isArray(suppliers)) {
         const timer = setTimeout(() => {
+          const currentCfg = storeConfigRef.current || {};
+          if (currentCfg.id && !isSameTenantStore(currentCfg, activeSlug)) return;
+          if (tenantSlugRef.current && normalizeTenantId(tenantSlugRef.current) !== normalizeTenantId(activeSlug)) return;
           supabase.from('store_config')
-            .update({ config: { ...storeConfig, suppliersBackup: suppliers } })
+            .update({ config: { ...currentCfg, suppliersBackup: suppliers } })
             .eq('id', activeSlug)
             .then(() => {})
             .catch(() => {});
@@ -3734,7 +3878,7 @@ export const StoreProvider = ({ children }) => {
         return () => clearTimeout(timer);
       }
     } catch (e) {}
-  }, [suppliers, tenantSlug, merchantStore?.id, storeConfig]);
+  }, [suppliers, tenantSlug, merchantStore?.id]);
 
   useEffect(() => {
     try {
@@ -3751,17 +3895,23 @@ export const StoreProvider = ({ children }) => {
   useEffect(() => {
     try {
       const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
+      if (merchantStore?.id && tenantSlug && !isSameTenantStore(merchantStore, tenantSlug)) {
+        return;
+      }
       localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(creditCustomers));
       localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
       if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
         localStorage.setItem('marketsaas_default_credits', JSON.stringify(creditCustomers));
         localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(creditCustomers));
       }
-      // Backup en Supabase store_config para persistencia permanente en la nube
+      // Backup en Supabase store_config para persistencia permanente en la nube (solo del tenant activo)
       if (supabase && activeSlug && activeSlug !== 'default' && Array.isArray(creditCustomers)) {
         const timer = setTimeout(() => {
+          const currentCfg = storeConfigRef.current || {};
+          if (currentCfg.id && !isSameTenantStore(currentCfg, activeSlug)) return;
+          if (tenantSlugRef.current && normalizeTenantId(tenantSlugRef.current) !== normalizeTenantId(activeSlug)) return;
           supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: creditCustomers } })
+            .update({ config: { ...currentCfg, creditsBackup: creditCustomers } })
             .eq('id', activeSlug)
             .then(() => {})
             .catch(() => {});
@@ -3769,7 +3919,7 @@ export const StoreProvider = ({ children }) => {
         return () => clearTimeout(timer);
       }
     } catch (e) {}
-  }, [creditCustomers, tenantSlug, merchantStore?.id, storeConfig]);
+  }, [creditCustomers, tenantSlug, merchantStore?.id]);
 
   // Exportar ventas a CSV para la contabilidad del dueño
   const exportSalesCSV = () => {
@@ -4375,12 +4525,14 @@ export const StoreProvider = ({ children }) => {
     const targetStore = (stores || []).find(s => s.slug === storeSlugOrId || s.id === storeSlugOrId);
     if (targetStore) {
       setMerchantStore(targetStore);
+      setSelectedStore(targetStore);
     } else {
       setMerchantStore({
         id: storeSlugOrId,
         slug: storeSlugOrId,
-        name: storeConfig?.name || storeSlugOrId
+        name: storeSlugOrId
       });
+      setSelectedStore(null);
     }
     goToStore(storeSlugOrId);
     setIsImpersonating(true);
@@ -6887,6 +7039,7 @@ export const StoreProvider = ({ children }) => {
       setTenantSlug(cleanSlug);
       setStoreConfigState(newConfig);
       setMerchantStore(storeRecord);
+      setSelectedStore(null);
       localStorage.setItem('marketsaas_active_tenant', cleanSlug);
 
       // Sincronizar teléfono en metadata de Supabase Auth para máxima consistencia y recuperación
@@ -6974,9 +7127,12 @@ export const StoreProvider = ({ children }) => {
 
         const store = await fetchStoreForUser(data.user.id, data.user.email);
         if (store) {
+          setSelectedStore(store);
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.set('store', store.id);
           window.history.replaceState({}, '', newUrl.toString());
+        } else {
+          setSelectedStore(null);
         }
         setViewMode('admin');
         showToast('¡Bienvenido a tu panel de administración!', 'success');
@@ -7006,6 +7162,7 @@ export const StoreProvider = ({ children }) => {
     // Desconectar estados locales de usuario y redirigir inmediatamente
     setCurrentUser(null);
     setMerchantStore(null);
+    setSelectedStore(null);
     setIsImpersonating(false);
     setViewMode('spectator');
     showToast('Sesión cerrada correctamente.', 'info');
