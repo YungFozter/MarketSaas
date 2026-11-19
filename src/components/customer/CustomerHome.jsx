@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
@@ -66,9 +66,8 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   };
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [itemsPerPage, setItemsPerPage] = useState(16);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
-  const catalogGridRef = useRef(null);
 
   // Filtrado reactivo optimizado con useMemo para navegación ultra-ligera en móvil
   const filteredProducts = useMemo(() => {
@@ -105,53 +104,13 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
-    if (catalogGridRef.current) {
-      catalogGridRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof document !== 'undefined') {
+      const section = document.getElementById('products-catalog-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
-
-
-  // Transmisión y Chaining fluido de Scroll para el Catálogo de Productos (VISTA VECINO):
-  // Al llegar al tope superior de la lista scrolleable del catálogo (scrollTop <= 0) y seguir subiendo
-  // (mediante deslizamiento táctil en móviles o rueda/trackpad), el evento transmite el scroll
-  // directamente a la página principal para volver a la tienda sin atascos ni zonas muertas.
-  useEffect(() => {
-    const el = catalogGridRef.current;
-    if (!el) return;
-
-    let touchStartY = 0;
-
-    const handleTouchStart = (e) => {
-      if (e.touches && e.touches.length > 0) {
-        touchStartY = e.touches[0].clientY;
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      if (!e.touches || e.touches.length === 0) return;
-      const currentY = e.touches[0].clientY;
-      const deltaY = touchStartY - currentY; // > 0: arrastre hacia arriba (bajar), < 0: arrastre hacia abajo (subir)
-
-      // Si el usuario desliza con el dedo hacia abajo para subir la página
-      // y la lista del catálogo ya se encuentra en su tope superior (scrollTop <= 0)
-      if (deltaY < 0 && el.scrollTop <= 0) {
-        window.scrollBy({ top: deltaY, behavior: 'auto' });
-      }
-      // Si el usuario desliza hacia arriba para bajar la página y la lista ya llegó a su fin
-      else if (deltaY > 0 && el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
-        window.scrollBy({ top: deltaY, behavior: 'auto' });
-      }
-      touchStartY = currentY;
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchmove', handleTouchMove, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchmove', handleTouchMove);
-    };
-  }, [currentPage, itemsPerPage, selectedCategory, filteredProducts]);
 
   const [isDeliveredSectionOpen, setIsDeliveredSectionOpen] = useState(false);
 
@@ -350,9 +309,136 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         </div>
       )}
 
-      {/* SECCIÓN DE ENTREGADOS: Historial y Lista de Pedidos Entregados del Vecino */}
+      {/* Barra de Categorías */}
+      <CategoryBar
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {/* Catálogo de Productos Principal (flujo continuo sin doble scroll) */}
+      <section id="products-catalog-section" className="scroll-mt-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div>
+              <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+                {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                {filteredProducts.length === 1 
+                  ? '1 producto encontrado' 
+                  : `${filteredProducts.length} productos encontrados`}
+              </p>
+            </div>
+
+            {neighborDeliveredOrders.length > 0 && (
+              <a
+                href="#delivered-orders-section"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-bold transition-colors"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                <span>Tus pedidos ({neighborDeliveredOrders.length})</span>
+              </a>
+            )}
+          </div>
+
+          {/* Selector de cantidad por página (20, 40, 60) */}
+          {filteredProducts.length > 0 && (
+            <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-2 pr-1">
+                Por pág:
+              </span>
+              <div className="flex items-center gap-1">
+                {[20, 40, 60].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setItemsPerPage(num)}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      itemsPerPage === num
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {filteredProducts.length === 0 ? (
+          <SearchEmptyState
+            searchQuery={searchQuery}
+            selectedCategory={selectedCategory}
+            storeConfig={storeConfig}
+            onClearFilter={() => {
+              setSelectedCategory('all');
+              setSearchQuery('');
+            }}
+            onRequestProduct={(term) => onOpenRequests(term || searchQuery || '')}
+          />
+        ) : (
+          <>
+            <div
+              className="customer-products-grid pt-1"
+              aria-label="Lista de productos del catálogo"
+            >
+              {paginatedProducts.map((prod, idx) => (
+                <ProductCard
+                  key={prod.id}
+                  product={prod}
+                  onOpenDetail={(p) => setSelectedProduct(p)}
+                  onRequestProduct={onOpenRequests}
+                  deferRender={idx >= 10}
+                />
+              ))}
+            </div>
+
+            {/* Barra de Paginación */}
+            <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
+              <div className="text-xs text-slate-500 font-medium order-2 sm:order-1">
+                Mostrando <span className="font-bold text-slate-800">{startIndex + 1}</span> - <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> de <span className="font-bold text-slate-800">{filteredProducts.length}</span> productos
+              </div>
+
+              <div className="flex items-center gap-2 order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Página Anterior"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Anterior</span>
+                </button>
+
+                <div className="px-3 py-1.5 text-xs font-extrabold text-slate-700 bg-slate-100 rounded-xl border border-slate-200/60">
+                  Página {currentPage} de {totalPages}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                  title="Página Siguiente"
+                >
+                  <span>Siguiente</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* SECCIÓN DE ENTREGADOS (debajo del catálogo para no competir con la compra) */}
       {neighborDeliveredOrders.length > 0 && (
-        <section className="mb-6 sm:mb-8 rounded-3xl bg-white border border-emerald-200 shadow-sm p-4 sm:p-5 space-y-3.5 animate-fadeIn">
+        <section
+          id="delivered-orders-section"
+          className="customer-delivered-section mt-6 sm:mt-8 rounded-3xl bg-white border border-emerald-200 shadow-sm p-4 sm:p-5 space-y-3.5 scroll-mt-20"
+        >
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/80 flex items-center justify-center font-bold shadow-2xs">
@@ -476,122 +562,6 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           )}
         </section>
       )}
-
-      {/* Barra de Categorías */}
-      <CategoryBar
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
-
-      {/* Catálogo de Productos Principal */}
-      <section id="products-catalog-section" className="scroll-mt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
-              {selectedCategory === 'all' ? 'Todo el Catálogo' : selectedCategory}
-            </h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {filteredProducts.length === 1 
-                ? '1 producto encontrado' 
-                : `${filteredProducts.length} productos encontrados`}
-            </p>
-          </div>
-
-          {/* Selector de cantidad por página (16, 32, 50) */}
-          {filteredProducts.length > 0 && (
-            <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider pl-2 pr-1">
-                Por pág:
-              </span>
-              <div className="flex items-center gap-1">
-                {[16, 32, 50].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => setItemsPerPage(num)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
-                      itemsPerPage === num
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {filteredProducts.length === 0 ? (
-          <SearchEmptyState
-            searchQuery={searchQuery}
-            selectedCategory={selectedCategory}
-            storeConfig={storeConfig}
-            onClearFilter={() => {
-              setSelectedCategory('all');
-              setSearchQuery('');
-            }}
-            onRequestProduct={(term) => onOpenRequests(term || searchQuery || '')}
-          />
-        ) : (
-          <>
-            {/* Contenedor scrolleable del catálogo para no alargar la pantalla */}
-            <div 
-              ref={catalogGridRef}
-              className="max-h-[580px] sm:max-h-[700px] overflow-y-auto overscroll-y-auto touch-pan-y pr-1 sm:pr-2 pb-2 rounded-2xl focus:outline-none catalog-scroll-container"
-              tabIndex={0}
-              aria-label="Lista de productos del catálogo"
-            >
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 pt-1">
-                {paginatedProducts.map((prod) => (
-                  <ProductCard
-                    key={prod.id}
-                    product={prod}
-                    onOpenDetail={(p) => setSelectedProduct(p)}
-                    onRequestProduct={onOpenRequests}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Barra de Paginación */}
-            <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs">
-              <div className="text-xs text-slate-500 font-medium order-2 sm:order-1">
-                Mostrando <span className="font-bold text-slate-800">{startIndex + 1}</span> - <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> de <span className="font-bold text-slate-800">{filteredProducts.length}</span> productos
-              </div>
-
-              <div className="flex items-center gap-2 order-1 sm:order-2">
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-                  title="Página Anterior"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Anterior</span>
-                </button>
-
-                <div className="px-3 py-1.5 text-xs font-extrabold text-slate-700 bg-slate-100 rounded-xl border border-slate-200/60">
-                  Página {currentPage} de {totalPages}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-                  title="Página Siguiente"
-                >
-                  <span>Siguiente</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </section>
 
       {/* Modal de Detalle de Producto */}
       {selectedProduct && (

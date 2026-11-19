@@ -1,12 +1,18 @@
 /* ==========================================================================
-   CategoryBar.css - Estilos específicos para la barra horizontal de categorías
+   CategoryBar.css - Barra horizontal táctil y accesible de categorías
    ========================================================================== */
 
 .category-bar-scroller {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   overflow-x: auto;
+  padding-block: 0.25rem 0.5rem;
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -15,6 +21,29 @@
 }
 
 .category-pill-button {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  scroll-snap-align: start;
   white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out, box-shadow 150ms ease-out, scale 150ms ease-out;
+}
+
+.category-pill-button:active {
+  scale: 0.97;
+}
+
+.category-pill-button:focus-visible {
+  outline: 2px solid #047857;
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  .category-pill-button {
+    min-block-size: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-pill-button {
+    transition: none;
+  }
 }

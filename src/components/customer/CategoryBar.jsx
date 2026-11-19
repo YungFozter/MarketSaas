@@ -40,18 +40,18 @@ export const CategoryBar = React.memo(({ selectedCategory, onSelectCategory }) =
   }, [products]);
 
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
-          <span>Categorías de la Tienda</span>
+    <section aria-label="Categorías de la tienda" className="mb-5">
+      <div className="flex items-center justify-between mb-2.5 px-0.5">
+        <h2 className="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">
+          Categorías
         </h2>
-        <span className="text-xs text-slate-500 font-medium">
-          {products.length} productos en stock
+        <span className="text-xs text-slate-500 font-semibold">
+          {products.length} {products.length === 1 ? 'producto' : 'productos'} en stock
         </span>
       </div>
 
-      {/* Barra de scroll horizontal limpia y optimizada para deslizamiento táctil */}
-      <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar touch-pan-x scroll-smooth overscroll-x-contain">
+      {/* Barra de scroll horizontal limpia con snap y deslizamiento táctil nativo */}
+      <div className="category-bar-scroller" role="group" aria-label="Filtrar por categoría">
         {categories.map((cat) => {
           const catIdNorm = (cat.id || '').toLowerCase().trim();
           const isSelected = selectedCategory === cat.id || (selectedCategory !== 'all' && selectedCategory?.toLowerCase()?.trim() === catIdNorm);
@@ -64,14 +64,16 @@ export const CategoryBar = React.memo(({ selectedCategory, onSelectCategory }) =
           return (
             <button
               key={cat.id}
+              type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectCategory(cat.id)}
-              className={`flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all duration-200 shrink-0 border cursor-pointer active:scale-95 ${
+              className={`category-pill-button flex items-center gap-2 px-3 sm:px-3.5 py-2 rounded-2xl font-bold text-xs sm:text-sm border cursor-pointer ${
                 isSelected
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 scale-[1.02]'
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/20'
                   : 'bg-white text-slate-700 border-slate-200/90 hover:border-emerald-300 hover:bg-emerald-50/50 shadow-2xs'
               }`}
             >
-              <span className={`p-1 rounded-lg ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-emerald-700'}`}>
+              <span className={`p-1 rounded-lg ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-emerald-700'}`} aria-hidden="true">
                 {iconMap[cat.icon] || <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               </span>
               <span>{cat.name}</span>
@@ -86,6 +88,6 @@ export const CategoryBar = React.memo(({ selectedCategory, onSelectCategory }) =
           );
         })}
       </div>
-    </div>
+    </section>
   );
 });
