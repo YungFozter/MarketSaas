@@ -1858,6 +1858,8 @@ export const StoreProvider = ({ children }) => {
     }
     return isMatiasSeedStore(tenantSlug || merchantStore?.id) ? matiasCreditCustomers.map(normalizeCreditCustomer) : [];
   });
+  const creditCustomersRef = useRef(creditCustomers);
+  creditCustomersRef.current = creditCustomers;
 
   // 11. Cupones de descuento aplicados
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -6525,6 +6527,44 @@ export const StoreProvider = ({ children }) => {
   // LIBRETA DE CRÉDITOS Y CUENTAS POR COBRAR (FIAO VECINAL DIGITAL)
   // ==============================================================================
 
+  const persistCreditsLocally = (activeSlug, list) => {
+    try {
+      localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(list));
+      localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
+      if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
+        localStorage.setItem('marketsaas_default_credits', JSON.stringify(list));
+        localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(list));
+      }
+    } catch (e) {}
+  };
+
+  const syncCreditCustomerToCloud = async (targetTenant, customer) => {
+    if (!supabase || !customer) return true;
+    try {
+      const { error } = await supabase.from('credit_customers').upsert([{
+        id: customer.id,
+        tenant_id: targetTenant,
+        name: customer.name,
+        phone: customer.phone || '',
+        apartment: customer.apartment || '',
+        notes: customer.notes || '',
+        balance: customer.balance,
+        credit_limit: customer.creditLimit || 0,
+        transactions: customer.transactions || [],
+        created_at: customer.createdAt || new Date().toISOString(),
+        updated_at: customer.updatedAt || new Date().toISOString()
+      }], { onConflict: 'id' });
+      if (error) {
+        console.warn('Error sincronizando deudor en Supabase:', error);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('Error de red al sincronizar deudor:', e);
+      return false;
+    }
+  };
+
   const addCreditCustomer = async (customerData) => {
     const cleanName = (customerData.name || '').trim();
     if (!cleanName) {
@@ -6532,7 +6572,8 @@ export const StoreProvider = ({ children }) => {
       return null;
     }
 
-    const initialAmount = Math.max(0, parseFloat(customerData.initialBalance) || 0);
+    const initialAmount = roundMoney(Math.max(0, parseFloat(customerData.initialBalance) || 0));
+    const parsedLimit = roundMoney(Math.max(0, parseFloat(customerData.creditLimit) || 0));
     const newCustomer = normalizeCreditCustomer({
       id: `cred-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       name: cleanName,
@@ -6540,7 +6581,7 @@ export const StoreProvider = ({ children }) => {
       apartment: (customerData.apartment || customerData.address || '').trim(),
       notes: (customerData.notes || '').trim(),
       balance: initialAmount,
-      creditLimit: parseFloat(customerData.creditLimit) || 0,
+      creditLimit: parsedLimit,
       transactions: initialAmount > 0 ? [
         {
           id: `tx-${Date.now()}`,
@@ -6558,49 +6599,18 @@ export const StoreProvider = ({ children }) => {
     const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
 
-    let updatedList = [];
-    setCreditCustomers(prev => {
-      updatedList = [newCustomer, ...prev.filter(c => c.id !== newCustomer.id)];
-      try {
-        localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(updatedList));
-        localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
-        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
-          localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
-          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
-        }
-      } catch (e) {}
-      return updatedList;
-    });
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
+    const updatedList = [newCustomer, ...baseList.filter(c => c.id !== newCustomer.id)];
+    creditCustomersRef.current = updatedList;
+    setCreditCustomers(updatedList);
+    persistCreditsLocally(activeSlug, updatedList);
 
-    try {
-      if (supabase) {
-        await supabase.from('credit_customers').upsert([{
-          id: newCustomer.id,
-          tenant_id: targetTenant,
-          name: newCustomer.name,
-          phone: newCustomer.phone,
-          apartment: newCustomer.apartment,
-          notes: newCustomer.notes,
-          balance: newCustomer.balance,
-          credit_limit: newCustomer.creditLimit,
-          transactions: newCustomer.transactions,
-          created_at: newCustomer.createdAt,
-          updated_at: newCustomer.updatedAt
-        }], { onConflict: 'id' });
-
-        if (targetTenant && targetTenant !== 'default') {
-          supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: updatedList } })
-            .eq('id', targetTenant)
-            .then(() => {})
-            .catch(() => {});
-        }
-      }
-    } catch (e) {
-      // Fallback seguro a localStorage
+    const cloudSynced = await syncCreditCustomerToCloud(targetTenant, newCustomer);
+    if (!cloudSynced) {
+      showToast(`"${newCustomer.name}" guardado en este dispositivo, pero falló la sincronización en la nube.`, 'warning');
+    } else {
+      showToast(`Deudor "${newCustomer.name}" registrado en la libreta de cuentas.`, 'success');
     }
-
-    showToast(`Deudor "${newCustomer.name}" registrado en la libreta de cuentas.`, 'success');
     return newCustomer;
   };
 
@@ -6608,79 +6618,44 @@ export const StoreProvider = ({ children }) => {
     const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
 
-    let updatedList = [];
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
     let updatedCustomer = null;
-    setCreditCustomers(prev => {
-      updatedList = prev.map(c => {
-        if (c.id === customerId) {
-          updatedCustomer = normalizeCreditCustomer({
-            ...c,
-            ...updatedFields,
-            updatedAt: new Date().toISOString()
-          });
-          return updatedCustomer;
-        }
-        return c;
-      });
-      try {
-        localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(updatedList));
-        localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
-        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
-          localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
-          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
-        }
-      } catch (e) {}
-      return updatedList;
-    });
-
-    try {
-      if (supabase && updatedCustomer) {
-        await supabase.from('credit_customers').upsert([{
-          id: updatedCustomer.id,
-          tenant_id: targetTenant,
-          name: updatedCustomer.name,
-          phone: updatedCustomer.phone || '',
-          apartment: updatedCustomer.apartment || '',
-          notes: updatedCustomer.notes || '',
-          balance: updatedCustomer.balance,
-          credit_limit: updatedCustomer.creditLimit || 0,
-          transactions: updatedCustomer.transactions || [],
-          created_at: updatedCustomer.createdAt || new Date().toISOString(),
-          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
-        }], { onConflict: 'id' });
-
-        if (targetTenant && targetTenant !== 'default') {
-          supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: updatedList } })
-            .eq('id', targetTenant)
-            .then(() => {})
-            .catch(() => {});
-        }
+    const updatedList = baseList.map(c => {
+      if (c.id === customerId) {
+        updatedCustomer = normalizeCreditCustomer({
+          ...c,
+          ...updatedFields,
+          updatedAt: new Date().toISOString()
+        });
+        return updatedCustomer;
       }
-    } catch (e) {}
+      return c;
+    });
+    creditCustomersRef.current = updatedList;
+    setCreditCustomers(updatedList);
+    persistCreditsLocally(activeSlug, updatedList);
 
-    showToast('Datos del deudor actualizados.', 'info');
+    const cloudSynced = await syncCreditCustomerToCloud(targetTenant, updatedCustomer);
+    if (!cloudSynced) {
+      showToast('Datos actualizados en este dispositivo, pero falló la sincronización en la nube.', 'warning');
+    } else {
+      showToast('Datos del deudor actualizados.', 'info');
+    }
+    return cloudSynced;
   };
 
   const deleteCreditCustomer = async (customerId) => {
-    const cust = creditCustomers.find(c => c.id === customerId);
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
+    const cust = baseList.find(c => c.id === customerId);
     const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
 
-    let remaining = [];
-    setCreditCustomers(prev => {
-      remaining = prev.filter(c => c.id !== customerId);
-      try {
-        localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(remaining));
-        localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
-        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
-          localStorage.setItem('marketsaas_default_credits', JSON.stringify(remaining));
-          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(remaining));
-        }
-      } catch (e) {}
-      return remaining;
-    });
+    const remaining = baseList.filter(c => c.id !== customerId);
+    creditCustomersRef.current = remaining;
+    setCreditCustomers(remaining);
+    persistCreditsLocally(activeSlug, remaining);
 
+    let cloudSynced = true;
     try {
       if (supabase) {
         let q = supabase.from('credit_customers')
@@ -6689,174 +6664,142 @@ export const StoreProvider = ({ children }) => {
         if (targetTenant && targetTenant !== 'default') {
           q = q.eq('tenant_id', targetTenant);
         }
-        await q;
-
-        if (targetTenant && targetTenant !== 'default') {
-          supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: remaining } })
-            .eq('id', targetTenant)
-            .then(() => {})
-            .catch(() => {});
+        const { error } = await q;
+        if (error) {
+          cloudSynced = false;
+          console.warn('Error eliminando deudor en Supabase:', error);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      cloudSynced = false;
+      console.warn('Error de red al eliminar deudor:', e);
+    }
 
-    showToast(`Cuenta de "${cust?.name || ''}" eliminada de la libreta.`, 'info');
+    if (!cloudSynced) {
+      showToast(`"${cust?.name || 'Deudor'}" eliminado localmente, pero falló la eliminación en la nube.`, 'warning');
+    } else {
+      showToast(`Cuenta de "${cust?.name || ''}" eliminada de la libreta.`, 'info');
+    }
+    return cloudSynced;
   };
 
   const addCustomerCharge = async (customerId, amount, concept = 'Compra a cuenta / Fiao', items = []) => {
-    const numAmount = Math.max(0, parseFloat(amount) || 0);
-    if (numAmount <= 0) return;
+    const numAmount = roundMoney(Math.max(0, parseFloat(amount) || 0));
+    if (numAmount <= 0) return { ok: false };
 
-    let targetName = '';
-    let updatedCustomer = null;
     const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
+    const targetExisting = baseList.find(c => c.id === customerId);
+    if (!targetExisting) return { ok: false };
 
-    let updatedList = [];
-    setCreditCustomers(prev => {
-      updatedList = prev.map(c => {
-        if (c.id === customerId) {
-          targetName = c.name;
-          const newBalance = Number((c.balance + numAmount).toFixed(2));
-          const newTx = {
-            id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            date: new Date().toISOString(),
-            type: 'charge',
-            amount: numAmount,
-            concept: concept.trim() || 'Compra a crédito',
-            balanceAfter: newBalance,
-            items: Array.isArray(items) ? items : []
-          };
-          updatedCustomer = {
-            ...c,
-            balance: newBalance,
-            transactions: [newTx, ...(c.transactions || [])],
-            updatedAt: new Date().toISOString()
-          };
-          return updatedCustomer;
-        }
-        return c;
-      });
-      try {
-        localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(updatedList));
-        localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
-        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
-          localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
-          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
-        }
-      } catch (e) {}
-      return updatedList;
-    });
+    const targetName = targetExisting.name;
+    const creditLimit = roundMoney(targetExisting.creditLimit || 0);
+    const newBalance = roundMoney((targetExisting.balance || 0) + numAmount);
+    const newTx = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      date: new Date().toISOString(),
+      type: 'charge',
+      amount: numAmount,
+      concept: concept.trim() || 'Compra a crédito',
+      balanceAfter: newBalance,
+      items: Array.isArray(items) ? items : []
+    };
+    const updatedCustomer = {
+      ...targetExisting,
+      balance: newBalance,
+      transactions: [newTx, ...(targetExisting.transactions || [])],
+      updatedAt: new Date().toISOString()
+    };
+    const updatedList = baseList.map(c => (c.id === customerId ? updatedCustomer : c));
+    creditCustomersRef.current = updatedList;
+    setCreditCustomers(updatedList);
+    persistCreditsLocally(activeSlug, updatedList);
 
-    try {
-      if (supabase && updatedCustomer) {
-        await supabase.from('credit_customers').upsert([{
-          id: updatedCustomer.id,
-          tenant_id: targetTenant,
-          name: updatedCustomer.name,
-          phone: updatedCustomer.phone || '',
-          apartment: updatedCustomer.apartment || '',
-          notes: updatedCustomer.notes || '',
-          balance: updatedCustomer.balance,
-          credit_limit: updatedCustomer.creditLimit || 0,
-          transactions: updatedCustomer.transactions || [],
-          created_at: updatedCustomer.createdAt || new Date().toISOString(),
-          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
-        }], { onConflict: 'id' });
-
-        if (targetTenant && targetTenant !== 'default') {
-          supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: updatedList } })
-            .eq('id', targetTenant)
-            .then(() => {})
-            .catch(() => {});
-        }
-      }
-    } catch (e) {}
-
+    const cloudSynced = await syncCreditCustomerToCloud(targetTenant, updatedCustomer);
     const cur = storeConfig?.currencySymbol || 'Bs.';
-    showToast(`Anotado a la cuenta de ${targetName}: +${cur} ${numAmount.toFixed(2)}`, 'warning');
+    const reachedLimit = creditLimit > 0 && newBalance >= creditLimit;
+
+    if (!cloudSynced) {
+      showToast(`Anotado +${cur} ${numAmount.toFixed(2)} a ${targetName} (solo local, revisa tu conexión).`, 'warning');
+    } else if (reachedLimit) {
+      showToast(
+        `⚠️ ${targetName}: +${cur} ${numAmount.toFixed(2)} anotados. Saldo (${cur} ${newBalance.toFixed(2)}) alcanzó/superó su límite de ${cur} ${creditLimit.toFixed(2)}.`,
+        'warning'
+      );
+    } else {
+      showToast(`Anotado a la cuenta de ${targetName}: +${cur} ${numAmount.toFixed(2)}`, 'warning');
+    }
+
+    return { ok: true, cloudSynced, newBalance, reachedLimit };
   };
 
   const addCustomerPayment = async (customerId, amount, paymentMethod = 'cash', note = '') => {
-    const numAmount = Math.max(0, parseFloat(amount) || 0);
-    if (numAmount <= 0) {
+    const rawAmount = roundMoney(Math.max(0, parseFloat(amount) || 0));
+    if (rawAmount <= 0) {
       showToast('Ingresa un monto válido a abonar.', 'warning');
-      return;
+      return { ok: false };
     }
 
-    let targetName = '';
-    let newBal = 0;
-    let updatedCustomer = null;
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
+    const existing = baseList.find(c => c.id === customerId);
+    if (!existing) return { ok: false };
+
+    const prevDebt = roundMoney(existing.balance || 0);
+    if (prevDebt <= 0) {
+      showToast(`${existing.name} ya está al día sin saldo pendiente por abonar.`, 'info');
+      return { ok: false };
+    }
+
     const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
     const targetTenant = merchantStore?.id || tenantSlug || 'default';
-
-    let updatedList = [];
-    setCreditCustomers(prev => {
-      updatedList = prev.map(c => {
-        if (c.id === customerId) {
-          targetName = c.name;
-          newBal = Math.max(0, Number((c.balance - numAmount).toFixed(2)));
-          const newTx = {
-            id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-            date: new Date().toISOString(),
-            type: 'payment',
-            amount: numAmount,
-            concept: note.trim() || `Abono recibido (${paymentMethod === 'qr' ? 'QR Digital' : 'Efectivo'})`,
-            paymentMethod,
-            balanceAfter: newBal
-          };
-          updatedCustomer = {
-            ...c,
-            balance: newBal,
-            transactions: [newTx, ...(c.transactions || [])],
-            updatedAt: new Date().toISOString()
-          };
-          return updatedCustomer;
-        }
-        return c;
-      });
-      try {
-        localStorage.setItem(`marketsaas_${activeSlug}_credits`, JSON.stringify(updatedList));
-        localStorage.setItem(`marketsaas_${activeSlug}_credits_initialized`, 'true');
-        if (activeSlug === 'matias-tiendatodo' || activeSlug === 'default') {
-          localStorage.setItem('marketsaas_default_credits', JSON.stringify(updatedList));
-          localStorage.setItem('marketsaas_matias-tiendatodo_credits', JSON.stringify(updatedList));
-        }
-      } catch (e) {}
-      return updatedList;
-    });
-
-    try {
-      if (supabase && updatedCustomer) {
-        await supabase.from('credit_customers').upsert([{
-          id: updatedCustomer.id,
-          tenant_id: targetTenant,
-          name: updatedCustomer.name,
-          phone: updatedCustomer.phone || '',
-          apartment: updatedCustomer.apartment || '',
-          notes: updatedCustomer.notes || '',
-          balance: updatedCustomer.balance,
-          credit_limit: updatedCustomer.creditLimit || 0,
-          transactions: updatedCustomer.transactions || [],
-          created_at: updatedCustomer.createdAt || new Date().toISOString(),
-          updated_at: updatedCustomer.updatedAt || new Date().toISOString()
-        }], { onConflict: 'id' });
-
-        if (targetTenant && targetTenant !== 'default') {
-          supabase.from('store_config')
-            .update({ config: { ...storeConfig, creditsBackup: updatedList } })
-            .eq('id', targetTenant)
-            .then(() => {})
-            .catch(() => {});
-        }
-      }
-    } catch (e) {}
+    const targetName = existing.name;
+    const appliedAmount = Math.min(rawAmount, prevDebt);
+    const overpayment = rawAmount > prevDebt ? roundMoney(rawAmount - prevDebt) : 0;
+    const newBal = Math.max(0, roundMoney(prevDebt - appliedAmount));
 
     const cur = storeConfig?.currencySymbol || 'Bs.';
+    const baseConcept = note.trim() || `Abono recibido (${paymentMethod === 'qr' ? 'QR Digital' : 'Efectivo'})`;
+    const finalConcept = overpayment > 0
+      ? `${baseConcept} (Entregó ${cur} ${rawAmount.toFixed(2)}, cambio ${cur} ${overpayment.toFixed(2)})`
+      : baseConcept;
+
+    const newTx = {
+      id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      date: new Date().toISOString(),
+      type: 'payment',
+      amount: appliedAmount,
+      concept: finalConcept,
+      paymentMethod,
+      balanceAfter: newBal
+    };
+    const updatedCustomer = {
+      ...existing,
+      balance: newBal,
+      transactions: [newTx, ...(existing.transactions || [])],
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedList = baseList.map(c => (c.id === customerId ? updatedCustomer : c));
+    creditCustomersRef.current = updatedList;
+    setCreditCustomers(updatedList);
+    persistCreditsLocally(activeSlug, updatedList);
+
+    const cloudSynced = await syncCreditCustomerToCloud(targetTenant, updatedCustomer);
     triggerConfetti();
-    showToast(`✓ Abono de ${cur} ${numAmount.toFixed(2)} registrado para ${targetName}. Saldo: ${cur} ${newBal.toFixed(2)}`, 'success');
+
+    if (!cloudSynced) {
+      showToast(`Abono de ${cur} ${appliedAmount.toFixed(2)} guardado localmente para ${targetName}, pero falló la nube.`, 'warning');
+    } else if (overpayment > 0) {
+      showToast(
+        `✓ Cuenta saldada para ${targetName} (${cur} ${appliedAmount.toFixed(2)}). Cambio a devolver: ${cur} ${overpayment.toFixed(2)}.`,
+        'success'
+      );
+    } else {
+      showToast(`✓ Abono de ${cur} ${appliedAmount.toFixed(2)} registrado para ${targetName}. Saldo: ${cur} ${newBal.toFixed(2)}`, 'success');
+    }
+
+    return { ok: true, cloudSynced, appliedAmount, overpayment, newBalance: newBal };
   };
 
   const clearCustomerBalance = (customerId, paymentMethod = 'cash') => {

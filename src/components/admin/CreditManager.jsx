@@ -23,10 +23,26 @@ import {
   FileText,
   UserCheck,
   Percent,
-  ShoppingCart
+  ShoppingCart,
+  Lock
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
+import { roundMoney } from '../../utils/paymentUtils';
 import './CreditManager.css';
+
+const getBoliviaYearMonth = (dateInput = new Date()) => {
+  const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(d.getTime())) return '';
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/La_Paz',
+      year: 'numeric',
+      month: '2-digit'
+    }).format(d);
+  } catch {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+};
 
 export const CreditManager = () => {
   const { 
@@ -40,12 +56,14 @@ export const CreditManager = () => {
     storeConfig,
     formatBoliviaDateTime,
     showToast,
-    triggerConfetti
+    triggerConfetti,
+    isSubscriptionActive
   } = useStore();
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const storeName = storeConfig?.name || 'Mi Tienda';
   const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '';
+  const isReadOnlyCredits = isSubscriptionActive === false;
 
   // Filtros y Búsqueda
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,6 +91,7 @@ export const CreditManager = () => {
 
   const [activeCustomerForPayment, setActiveCustomerForPayment] = useState(null);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  const [isSubmittingCredit, setIsSubmittingCredit] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     paymentMethod: 'cash', // 'cash' | 'qr'
@@ -81,27 +100,27 @@ export const CreditManager = () => {
 
   // Métricas Clave
   const totalDebt = useMemo(() => {
-    return creditCustomers.reduce((acc, c) => acc + (c.balance || 0), 0);
+    return roundMoney(creditCustomers.reduce((acc, c) => acc + (Number(c.balance) || 0), 0));
   }, [creditCustomers]);
 
   const customersWithDebtCount = useMemo(() => {
-    return creditCustomers.filter(c => (c.balance || 0) > 0).length;
+    return creditCustomers.filter(c => (Number(c.balance) || 0) > 0).length;
   }, [creditCustomers]);
 
   const totalCollectedThisMonth = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const currentBoliviaYM = getBoliviaYearMonth(new Date());
+    if (!currentBoliviaYM) return 0;
 
-    return creditCustomers.reduce((total, c) => {
-      const txs = Array.isArray(c.transactions) ? c.transactions : [];
-      const monthPayments = txs.filter(tx => {
-        if (tx.type !== 'payment') return false;
-        const d = new Date(tx.date);
-        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-      });
-      return total + monthPayments.reduce((sub, tx) => sub + (tx.amount || 0), 0);
-    }, 0);
+    return roundMoney(
+      creditCustomers.reduce((total, c) => {
+        const txs = Array.isArray(c.transactions) ? c.transactions : [];
+        const monthPayments = txs.filter(tx => {
+          if (tx.type !== 'payment') return false;
+          return getBoliviaYearMonth(tx.date) === currentBoliviaYM;
+        });
+        return total + monthPayments.reduce((sub, tx) => sub + (Number(tx.amount) || 0), 0);
+      }, 0)
+    );
   }, [creditCustomers]);
 
   // Lista Filtrada
@@ -122,6 +141,10 @@ export const CreditManager = () => {
 
   // Manejo de Formulario de Cliente
   const handleOpenNewCustomer = () => {
+    if (isReadOnlyCredits) {
+      showToast('Tu suscripción venció. Renueva tu plan en "Mi Suscripción" para registrar nuevos deudores o fiar compras.', 'warning');
+      return;
+    }
     setEditingCustomer(null);
     setCustomerForm({
       name: '',
@@ -162,55 +185,62 @@ export const CreditManager = () => {
 
   const handleSaveCustomer = async (e) => {
     e.preventDefault();
+    if (isSubmittingCredit) return;
     if (!customerForm.name.trim()) {
       showToast('Por favor escribe el nombre del vecino.', 'warning');
       return;
     }
 
-    if (editingCustomer) {
-      updateCreditCustomer(editingCustomer.id, {
-        name: customerForm.name.trim(),
-        phone: customerForm.phone.trim(),
-        apartment: customerForm.apartment.trim(),
-        notes: customerForm.notes.trim(),
-        creditLimit: parseFloat(customerForm.creditLimit) || 0
-      });
-      showToast('Datos del deudor actualizados.', 'success');
-    } else {
-      const isWithoutDebt = customerForm.debtMode === 'none';
-      const initAmount = isWithoutDebt ? 0 : Math.max(0, parseFloat(customerForm.initialBalance) || 0);
-
-      let concept = '';
-      if (initAmount > 0) {
-        if (customerForm.debtMode === 'counter') {
-          concept = customerForm.initialConcept.trim()
-            ? `Compra fiada en mostrador: ${customerForm.initialConcept.trim()}`
-            : 'Compra fiada en mostrador (Al registrarse)';
-        } else {
-          concept = customerForm.initialConcept.trim()
-            ? `Saldo previo de libreta: ${customerForm.initialConcept.trim()}`
-            : 'Saldo inicial / Deuda previa de libreta';
-        }
-      }
-
-      await addCreditCustomer({
-        name: customerForm.name.trim(),
-        phone: customerForm.phone.trim(),
-        apartment: customerForm.apartment.trim(),
-        notes: customerForm.notes.trim(),
-        creditLimit: parseFloat(customerForm.creditLimit) || 0,
-        initialBalance: initAmount,
-        initialConcept: concept
-      });
-
-      if (initAmount > 0) {
-        showToast(`Deudor registrado con ${currency} ${initAmount.toFixed(2)} fiados en este momento.`, 'success');
-      } else {
-        showToast('Deudor registrado exitosamente.', 'success');
-      }
+    if (!editingCustomer && isReadOnlyCredits) {
+      showToast('Tu suscripción venció. Renueva tu plan para registrar nuevos deudores.', 'warning');
+      return;
     }
 
-    setIsCustomerModalOpen(false);
+    setIsSubmittingCredit(true);
+    try {
+      const parsedLimit = roundMoney(Math.max(0, parseFloat(customerForm.creditLimit) || 0));
+
+      if (editingCustomer) {
+        await updateCreditCustomer(editingCustomer.id, {
+          name: customerForm.name.trim(),
+          phone: customerForm.phone.trim(),
+          apartment: customerForm.apartment.trim(),
+          notes: customerForm.notes.trim(),
+          creditLimit: parsedLimit
+        });
+      } else {
+        const isWithoutDebt = customerForm.debtMode === 'none';
+        const initAmount = isWithoutDebt ? 0 : roundMoney(Math.max(0, parseFloat(customerForm.initialBalance) || 0));
+
+        let concept = '';
+        if (initAmount > 0) {
+          if (customerForm.debtMode === 'counter') {
+            concept = customerForm.initialConcept.trim()
+              ? `Compra fiada en mostrador: ${customerForm.initialConcept.trim()}`
+              : 'Compra fiada en mostrador (Al registrarse)';
+          } else {
+            concept = customerForm.initialConcept.trim()
+              ? `Saldo previo de libreta: ${customerForm.initialConcept.trim()}`
+              : 'Saldo inicial / Deuda previa de libreta';
+          }
+        }
+
+        const created = await addCreditCustomer({
+          name: customerForm.name.trim(),
+          phone: customerForm.phone.trim(),
+          apartment: customerForm.apartment.trim(),
+          notes: customerForm.notes.trim(),
+          creditLimit: parsedLimit,
+          initialBalance: initAmount,
+          initialConcept: concept
+        });
+        if (!created) return;
+      }
+
+      setIsCustomerModalOpen(false);
+    } finally {
+      setIsSubmittingCredit(false);
+    }
   };
 
   // Referencias reactivas a los clientes activos en modales para evitar snapshots obsoletos
@@ -231,13 +261,22 @@ export const CreditManager = () => {
 
   // Manejo de Cargo Manual
   const handleOpenChargeModal = (customer) => {
+    if (isReadOnlyCredits) {
+      showToast('Tu suscripción venció. Solo puedes consultar cuentas y registrar abonos mientras renuevas tu plan.', 'warning');
+      return;
+    }
     setActiveCustomerForCharge(customer);
     setChargeForm({ amount: '', concept: '' });
   };
 
-  const handleConfirmCharge = (e) => {
+  const handleConfirmCharge = async (e) => {
     e.preventDefault();
-    const amt = parseFloat(chargeForm.amount);
+    if (isSubmittingCredit) return;
+    if (isReadOnlyCredits) {
+      showToast('Tu suscripción venció. Renueva tu plan para anotar nuevos fiados.', 'warning');
+      return;
+    }
+    const amt = roundMoney(parseFloat(chargeForm.amount));
     if (!amt || amt <= 0) {
       showToast('Ingresa un monto válido mayor a 0.', 'warning');
       return;
@@ -246,12 +285,17 @@ export const CreditManager = () => {
     const targetCustomer = currentCustomerForCharge || activeCustomerForCharge;
     if (!targetCustomer) return;
 
-    addCustomerCharge(
-      targetCustomer.id, 
-      amt, 
-      chargeForm.concept.trim() || 'Compra anotada a cuenta'
-    );
-    setActiveCustomerForCharge(null);
+    setIsSubmittingCredit(true);
+    try {
+      await addCustomerCharge(
+        targetCustomer.id,
+        amt,
+        chargeForm.concept.trim() || 'Compra anotada a cuenta'
+      );
+      setActiveCustomerForCharge(null);
+    } finally {
+      setIsSubmittingCredit(false);
+    }
   };
 
   // Manejo de Abono / Pago
@@ -264,9 +308,10 @@ export const CreditManager = () => {
     });
   };
 
-  const handleConfirmPayment = (e) => {
+  const handleConfirmPayment = async (e) => {
     e.preventDefault();
-    const amt = parseFloat(paymentForm.amount);
+    if (isSubmittingCredit) return;
+    const amt = roundMoney(parseFloat(paymentForm.amount));
     if (!amt || amt <= 0) {
       showToast('Ingresa un monto válido a abonar.', 'warning');
       return;
@@ -274,14 +319,25 @@ export const CreditManager = () => {
 
     const targetCustomer = currentCustomerForPayment || activeCustomerForPayment;
     if (!targetCustomer) return;
+    if ((Number(targetCustomer.balance) || 0) <= 0) {
+      showToast(`${targetCustomer.name} ya está al día sin deuda pendiente.`, 'info');
+      return;
+    }
 
-    addCustomerPayment(
-      targetCustomer.id,
-      amt,
-      paymentForm.paymentMethod,
-      paymentForm.note.trim() || (amt >= targetCustomer.balance ? 'Liquidación total' : 'Abono parcial')
-    );
-    setActiveCustomerForPayment(null);
+    setIsSubmittingCredit(true);
+    try {
+      const res = await addCustomerPayment(
+        targetCustomer.id,
+        amt,
+        paymentForm.paymentMethod,
+        paymentForm.note.trim() || (amt >= targetCustomer.balance ? 'Liquidación total' : 'Abono parcial')
+      );
+      if (res?.ok !== false) {
+        setActiveCustomerForPayment(null);
+      }
+    } finally {
+      setIsSubmittingCredit(false);
+    }
   };
 
   // Enviar Recordatorio Educado por WhatsApp
@@ -338,12 +394,29 @@ export const CreditManager = () => {
         <button
           type="button"
           onClick={handleOpenNewCustomer}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm shadow-md shadow-indigo-600/20 hover:shadow-lg transition-all cursor-pointer active:scale-95"
+          title={isReadOnlyCredits ? 'Suscripción vencida: renueva tu plan para registrar nuevos deudores' : 'Registrar nuevo vecino en la libreta'}
+          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+            isReadOnlyCredits
+              ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 hover:shadow-lg active:scale-95'
+          }`}
         >
-          <Plus className="w-4 h-4" />
-          <span>+ Nuevo Deudor</span>
+          {isReadOnlyCredits ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          <span>{isReadOnlyCredits ? 'Nuevo Deudor (Bloqueado)' : '+ Nuevo Deudor'}</span>
         </button>
       </div>
+
+      {isReadOnlyCredits && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+          <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-900 leading-relaxed">
+            <strong className="font-black block sm:inline">Modo Cobranza (Suscripción Vencida): </strong>
+            <span>
+              Puedes consultar cuentas pendientes, enviar recordatorios por WhatsApp y <strong>registrar abonos</strong> para cobrar tu dinero. Para añadir nuevos deudores o anotar nuevos fiados, renueva tu plan en <strong>Mi Suscripción</strong>.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Tarjetas KPI de Estado de Cuentas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -623,9 +696,14 @@ export const CreditManager = () => {
                   <button
                     type="button"
                     onClick={() => handleOpenChargeModal(customer)}
-                    className="px-2.5 py-2 rounded-xl bg-indigo-50 border border-indigo-200/70 hover:bg-indigo-100 text-indigo-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    title={isReadOnlyCredits ? 'Suscripción vencida: no se pueden anotar nuevos fiados' : 'Anotar nueva compra fiada'}
+                    className={`px-2.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      isReadOnlyCredits
+                        ? 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/70'
+                        : 'bg-indigo-50 border-indigo-200/70 hover:bg-indigo-100 text-indigo-800'
+                    }`}
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    {isReadOnlyCredits ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                     <span>Anotar Fiao</span>
                   </button>
 
@@ -723,7 +801,7 @@ export const CreditManager = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.5"
+                  step="0.01"
                   min="0"
                   value={customerForm.creditLimit}
                   onChange={(e) => setCustomerForm(prev => ({ ...prev, creditLimit: e.target.value }))}
@@ -915,6 +993,17 @@ export const CreditManager = () => {
                       <span>El vecino se registrará con saldo en <strong>0.00 {currency}</strong>. Podrás anotarle compras fiadas más adelante desde el botón &ldquo;Anotar Fiao&rdquo;.</span>
                     </div>
                   )}
+
+                  {customerForm.debtMode !== 'none' &&
+                    roundMoney(parseFloat(customerForm.creditLimit) || 0) > 0 &&
+                    roundMoney(parseFloat(customerForm.initialBalance) || 0) >= roundMoney(parseFloat(customerForm.creditLimit) || 0) && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-[11px] text-amber-950 flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Aviso:</strong> El saldo inicial ({currency} {roundMoney(parseFloat(customerForm.initialBalance) || 0).toFixed(2)}) alcanza o supera el límite de crédito configurado ({currency} {roundMoney(parseFloat(customerForm.creditLimit) || 0).toFixed(2)}).
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -941,9 +1030,12 @@ export const CreditManager = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer flex items-center gap-2 transition-all"
+                  disabled={isSubmittingCredit}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer flex items-center gap-2 transition-all disabled:opacity-60"
                 >
-                  {editingCustomer ? (
+                  {isSubmittingCredit ? (
+                    'Guardando...'
+                  ) : editingCustomer ? (
                     'Guardar Cambios'
                   ) : customerForm.debtMode !== 'none' && (parseFloat(customerForm.initialBalance) || 0) > 0 ? (
                     <>
@@ -963,7 +1055,16 @@ export const CreditManager = () => {
       {/* ========================================================================= */}
       {/* MODAL: ANOTAR CARGO MANUAL / FIAO */}
       {/* ========================================================================= */}
-      {activeCustomerForCharge && (
+      {activeCustomerForCharge && (() => {
+        const targetCharge = currentCustomerForCharge || activeCustomerForCharge;
+        const chargeAmount = roundMoney(Math.max(0, parseFloat(chargeForm.amount) || 0));
+        const currentBal = roundMoney(targetCharge.balance || 0);
+        const projectedBalance = roundMoney(currentBal + chargeAmount);
+        const creditLimit = roundMoney(targetCharge.creditLimit || 0);
+        const willReachLimit = creditLimit > 0 && projectedBalance >= creditLimit;
+        const alreadyOverLimit = creditLimit > 0 && currentBal >= creditLimit;
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
@@ -972,7 +1073,7 @@ export const CreditManager = () => {
                   Anotar Compra a Cuenta
                 </h3>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-indigo-700">{(currentCustomerForCharge || activeCustomerForCharge).name}</strong> (Saldo actual: {currency} {(currentCustomerForCharge || activeCustomerForCharge).balance.toFixed(2)})
+                  Vecino: <strong className="text-indigo-700">{targetCharge.name}</strong> (Saldo actual: {currency} {currentBal.toFixed(2)})
                 </p>
               </div>
               <button
@@ -995,8 +1096,8 @@ export const CreditManager = () => {
                   </span>
                   <input
                     type="number"
-                    step="0.10"
-                    min="0.10"
+                    step="0.01"
+                    min="0.01"
                     required
                     autoFocus
                     value={chargeForm.amount}
@@ -1023,10 +1124,25 @@ export const CreditManager = () => {
 
               <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
                 <span className="text-slate-500 font-bold">Nuevo saldo resultante:</span>
-                <span className="font-black text-rose-600 text-sm">
-                  {currency} {((currentCustomerForCharge || activeCustomerForCharge).balance + (parseFloat(chargeForm.amount) || 0)).toFixed(2)}
+                <span className={`font-black text-sm ${willReachLimit ? 'text-rose-700' : 'text-rose-600'}`}>
+                  {currency} {projectedBalance.toFixed(2)}
                 </span>
               </div>
+
+              {(willReachLimit || alreadyOverLimit) && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2 text-xs text-amber-950">
+                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="leading-snug">
+                    <strong className="font-black block">
+                      {projectedBalance > creditLimit ? 'Límite de crédito superado' : 'Límite de crédito alcanzado'}
+                    </strong>
+                    <span>
+                      Su límite configurado es <strong>{currency} {creditLimit.toFixed(2)}</strong> y quedará con{' '}
+                      <strong>{currency} {projectedBalance.toFixed(2)}</strong>.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
@@ -1038,20 +1154,40 @@ export const CreditManager = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer"
+                  disabled={isSubmittingCredit}
+                  className={`px-5 py-2.5 rounded-xl text-white font-extrabold text-xs shadow-md cursor-pointer disabled:opacity-60 ${
+                    willReachLimit
+                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
+                      : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                  }`}
                 >
-                  + Anotar a su Cuenta
+                  {isSubmittingCredit
+                    ? 'Guardando...'
+                    : willReachLimit
+                      ? '⚠️ Confirmar Fiao (Sobre Límite)'
+                      : '+ Anotar a su Cuenta'}
                 </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* MODAL: REGISTRAR ABONO / PAGO */}
       {/* ========================================================================= */}
-      {activeCustomerForPayment && (
+      {activeCustomerForPayment && (() => {
+        const targetPayment = currentCustomerForPayment || activeCustomerForPayment;
+        const currentDebt = roundMoney(targetPayment.balance || 0);
+        const rawPaymentAmount = roundMoney(Math.max(0, parseFloat(paymentForm.amount) || 0));
+        const appliedPayment = currentDebt > 0 ? Math.min(rawPaymentAmount, currentDebt) : 0;
+        const overpaymentChange = currentDebt > 0 && rawPaymentAmount > currentDebt
+          ? roundMoney(rawPaymentAmount - currentDebt)
+          : 0;
+        const remainingBalance = Math.max(0, roundMoney(currentDebt - appliedPayment));
+
+        return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
@@ -1060,7 +1196,7 @@ export const CreditManager = () => {
                   Registrar Abono de Dinero
                 </h3>
                 <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-emerald-700">{(currentCustomerForPayment || activeCustomerForPayment).name}</strong>
+                  Vecino: <strong className="text-emerald-700">{targetPayment.name}</strong>
                 </p>
               </div>
               <button
@@ -1078,13 +1214,13 @@ export const CreditManager = () => {
                 <div>
                   <span className="text-[10px] uppercase font-bold text-slate-400 block">Deuda Pendiente</span>
                   <span className="text-xl font-black text-rose-400">
-                    {currency} {(currentCustomerForPayment || activeCustomerForPayment).balance.toFixed(2)}
+                    {currency} {currentDebt.toFixed(2)}
                   </span>
                 </div>
-                {(currentCustomerForPayment || activeCustomerForPayment).balance > 0 && (
+                {currentDebt > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPaymentForm(prev => ({ ...prev, amount: String((currentCustomerForPayment || activeCustomerForPayment).balance) }))}
+                    onClick={() => setPaymentForm(prev => ({ ...prev, amount: String(currentDebt) }))}
                     className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer shadow-xs"
                   >
                     Saldar Total
@@ -1092,82 +1228,104 @@ export const CreditManager = () => {
                 )}
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Monto que está Abonando ({currency}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                    {currency}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.50"
-                    min="0.50"
-                    required
-                    autoFocus
-                    value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-3 text-lg font-black rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
+              {currentDebt <= 0 ? (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 flex items-center gap-2 font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Este vecino ya está al día y no tiene deuda pendiente para abonar.</span>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Monto que está Abonando ({currency}) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
+                        {currency}
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        required
+                        autoFocus
+                        value={paymentForm.amount}
+                        onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
+                        placeholder="0.00"
+                        className="w-full pl-10 pr-4 py-3 text-lg font-black rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
 
-              {/* Método de Cobro */}
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                  ¿Cómo te está pagando el vecino?
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                    className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      paymentForm.paymentMethod === 'cash'
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Banknote className="w-4 h-4 text-emerald-600" />
-                    <span>En Efectivo</span>
-                  </button>
+                  {/* Método de Cobro */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      ¿Cómo te está pagando el vecino?
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'cash' }))}
+                        className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          paymentForm.paymentMethod === 'cash'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Banknote className="w-4 h-4 text-emerald-600" />
+                        <span>En Efectivo</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'qr' }))}
-                    className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      paymentForm.paymentMethod === 'qr'
-                        ? 'border-cyan-500 bg-cyan-50 text-cyan-800 ring-2 ring-cyan-500/20'
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <QrCode className="w-4 h-4 text-cyan-600" />
-                    <span>Por QR Digital</span>
-                  </button>
-                </div>
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'qr' }))}
+                        className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                          paymentForm.paymentMethod === 'qr'
+                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 ring-2 ring-cyan-500/20'
+                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <QrCode className="w-4 h-4 text-cyan-600" />
+                        <span>Por QR Digital</span>
+                      </button>
+                    </div>
+                  </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Nota / Observación (Opcional)
-                </label>
-                <input
-                  type="text"
-                  value={paymentForm.note}
-                  onChange={(e) => setPaymentForm(prev => ({ ...prev, note: e.target.value }))}
-                  placeholder="Ej. Dejó 50 Bs en billete, transferido por BCP..."
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Nota / Observación (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentForm.note}
+                      onChange={(e) => setPaymentForm(prev => ({ ...prev, note: e.target.value }))}
+                      placeholder="Ej. Dejó 50 Bs en billete, transferido por BCP..."
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
 
-              {/* Saldo Restante */}
-              <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-bold">Saldo restante tras abono:</span>
-                <span className="font-black text-emerald-700 text-sm">
-                  {currency} {Math.max(0, (currentCustomerForPayment || activeCustomerForPayment).balance - (parseFloat(paymentForm.amount) || 0)).toFixed(2)}
-                </span>
-              </div>
+                  {overpaymentChange > 0 && (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 space-y-1">
+                      <div className="font-black flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                        <span>Entregado supera la deuda actual</span>
+                      </div>
+                      <p className="leading-snug">
+                        Se aplicarán <strong>{currency} {appliedPayment.toFixed(2)}</strong> para saldar la cuenta y debes devolver{' '}
+                        <strong>{currency} {overpaymentChange.toFixed(2)}</strong> de cambio.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Saldo Restante */}
+                  <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-bold">Saldo restante tras abono:</span>
+                    <span className="font-black text-emerald-700 text-sm">
+                      {currency} {remainingBalance.toFixed(2)}
+                    </span>
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
@@ -1179,15 +1337,17 @@ export const CreditManager = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer"
+                  disabled={currentDebt <= 0 || isSubmittingCredit}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  ✓ Confirmar Abono Recibido
+                  {isSubmittingCredit ? 'Guardando...' : '✓ Confirmar Abono Recibido'}
                 </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* MODAL: HISTORIAL Y LIBRETA COMPLETA DE CUENTAS */}
@@ -1289,13 +1449,21 @@ export const CreditManager = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (isReadOnlyCredits) {
+                    showToast('Tu suscripción venció. Renueva tu plan para anotar nuevos fiados.', 'warning');
+                    return;
+                  }
                   const cust = currentCustomerForHistory || activeCustomerForHistory;
                   setActiveCustomerForHistory(null);
                   handleOpenChargeModal(cust);
                 }}
-                className="px-3.5 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer hover:bg-indigo-100"
+                className={`px-3.5 py-2 rounded-xl border font-extrabold text-xs flex items-center gap-1.5 cursor-pointer ${
+                  isReadOnlyCredits
+                    ? 'bg-slate-100 border-slate-200 text-slate-400'
+                    : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                }`}
               >
-                <Plus className="w-3.5 h-3.5" />
+                {isReadOnlyCredits ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                 <span>+ Anotar Compra</span>
               </button>
 
@@ -1404,14 +1572,21 @@ export const CreditManager = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  deleteCreditCustomer(customerToDelete.id);
-                  setCustomerToDelete(null);
+                disabled={isSubmittingCredit}
+                onClick={async () => {
+                  if (isSubmittingCredit) return;
+                  setIsSubmittingCredit(true);
+                  try {
+                    await deleteCreditCustomer(customerToDelete.id);
+                    setCustomerToDelete(null);
+                  } finally {
+                    setIsSubmittingCredit(false);
+                  }
                 }}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-60"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Sí, Eliminar</span>
+                <span>{isSubmittingCredit ? 'Eliminando...' : 'Sí, Eliminar'}</span>
               </button>
             </div>
           </div>
