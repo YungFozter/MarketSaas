@@ -1,28 +1,38 @@
 /* ==========================================================================
    ShareStoreModal.css - Marketing & Difusión Vecinal (Vista Dueño)
-   Diseño Responsive y Scroll de Alto Rendimiento (60/120fps sin repaints):
-   - Vista PC (lg+): Widescreen 2 Columnas
-   - Vista Tablet & Móvil: Stack Vertical Fluido con Carrusel Táctil
+   Diseño Responsive Adaptativo por Viewport (PC, Tablet y Móvil Nativo)
    ========================================================================== */
 
-/* Overlay ligero sin backdrop-filter para evitar recomposición pesada de GPU al scrollear */
+/* Overlay ligero con soporte de área segura (Notch / Barra de navegación móvil) */
 .share-store-modal-overlay {
   animation: shareStoreOverlayIn 0.16s ease-out forwards;
   overscroll-behavior: contain;
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-left: max(0.5rem, env(safe-area-inset-left, 0px));
+  padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
-/* Tarjeta principal del modal con aislamiento de layout/paint */
+/* Tarjeta principal del modal con altura dinámica exacta al dispositivo */
 .share-store-modal-card {
   animation: shareStoreCardIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   overscroll-behavior: contain;
   contain: layout paint;
+  width: 100%;
+  /* Fallback vh -> svh (viewport estable con barras visibles) -> dvh (viewport dinámico) */
+  max-height: calc(100vh - 1rem);
+  max-height: calc(100svh - 1rem);
+  max-height: calc(100dvh - 1rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   box-shadow:
     0 20px 40px -12px rgba(15, 23, 42, 0.28),
     0 4px 14px -2px rgba(15, 23, 42, 0.08);
 }
 
-/* Cuerpo desplazable interno con scroll nativo instantáneo */
+/* Cuerpo desplazable interno con flex-1 y min-height: 0 obligatorio para que el scroll funcione en cualquier móvil */
 .share-store-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
@@ -31,7 +41,7 @@
 }
 
 .share-store-modal-body::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .share-store-modal-body::-webkit-scrollbar-track {
@@ -47,12 +57,20 @@
   background-color: #94a3b8;
 }
 
+/* En monitores de escritorio amplios (lg+ y altura >= 760px) se desactiva el scroll externo */
+@media (min-width: 1024px) and (min-height: 760px) {
+  .share-store-modal-body {
+    overflow-y: visible;
+  }
+}
+
 /* Carrusel horizontal de plantillas en móvil/tablet; Grid en PC */
 .share-store-carousel {
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
+  touch-action: pan-x pan-y;
 }
 
 .share-store-carousel::-webkit-scrollbar {
@@ -64,13 +82,14 @@
   scrollbar-width: none;
   -ms-overflow-style: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .share-store-chips-row::-webkit-scrollbar {
   display: none;
 }
 
-/* Tarjeta de plantilla individual (solo propiedades ligeras, sin animar box-shadow en scroll) */
+/* Tarjeta de plantilla individual */
 .share-template-card {
   transition:
     transform 0.14s cubic-bezier(0.16, 1, 0.3, 1),
@@ -78,8 +97,10 @@
     background-color 0.14s ease;
 }
 
-.share-template-card:hover {
-  transform: translateY(-1px);
+@media (hover: hover) and (pointer: fine) {
+  .share-template-card:hover {
+    transform: translateY(-1px);
+  }
 }
 
 .share-template-card:active {
@@ -90,7 +111,7 @@
   box-shadow: 0 6px 16px -4px rgba(245, 158, 11, 0.18);
 }
 
-/* Superficie de previsualización de chat de WhatsApp (color sólido #efeae2 sin gradientes repetitivos que ralenticen el scroll) */
+/* Superficie de previsualización de chat de WhatsApp */
 .share-wa-chat-viewport {
   background-color: #efeae2;
   overscroll-behavior: contain;
@@ -101,7 +122,7 @@
 }
 
 .share-wa-chat-viewport::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .share-wa-chat-viewport::-webkit-scrollbar-track {
@@ -140,7 +161,30 @@
   border-right: 8px solid transparent;
 }
 
-/* Keyframes de entrada (solo opacity y transform) */
+/* Evitar zoom automático en iOS Safari al enfocar el input en pantallas táctiles */
+@media (pointer: coarse) {
+  .share-promo-input {
+    font-size: 16px !important;
+  }
+}
+
+/* Adaptación en dispositivos móviles (< 640px) */
+@media (max-width: 639px) {
+  .share-store-modal-card {
+    border-radius: 20px;
+    max-height: calc(100svh - 0.75rem);
+    max-height: calc(100dvh - 0.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Adaptación para pantallas móviles bajas o modo horizontal (altura < 700px) */
+@media (max-height: 700px) {
+  .share-wa-chat-viewport {
+    max-height: 135px !important;
+  }
+}
+
+/* Keyframes de entrada */
 @keyframes shareStoreOverlayIn {
   from {
     opacity: 0;
@@ -153,19 +197,11 @@
 @keyframes shareStoreCardIn {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.985);
+    transform: translateY(8px) scale(0.985);
   }
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-/* Adaptación en móviles pequeños (< 640px) */
-@media (max-width: 639px) {
-  .share-store-modal-card {
-    max-height: 94dvh;
-    border-radius: 24px;
   }
 }
 
