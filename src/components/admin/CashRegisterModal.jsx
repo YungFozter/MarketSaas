@@ -29,9 +29,18 @@ import {
   calculateSplitPortions, 
   formatPaymentBreakdownText 
 } from '../../utils/paymentUtils';
+import { calculateCreditPaymentsInShift } from '../../utils/creditUtils';
 
 export const CashRegisterModal = ({ isOpen, onClose }) => {
-  const { orders = [], storeConfig, tenantSlug, currentUser, showToast, isSubscriptionActive } = useStore();
+  const {
+    orders = [],
+    creditCustomers = [],
+    storeConfig,
+    tenantSlug,
+    currentUser,
+    showToast,
+    isSubscriptionActive
+  } = useStore();
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const tenantKey = tenantSlug || storeConfig?.id || 'default';
 
@@ -158,8 +167,11 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
     qrTotal = roundMoney(qrTotal);
     cardTotal = roundMoney(cardTotal);
 
+    const creditPayments = calculateCreditPaymentsInShift(creditCustomers, registerOpenedAt);
     const totalExpenses = expenses.reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
-    const expectedCashInDrawer = roundMoney((Number(openingCash) || 0) + cashTotal - totalExpenses);
+    const expectedCashInDrawer = roundMoney(
+      (Number(openingCash) || 0) + cashTotal + creditPayments.cashTotal - totalExpenses
+    );
 
     return {
       cashTotal,
@@ -171,9 +183,15 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
       combinedTotal: roundMoney(combinedTotal),
       totalOrders: validOrders.length,
       totalExpenses,
+      creditPaymentsCash: creditPayments.cashTotal,
+      creditPaymentsCashCount: creditPayments.cashCount,
+      creditPaymentsQr: creditPayments.qrTotal,
+      creditPaymentsQrCount: creditPayments.qrCount,
+      creditPaymentsTotal: creditPayments.total,
+      creditPaymentsCount: creditPayments.totalCount,
       expectedCashInDrawer
     };
-  }, [orders, registerOpenedAt, expenses, openingCash]);
+  }, [orders, creditCustomers, registerOpenedAt, expenses, openingCash]);
 
   // Actualizar conteo físico cuando se usa la calculadora de billetes
   const calculatedDenominationsTotal = useMemo(() => {
@@ -284,6 +302,11 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
       cardSales: cashStats.cardTotal,
       combinedCount: cashStats.combinedCount,
       combinedTotal: cashStats.combinedTotal,
+      creditPaymentsCash: cashStats.creditPaymentsCash,
+      creditPaymentsCashCount: cashStats.creditPaymentsCashCount,
+      creditPaymentsQr: cashStats.creditPaymentsQr,
+      creditPaymentsQrCount: cashStats.creditPaymentsQrCount,
+      creditPaymentsTotal: cashStats.creditPaymentsTotal,
       expenses: expenses,
       totalExpenses: cashStats.totalExpenses,
       expectedCash: cashStats.expectedCashInDrawer,
@@ -355,6 +378,12 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
             <span>(+) Ventas Efectivo (${record.cashSalesCount}):</span>
             <span class="bold">${currency} ${record.cashSales.toFixed(2)}</span>
           </div>
+          ${Number(record.creditPaymentsCash || 0) > 0 ? `
+            <div class="row">
+              <span>(+) Abonos Libreta Efectivo (${record.creditPaymentsCashCount || 0}):</span>
+              <span class="bold">${currency} ${Number(record.creditPaymentsCash).toFixed(2)}</span>
+            </div>
+          ` : ''}
           <div class="row">
             <span>(-) Salidas / Gastos (${record.expenses?.length || 0}):</span>
             <span>${currency} ${record.totalExpenses.toFixed(2)}</span>
@@ -376,6 +405,12 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
             <span>Ventas QR (Banco):</span>
             <span>${currency} ${record.qrSales.toFixed(2)}</span>
           </div>
+          ${Number(record.creditPaymentsQr || 0) > 0 ? `
+            <div class="row" style="font-size:11px;">
+              <span>Abonos Libreta QR (${record.creditPaymentsQrCount || 0}):</span>
+              <span>${currency} ${Number(record.creditPaymentsQr).toFixed(2)}</span>
+            </div>
+          ` : ''}
           ${record.cardSales > 0 ? `
             <div class="row" style="font-size:11px;">
               <span>Ventas Tarjeta POS (Banco):</span>
@@ -667,6 +702,32 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
+                {/* Sub-barra de Abonos de Libreta cobrados en el turno */}
+                {cashStats.creditPaymentsTotal > 0 && (
+                  <div className="bg-indigo-50/80 p-3.5 rounded-2xl border border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                    <div className="space-y-0.5">
+                      <span className="font-black text-indigo-950 block">
+                        Cobros de Libreta (Abonos del turno): +{currency} {cashStats.creditPaymentsTotal.toFixed(2)}
+                      </span>
+                      <span className="text-[11px] text-indigo-800 font-medium block">
+                        Sumados al efectivo en cajón / QR banco sin alterar el total de ventas nuevas del día.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap shrink-0">
+                      {cashStats.creditPaymentsCash > 0 && (
+                        <span className="font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px]">
+                          Efectivo: +{currency} {cashStats.creditPaymentsCash.toFixed(2)} ({cashStats.creditPaymentsCashCount})
+                        </span>
+                      )}
+                      {cashStats.creditPaymentsQr > 0 && (
+                        <span className="font-bold text-cyan-900 bg-cyan-100 px-2.5 py-1 rounded-lg border border-cyan-200 text-[11px]">
+                          QR: +{currency} {cashStats.creditPaymentsQr.toFixed(2)} ({cashStats.creditPaymentsQrCount})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Sub-barra informativa de canales electrónicos y cobros combinados */}
                 {(cashStats.qrTotal > 0 || cashStats.cardTotal > 0 || cashStats.combinedCount > 0) && (
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -942,7 +1003,11 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
                         </span>
                       </div>
                       <p className="text-xs text-slate-600 font-medium">
-                        Ventas Efectivo: <strong className="text-slate-800">{currency} {cl.cashSales?.toFixed(2)}</strong> • Salidas: {currency} {cl.totalExpenses?.toFixed(2)}
+                        Ventas Efectivo: <strong className="text-slate-800">{currency} {cl.cashSales?.toFixed(2)}</strong>
+                        {Number(cl.creditPaymentsTotal || 0) > 0 && (
+                          <> • Abonos Libreta: <strong className="text-indigo-700">{currency} {Number(cl.creditPaymentsTotal).toFixed(2)}</strong></>
+                        )}
+                        {' '}• Salidas: {currency} {cl.totalExpenses?.toFixed(2)}
                       </p>
                       {cl.notes && <p className="text-[11px] text-slate-500 italic">"{cl.notes}"</p>}
                     </div>

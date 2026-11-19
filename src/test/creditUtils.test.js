@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {
   revertTransactionFromCustomer,
   sortCreditCustomers,
-  buildCreditSummaryCsv
+  buildCreditSummaryCsv,
+  calculateCreditPaymentsInShift
 } from '../utils/creditUtils.js';
 
 test('revertTransactionFromCustomer anula un cargo erróneo y recalcula balanceAfter y saldo final', () => {
@@ -87,4 +88,33 @@ test('buildCreditSummaryCsv incluye BOM UTF-8 y neutraliza fórmulas CSV potenci
   assert.ok(csv.includes('"\'=CMD|calc"'));
   assert.ok(csv.includes('"\'+59177123456"'));
   assert.ok(csv.includes('"25.50"'));
+});
+
+test('calculateCreditPaymentsInShift separa abonos Efectivo vs QR dentro del turno y excluye cargos o turnos previos', () => {
+  const openedAt = '2026-11-19T08:00:00Z';
+  const customers = [
+    {
+      id: 'c1',
+      transactions: [
+        { id: 't1', type: 'payment', paymentMethod: 'cash', amount: 35.5, date: '2026-11-19T09:15:00Z' },
+        { id: 't2', type: 'payment', paymentMethod: 'qr', amount: 24.5, date: '2026-11-19T10:30:00Z' },
+        { id: 't3', type: 'charge', amount: 100, date: '2026-11-19T11:00:00Z' },
+        { id: 't4', type: 'payment', paymentMethod: 'cash', amount: 50, date: '2026-11-18T22:00:00Z' }
+      ]
+    },
+    {
+      id: 'c2',
+      transactions: [
+        { id: 't5', type: 'payment', paymentMethod: 'cash', amount: 14.5, date: '2026-11-19T14:00:00Z' }
+      ]
+    }
+  ];
+
+  const stats = calculateCreditPaymentsInShift(customers, openedAt);
+  assert.equal(stats.cashTotal, 50);
+  assert.equal(stats.cashCount, 2);
+  assert.equal(stats.qrTotal, 24.5);
+  assert.equal(stats.qrCount, 1);
+  assert.equal(stats.total, 74.5);
+  assert.equal(stats.totalCount, 3);
 });

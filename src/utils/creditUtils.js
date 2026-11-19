@@ -19,6 +19,49 @@ export const getSortedTransactionsDesc = (transactions = []) => {
 };
 
 /**
+ * Calcula los abonos cobrados de la Libreta de Deudas dentro del turno de caja activo,
+ * desglosados por Efectivo vs QR Digital para cuadrar arqueo sin inflar ventas nuevas.
+ */
+export const calculateCreditPaymentsInShift = (creditCustomers = [], registerOpenedAt = null) => {
+  const openedMs = registerOpenedAt ? toTimestampMs(registerOpenedAt) : 0;
+  const hasOpenedBoundary = openedMs > 0;
+
+  let cashTotal = 0;
+  let cashCount = 0;
+  let qrTotal = 0;
+  let qrCount = 0;
+
+  (creditCustomers || []).forEach((customer) => {
+    const txs = Array.isArray(customer?.transactions) ? customer.transactions : [];
+    txs.forEach((tx) => {
+      if (!tx || tx.type !== 'payment') return;
+      const txMs = toTimestampMs(tx.date);
+      if (hasOpenedBoundary && txMs < openedMs) return;
+
+      const amt = roundMoney(Math.max(0, Number(tx.amount) || 0));
+      if (amt <= 0) return;
+
+      if (tx.paymentMethod === 'qr') {
+        qrTotal = roundMoney(qrTotal + amt);
+        qrCount += 1;
+      } else {
+        cashTotal = roundMoney(cashTotal + amt);
+        cashCount += 1;
+      }
+    });
+  });
+
+  return {
+    cashTotal,
+    cashCount,
+    qrTotal,
+    qrCount,
+    total: roundMoney(cashTotal + qrTotal),
+    totalCount: cashCount + qrCount
+  };
+};
+
+/**
  * Anula/revierte un movimiento específico de la libreta de un vecino y recalcula
  * de forma exacta toda la línea de tiempo (balanceAfter y balance final).
  * @param {Object} customer

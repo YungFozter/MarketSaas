@@ -1225,11 +1225,14 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                     {selectedCreditCustomerId && (() => {
                       const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
                       if (!cust) return null;
-                      const newBal = (cust.balance || 0) + subtotal;
-                      const exceedsLimit = cust.creditLimit > 0 && newBal > cust.creditLimit;
+                      const currentBal = roundMoney(cust.balance || 0);
+                      const newBal = roundMoney(currentBal + subtotal);
+                      const creditLimit = roundMoney(cust.creditLimit || 0);
+                      const reachesLimit = creditLimit > 0 && newBal >= creditLimit;
+                      const exceedsLimit = creditLimit > 0 && newBal > creditLimit;
 
                       return (
-                        <div className={`p-3.5 rounded-2xl border space-y-1.5 ${exceedsLimit ? 'bg-rose-50 border-rose-200' : 'bg-indigo-50/70 border-indigo-100'}`}>
+                        <div className={`p-3.5 rounded-2xl border space-y-1.5 ${reachesLimit ? 'bg-amber-50 border-amber-300' : 'bg-indigo-50/70 border-indigo-100'}`}>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-600 font-medium">Deudor seleccionado:</span>
                             <div className="flex items-center gap-2">
@@ -1250,20 +1253,25 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-600 font-medium">Saldo actual del deudor:</span>
-                            <span className="font-bold text-slate-800">{currency} {(cust.balance || 0).toFixed(2)}</span>
+                            <span className="font-bold text-slate-800">{currency} {currentBal.toFixed(2)}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-slate-600 font-medium">+ Esta compra a cuenta:</span>
-                            <span className="font-bold text-indigo-700">+{currency} {subtotal.toFixed(2)}</span>
+                            <span className="font-bold text-indigo-700">+{currency} {roundMoney(subtotal).toFixed(2)}</span>
                           </div>
                           <div className="border-t border-slate-200/80 pt-1.5 flex items-center justify-between text-xs">
                             <span className="font-bold text-slate-800">Nuevo saldo acumulado:</span>
-                            <span className="font-black text-rose-600 text-sm">{currency} {newBal.toFixed(2)}</span>
+                            <span className={`font-black text-sm ${reachesLimit ? 'text-rose-700' : 'text-rose-600'}`}>{currency} {newBal.toFixed(2)}</span>
                           </div>
-                          {exceedsLimit && (
-                            <p className="text-[11px] font-bold text-rose-600 pt-1">
-                              ⚠️ Aviso: Esta compra superará el límite de crédito fijado ({currency} {cust.creditLimit.toFixed(2)}).
-                            </p>
+                          {reachesLimit && (
+                            <div className="mt-1.5 p-2 rounded-xl bg-white/90 border border-amber-300 flex items-start gap-1.5 text-[11px] font-bold text-amber-950">
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                              <span>
+                                {exceedsLimit
+                                  ? `Límite superado: su tope configurado es ${currency} ${creditLimit.toFixed(2)}.`
+                                  : `Límite alcanzado: quedará justo en su tope de ${currency} ${creditLimit.toFixed(2)}.`}
+                              </span>
+                            </div>
                           )}
                         </div>
                       );
@@ -1364,6 +1372,9 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
               {paymentType === 'credit' && selectedCreditCustomerId && (() => {
                 const cust = creditCustomers.find(c => c.id === selectedCreditCustomerId);
                 if (!cust) return null;
+                const projected = roundMoney((cust.balance || 0) + subtotal);
+                const limit = roundMoney(cust.creditLimit || 0);
+                const reachesLimit = limit > 0 && projected >= limit;
                 return (
                   <div className="text-xs space-y-1 pt-0.5 text-slate-300">
                     <div className="flex justify-between">
@@ -1372,10 +1383,18 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Saldo posterior:</span>
-                      <span className="font-black text-rose-400">
-                        {currency} {((cust.balance || 0) + subtotal).toFixed(2)}
+                      <span className={`font-black ${reachesLimit ? 'text-amber-400' : 'text-rose-400'}`}>
+                        {currency} {projected.toFixed(2)}
                       </span>
                     </div>
+                    {reachesLimit && (
+                      <div className="mt-1 px-2.5 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[11px] font-bold flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                        <span>
+                          {projected > limit ? 'Supera' : 'Alcanza'} límite ({currency} {limit.toFixed(2)})
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1415,6 +1434,18 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
             </div>
 
             {/* Botón Principal de Confirmación Definitiva */}
+            {(() => {
+              const selectedCreditCust = paymentType === 'credit' && selectedCreditCustomerId
+                ? creditCustomers.find(c => c.id === selectedCreditCustomerId)
+                : null;
+              const creditLimit = roundMoney(selectedCreditCust?.creditLimit || 0);
+              const reachesCreditLimit = Boolean(
+                selectedCreditCust &&
+                creditLimit > 0 &&
+                roundMoney((selectedCreditCust.balance || 0) + subtotal) >= creditLimit
+              );
+
+              return (
             <div className="space-y-2 pt-1">
               <button
                 type="button"
@@ -1423,16 +1454,20 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                 className={`w-full py-4 px-4 rounded-2xl font-black text-sm sm:text-base shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
                   paymentType === 'combined' && !isSplitExact
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:shadow-xl'
+                    : reachesCreditLimit
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/30 hover:shadow-xl'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:shadow-xl'
                 }`}
               >
-                <Check className="w-5 h-5 stroke-[2.5]" />
+                {reachesCreditLimit ? <AlertCircle className="w-5 h-5 stroke-[2.5]" /> : <Check className="w-5 h-5 stroke-[2.5]" />}
                 <span className="text-center">
                   {paymentType === 'combined' && !isSplitExact
                     ? (splitDifference > 0.009 
                         ? `Faltan ${currency} ${splitDifference.toFixed(2)} por cubrir` 
                         : `Monto excede por ${currency} ${Math.abs(splitDifference).toFixed(2)}`)
-                    : `Confirmar y Finalizar Venta (${currency} ${subtotal.toFixed(2)})`}
+                    : reachesCreditLimit
+                      ? `Confirmar Fiao sobre Límite (${currency} ${subtotal.toFixed(2)})`
+                      : `Confirmar y Finalizar Venta (${currency} ${subtotal.toFixed(2)})`}
                 </span>
               </button>
 
@@ -1444,6 +1479,8 @@ export const PosTerminal = ({ onClose, onSaleCompleted }) => {
                 ← Volver al Catálogo y seguir agregando productos
               </button>
             </div>
+              );
+            })()}
           </div>
         </div>
 
