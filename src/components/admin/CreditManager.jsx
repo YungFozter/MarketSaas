@@ -1,34 +1,31 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  BookOpen, 
-  Plus, 
-  Search, 
-  Phone, 
-  Home, 
-  Send, 
-  DollarSign, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
-  Edit3, 
-  History, 
-  CreditCard, 
-  Banknote, 
-  QrCode, 
-  X, 
-  ChevronRight,
-  TrendingDown,
-  TrendingUp,
-  FileText,
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Phone,
+  Home,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Edit3,
+  History,
+  Banknote,
   UserCheck,
-  Percent,
-  ShoppingCart,
   Lock
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { roundMoney } from '../../utils/paymentUtils';
+import { CustomerFormModal } from './credits/CustomerFormModal';
+import { ChargeModal } from './credits/ChargeModal';
+import { PaymentModal } from './credits/PaymentModal';
+import { HistoryModal } from './credits/HistoryModal';
+import { DeleteDebtorModal } from './credits/DeleteDebtorModal';
 import './CreditManager.css';
+
+const PAGE_SIZE = 24;
+const ABOVE_THE_FOLD_CARDS = 6;
 
 const getBoliviaYearMonth = (dateInput = new Date()) => {
   const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
@@ -45,33 +42,31 @@ const getBoliviaYearMonth = (dateInput = new Date()) => {
 };
 
 export const CreditManager = () => {
-  const { 
-    creditCustomers = [], 
-    addCreditCustomer, 
-    updateCreditCustomer, 
-    deleteCreditCustomer, 
-    addCustomerCharge, 
-    addCustomerPayment, 
-    clearCustomerBalance,
+  const {
+    creditCustomers = [],
+    addCreditCustomer,
+    updateCreditCustomer,
+    deleteCreditCustomer,
+    addCustomerCharge,
+    addCustomerPayment,
     storeConfig,
     formatBoliviaDateTime,
     showToast,
-    triggerConfetti,
     isSubscriptionActive
   } = useStore();
 
   const currency = storeConfig?.currencySymbol || 'Bs.';
   const storeName = storeConfig?.name || 'Mi Tienda';
-  const storePhone = storeConfig?.whatsapp || storeConfig?.phone || '';
   const isReadOnlyCredits = isSubscriptionActive === false;
 
-  // Filtros y Búsqueda
+  // Filtros, búsqueda y paginación progresiva
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'debt' | 'clean'
+  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
 
   // Modales
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState(null); // null = nuevo
+  const [editingCustomer, setEditingCustomer] = useState(null);
   const [customerForm, setCustomerForm] = useState({
     name: '',
     phone: '',
@@ -79,7 +74,8 @@ export const CreditManager = () => {
     notes: '',
     creditLimit: '',
     initialBalance: '',
-    initialConcept: ''
+    initialConcept: '',
+    debtMode: 'counter'
   });
 
   const [activeCustomerForHistory, setActiveCustomerForHistory] = useState(null);
@@ -125,10 +121,11 @@ export const CreditManager = () => {
 
   // Lista Filtrada
   const filteredCustomers = useMemo(() => {
+    const q = searchTerm.toLowerCase();
     return creditCustomers.filter(c => {
-      const matchSearch = 
-        (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (c.apartment || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchSearch =
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.apartment || '').toLowerCase().includes(q) ||
         (c.phone || '').includes(searchTerm);
 
       if (!matchSearch) return false;
@@ -138,6 +135,20 @@ export const CreditManager = () => {
       return true;
     });
   }, [creditCustomers, searchTerm, filterStatus]);
+
+  const visibleCustomers = useMemo(() => {
+    return filteredCustomers.slice(0, visibleLimit);
+  }, [filteredCustomers, visibleLimit]);
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    setVisibleLimit(PAGE_SIZE);
+  };
+
+  const handleFilterChange = (status) => {
+    setFilterStatus(status);
+    setVisibleLimit(PAGE_SIZE);
+  };
 
   // Manejo de Formulario de Cliente
   const handleOpenNewCustomer = () => {
@@ -154,7 +165,7 @@ export const CreditManager = () => {
       creditLimit: '',
       initialBalance: '',
       initialConcept: '',
-      debtMode: 'counter' // 'counter' (fiar compra ahora) | 'previous' (saldo libreta) | 'none' (sin deuda inicial)
+      debtMode: 'counter'
     });
     setIsCustomerModalOpen(true);
   };
@@ -176,7 +187,7 @@ export const CreditManager = () => {
 
   const handleQuickAddInitialBalance = (amountToAdd) => {
     const current = parseFloat(customerForm.initialBalance) || 0;
-    const nextVal = (current + amountToAdd).toFixed(2);
+    const nextVal = roundMoney(current + amountToAdd).toFixed(2);
     setCustomerForm(prev => ({
       ...prev,
       initialBalance: nextVal.endsWith('.00') ? String(parseInt(nextVal, 10)) : nextVal
@@ -340,6 +351,17 @@ export const CreditManager = () => {
     }
   };
 
+  const handleConfirmDeleteCustomer = async (customerId) => {
+    if (isSubmittingCredit) return;
+    setIsSubmittingCredit(true);
+    try {
+      await deleteCreditCustomer(customerId);
+      setCustomerToDelete(null);
+    } finally {
+      setIsSubmittingCredit(false);
+    }
+  };
+
   // Enviar Recordatorio Educado por WhatsApp
   const handleSendWhatsAppReminder = (customer) => {
     if (!customer.phone) {
@@ -347,28 +369,29 @@ export const CreditManager = () => {
       return;
     }
 
-    const cleanPhone = customer.phone.replace(/[^\d]/g, '');
+    const cleanPhone = customer.phone.replace(/[^\d]/g, '').replace(/^0+/, '');
+    if (cleanPhone.length < 8) {
+      showToast('El número de teléfono del vecino es incompleto o inválido para WhatsApp.', 'warning');
+      return;
+    }
     const phoneWithCountry = cleanPhone.length === 8 ? `591${cleanPhone}` : cleanPhone;
 
-    // Obtener los últimos consumos que sumen la deuda
     const recentCharges = (customer.transactions || [])
       .filter(tx => tx.type === 'charge')
       .slice(0, 3)
-      .map(tx => `  • ${tx.concept} (${currency} ${tx.amount.toFixed(2)})`)
+      .map(tx => `  • ${tx.concept} (${currency} ${Number(tx.amount || 0).toFixed(2)})`)
       .join('\n');
 
-    const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
-
-    const text = 
+    const text =
       `Hola *${customer.name}*! 👋 Le saludamos cordialmente de *${storeName}*.\n\n` +
       `Le compartimos el resumen de su cuenta de confianza en la tienda a la fecha:\n\n` +
-      `💰 *Saldo pendiente actual:* ${currency} ${customer.balance.toFixed(2)}\n\n` +
+      `💰 *Saldo pendiente actual:* ${currency} ${Number(customer.balance || 0).toFixed(2)}\n\n` +
       (recentCharges ? `📌 *Últimos consumos anotados:*\n${recentCharges}\n\n` : '') +
       `Puede pasar por el minimarket a abonar cuando guste o si prefiere pagar por QR digital, avísenos y con gusto se lo enviamos.\n\n` +
       `¡Muchísimas gracias por su confianza y preferencia de siempre! 😊`;
 
     const waUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank');
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -377,7 +400,7 @@ export const CreditManager = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20">
+            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
@@ -395,7 +418,7 @@ export const CreditManager = () => {
           type="button"
           onClick={handleOpenNewCustomer}
           title={isReadOnlyCredits ? 'Suscripción vencida: renueva tu plan para registrar nuevos deudores' : 'Registrar nuevo vecino en la libreta'}
-          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer ${
+          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 ${
             isReadOnlyCredits
               ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
               : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 hover:shadow-lg active:scale-95'
@@ -420,7 +443,6 @@ export const CreditManager = () => {
 
       {/* Tarjetas KPI de Estado de Cuentas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        {/* Total por Cobrar */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-rose-100 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
             <div>
@@ -445,12 +467,11 @@ export const CreditManager = () => {
           </p>
         </div>
 
-        {/* Deudores Registrados */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-xs font-black uppercase tracking-wider text-indigo-600">Deudores en Libreta</span>
-              <p className="text-[11px] text-slate-500 font-medium">Clientes registrados con cuenta</p>
+              <p className="text-[11px] text-slate-500 font-medium">Cuentas activas de vecinos</p>
             </div>
             <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 shrink-0">
               <UserCheck className="w-4 h-4" />
@@ -459,9 +480,9 @@ export const CreditManager = () => {
           <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-2">
             {creditCustomers.length}
           </p>
-          <p className="text-xs text-slate-500 font-bold mt-1">
+          <p className="text-xs text-slate-500 font-medium mt-1">
             {creditCustomers.length === 0 ? (
-              <span className="font-normal text-slate-400">Sin personas anotadas todavía</span>
+              <span>Aún no has registrado clientes fiados</span>
             ) : (
               <span>
                 <strong className="text-rose-600">{customersWithDebtCount} deben</strong>
@@ -472,7 +493,6 @@ export const CreditManager = () => {
           </p>
         </div>
 
-        {/* Total Cobrado en el Mes */}
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-emerald-100 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
@@ -498,23 +518,22 @@ export const CreditManager = () => {
 
       {/* Barra de Filtros y Buscador */}
       <div className="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Input Buscador */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
-            type="text"
+            type="search"
+            aria-label="Buscar vecino en libreta de deudas"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Buscar por nombre, departamento o teléfono..."
             className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
           />
         </div>
 
-        {/* Filtros Píldora */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
           <button
             type="button"
-            onClick={() => setFilterStatus('all')}
+            onClick={() => handleFilterChange('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterStatus === 'all'
                 ? 'bg-slate-900 text-white shadow-xs'
@@ -526,7 +545,7 @@ export const CreditManager = () => {
 
           <button
             type="button"
-            onClick={() => setFilterStatus('debt')}
+            onClick={() => handleFilterChange('debt')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterStatus === 'debt'
                 ? 'bg-rose-600 text-white shadow-xs'
@@ -538,7 +557,7 @@ export const CreditManager = () => {
 
           <button
             type="button"
-            onClick={() => setFilterStatus('clean')}
+            onClick={() => handleFilterChange('clean')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
               filterStatus === 'clean'
                 ? 'bg-emerald-600 text-white shadow-xs'
@@ -560,7 +579,7 @@ export const CreditManager = () => {
             {searchTerm ? 'No se encontraron vecinos con ese filtro' : 'Aún no tienes vecinos en tu libreta de cuentas'}
           </h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Registra a tus clientes habituales para anotarles compras "al fiao", registrar abonos de dinero y recordarles sus cuentas por WhatsApp de forma organizada.
+            Registra a tus clientes habituales para anotarles compras &ldquo;al fiao&rdquo;, registrar abonos de dinero y recordarles sus cuentas por WhatsApp de forma organizada.
           </p>
           <button
             type="button"
@@ -572,1026 +591,222 @@ export const CreditManager = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCustomers.map(customer => {
-            const hasDebt = (customer.balance || 0) > 0;
-            const limitPercentage = customer.creditLimit > 0 
-              ? Math.min(100, Math.round((customer.balance / customer.creditLimit) * 100))
-              : null;
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleCustomers.map((customer, idx) => {
+              const hasDebt = (customer.balance || 0) > 0;
+              const limitPercentage = customer.creditLimit > 0
+                ? Math.min(100, Math.round((customer.balance / customer.creditLimit) * 100))
+                : null;
+              const isBelowFold = idx >= ABOVE_THE_FOLD_CARDS;
 
-            return (
-              <div 
-                key={customer.id} 
-                className={`bg-white rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
-                  hasDebt ? 'border-rose-200/80 hover:border-rose-300' : 'border-slate-200 hover:border-indigo-200'
-                }`}
-              >
-                {/* Parte Superior de la Tarjeta */}
-                <div className="p-4 sm:p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
-                        {customer.name}
-                      </h3>
-                      {customer.apartment && (
-                        <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-                          <Home className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{customer.apartment}</span>
-                        </p>
-                      )}
-                      {customer.phone && (
-                        <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
-                          <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{customer.phone}</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Botones rápidos de editar y borrar */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEditCustomer(customer)}
-                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                        title="Editar datos"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCustomerToDelete(customer)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        title="Eliminar cuenta de deudor"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Notas Especiales */}
-                  {customer.notes && (
-                    <p className="text-xs text-slate-600 bg-slate-50 p-2 rounded-xl italic border border-slate-100 line-clamp-2">
-                      "{customer.notes}"
-                    </p>
-                  )}
-
-                  {/* Saldo y Barra de Límite */}
-                  <div className={`p-3 rounded-xl border ${hasDebt ? 'bg-rose-50/70 border-rose-100' : 'bg-emerald-50/70 border-emerald-100'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-[11px] font-black uppercase tracking-wider ${hasDebt ? 'text-rose-700' : 'text-emerald-700'}`}>
-                        {hasDebt ? 'Saldo Pendiente' : 'Estado'}
-                      </span>
-                      <span className={`font-black text-base sm:text-lg ${hasDebt ? 'text-rose-600' : 'text-emerald-700'}`}>
-                        {currency} {customer.balance.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* Barra de progreso de límite de crédito */}
-                    {customer.creditLimit > 0 && (
-                      <div className="mt-2 space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
-                          <span>Límite de crédito: {currency} {customer.creditLimit.toFixed(2)}</span>
-                          <span className={limitPercentage >= 90 ? 'text-rose-600 font-black' : ''}>{limitPercentage}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all ${
-                              limitPercentage >= 90 ? 'bg-rose-600' : limitPercentage >= 60 ? 'bg-amber-500' : 'bg-indigo-600'
-                            }`}
-                            style={{ width: `${limitPercentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Acciones de la Tarjeta */}
-                <div className="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
-                  {/* Botón Cobrar WhatsApp */}
-                  {hasDebt && customer.phone ? (
-                    <button
-                      type="button"
-                      onClick={() => handleSendWhatsAppReminder(customer)}
-                      className="px-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 col-span-2"
-                    >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Cobrar por WhatsApp</span>
-                    </button>
-                  ) : null}
-
-                  {/* Botón Abonar */}
-                  <button
-                    type="button"
-                    onClick={() => handleOpenPaymentModal(customer)}
-                    className={`px-2.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      !hasDebt ? 'col-span-1' : ''
-                    }`}
-                  >
-                    <Banknote className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Abonar</span>
-                  </button>
-
-                  {/* Botón Anotar Cargo / Fiao */}
-                  <button
-                    type="button"
-                    onClick={() => handleOpenChargeModal(customer)}
-                    title={isReadOnlyCredits ? 'Suscripción vencida: no se pueden anotar nuevos fiados' : 'Anotar nueva compra fiada'}
-                    className={`px-2.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      isReadOnlyCredits
-                        ? 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/70'
-                        : 'bg-indigo-50 border-indigo-200/70 hover:bg-indigo-100 text-indigo-800'
-                    }`}
-                  >
-                    {isReadOnlyCredits ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    <span>Anotar Fiao</span>
-                  </button>
-
-                  {/* Botón Ver Libreta / Historial */}
-                  <button
-                    type="button"
-                    onClick={() => setActiveCustomerForHistory(customer)}
-                    className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer col-span-2 mt-0.5"
-                  >
-                    <History className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Ver libreta ({customer.transactions?.length || 0} movimientos)</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL: NUEVO / EDITAR VECINO A CRÉDITO */}
-      {/* ========================================================================= */}
-      {isCustomerModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 my-auto max-h-[94vh] flex flex-col">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 rounded-2xl bg-indigo-100 text-indigo-700 shadow-2xs">
-                  <UserCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-base text-slate-900 leading-tight">
-                    {editingCustomer ? 'Editar Datos del Deudor' : 'Registrar Nuevo Deudor'}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    {editingCustomer ? 'Modifica los datos personales y límites' : 'Crea su cuenta y anota si te pide fiado en este momento'}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCustomerModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/50 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveCustomer} className="p-5 space-y-4 overflow-y-auto">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customerForm.name}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Ej. Don Carlos Mendoza, Lic. Carla Ortiz..."
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Teléfono / WhatsApp
-                  </label>
-                  <input
-                    type="tel"
-                    value={customerForm.phone}
-                    onChange={(e) => setCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Ej. 77123456"
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Torre / Depto / Casa
-                  </label>
-                  <input
-                    type="text"
-                    value={customerForm.apartment}
-                    onChange={(e) => setCustomerForm(prev => ({ ...prev, apartment: e.target.value }))}
-                    placeholder="Ej. Torre B - 402"
-                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  ¿Hasta cuánto le permites fiar? (Límite máximo en {currency} - Opcional)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={customerForm.creditLimit}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, creditLimit: e.target.value }))}
-                  placeholder="Ej. 300 (déjalo vacío o en 0 si no tiene tope)"
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-                <span className="text-[11px] text-slate-500 mt-1 block">
-                  💡 El sistema te avisará automáticamente cuando sus compras fiadas alcancen este monto.
-                </span>
-              </div>
-
-              {/* Si es nuevo deudor: Fiar compra en este momento o Deuda anterior */}
-              {!editingCustomer && (
-                <div className="p-3.5 sm:p-4 bg-slate-50/90 border border-slate-200 rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <DollarSign className="w-4 h-4 text-indigo-600" />
-                      ¿Deseas registrar una deuda ahora mismo?
-                    </span>
-                  </div>
-
-                  {/* Selector de modo: Fiar ahora vs Deuda de libreta vs Sin deuda */}
-                  <div className="grid grid-cols-3 gap-1 p-1 bg-white border border-slate-200 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => setCustomerForm(prev => ({ ...prev, debtMode: 'counter' }))}
-                      className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
-                        customerForm.debtMode === 'counter'
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Fiar compra ahora</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setCustomerForm(prev => ({ ...prev, debtMode: 'previous' }))}
-                      className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
-                        customerForm.debtMode === 'previous'
-                          ? 'bg-amber-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
-                    >
-                      <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Deuda de libreta</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setCustomerForm(prev => ({ ...prev, debtMode: 'none', initialBalance: '', initialConcept: '' }))}
-                      className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
-                        customerForm.debtMode === 'none'
-                          ? 'bg-slate-700 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
-                    >
-                      <UserCheck className="w-3.5 h-3.5 shrink-0" />
-                      <span className="truncate">Sin deuda</span>
-                    </button>
-                  </div>
-
-                  {/* MODO 1: FIAR COMPRA DE ESTE MOMENTO (EN MOSTRADOR) */}
-                  {customerForm.debtMode === 'counter' && (
-                    <div className="bg-indigo-50/80 border border-indigo-200/90 rounded-xl p-3.5 space-y-3">
-                      <div>
-                        <span className="text-xs font-extrabold text-indigo-950 block">
-                          🛒 Compra fiada en este momento (Mostrador)
-                        </span>
-                        <p className="text-[11px] text-indigo-800 leading-tight mt-0.5">
-                          Si el vecino está en la tienda pidiendo fiado ahorita, anota aquí el total y los productos.
-                        </p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-extrabold text-indigo-950">
-                            Monto de la compra a fiar ({currency}) *
-                          </label>
-                          {customerForm.initialBalance && (
-                            <button
-                              type="button"
-                              onClick={() => setCustomerForm(prev => ({ ...prev, initialBalance: '' }))}
-                              className="text-[10px] text-indigo-600 hover:text-indigo-800 font-bold cursor-pointer"
-                            >
-                              Borrar monto
-                            </button>
-                          )}
-                        </div>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-indigo-500 font-extrabold text-sm">
-                            {currency}
-                          </div>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={customerForm.initialBalance}
-                            onChange={(e) => setCustomerForm(prev => ({ ...prev, initialBalance: e.target.value }))}
-                            placeholder="0.00"
-                            className="w-full pl-11 pr-3 py-2 text-base font-black rounded-xl bg-white border border-indigo-300 text-indigo-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-                          />
-                        </div>
-
-                        {/* Botones de suma rápida para mostrador */}
-                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                          <span className="text-[10px] font-bold text-indigo-800">Suma rápida:</span>
-                          {[5, 10, 20, 50, 100].map((quickAmt) => (
-                            <button
-                              key={quickAmt}
-                              type="button"
-                              onClick={() => handleQuickAddInitialBalance(quickAmt)}
-                              className="px-2 py-1 bg-white hover:bg-indigo-100 border border-indigo-200 text-indigo-800 font-black text-[11px] rounded-lg transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
-                            >
-                              +{quickAmt}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold text-indigo-950 block mb-1">
-                          ¿Qué productos se lleva? (Opcional)
-                        </label>
-                        <input
-                          type="text"
-                          value={customerForm.initialConcept}
-                          onChange={(e) => setCustomerForm(prev => ({ ...prev, initialConcept: e.target.value }))}
-                          placeholder="Ej. 2 leches Pil, 1 aceite, 10 panes..."
-                          className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-indigo-200 focus:outline-none focus:border-indigo-500 text-slate-800 font-medium"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-[11px] text-indigo-800 font-medium bg-white/80 px-2.5 py-1.5 rounded-lg border border-indigo-100">
-                        <span>💡</span>
-                        <span>Se creará el deudor y quedará registrada esta compra a cuenta en su libreta con fecha y hora actual.</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MODO 2: DEUDA PREVIA DE LIBRETA */}
-                  {customerForm.debtMode === 'previous' && (
-                    <div className="bg-amber-50/90 border border-amber-200 rounded-xl p-3.5 space-y-2.5">
-                      <div>
-                        <span className="text-xs font-bold text-amber-950 block">
-                          📒 Saldo acumulado anterior (Libreta de papel)
-                        </span>
-                        <p className="text-[11px] text-amber-800 leading-tight mt-0.5">
-                          Si viene de tu cuaderno anterior o días pasados, anota aquí con cuánto empieza su saldo.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div>
-                          <label className="text-[11px] font-bold text-amber-950 block mb-1">
-                            Monto que ya debe ({currency})
-                          </label>
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            value={customerForm.initialBalance}
-                            onChange={(e) => setCustomerForm(prev => ({ ...prev, initialBalance: e.target.value }))}
-                            placeholder="Ej. 120.00"
-                            className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-amber-300 focus:outline-none focus:border-amber-500 font-bold text-amber-950"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] font-bold text-amber-950 block mb-1">
-                            Motivo o detalle (Opcional)
-                          </label>
-                          <input
-                            type="text"
-                            value={customerForm.initialConcept}
-                            onChange={(e) => setCustomerForm(prev => ({ ...prev, initialConcept: e.target.value }))}
-                            placeholder="Ej. Libreta vieja, víveres..."
-                            className="w-full px-3 py-2 text-xs rounded-xl bg-white border border-amber-300 focus:outline-none focus:border-amber-500 font-medium text-slate-800"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MODO 3: SIN DEUDA INICIAL */}
-                  {customerForm.debtMode === 'none' && (
-                    <div className="p-3 bg-slate-100/90 border border-slate-200 text-slate-600 rounded-xl text-xs flex items-center gap-2">
-                      <span className="text-base">ℹ️</span>
-                      <span>El vecino se registrará con saldo en <strong>0.00 {currency}</strong>. Podrás anotarle compras fiadas más adelante desde el botón &ldquo;Anotar Fiao&rdquo;.</span>
-                    </div>
-                  )}
-
-                  {customerForm.debtMode !== 'none' &&
-                    roundMoney(parseFloat(customerForm.creditLimit) || 0) > 0 &&
-                    roundMoney(parseFloat(customerForm.initialBalance) || 0) >= roundMoney(parseFloat(customerForm.creditLimit) || 0) && (
-                    <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-xl text-[11px] text-amber-950 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                      <span>
-                        <strong>Aviso:</strong> El saldo inicial ({currency} {roundMoney(parseFloat(customerForm.initialBalance) || 0).toFixed(2)}) alcanza o supera el límite de crédito configurado ({currency} {roundMoney(parseFloat(customerForm.creditLimit) || 0).toFixed(2)}).
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Notas Especiales
-                </label>
-                <textarea
-                  rows="2"
-                  value={customerForm.notes}
-                  onChange={(e) => setCustomerForm(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Ej. Paga cada quincena, cobra el sueldo los días 30..."
-                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCustomerModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingCredit}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/20 cursor-pointer flex items-center gap-2 transition-all disabled:opacity-60"
-                >
-                  {isSubmittingCredit ? (
-                    'Guardando...'
-                  ) : editingCustomer ? (
-                    'Guardar Cambios'
-                  ) : customerForm.debtMode !== 'none' && (parseFloat(customerForm.initialBalance) || 0) > 0 ? (
-                    <>
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>Registrar y Fiar {currency} {(parseFloat(customerForm.initialBalance) || 0).toFixed(2)}</span>
-                    </>
-                  ) : (
-                    <span>Registrar Deudor</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL: ANOTAR CARGO MANUAL / FIAO */}
-      {/* ========================================================================= */}
-      {activeCustomerForCharge && (() => {
-        const targetCharge = currentCustomerForCharge || activeCustomerForCharge;
-        const chargeAmount = roundMoney(Math.max(0, parseFloat(chargeForm.amount) || 0));
-        const currentBal = roundMoney(targetCharge.balance || 0);
-        const projectedBalance = roundMoney(currentBal + chargeAmount);
-        const creditLimit = roundMoney(targetCharge.creditLimit || 0);
-        const willReachLimit = creditLimit > 0 && projectedBalance >= creditLimit;
-        const alreadyOverLimit = creditLimit > 0 && currentBal >= creditLimit;
-
-        return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-50/50">
-              <div>
-                <h3 className="font-black text-base text-slate-900">
-                  Anotar Compra a Cuenta
-                </h3>
-                <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-indigo-700">{targetCharge.name}</strong> (Saldo actual: {currency} {currentBal.toFixed(2)})
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveCustomerForCharge(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/50 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmCharge} className="p-5 space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Monto a Anotar ({currency}) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                    {currency}
-                  </span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    autoFocus
-                    value={chargeForm.amount}
-                    onChange={(e) => setChargeForm(prev => ({ ...prev, amount: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full pl-10 pr-4 py-3 text-lg font-black rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Detalle de Productos / Concepto *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={chargeForm.concept}
-                  onChange={(e) => setChargeForm(prev => ({ ...prev, concept: e.target.value }))}
-                  placeholder="Ej. 2 leches Pil, 1 maple de huevos, 5 panes..."
-                  className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-bold">Nuevo saldo resultante:</span>
-                <span className={`font-black text-sm ${willReachLimit ? 'text-rose-700' : 'text-rose-600'}`}>
-                  {currency} {projectedBalance.toFixed(2)}
-                </span>
-              </div>
-
-              {(willReachLimit || alreadyOverLimit) && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-2 text-xs text-amber-950">
-                  <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <div className="leading-snug">
-                    <strong className="font-black block">
-                      {projectedBalance > creditLimit ? 'Límite de crédito superado' : 'Límite de crédito alcanzado'}
-                    </strong>
-                    <span>
-                      Su límite configurado es <strong>{currency} {creditLimit.toFixed(2)}</strong> y quedará con{' '}
-                      <strong>{currency} {projectedBalance.toFixed(2)}</strong>.
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomerForCharge(null)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingCredit}
-                  className={`px-5 py-2.5 rounded-xl text-white font-extrabold text-xs shadow-md cursor-pointer disabled:opacity-60 ${
-                    willReachLimit
-                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20'
-                      : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+              return (
+                <div
+                  key={customer.id}
+                  className={`${isBelowFold ? 'credit-card-deferred ' : ''}bg-white rounded-2xl border transition-colors duration-200 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md ${
+                    hasDebt ? 'border-rose-200/80 hover:border-rose-300' : 'border-slate-200 hover:border-indigo-200'
                   }`}
                 >
-                  {isSubmittingCredit
-                    ? 'Guardando...'
-                    : willReachLimit
-                      ? '⚠️ Confirmar Fiao (Sobre Límite)'
-                      : '+ Anotar a su Cuenta'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        );
-      })()}
-
-      {/* ========================================================================= */}
-      {/* MODAL: REGISTRAR ABONO / PAGO */}
-      {/* ========================================================================= */}
-      {activeCustomerForPayment && (() => {
-        const targetPayment = currentCustomerForPayment || activeCustomerForPayment;
-        const currentDebt = roundMoney(targetPayment.balance || 0);
-        const rawPaymentAmount = roundMoney(Math.max(0, parseFloat(paymentForm.amount) || 0));
-        const appliedPayment = currentDebt > 0 ? Math.min(rawPaymentAmount, currentDebt) : 0;
-        const overpaymentChange = currentDebt > 0 && rawPaymentAmount > currentDebt
-          ? roundMoney(rawPaymentAmount - currentDebt)
-          : 0;
-        const remainingBalance = Math.max(0, roundMoney(currentDebt - appliedPayment));
-
-        return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-emerald-50/50">
-              <div>
-                <h3 className="font-black text-base text-slate-900">
-                  Registrar Abono de Dinero
-                </h3>
-                <p className="text-xs text-slate-500 font-semibold mt-0.5">
-                  Vecino: <strong className="text-emerald-700">{targetPayment.name}</strong>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveCustomerForPayment(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/50 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmPayment} className="p-5 space-y-4">
-              {/* Deuda Actual Destacada */}
-              <div className="p-3.5 bg-slate-900 text-white rounded-2xl flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Deuda Pendiente</span>
-                  <span className="text-xl font-black text-rose-400">
-                    {currency} {currentDebt.toFixed(2)}
-                  </span>
-                </div>
-                {currentDebt > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPaymentForm(prev => ({ ...prev, amount: String(currentDebt) }))}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-[11px] cursor-pointer shadow-xs"
-                  >
-                    Saldar Total
-                  </button>
-                )}
-              </div>
-
-              {currentDebt <= 0 ? (
-                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-900 flex items-center gap-2 font-semibold">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Este vecino ya está al día y no tiene deuda pendiente para abonar.</span>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Monto que está Abonando ({currency}) *
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-black text-slate-400 text-sm">
-                        {currency}
-                      </span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        required
-                        autoFocus
-                        value={paymentForm.amount}
-                        onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
-                        placeholder="0.00"
-                        className="w-full pl-10 pr-4 py-3 text-lg font-black rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Método de Cobro */}
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
-                      ¿Cómo te está pagando el vecino?
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'cash' }))}
-                        className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                          paymentForm.paymentMethod === 'cash'
-                            ? 'border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20'
-                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <Banknote className="w-4 h-4 text-emerald-600" />
-                        <span>En Efectivo</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setPaymentForm(prev => ({ ...prev, paymentMethod: 'qr' }))}
-                        className={`p-3 rounded-xl border text-xs font-extrabold flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                          paymentForm.paymentMethod === 'qr'
-                            ? 'border-cyan-500 bg-cyan-50 text-cyan-800 ring-2 ring-cyan-500/20'
-                            : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <QrCode className="w-4 h-4 text-cyan-600" />
-                        <span>Por QR Digital</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Nota / Observación (Opcional)
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentForm.note}
-                      onChange={(e) => setPaymentForm(prev => ({ ...prev, note: e.target.value }))}
-                      placeholder="Ej. Dejó 50 Bs en billete, transferido por BCP..."
-                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-
-                  {overpaymentChange > 0 && (
-                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-950 space-y-1">
-                      <div className="font-black flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                        <span>Entregado supera la deuda actual</span>
+                  <div className="p-4 sm:p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug truncate">
+                          {customer.name}
+                        </h3>
+                        {customer.apartment && (
+                          <p className="text-xs text-slate-500 flex items-center gap-1 font-medium truncate">
+                            <Home className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{customer.apartment}</span>
+                          </p>
+                        )}
+                        {customer.phone && (
+                          <p className="text-xs text-slate-500 flex items-center gap-1 font-medium">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{customer.phone}</span>
+                          </p>
+                        )}
                       </div>
-                      <p className="leading-snug">
-                        Se aplicarán <strong>{currency} {appliedPayment.toFixed(2)}</strong> para saldar la cuenta y debes devolver{' '}
-                        <strong>{currency} {overpaymentChange.toFixed(2)}</strong> de cambio.
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditCustomer(customer)}
+                          aria-label={`Editar datos de ${customer.name}`}
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                          title="Editar datos"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomerToDelete(customer)}
+                          aria-label={`Eliminar cuenta de ${customer.name}`}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar cuenta de deudor"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {customer.notes && (
+                      <p className="text-xs text-slate-600 bg-slate-50 p-2 rounded-xl italic border border-slate-100 line-clamp-2">
+                        &ldquo;{customer.notes}&rdquo;
                       </p>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Saldo Restante */}
-                  <div className="p-3 bg-slate-50 rounded-2xl flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-bold">Saldo restante tras abono:</span>
-                    <span className="font-black text-emerald-700 text-sm">
-                      {currency} {remainingBalance.toFixed(2)}
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomerForPayment(null)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={currentDebt <= 0 || isSubmittingCredit}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmittingCredit ? 'Guardando...' : '✓ Confirmar Abono Recibido'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        );
-      })()}
-
-      {/* ========================================================================= */}
-      {/* MODAL: HISTORIAL Y LIBRETA COMPLETA DE CUENTAS */}
-      {/* ========================================================================= */}
-      {activeCustomerForHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-100">
-            {/* Header del Historial */}
-            <div className="p-5 border-b border-slate-200/80 flex items-center justify-between bg-slate-50/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-black text-base text-slate-900">
-                    Libreta de Cuentas: {(currentCustomerForHistory || activeCustomerForHistory).name}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {(currentCustomerForHistory || activeCustomerForHistory).apartment || 'Vecino'} {(currentCustomerForHistory || activeCustomerForHistory).phone && `• Tel: ${(currentCustomerForHistory || activeCustomerForHistory).phone}`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Saldo Actual</span>
-                  <span className={`text-base font-black ${(currentCustomerForHistory || activeCustomerForHistory).balance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {currency} {(currentCustomerForHistory || activeCustomerForHistory).balance.toFixed(2)}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomerForHistory(null)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200/50 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Lista Cronológica de Movimientos */}
-            <div className="p-4 sm:p-6 overflow-y-auto space-y-3 flex-1">
-              {(!(currentCustomerForHistory || activeCustomerForHistory).transactions || (currentCustomerForHistory || activeCustomerForHistory).transactions.length === 0) ? (
-                <div className="text-center py-12 text-slate-400 space-y-2">
-                  <Clock className="w-8 h-8 mx-auto text-slate-300" />
-                  <p className="font-bold text-xs">No hay movimientos registrados en la libreta todavía.</p>
-                </div>
-              ) : (
-                <div className="space-y-2.5">
-                  {(currentCustomerForHistory || activeCustomerForHistory).transactions.map((tx, idx) => {
-                    const isCharge = tx.type === 'charge';
-
-                    return (
-                      <div
-                        key={tx.id || idx}
-                        className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                          isCharge 
-                            ? 'bg-rose-50/40 border-rose-100' 
-                            : 'bg-emerald-50/40 border-emerald-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-xl shrink-0 ${isCharge ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {isCharge ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                          </div>
-
-                          <div className="space-y-0.5">
-                            <p className="font-extrabold text-xs sm:text-sm text-slate-900 leading-tight">
-                              {tx.concept}
-                            </p>
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
-                              <span>{formatBoliviaDateTime(tx.date)}</span>
-                              {!isCharge && (
-                                <span className="px-1.5 py-0.5 bg-white rounded border text-[10px] font-bold text-slate-600">
-                                  {tx.paymentMethod === 'qr' ? 'QR' : 'Efectivo'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <span className={`font-black text-sm sm:text-base block ${isCharge ? 'text-rose-600' : 'text-emerald-700'}`}>
-                            {isCharge ? `+${currency} ${tx.amount.toFixed(2)}` : `-${currency} ${tx.amount.toFixed(2)}`}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-bold block">
-                            Saldo: {currency} {tx.balanceAfter.toFixed(2)}
-                          </span>
-                        </div>
+                    <div className={`p-3 rounded-xl border ${hasDebt ? 'bg-rose-50/70 border-rose-100' : 'bg-emerald-50/70 border-emerald-100'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[11px] font-black uppercase tracking-wider ${hasDebt ? 'text-rose-700' : 'text-emerald-700'}`}>
+                          {hasDebt ? 'Saldo Pendiente' : 'Estado'}
+                        </span>
+                        <span className={`font-black text-base sm:text-lg ${hasDebt ? 'text-rose-600' : 'text-emerald-700'}`}>
+                          {currency} {Number(customer.balance || 0).toFixed(2)}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
-            {/* Footer con acciones */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
+                      {customer.creditLimit > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
+                            <span>Límite de crédito: {currency} {Number(customer.creditLimit).toFixed(2)}</span>
+                            <span className={limitPercentage >= 90 ? 'text-rose-600 font-black' : ''}>{limitPercentage}%</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-200/80 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                limitPercentage >= 90 ? 'bg-rose-600' : limitPercentage >= 60 ? 'bg-amber-500' : 'bg-indigo-600'
+                              }`}
+                              style={{ width: `${limitPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50/80 border-t border-slate-100 grid grid-cols-2 gap-2">
+                    {hasDebt && customer.phone ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSendWhatsAppReminder(customer)}
+                        className="px-2.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 col-span-2"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Cobrar por WhatsApp</span>
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPaymentModal(customer)}
+                      className="px-2.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Abonar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenChargeModal(customer)}
+                      title={isReadOnlyCredits ? 'Suscripción vencida: no se pueden anotar nuevos fiados' : 'Anotar nueva compra fiada'}
+                      className={`px-2.5 py-2 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        isReadOnlyCredits
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200/70'
+                          : 'bg-indigo-50 border-indigo-200/70 hover:bg-indigo-100 text-indigo-800'
+                      }`}
+                    >
+                      {isReadOnlyCredits ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      <span>Anotar Fiao</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveCustomerForHistory(customer)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer col-span-2 mt-0.5"
+                    >
+                      <History className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Ver libreta ({customer.transactions?.length || 0} movimientos)</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredCustomers.length > visibleLimit && (
+            <div className="flex justify-center pt-1">
               <button
                 type="button"
-                onClick={() => {
-                  if (isReadOnlyCredits) {
-                    showToast('Tu suscripción venció. Renueva tu plan para anotar nuevos fiados.', 'warning');
-                    return;
-                  }
-                  const cust = currentCustomerForHistory || activeCustomerForHistory;
-                  setActiveCustomerForHistory(null);
-                  handleOpenChargeModal(cust);
-                }}
-                className={`px-3.5 py-2 rounded-xl border font-extrabold text-xs flex items-center gap-1.5 cursor-pointer ${
-                  isReadOnlyCredits
-                    ? 'bg-slate-100 border-slate-200 text-slate-400'
-                    : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                }`}
+                onClick={() => setVisibleLimit(prev => prev + PAGE_SIZE)}
+                className="px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-2xs cursor-pointer transition-colors"
               >
-                {isReadOnlyCredits ? <Lock className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                <span>+ Anotar Compra</span>
+                Mostrar {Math.min(PAGE_SIZE, filteredCustomers.length - visibleLimit)} vecinos más (quedan {filteredCustomers.length - visibleLimit})
               </button>
-
-              <div className="flex items-center gap-2">
-                {(currentCustomerForHistory || activeCustomerForHistory).balance > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const cust = currentCustomerForHistory || activeCustomerForHistory;
-                      setActiveCustomerForHistory(null);
-                      handleOpenPaymentModal(cust);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                  >
-                    <Banknote className="w-3.5 h-3.5" />
-                    <span>Abonar Dinero</span>
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => setActiveCustomerForHistory(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: CONFIRMACIÓN ELEGANTE DE ELIMINACIÓN DE DEUDOR                      */}
-      {/* ========================================================================= */}
-      {customerToDelete && (
-        <div 
-          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fadeIn"
-          onClick={() => setCustomerToDelete(null)}
-        >
-          <div 
-            className="bg-white rounded-3xl w-full max-w-sm sm:max-w-md shadow-2xl overflow-hidden border border-slate-100 p-5 sm:p-6 text-center space-y-4 animate-fadeIn"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Icono de advertencia / eliminación */}
-            <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center justify-center mx-auto shadow-xs">
-              <Trash2 className="w-7 h-7" />
-            </div>
+      {/* Modales Nativos Modulares (<dialog>) */}
+      <CustomerFormModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        editingCustomer={editingCustomer}
+        customerForm={customerForm}
+        setCustomerForm={setCustomerForm}
+        handleQuickAddInitialBalance={handleQuickAddInitialBalance}
+        onSubmit={handleSaveCustomer}
+        isSubmitting={isSubmittingCredit}
+        currency={currency}
+      />
 
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                ¿Eliminar cuenta de deudor?
-              </h3>
-              <p className="text-xs text-slate-500">
-                Esta acción no se puede deshacer y removerá la ficha del cliente de la libreta.
-              </p>
-            </div>
+      <ChargeModal
+        customer={currentCustomerForCharge}
+        onClose={() => setActiveCustomerForCharge(null)}
+        chargeForm={chargeForm}
+        setChargeForm={setChargeForm}
+        onSubmit={handleConfirmCharge}
+        isSubmitting={isSubmittingCredit}
+        currency={currency}
+      />
 
-            {/* Ficha Resumen del Deudor */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 text-left space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-extrabold text-sm text-slate-900 truncate">
-                    {customerToDelete.name}
-                  </p>
-                  {customerToDelete.phone && (
-                    <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3" />
-                      <span>{customerToDelete.phone}</span>
-                    </p>
-                  )}
-                </div>
-                {customerToDelete.apartment && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 shrink-0">
-                    {customerToDelete.apartment}
-                  </span>
-                )}
-              </div>
+      <PaymentModal
+        customer={currentCustomerForPayment}
+        onClose={() => setActiveCustomerForPayment(null)}
+        paymentForm={paymentForm}
+        setPaymentForm={setPaymentForm}
+        onSubmit={handleConfirmPayment}
+        isSubmitting={isSubmittingCredit}
+        currency={currency}
+      />
 
-              <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-200/60">
-                <span className="text-slate-500 font-medium">Saldo en cuenta:</span>
-                <span className={`font-black ${customerToDelete.balance > 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
-                  {currency} {Number(customerToDelete.balance || 0).toFixed(2)}
-                </span>
-              </div>
-            </div>
+      <HistoryModal
+        customer={currentCustomerForHistory}
+        onClose={() => setActiveCustomerForHistory(null)}
+        onOpenCharge={(cust) => {
+          if (isReadOnlyCredits) {
+            showToast('Tu suscripción venció. Renueva tu plan para anotar nuevos fiados.', 'warning');
+            return;
+          }
+          setActiveCustomerForHistory(null);
+          handleOpenChargeModal(cust);
+        }}
+        onOpenPayment={(cust) => {
+          setActiveCustomerForHistory(null);
+          handleOpenPaymentModal(cust);
+        }}
+        isReadOnlyCredits={isReadOnlyCredits}
+        formatBoliviaDateTime={formatBoliviaDateTime}
+        currency={currency}
+      />
 
-            {/* Alerta si tiene deuda pendiente */}
-            {customerToDelete.balance > 0 && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-left flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-rose-900 font-medium leading-tight">
-                  <strong>Atención:</strong> Este deudor tiene una deuda acumulada de <strong>{currency} {customerToDelete.balance.toFixed(2)}</strong>. Si eliminas su cuenta, perderás el registro de cobro y sus movimientos.
-                </p>
-              </div>
-            )}
-
-            {/* Botones de acción */}
-            <div className="flex items-center gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setCustomerToDelete(null)}
-                className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                disabled={isSubmittingCredit}
-                onClick={async () => {
-                  if (isSubmittingCredit) return;
-                  setIsSubmittingCredit(true);
-                  try {
-                    await deleteCreditCustomer(customerToDelete.id);
-                    setCustomerToDelete(null);
-                  } finally {
-                    setIsSubmittingCredit(false);
-                  }
-                }}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-md shadow-rose-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-60"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>{isSubmittingCredit ? 'Eliminando...' : 'Sí, Eliminar'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteDebtorModal
+        customer={customerToDelete}
+        onClose={() => setCustomerToDelete(null)}
+        onConfirmDelete={handleConfirmDeleteCustomer}
+        isSubmitting={isSubmittingCredit}
+        currency={currency}
+      />
     </div>
   );
 };

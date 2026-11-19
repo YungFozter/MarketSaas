@@ -14,3 +14,30 @@
     transform: translateY(0);
   }
 }
+
+/* Native top-layer modal dialog: scroll containment without mutating html/body overflow */
+dialog.credit-dialog[open] {
+  margin: auto;
+  overscroll-behavior: contain;
+}
+
+dialog.credit-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(15, 23, 42, 0.62);
+}
+
+dialog.credit-dialog.credit-dialog--dark::backdrop {
+  background-color: rgba(2, 6, 23, 0.78);
+}
+
+/* Safe-area spacing at bottom of modal footers on mobile screens */
+.credit-modal-footer {
+  padding-bottom: max(0.875rem, env(safe-area-inset-bottom));
+}
+
+/* Defer layout/paint for debtor cards strictly below the initial fold */
+.credit-card-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto none auto 280px;
+}
