@@ -809,8 +809,14 @@ export const AdminHome = ({ onOpenAuthModal }) => {
     window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // Modificar stock inline para el Bento de Inventario Exprés
+  // Modificar stock inline para el Bento de Inventario Exprés (bloqueado si expiró la suscripción)
   const handleQuickStockChange = (productId, delta) => {
+    if (!isSubscriptionActive) {
+      setBlockedFeatureName('Edición de Stock e Inventario');
+      setBlockedVariant('expired');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     const prod = products.find(p => p.id === productId);
     if (!prod) return;
     const currentStock = (prod.stock !== 'Sin definir' && prod.stock != null && !isNaN(parseInt(prod.stock, 10)))
@@ -1192,19 +1198,37 @@ export const AdminHome = ({ onOpenAuthModal }) => {
                 <div className="space-y-1.5 animate-in fade-in duration-200">
                   {/* Botón Difusión y Marketing Vecinal */}
                   <button
-                    onClick={() => setIsShareModalOpen(true)}
+                    onClick={() => {
+                      if (!isSubscriptionActive) {
+                        setBlockedFeatureName('Marketing Vecinal');
+                        setBlockedVariant('expired');
+                        setIsBlockedModalOpen(true);
+                      } else {
+                        setIsShareModalOpen(true);
+                      }
+                    }}
                     className={`flex items-center justify-between w-full py-2 px-2.5 rounded-xl border font-bold text-xs transition-all cursor-pointer shadow-2xs group ${
-                      isProPlan 
-                        ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
-                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
+                      !isSubscriptionActive
+                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                        : isProPlan 
+                          ? 'bg-amber-50/80 hover:bg-amber-100/90 text-amber-950 border-amber-300' 
+                          : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
                     }`}
-                    title="Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket"
+                    title={!isSubscriptionActive ? 'Función bloqueada por suscripción vencida' : 'Campañas de difusión vecinal y plantillas de WhatsApp para tu minimarket'}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <Megaphone className={`w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                      {!isSubscriptionActive ? (
+                        <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      ) : (
+                        <Megaphone className={`w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform ${isProPlan ? 'text-amber-600' : 'text-emerald-600'}`} />
+                      )}
                       <span className="truncate">Marketing & Difusión</span>
                     </div>
-                    {isProPlan ? (
+                    {!isSubscriptionActive ? (
+                      <span className="shrink-0 text-[9px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded-md">
+                        🔒
+                      </span>
+                    ) : isProPlan ? (
                       <span className="shrink-0 text-[9px] font-black bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md">
                         PRO
                       </span>

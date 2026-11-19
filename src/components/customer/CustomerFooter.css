@@ -1,0 +1,19 @@
+/* ==========================================================================
+   CustomerFooter.css - Pie de página de tienda y métodos de pago
+   ========================================================================== */
+
+.footer-payment-pills {
+  display: flex;
+  flex-wrap: wrap;
+  flex-wrap: balance;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.footer-payment-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-block-size: 2rem;
+}

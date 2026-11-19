@@ -371,6 +371,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           <SearchEmptyState
             searchQuery={searchQuery}
             selectedCategory={selectedCategory}
+            totalStoreProducts={products.length}
             storeConfig={storeConfig}
             onClearFilter={() => {
               setSelectedCategory('all');
