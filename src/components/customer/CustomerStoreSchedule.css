@@ -1,0 +1,48 @@
+/* ==========================================================================
+   CustomerStoreSchedule.css - Acordeón nativo accesible para horario de tienda
+   ========================================================================== */
+
+.customer-schedule-details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.customer-schedule-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.customer-schedule-details > summary .schedule-chevron {
+  transition: transform 0.22s ease;
+}
+
+.customer-schedule-details[open] > summary .schedule-chevron {
+  transform: rotate(180deg);
+}
+
+.customer-schedule-details::details-content {
+  interpolate-size: allow-keywords;
+  overflow: clip;
+  contain: layout;
+}
+
+.customer-schedule-details:not([open])::details-content {
+  block-size: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .customer-schedule-details::details-content {
+    transition: block-size 0.25s ease-in-out, content-visibility 0.25s ease-in-out allow-discrete;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-schedule-details > summary .schedule-chevron {
+    transition: none;
+  }
+}
+
+.customer-weekly-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 0.5rem;
+}

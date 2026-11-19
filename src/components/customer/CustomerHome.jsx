@@ -229,9 +229,9 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 pb-20 sm:pb-24">
+    <main className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 pb-20 sm:pb-24">
       {/* Barra de Retorno y Acciones Directas de la Tienda */}
-      <div className="customer-store-topbar mb-3.5 bg-white px-3 sm:px-3.5 py-2 rounded-2xl border border-slate-200 shadow-2xs">
+      <div className="customer-store-topbar mb-3 bg-white px-3 sm:px-3.5 py-2 rounded-2xl border border-slate-200 shadow-2xs">
         <button
           type="button"
           onClick={goToDirectory}
@@ -269,32 +269,32 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             title="Instalar la aplicación en tu celular o PC"
           >
             <Smartphone className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">Instalar App</span>
-            <span className="sm:hidden">Instalar App</span>
+            <span>Instalar App</span>
           </button>
         </div>
       </div>
 
-      {/* Vista Previa Profesional del Horario de Hoy y Semana Completa (contraída por defecto) */}
-      <CustomerStoreSchedule 
-        storeConfig={storeConfig} 
-        initialExpanded={false} 
-      />
-
-      {/* Card / Banner de Horario de Envíos a Domicilio (Motodelivery) */}
-      {storeConfig?.enableDelivery !== false && (
-        <CustomerDeliveryScheduleCard 
-          storeConfig={storeConfig} 
-          variant="card" 
-        />
-      )}
-
-      {/* Banner Superior Principal */}
+      {/* Banner Superior Principal de la Tienda */}
       <HeroBanner 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         onOpenLocationModal={onOpenLocationModal}
       />
+
+      {/* Franja compacta lado a lado: Horario de Tienda + Horario de Envíos */}
+      <div className="customer-schedules-strip mb-4">
+        <CustomerStoreSchedule 
+          storeConfig={storeConfig} 
+          initialExpanded={false} 
+        />
+
+        {storeConfig?.enableDelivery !== false && (
+          <CustomerDeliveryScheduleCard 
+            storeConfig={storeConfig} 
+            variant="card" 
+          />
+        )}
+      </div>
 
       {/* Banner de Pedido en Curso o Pedido Recién Entregado */}
       {activeOrder && (
