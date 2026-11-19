@@ -35,6 +35,14 @@ import { SUPPLIER_CATEGORIES } from '../../data/supplierInitialData';
 import { downloadProductTemplate, parseProductExcel } from '../../utils/excelProductUtils';
 import { normalizeSearchText, escapeHtml } from '../../utils/formatters';
 import { compressImage } from '../../utils/imageUtils';
+import { roundMoney } from '../../utils/paymentUtils';
+import {
+  DEFAULT_PRODUCT_IMAGE,
+  buildCleanNewProduct,
+  computeMarginPercent,
+  findDuplicateProductCode,
+  resolveActiveCategories
+} from '../../utils/inventoryUtils';
 import { SeedCatalogModal } from './SeedCatalogModal/SeedCatalogModal';
 import { ProductCameraModal } from './ProductCameraModal';
 import { ProductPerformanceModal } from './ProductPerformanceModal';
@@ -87,17 +95,23 @@ export const InventoryManager = () => {
     'Snacks & Golosinas',
     'Limpieza & Hogar'
   ];
-  const configured = Array.isArray(storeConfig?.categories) ? storeConfig.categories : [];
-  const fromProds = (products || []).map(p => (p.category || '').trim()).filter(c => c && c !== 'Sin definir' && c !== 'all');
-  const activeCategories = Array.from(new Set([...baseDefaults, ...configured, ...fromProds]));
+  const activeCategories = useMemo(
+    () => resolveActiveCategories(storeConfig?.categories, products, baseDefaults),
+    [storeConfig?.categories, products]
+  );
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const handleAddCategory = () => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Gestión de Categorías');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (!newCategoryName.trim()) return;
     const cleanCat = newCategoryName.trim();
-    if (activeCategories.includes(cleanCat)) {
+    if (activeCategories.some(c => c.toLowerCase() === cleanCat.toLowerCase())) {
       showToast('Esta categoría ya existe.', 'warning');
       return;
     }
@@ -108,6 +122,11 @@ export const InventoryManager = () => {
   };
 
   const handleRemoveCategory = (catName) => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Gestión de Categorías');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (activeCategories.length <= 1) {
       showToast('Debe haber al menos una categoría.', 'warning');
       return;
@@ -136,6 +155,11 @@ export const InventoryManager = () => {
   // Crear y guardar nueva categoría directamente desde el dropdown de edición de producto
   const handleCreateCategoryInline = async (e) => {
     if (e) e.preventDefault();
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Gestión de Categorías');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     const cleanCat = inlineCategoryInput.trim();
     if (!cleanCat) return;
 
@@ -526,23 +550,7 @@ export const InventoryManager = () => {
       return;
     }
     setIsNew(true);
-    setEditingProduct({
-      name: '',
-      code: `780${Math.floor(10000000 + Math.random() * 90000000)}`,
-      category: activeCategories[0] || 'Abarrotes',
-      supplierId: '',
-      supplierName: '',
-      price: 1.50,
-      originalPrice: 1.50,
-      costPrice: 0.90,
-      stock: 20,
-      minStock: 5,
-      unit: 'Unidad',
-      image: '/products/producto-sin-imagen.png',
-      description: 'Producto fresco de alta calidad para la despensa del hogar.',
-      badge: '',
-      isPopular: false
-    });
+    setEditingProduct(buildCleanNewProduct(activeCategories));
   };
 
   const handleOpenEdit = (product) => {
@@ -584,31 +592,79 @@ export const InventoryManager = () => {
       setIsBlockedModalOpen(true);
       return;
     }
-    if (!editingProduct.name.trim()) {
+    const cleanName = (editingProduct.name || '').trim();
+    if (!cleanName) {
       showToast('Ingresa el nombre del producto', 'warning');
       return;
     }
-    const cost = editingProduct.costPrice ?? editingProduct.cost_price;
+
+    const parsedPrice = roundMoney(editingProduct.price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      showToast(`Ingresa un precio de venta válido mayor a ${currency} 0.00.`, 'warning');
+      return;
+    }
+
+    const cleanCode = (editingProduct.code || '').trim();
+    const duplicateSku = findDuplicateProductCode(products, cleanCode, editingProduct.id);
+    if (duplicateSku) {
+      showToast(`El código / SKU "${cleanCode}" ya está registrado en "${duplicateSku.name}".`, 'warning');
+      return;
+    }
+
+    const rawCost = editingProduct.costPrice ?? editingProduct.cost_price;
+    const isCostEmpty = rawCost === '' || rawCost === 'Sin definir' || rawCost === undefined || rawCost === null;
+    const parsedCost = isCostEmpty ? 'Sin definir' : roundMoney(rawCost);
+    if (typeof parsedCost === 'number' && parsedCost < 0) {
+      showToast('El costo de compra no puede ser negativo.', 'warning');
+      return;
+    }
+
+    const rawOriginal = editingProduct.originalPrice ?? editingProduct.original_price;
+    const isOriginalEmpty = rawOriginal === '' || rawOriginal === undefined || rawOriginal === null;
+    let parsedOriginal = isOriginalEmpty ? parsedPrice : roundMoney(rawOriginal);
+    if (!Number.isFinite(parsedOriginal) || parsedOriginal < parsedPrice) {
+      parsedOriginal = parsedPrice;
+    }
+
+    const parseOptionalInt = (val) => {
+      if (val === '' || val === 'Sin definir' || val === undefined || val === null) return 'Sin definir';
+      const n = parseInt(val, 10);
+      return Number.isFinite(n) ? Math.max(0, n) : 'Sin definir';
+    };
+
+    const parsedStock = parseOptionalInt(editingProduct.stock);
+    const parsedMinStock = parseOptionalInt(editingProduct.minStock ?? editingProduct.min_stock);
+
     const finalImage = (editingProduct.image && editingProduct.image.trim())
       ? editingProduct.image.trim()
-      : '/products/producto-sin-imagen.png';
+      : DEFAULT_PRODUCT_IMAGE;
 
     const assignedSup = activeSuppliers.find(s => s.id === editingProduct.supplierId);
     const resolvedSupplierName = assignedSup ? assignedSup.name : (editingProduct.supplierName || '');
 
     setIsSavingProduct(true);
     try {
-      await saveProduct({
+      const result = await saveProduct({
         ...editingProduct,
+        name: cleanName,
+        code: cleanCode,
+        price: parsedPrice,
+        originalPrice: parsedOriginal,
+        original_price: parsedOriginal,
+        stock: parsedStock,
+        minStock: parsedMinStock,
+        min_stock: parsedMinStock,
         supplierId: editingProduct.supplierId || '',
         supplier_id: editingProduct.supplierId || '',
         supplierName: resolvedSupplierName,
         supplier_name: resolvedSupplierName,
         image: finalImage,
-        costPrice: cost !== undefined ? cost : 'Sin definir',
-        cost_price: cost !== undefined ? cost : 'Sin definir'
+        costPrice: parsedCost,
+        cost_price: parsedCost
       });
-      setEditingProduct(null);
+      if (result?.success !== false) {
+        setEditingProduct(null);
+      }
     } catch (err) {
       console.error('Error al guardar producto:', err);
     } finally {
@@ -715,6 +771,11 @@ export const InventoryManager = () => {
   };
 
   const handleConfirmImport = async () => {
+    if (!isSubscriptionActive) {
+      setBlockedFeature('Importación Masiva desde Excel');
+      setIsBlockedModalOpen(true);
+      return;
+    }
     if (!importPreview?.validProducts || importPreview.validProducts.length === 0) return;
     try {
       setIsImporting(true);
@@ -2111,14 +2172,22 @@ export const InventoryManager = () => {
               <div className="space-y-2 p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-100">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Costo Compra (Bs.)</label>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Costo Compra ({currency})</label>
                     <input
                       type="number"
-                      step="0.10"
-                      value={typeof editingProduct.costPrice === 'number' ? editingProduct.costPrice : ''}
-                      onChange={(e) => setEditingProduct({ 
-                        ...editingProduct, 
-                        costPrice: e.target.value === '' ? 'Sin definir' : parseFloat(e.target.value) || 0 
+                      step="0.01"
+                      min="0"
+                      value={
+                        editingProduct.costPrice === '' ||
+                        editingProduct.costPrice === 'Sin definir' ||
+                        editingProduct.costPrice === undefined ||
+                        editingProduct.costPrice === null
+                          ? ''
+                          : editingProduct.costPrice
+                      }
+                      onChange={(e) => setEditingProduct({
+                        ...editingProduct,
+                        costPrice: e.target.value === '' ? 'Sin definir' : e.target.value
                       })}
                       placeholder="Sin definir"
                       className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
@@ -2126,40 +2195,66 @@ export const InventoryManager = () => {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Venta (Bs.) *</label>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Venta ({currency}) *</label>
                     <input
                       type="number"
-                      step="0.10"
+                      step="0.01"
+                      min="0.01"
                       required
-                      value={typeof editingProduct.price === 'number' ? editingProduct.price : ''}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                      value={
+                        editingProduct.price === '' ||
+                        editingProduct.price === undefined ||
+                        editingProduct.price === null
+                          ? ''
+                          : editingProduct.price
+                      }
+                      onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                      placeholder="Ej. 10.50"
                       className="w-full px-2.5 py-2 rounded-xl border border-emerald-300 text-xs font-black text-emerald-800 bg-white"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Normal (Bs.)</label>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Precio Normal ({currency})</label>
                     <input
                       type="number"
-                      step="0.10"
-                      value={typeof editingProduct.originalPrice === 'number' ? editingProduct.originalPrice : (typeof editingProduct.price === 'number' ? editingProduct.price : '')}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: parseFloat(e.target.value) || 0 })}
+                      step="0.01"
+                      min="0"
+                      value={
+                        editingProduct.originalPrice === '' ||
+                        editingProduct.originalPrice === undefined ||
+                        editingProduct.originalPrice === null
+                          ? ''
+                          : editingProduct.originalPrice
+                      }
+                      onChange={(e) => setEditingProduct({ ...editingProduct, originalPrice: e.target.value })}
+                      placeholder={editingProduct.price ? String(editingProduct.price) : 'Opcional'}
                       className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs font-medium bg-white"
                     />
                   </div>
                 </div>
 
                 {/* Calculadora en tiempo real de Margen % */}
-                {editingProduct.price > 0 && (
-                  <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-xs">
-                    <span className="text-slate-600 font-semibold">Margen de Ganancia Estimado:</span>
-                    <span className="font-extrabold text-emerald-800 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-200">
-                      {typeof editingProduct.costPrice === 'number'
-                        ? `${(((editingProduct.price - editingProduct.costPrice) / editingProduct.price) * 100).toFixed(1)}% Margen Neto`
-                        : 'Sin definir (Costo pendiente)'}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const marginPct = computeMarginPercent(editingProduct.price, editingProduct.costPrice);
+                  if (Number(editingProduct.price) <= 0) return null;
+                  return (
+                    <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-xs">
+                      <span className="text-slate-600 font-semibold">Margen de Ganancia Estimado:</span>
+                      <span className={`font-extrabold px-2.5 py-0.5 rounded-lg border ${
+                        marginPct === null
+                          ? 'text-slate-600 bg-white border-slate-200'
+                          : marginPct >= 15
+                            ? 'text-emerald-800 bg-white border-emerald-200'
+                            : 'text-amber-700 bg-amber-50 border-amber-200'
+                      }`}>
+                        {marginPct !== null
+                          ? `${marginPct.toFixed(1)}% Margen Neto`
+                          : 'Sin definir (Costo pendiente)'}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Stock y Stock Mínimo */}
@@ -2168,10 +2263,19 @@ export const InventoryManager = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Stock Actual (u)</label>
                   <input
                     type="number"
-                    value={typeof editingProduct.stock === 'number' ? editingProduct.stock : ''}
-                    onChange={(e) => setEditingProduct({ 
-                      ...editingProduct, 
-                      stock: e.target.value === '' ? 'Sin definir' : parseInt(e.target.value, 10) || 0 
+                    min="0"
+                    step="1"
+                    value={
+                      editingProduct.stock === '' ||
+                      editingProduct.stock === 'Sin definir' ||
+                      editingProduct.stock === undefined ||
+                      editingProduct.stock === null
+                        ? ''
+                        : editingProduct.stock
+                    }
+                    onChange={(e) => setEditingProduct({
+                      ...editingProduct,
+                      stock: e.target.value === '' ? 'Sin definir' : e.target.value
                     })}
                     placeholder="Sin definir"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold"
@@ -2182,10 +2286,19 @@ export const InventoryManager = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1">Alerta Stock Mínimo</label>
                   <input
                     type="number"
-                    value={typeof editingProduct.minStock === 'number' ? editingProduct.minStock : ''}
-                    onChange={(e) => setEditingProduct({ 
-                      ...editingProduct, 
-                      minStock: e.target.value === '' ? 'Sin definir' : parseInt(e.target.value, 10) || 0 
+                    min="0"
+                    step="1"
+                    value={
+                      editingProduct.minStock === '' ||
+                      editingProduct.minStock === 'Sin definir' ||
+                      editingProduct.minStock === undefined ||
+                      editingProduct.minStock === null
+                        ? ''
+                        : editingProduct.minStock
+                    }
+                    onChange={(e) => setEditingProduct({
+                      ...editingProduct,
+                      minStock: e.target.value === '' ? 'Sin definir' : e.target.value
                     })}
                     placeholder="Sin definir"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium"

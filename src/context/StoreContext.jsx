@@ -34,6 +34,7 @@ import {
   roundMoney
 } from '../utils/paymentUtils';
 import { revertTransactionFromCustomer } from '../utils/creditUtils';
+import { buildSupabaseProductRecord } from '../utils/inventoryUtils';
 
 export {
   PAYMENT_METHODS,
@@ -1344,6 +1345,8 @@ export const StoreProvider = ({ children }) => {
     }
     return baseCatalog.filter(bp => !deletedIds.has(String(bp.id)));
   });
+  const productsRef = useRef(products);
+  productsRef.current = products;
 
   // 3. Configuración de Tienda Aislada por Tenant
   const [storeConfig, setStoreConfigState] = useState(() => {
@@ -2670,11 +2673,31 @@ export const StoreProvider = ({ children }) => {
               if (Array.isArray(p)) localItems = p;
             } catch (e) {}
           }
+          const deletedLocalIds = getDeletedProductIds(tenantSlug);
           if (data.length > 0) {
-            const normalizedData = data.map(normalizeProduct);
-            setProducts(normalizedData);
+            const normalizedRemote = data
+              .map(normalizeProduct)
+              .filter(p => !deletedLocalIds.has(String(p.id)));
+            const remoteMap = new Map(normalizedRemote.map(p => [String(p.id), p]));
+
+            // Preservar ediciones locales más recientes si quedaron pendientes de subir
+            const merged = normalizedRemote.map(rem => {
+              const loc = localItems.find(l => l && String(l.id) === String(rem.id));
+              if (!loc) return rem;
+              const locTs = new Date(loc.updatedAt || loc.updated_at || 0).getTime();
+              const remTs = new Date(rem.updatedAt || rem.updated_at || 0).getTime();
+              return locTs > remTs ? normalizeProduct(loc) : rem;
+            });
+
+            localItems.forEach(loc => {
+              if (loc && loc.id && !remoteMap.has(String(loc.id)) && !deletedLocalIds.has(String(loc.id))) {
+                merged.unshift(normalizeProduct(loc));
+              }
+            });
+
+            setProducts(merged);
             try {
-              localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(normalizedData));
+              localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(merged));
             } catch (e) {}
           } else if (localItems.length > 0) {
             setProducts(localItems.map(normalizeProduct));
@@ -5353,81 +5376,45 @@ export const StoreProvider = ({ children }) => {
       return { success: false, error: 'Unauthorized' };
     }
     const { silent = false } = options;
-    const cleanImage = (productData.image && productData.image.trim()) 
-      ? productData.image.trim() 
-      : '/products/producto-sin-imagen.png';
+    const effectiveTenant = merchantStore?.id || tenantSlug;
+    const baseProducts = Array.isArray(productsRef.current) ? productsRef.current : products;
 
     const isEdit = Boolean(productData.id);
-    const prodId = productData.id || `${tenantSlug}-prod-${Date.now()}`;
-    const nextNum = products.length + 1;
-    const autoCode = `COD-${String(nextNum).padStart(3, '0')}`;
-    const resolvedCode = (productData.code && String(productData.code).trim()) 
-      ? String(productData.code).trim() 
-      : autoCode;
-
-    const numPrice = typeof productData.price === 'number' ? productData.price : (parseFloat(productData.price) || 0);
-    const rawOrigPrice = productData.originalPrice ?? productData.original_price;
-    const origPrice = (rawOrigPrice != null && rawOrigPrice !== '' && rawOrigPrice !== 'Sin definir')
-      ? (typeof rawOrigPrice === 'number' ? rawOrigPrice : (parseFloat(rawOrigPrice) || numPrice))
-      : numPrice;
-
-    const costVal = productData.costPrice ?? productData.cost_price ?? 'Sin definir';
-    const stockVal = productData.stock != null ? String(productData.stock) : 'Sin definir';
-    const minStockVal = productData.minStock ?? productData.min_stock ?? 'Sin definir';
-    const isPop = Boolean(productData.isPopular ?? productData.is_popular);
-    const isAct = productData.isActive !== undefined ? Boolean(productData.isActive) : (productData.is_active !== undefined ? Boolean(productData.is_active) : true);
-
-    // Registro sanitizado canónico conteniendo estrictamente columnas reales de la tabla 'products' de Supabase
-    const cleanDbRecord = {
-      id: prodId,
-      tenant_id: tenantSlug,
-      name: productData.name?.trim() || 'Producto Sin Nombre',
-      category: productData.category?.trim() || 'Sin definir',
-      price: numPrice,
-      original_price: origPrice,
-      cost_price: String(costVal),
-      unit: productData.unit?.trim() || 'Sin definir',
-      stock: stockVal,
-      min_stock: String(minStockVal),
-      image: cleanImage,
-      badge: productData.badge?.trim() || '',
-      code: resolvedCode,
-      description: productData.description?.trim() || 'Sin definir',
-      is_popular: isPop,
-      is_active: isAct,
-      updated_at: new Date().toISOString()
-    };
-    if (productData.supplierId || productData.supplier_id) {
-      cleanDbRecord.supplier_id = String(productData.supplierId || productData.supplier_id);
-    }
+    const prodId = productData.id || `${effectiveTenant}-prod-${Date.now()}`;
+    const cleanDbRecord = buildSupabaseProductRecord(
+      { ...productData, id: prodId },
+      effectiveTenant,
+      baseProducts.length
+    );
 
     const normalizedProd = normalizeProduct({
       ...cleanDbRecord,
       supplierId: cleanDbRecord.supplier_id || '',
       supplierName: productData.supplierName || productData.supplier_name || '',
-      costPrice: costVal,
-      minStock: minStockVal,
-      originalPrice: origPrice,
-      isPopular: isPop,
-      isActive: isAct
+      costPrice: cleanDbRecord.cost_price,
+      minStock: cleanDbRecord.min_stock,
+      originalPrice: cleanDbRecord.original_price,
+      isPopular: cleanDbRecord.is_popular,
+      isActive: cleanDbRecord.is_active
     });
 
     // 1. Actualización inmediata en Estado React (Optimistic UI)
     let nextProducts;
     if (isEdit) {
-      nextProducts = products.map(p => (p.id === prodId ? { ...p, ...normalizedProd } : p));
+      nextProducts = baseProducts.map(p => (p.id === prodId ? { ...p, ...normalizedProd } : p));
       if (!nextProducts.some(p => p.id === prodId)) {
         nextProducts = [normalizedProd, ...nextProducts];
       }
     } else {
-      nextProducts = [normalizedProd, ...products];
+      nextProducts = [normalizedProd, ...baseProducts];
     }
+    productsRef.current = nextProducts;
     setProducts(nextProducts);
 
     // 2. Persistencia en LocalStorage protegida contra cuota
     try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
-      if (tenantSlug === 'matias-tiendatodo') {
+      localStorage.setItem(`marketsaas_${effectiveTenant}_products`, JSON.stringify(nextProducts));
+      if (effectiveTenant === 'matias-tiendatodo') {
         localStorage.setItem('marketsaas_default_products', JSON.stringify(nextProducts));
       }
     } catch (lsErr) {
@@ -5518,79 +5505,103 @@ export const StoreProvider = ({ children }) => {
   const deleteProduct = async (productId) => {
     if (!currentUser && !isImpersonating) {
       showToast('Acceso denegado: Debes iniciar sesión como dueño para eliminar productos.', 'error');
-      return;
+      return { ok: false };
     }
-    recordDeletedProductIds(tenantSlug, [productId]);
-    let nextProducts = [];
-    setProducts(prev => {
-      nextProducts = prev.filter(p => p.id !== productId);
-      return nextProducts;
-    });
+    const effectiveTenant = merchantStore?.id || tenantSlug;
+    recordDeletedProductIds(effectiveTenant, [productId]);
+    const baseProducts = Array.isArray(productsRef.current) ? productsRef.current : products;
+    const nextProducts = baseProducts.filter(p => p.id !== productId);
+    productsRef.current = nextProducts;
+    setProducts(nextProducts);
     try {
-      localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(nextProducts));
+      localStorage.setItem(`marketsaas_${effectiveTenant}_products`, JSON.stringify(nextProducts));
     } catch (e) {
       console.warn('Error guardando en localStorage tras eliminar producto:', e);
     }
+
+    let cloudSynced = true;
     if (supabase) {
       try {
         const { error } = await supabase
           .from('products')
           .delete()
           .eq('id', productId)
-          .eq('tenant_id', tenantSlug);
-        if (error) console.error('Error eliminando producto en Supabase:', error);
+          .eq('tenant_id', effectiveTenant);
+        if (error) {
+          cloudSynced = false;
+          console.error('Error eliminando producto en Supabase:', error);
+        }
       } catch (err) {
+        cloudSynced = false;
         console.error('Error de red al eliminar producto en Supabase:', err);
       }
     }
-    showToast('Producto eliminado del catálogo.', 'warning');
+    if (!cloudSynced) {
+      showToast('Producto quitado en este equipo, pero falló la eliminación en Supabase.', 'warning');
+    } else {
+      showToast('Producto eliminado del catálogo.', 'warning');
+    }
+    return { ok: true, cloudSynced };
   };
 
   // Eliminación Masiva de Productos Seleccionados
   const deleteProductsBatch = async (productIds) => {
     if (!currentUser && !isImpersonating) {
       showToast('Acceso denegado: Debes iniciar sesión como dueño para eliminar productos.', 'error');
-      return;
+      return { ok: false };
     }
-    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return;
-    recordDeletedProductIds(tenantSlug, productIds);
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) return { ok: false };
+    const effectiveTenant = merchantStore?.id || tenantSlug;
+    recordDeletedProductIds(effectiveTenant, productIds);
     const idSet = new Set(productIds);
-    setProducts(prev => {
-      const updated = prev.filter(p => !idSet.has(p.id));
-      try {
-        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updated));
-      } catch (e) {
-        console.error('Error guardando en localStorage:', e);
-      }
-      return updated;
-    });
+    const baseProducts = Array.isArray(productsRef.current) ? productsRef.current : products;
+    const updated = baseProducts.filter(p => !idSet.has(p.id));
+    productsRef.current = updated;
+    setProducts(updated);
+    try {
+      localStorage.setItem(`marketsaas_${effectiveTenant}_products`, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Error guardando en localStorage:', e);
+    }
 
+    let cloudSynced = true;
     if (supabase) {
       try {
         const { error } = await supabase
           .from('products')
           .delete()
           .in('id', productIds)
-          .eq('tenant_id', tenantSlug);
-        if (error) console.error('Error eliminando lote de productos en Supabase:', error);
+          .eq('tenant_id', effectiveTenant);
+        if (error) {
+          cloudSynced = false;
+          console.error('Error eliminando lote de productos en Supabase:', error);
+        }
       } catch (err) {
+        cloudSynced = false;
         console.error('Error de conexión al eliminar productos en Supabase:', err);
       }
     }
-    showToast(`✓ Se eliminaron ${productIds.length} productos seleccionados.`, 'info');
+    if (!cloudSynced) {
+      showToast(`${productIds.length} productos eliminados localmente, pero falló la sincronización con la nube.`, 'warning');
+    } else {
+      showToast(`✓ Se eliminaron ${productIds.length} productos seleccionados.`, 'info');
+    }
+    return { ok: true, cloudSynced };
   };
 
   // Importar Lote Masivo de Productos desde Excel
   const importProductsBatch = async (productList) => {
     if (!productList || !Array.isArray(productList) || productList.length === 0) {
       showToast('No hay productos válidos para importar.', 'warning');
-      return;
+      return { ok: false };
     }
 
+    const effectiveTenant = merchantStore?.id || tenantSlug;
     let createdCount = 0;
     let updatedCount = 0;
 
-    const safeExistingProducts = Array.isArray(products) ? products.filter(Boolean) : [];
+    const safeExistingProducts = Array.isArray(productsRef.current) ? productsRef.current.filter(Boolean) : [];
+    const batchBaseTs = Date.now();
 
     const preparedProducts = productList.map((p, idx) => {
       if (!p || typeof p !== 'object') return null;
@@ -5605,7 +5616,7 @@ export const StoreProvider = ({ children }) => {
         return (pCode && epCode && epCode === pCode) || (pName && epName && epName === pName);
       });
 
-      const prodId = existing?.id ? existing.id : `${tenantSlug}-prod-${Date.now()}-${idx}`;
+      const prodId = existing?.id ? existing.id : `${effectiveTenant}-prod-${batchBaseTs}-${idx}`;
       if (existing) {
         updatedCount++;
       } else {
@@ -5626,32 +5637,30 @@ export const StoreProvider = ({ children }) => {
         return 'Sin definir';
       })();
 
-      return {
+      return normalizeProduct({
         ...p,
         id: prodId,
-        tenant_id: tenantSlug,
+        tenant_id: effectiveTenant,
         costPrice: rawImportCost,
         cost_price: rawImportCost,
         image: p.image || '/products/producto-sin-imagen.png'
-      };
+      });
     }).filter(Boolean);
 
     // Actualizar estado local (merge con existentes)
-    setProducts(prev => {
-      const safePrev = Array.isArray(prev) ? prev.filter(Boolean) : [];
-      const map = new Map(safePrev.map(p => [p.id, p]));
-      preparedProducts.forEach(np => {
-        const prevItem = map.get(np.id) || {};
-        map.set(np.id, { ...prevItem, ...np });
-      });
-      const updatedList = Array.from(map.values());
-      try {
-        localStorage.setItem(`marketsaas_${tenantSlug}_products`, JSON.stringify(updatedList));
-      } catch (e) {
-        console.error('Error guardando en localStorage:', e);
-      }
-      return updatedList;
+    const map = new Map(safeExistingProducts.map(p => [p.id, p]));
+    preparedProducts.forEach(np => {
+      const prevItem = map.get(np.id) || {};
+      map.set(np.id, { ...prevItem, ...np });
     });
+    const updatedList = Array.from(map.values());
+    productsRef.current = updatedList;
+    setProducts(updatedList);
+    try {
+      localStorage.setItem(`marketsaas_${effectiveTenant}_products`, JSON.stringify(updatedList));
+    } catch (e) {
+      console.error('Error guardando en localStorage:', e);
+    }
 
     // Auto-agregar nuevas categorías si vienen en la importación a la configuración del dueño
     const currentCats = Array.isArray(storeConfig?.categories) ? storeConfig.categories : [];
@@ -5669,45 +5678,39 @@ export const StoreProvider = ({ children }) => {
       }));
     }
 
-    // Sincronizar con Supabase si está disponible
+    // Sincronizar con Supabase usando estrictamente columnas snake_case canónicas y chunks de 100
     if (supabase) {
       try {
-        const supabaseBatch = preparedProducts.map(p => ({
-          id: String(p.id),
-          tenant_id: p.tenant_id || tenantSlug,
-          name: String(p.name || 'Sin nombre'),
-          category: p.category || 'Sin definir',
-          code: p.code ? String(p.code) : '',
-          price: typeof p.price === 'number' ? p.price : (parseFloat(p.price) || 0),
-          original_price: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
-          originalPrice: typeof p.originalPrice === 'number' ? p.originalPrice : (parseFloat(p.originalPrice) || p.price),
-          cost_price: p.costPrice != null ? p.costPrice : 'Sin definir',
-          costPrice: p.costPrice != null ? p.costPrice : 'Sin definir',
-          stock: p.stock != null ? String(p.stock) : 'Sin definir',
-          min_stock: p.minStock != null ? String(p.minStock) : 'Sin definir',
-          minStock: p.minStock != null ? String(p.minStock) : 'Sin definir',
-          unit: p.unit || 'Sin definir',
-          image: p.image || '/products/producto-sin-imagen.png',
-          description: p.description || 'Sin definir',
-          badge: p.badge || '',
-          is_popular: Boolean(p.isPopular),
-          isPopular: Boolean(p.isPopular),
-          is_active: true,
-          isActive: true
-        }));
+        const supabaseBatch = preparedProducts.map((p, idx) =>
+          buildSupabaseProductRecord(p, effectiveTenant, idx)
+        );
 
-        const { error } = await supabase.from('products').upsert(supabaseBatch);
-        if (error) {
-          console.error('Error en upsert batch Supabase:', error);
-          showToast(`Guardado en tu inventario local. Supabase: ${error.message}`, 'warning');
-          return;
+        const CHUNK_SIZE = 100;
+        for (let i = 0; i < supabaseBatch.length; i += CHUNK_SIZE) {
+          const chunk = supabaseBatch.slice(i, i + CHUNK_SIZE);
+          let { error } = await supabase.from('products').upsert(chunk, { onConflict: 'id' });
+
+          if (error && (error.code === 'PGRST204' || error.message?.includes('supplier_id'))) {
+            const chunkNoSup = chunk.map(({ supplier_id, ...rest }) => rest);
+            const retry = await supabase.from('products').upsert(chunkNoSup, { onConflict: 'id' });
+            error = retry.error;
+          }
+
+          if (error) {
+            console.error('Error en upsert batch Supabase:', error);
+            showToast(`Guardado en tu inventario local (${createdCount} nuevos, ${updatedCount} actualizados). Error nube: ${error.message}`, 'warning');
+            return { ok: false, error };
+          }
         }
       } catch (err) {
         console.error('Error de conexión al sincronizar lote con Supabase:', err);
+        showToast('Importado localmente, pero falló la conexión con la nube.', 'warning');
+        return { ok: false, error: err };
       }
     }
 
     showToast(`✓ Se importaron ${createdCount} productos nuevos y se actualizaron ${updatedCount}.`, 'success');
+    return { ok: true, createdCount, updatedCount };
   };
 
   // Venta en POS de Mostrador (Dueño) con soporte para Efectivo, QR, Tarjeta, Fiao y Pago Combinado
