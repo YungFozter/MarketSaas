@@ -33,6 +33,7 @@ import {
   formatPaymentBreakdownText,
   roundMoney
 } from '../utils/paymentUtils';
+import { revertTransactionFromCustomer } from '../utils/creditUtils';
 
 export {
   PAYMENT_METHODS,
@@ -6884,6 +6885,44 @@ export const StoreProvider = ({ children }) => {
     addCustomerPayment(customerId, cust.balance, paymentMethod, 'Liquidación total de cuenta');
   };
 
+  const revertCustomerTransaction = async (customerId, transactionId) => {
+    const baseList = Array.isArray(creditCustomersRef.current) ? creditCustomersRef.current : creditCustomers;
+    const existing = baseList.find(c => c.id === customerId);
+    if (!existing) return { ok: false };
+
+    const result = revertTransactionFromCustomer(existing, transactionId);
+    if (!result) {
+      showToast('No se encontró el movimiento seleccionado.', 'warning');
+      return { ok: false };
+    }
+
+    const activeSlug = merchantStore?.id || tenantSlug || 'matias-tiendatodo';
+    const targetTenant = merchantStore?.id || tenantSlug || 'default';
+    const updatedList = baseList.map(c => (c.id === customerId ? result.updatedCustomer : c));
+
+    creditCustomersRef.current = updatedList;
+    setCreditCustomers(updatedList);
+    persistCreditsLocally(activeSlug, updatedList);
+
+    const cloudSynced = await syncCreditCustomerToCloud(targetTenant, result.updatedCustomer);
+    const cur = storeConfig?.currencySymbol || 'Bs.';
+    const kindLabel = result.removedTx.type === 'payment' ? 'Abono' : 'Fiao';
+
+    if (!cloudSynced) {
+      showToast(
+        `${kindLabel} anulado localmente. Nuevo saldo de ${existing.name}: ${cur} ${result.newBalance.toFixed(2)} (revisa conexión).`,
+        'warning'
+      );
+    } else {
+      showToast(
+        `✓ ${kindLabel} de ${cur} ${Number(result.removedTx.amount || 0).toFixed(2)} anulado. Nuevo saldo de ${existing.name}: ${cur} ${result.newBalance.toFixed(2)}`,
+        'info'
+      );
+    }
+
+    return { ok: true, cloudSynced, newBalance: result.newBalance };
+  };
+
   const removeCoupon = () => {
     setAppliedCoupon(null);
     showToast('Cupón removido.', 'info');
@@ -7322,6 +7361,7 @@ export const StoreProvider = ({ children }) => {
         addCustomerCharge,
         addCustomerPayment,
         clearCustomerBalance,
+        revertCustomerTransaction,
         activeTrackingOrderId,
         setActiveTrackingOrderId,
         neighborOrderIds,

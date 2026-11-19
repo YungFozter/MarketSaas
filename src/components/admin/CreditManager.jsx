@@ -13,10 +13,17 @@ import {
   History,
   Banknote,
   UserCheck,
-  Lock
+  Lock,
+  ArrowUpDown,
+  Download
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { roundMoney } from '../../utils/paymentUtils';
+import {
+  sortCreditCustomers,
+  downloadCreditSummaryCsv,
+  printCustomerStatement
+} from '../../utils/creditUtils';
 import { CustomerFormModal } from './credits/CustomerFormModal';
 import { ChargeModal } from './credits/ChargeModal';
 import { PaymentModal } from './credits/PaymentModal';
@@ -49,6 +56,7 @@ export const CreditManager = () => {
     deleteCreditCustomer,
     addCustomerCharge,
     addCustomerPayment,
+    revertCustomerTransaction,
     storeConfig,
     formatBoliviaDateTime,
     showToast,
@@ -59,9 +67,10 @@ export const CreditManager = () => {
   const storeName = storeConfig?.name || 'Mi Tienda';
   const isReadOnlyCredits = isSubscriptionActive === false;
 
-  // Filtros, búsqueda y paginación progresiva
+  // Filtros, búsqueda, ordenamiento y paginación progresiva
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'debt' | 'clean'
+  const [sortBy, setSortBy] = useState('recent'); // 'recent' | 'highest_debt' | 'lowest_debt' | 'name_asc'
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
 
   // Modales
@@ -119,10 +128,10 @@ export const CreditManager = () => {
     );
   }, [creditCustomers]);
 
-  // Lista Filtrada
+  // Lista Filtrada y Ordenada
   const filteredCustomers = useMemo(() => {
     const q = searchTerm.toLowerCase();
-    return creditCustomers.filter(c => {
+    const filtered = creditCustomers.filter(c => {
       const matchSearch =
         (c.name || '').toLowerCase().includes(q) ||
         (c.apartment || '').toLowerCase().includes(q) ||
@@ -134,7 +143,8 @@ export const CreditManager = () => {
       if (filterStatus === 'clean') return (c.balance || 0) === 0;
       return true;
     });
-  }, [creditCustomers, searchTerm, filterStatus]);
+    return sortCreditCustomers(filtered, sortBy);
+  }, [creditCustomers, searchTerm, filterStatus, sortBy]);
 
   const visibleCustomers = useMemo(() => {
     return filteredCustomers.slice(0, visibleLimit);
@@ -362,6 +372,32 @@ export const CreditManager = () => {
     }
   };
 
+  const handleRevertTransaction = async (customerId, transactionId) => {
+    if (isSubmittingCredit || !revertCustomerTransaction) return;
+    setIsSubmittingCredit(true);
+    try {
+      await revertCustomerTransaction(customerId, transactionId);
+    } finally {
+      setIsSubmittingCredit(false);
+    }
+  };
+
+  const handlePrintCustomerStatement = (customer) => {
+    const opened = printCustomerStatement(customer, storeConfig, formatBoliviaDateTime);
+    if (!opened) {
+      showToast('Permite las ventanas emergentes para imprimir o guardar el estado de cuenta en PDF.', 'warning');
+    }
+  };
+
+  const handleExportSummaryCsv = () => {
+    if (filteredCustomers.length === 0) {
+      showToast('No hay cuentas visibles para exportar.', 'warning');
+      return;
+    }
+    downloadCreditSummaryCsv(filteredCustomers, storeConfig, formatBoliviaDateTime);
+    showToast('Resumen de Libreta de Deudas descargado en CSV.', 'success');
+  };
+
   // Enviar Recordatorio Educado por WhatsApp
   const handleSendWhatsAppReminder = (customer) => {
     if (!customer.phone) {
@@ -414,19 +450,32 @@ export const CreditManager = () => {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenNewCustomer}
-          title={isReadOnlyCredits ? 'Suscripción vencida: renueva tu plan para registrar nuevos deudores' : 'Registrar nuevo vecino en la libreta'}
-          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 ${
-            isReadOnlyCredits
-              ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 hover:shadow-lg active:scale-95'
-          }`}
-        >
-          {isReadOnlyCredits ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          <span>{isReadOnlyCredits ? 'Nuevo Deudor (Bloqueado)' : '+ Nuevo Deudor'}</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleExportSummaryCsv}
+            disabled={filteredCustomers.length === 0}
+            title="Descargar resumen general de la libreta en CSV (Excel)"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            <Download className="w-4 h-4 text-slate-600" />
+            <span>Exportar CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenNewCustomer}
+            title={isReadOnlyCredits ? 'Suscripción vencida: renueva tu plan para registrar nuevos deudores' : 'Registrar nuevo vecino en la libreta'}
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 ${
+              isReadOnlyCredits
+                ? 'bg-slate-200 text-slate-500 hover:bg-slate-300'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20 hover:shadow-lg active:scale-95'
+            }`}
+          >
+            {isReadOnlyCredits ? <Lock className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            <span>{isReadOnlyCredits ? 'Nuevo Deudor (Bloqueado)' : '+ Nuevo Deudor'}</span>
+          </button>
+        </div>
       </div>
 
       {isReadOnlyCredits && (
@@ -566,6 +615,27 @@ export const CreditManager = () => {
           >
             ✅ Al Día ({creditCustomers.length - customersWithDebtCount})
           </button>
+
+          <div className="relative shrink-0 pl-1">
+            <label htmlFor="credit-sort-select" className="sr-only">
+              Ordenar vecinos en libreta
+            </label>
+            <ArrowUpDown className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <select
+              id="credit-sort-select"
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                setVisibleLimit(PAGE_SIZE);
+              }}
+              className="pl-8 pr-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200 focus:outline-none focus:border-indigo-500 cursor-pointer"
+            >
+              <option value="recent">Último movimiento</option>
+              <option value="highest_debt">Mayor deuda</option>
+              <option value="lowest_debt">Menor deuda</option>
+              <option value="name_asc">Nombre (A–Z)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -795,7 +865,10 @@ export const CreditManager = () => {
           setActiveCustomerForHistory(null);
           handleOpenPaymentModal(cust);
         }}
+        onRevertTransaction={handleRevertTransaction}
+        onPrintStatement={handlePrintCustomerStatement}
         isReadOnlyCredits={isReadOnlyCredits}
+        isSubmitting={isSubmittingCredit}
         formatBoliviaDateTime={formatBoliviaDateTime}
         currency={currency}
       />
