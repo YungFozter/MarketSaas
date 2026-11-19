@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HeroBanner } from './HeroBanner';
 import { CategoryBar } from './CategoryBar';
 import { ProductCard } from './ProductCard';
@@ -7,7 +7,24 @@ import { CustomerStoreSchedule } from './CustomerStoreSchedule';
 import { CustomerDeliveryScheduleCard } from './CustomerDeliveryScheduleCard';
 import { PwaInstallBanner } from './PwaInstallBanner';
 import { SearchEmptyState } from './SearchEmptyState/SearchEmptyState';
-import { Sparkles, ShoppingBag, ArrowRight, ArrowLeft, MessageCircle, X, Store, Truck, ChevronLeft, ChevronRight, Clock, Smartphone, CheckCircle2, PackageCheck } from 'lucide-react';
+import {
+  Sparkles,
+  ShoppingBag,
+  ArrowRight,
+  ArrowLeft,
+  MessageCircle,
+  X,
+  Store,
+  Truck,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Smartphone,
+  CheckCircle2,
+  PackageCheck,
+  Share2,
+  Check
+} from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import { normalizeSearchText } from '../../utils/formatters';
 import './CustomerHome.css';
@@ -26,9 +43,81 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
     tenantSlug,
     storeOpenStatus,
     isProPlan,
+    cart = [],
+    cartSubtotal = 0,
     addToCart,
     showToast
   } = useStore();
+
+  const totalCartItems = useMemo(
+    () => (cart || []).reduce((acc, item) => acc + (item.quantity || 1), 0),
+    [cart]
+  );
+  const currency = storeConfig?.currencySymbol || 'Bs.';
+
+  const [shareState, setShareState] = useState('idle'); // 'idle' | 'copied' | 'failed'
+  const [shareAnnouncement, setShareAnnouncement] = useState('');
+  const shareTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    };
+  }, []);
+
+  const handleShareStore = async () => {
+    const cleanTenant = tenantSlug || storeConfig?.id || 'default';
+    const shareUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}?view=customer&store=${cleanTenant}`
+      : `https://marketsaas.com/?view=customer&store=${cleanTenant}`;
+    const storeTitle = storeConfig?.name || 'Minimarket MarketSaaS';
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: storeTitle,
+          text: `Mira el catálogo online de ${storeTitle} para pedir por WhatsApp o delivery:`,
+          url: shareUrl
+        });
+        return;
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    const triggerCopyFeedback = (ok) => {
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+      setShareState(ok ? 'copied' : 'failed');
+      setShareAnnouncement(ok ? 'Enlace de tienda copiado' : 'No se pudo copiar el enlace');
+      if (ok) {
+        showToast?.('Enlace de la tienda copiado para compartir', 'success');
+      } else {
+        showToast?.('No se pudo copiar el enlace', 'warning');
+      }
+      shareTimerRef.current = setTimeout(() => {
+        setShareState('idle');
+        setShareAnnouncement('');
+      }, 2200);
+    };
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      triggerCopyFeedback(true);
+    } catch {
+      try {
+        const field = Object.assign(document.createElement('textarea'), { value: shareUrl });
+        field.setAttribute('readonly', '');
+        field.style.cssText = 'position:fixed;inset-block-start:0;opacity:0';
+        document.body.append(field);
+        field.select();
+        const copied = document.execCommand('copy');
+        field.remove();
+        triggerCopyFeedback(Boolean(copied));
+      } catch {
+        triggerCopyFeedback(false);
+      }
+    }
+  };
 
   const isProStore = Boolean(storeConfig?.isProStore || isProPlan || String(storeConfig?.plan || storeConfig?.subscription?.plan || '').toLowerCase().includes('pro'));
 
@@ -188,7 +277,11 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
   };
 
   return (
-    <main className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 pb-20 sm:pb-24">
+    <main
+      className={`max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4 ${
+        totalCartItems > 0 ? 'pb-24 sm:pb-16 customer-has-mobile-cart' : 'pb-16 sm:pb-20'
+      }`}
+    >
       {/* Barra de Retorno y Acciones Directas de la Tienda */}
       <div className="customer-store-topbar mb-3 bg-white px-3 sm:px-3.5 py-2 rounded-2xl border border-slate-200 shadow-2xs">
         <button
@@ -205,7 +298,7 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
           </span>
         </button>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-slate-500 shrink-0">
           {(storeConfig.whatsapp || storeConfig.phone) && (
             <a
               href={`https://wa.me/${(storeConfig.whatsapp || storeConfig.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`¡Hola ${storeConfig.name}! Tengo una consulta sobre los productos de la tienda.`)}`}
@@ -214,11 +307,37 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
               className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap"
               title="Consultar por WhatsApp a la tienda"
             >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-hidden="true" />
               <span className="hidden sm:inline">Consultar a la tienda</span>
               <span className="sm:hidden">WhatsApp</span>
             </a>
           )}
+
+          {/* Compartir tienda rápido con familiares o vecinos */}
+          <span className="inline-flex items-center">
+            <button
+              type="button"
+              onClick={handleShareStore}
+              data-copied={shareState === 'copied' ? '' : undefined}
+              data-failed={shareState === 'failed' ? '' : undefined}
+              className={`customer-share-btn inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border font-bold text-xs cursor-pointer shadow-2xs whitespace-nowrap ${
+                shareState === 'copied'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+              }`}
+              title="Compartir enlace de la tienda"
+            >
+              {shareState === 'copied' ? (
+                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" aria-hidden="true" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5 text-slate-500 shrink-0" aria-hidden="true" />
+              )}
+              <span>{shareState === 'copied' ? 'Copiado' : 'Compartir'}</span>
+            </button>
+            <span role="status" className="sr-only">
+              {shareAnnouncement}
+            </span>
+          </span>
 
           {/* Acceso único para Instalar la App del Minimarket */}
           <button
@@ -227,8 +346,9 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
             className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
             title="Instalar la aplicación en tu celular o PC"
           >
-            <Smartphone className="w-3.5 h-3.5 shrink-0" />
-            <span>Instalar App</span>
+            <Smartphone className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            <span className="hidden xs:inline sm:inline">Instalar App</span>
+            <span className="xs:hidden sm:hidden">App</span>
           </button>
         </div>
       </div>
@@ -573,10 +693,39 @@ export const CustomerHome = ({ onOpenCart, onOpenRequests, onOpenLocationModal }
         />
       )}
 
-      {/* Banner PWA: oculto flotante cuando existe pedido activo para no tapar seguimiento */}
+      {/* Barra inferior fija de Carrito en Móvil (oculta en >= sm) */}
+      {totalCartItems > 0 && (
+        <aside
+          aria-label="Resumen rápido de tu canasta"
+          className="customer-mobile-cart-bar sm:hidden animate-slideUp"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="block text-[11px] font-bold text-slate-500 leading-tight">
+                {totalCartItems} {totalCartItems === 1 ? 'producto en canasta' : 'productos en canasta'}
+              </span>
+              <span className="block text-base font-black text-emerald-700 leading-tight">
+                {currency} {Number(cartSubtotal || 0).toFixed(2)}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => onOpenCart?.()}
+              className="customer-mobile-cart-cta px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs shadow-md shadow-emerald-600/25 flex items-center gap-2 shrink-0 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4 shrink-0" aria-hidden="true" />
+              <span>Ver Canasta</span>
+              <ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" />
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Banner PWA: oculto flotante cuando existe pedido activo o barra móvil de carrito */}
       <PwaInstallBanner
         storeName={storeConfig?.name || 'tu tienda'}
-        suppressFloating={Boolean(activeOrder)}
+        suppressFloating={Boolean(activeOrder || totalCartItems > 0)}
       />
 
 
