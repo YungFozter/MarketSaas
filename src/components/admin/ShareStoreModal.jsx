@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Lightbulb,
-  CheckCheck
+  CheckCheck,
+  MapPin
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './ShareStoreModal.css';
@@ -32,7 +33,7 @@ const QUICK_PROMO_SUGGESTIONS = [
 ];
 
 export const ShareStoreModal = ({ isOpen, onClose }) => {
-  const { storeConfig, tenantSlug, showToast, isProPlan } = useStore();
+  const { storeConfig, stores = [], selectedStore, merchantStore, tenantSlug, showToast, isProPlan } = useStore();
   const [selectedTemplate, setSelectedTemplate] = useState('weekend');
   const [customPromo, setCustomPromo] = useState('');
   const [copiedMessage, setCopiedMessage] = useState(false);
@@ -111,17 +112,82 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   // 2. Ubicación en texto
   const addressText = storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Dirección de la tienda';
 
-  // 3. Enlace oficial de Google Maps
-  const lat = storeConfig?.latitude !== '' && storeConfig?.latitude != null
-    ? storeConfig.latitude
-    : storeConfig?.googleMapsCoordinates?.lat;
-  const lng = storeConfig?.longitude !== '' && storeConfig?.longitude != null
-    ? storeConfig.longitude
-    : storeConfig?.googleMapsCoordinates?.lng;
+  // 3. Enlace oficial de Google Maps con Pin Exacto (Marker) de las coordenadas GPS de la tienda
+  const { mapsUrl, hasExactCoordinates, resolvedLat, resolvedLng } = useMemo(() => {
+    const matchedDirectoryStore = (stores || []).find(
+      s => s && (
+        s.slug === tenant ||
+        s.id === tenant ||
+        s.slug === storeConfig?.id ||
+        s.id === storeConfig?.id ||
+        (Array.isArray(s.aliases) && s.aliases.includes(tenant))
+      )
+    );
 
-  const mapsUrl = (lat && lng)
-    ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([storeName, addressText, 'Bolivia'].filter(Boolean).join(', '))}`;
+    const candidateLat = [
+      storeConfig?.latitude,
+      storeConfig?.googleMapsCoordinates?.lat,
+      merchantStore?.latitude,
+      merchantStore?.config?.latitude,
+      merchantStore?.config?.googleMapsCoordinates?.lat,
+      selectedStore?.latitude,
+      selectedStore?.googleMapsCoordinates?.lat,
+      matchedDirectoryStore?.latitude,
+      matchedDirectoryStore?.googleMapsCoordinates?.lat
+    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
+
+    const candidateLng = [
+      storeConfig?.longitude,
+      storeConfig?.googleMapsCoordinates?.lng,
+      merchantStore?.longitude,
+      merchantStore?.config?.longitude,
+      merchantStore?.config?.googleMapsCoordinates?.lng,
+      selectedStore?.longitude,
+      selectedStore?.googleMapsCoordinates?.lng,
+      matchedDirectoryStore?.longitude,
+      matchedDirectoryStore?.googleMapsCoordinates?.lng
+    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
+
+    const numLat = candidateLat != null ? Number(candidateLat) : null;
+    const numLng = candidateLng != null ? Number(candidateLng) : null;
+
+    if (numLat != null && numLng != null) {
+      const cleanLat = Number(numLat.toFixed(6));
+      const cleanLng = Number(numLng.toFixed(6));
+      // `https://maps.google.com/?q=lat,lng` coloca directamente un marcador rojo exacto en Google Maps (PC, Android y iOS)
+      return {
+        mapsUrl: `https://maps.google.com/?q=${cleanLat},${cleanLng}`,
+        hasExactCoordinates: true,
+        resolvedLat: cleanLat,
+        resolvedLng: cleanLng
+      };
+    }
+
+    // Fallback cuando una tienda nueva aún no ha fijado su pin GPS en Configuración:
+    // Buscamos la dirección o zona en Santa Cruz de la Sierra (sin el nombre ficticio de la tienda para que Google Maps sí encuentre la calle)
+    const cleanQuery = [
+      addressText !== 'Dirección de la tienda' ? addressText : storeName,
+      'Santa Cruz de la Sierra, Bolivia'
+    ].filter(Boolean).join(', ');
+
+    return {
+      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(cleanQuery)}`,
+      hasExactCoordinates: false,
+      resolvedLat: null,
+      resolvedLng: null
+    };
+  }, [
+    stores,
+    tenant,
+    storeConfig?.id,
+    storeConfig?.latitude,
+    storeConfig?.longitude,
+    storeConfig?.googleMapsCoordinates,
+    merchantStore,
+    selectedStore,
+    addressText,
+    storeName
+  ]);
 
   // 4. Catálogo de Plantillas de Marketing Vecinal
   const templates = useMemo(() => [
@@ -657,7 +723,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Ventana simulada de conversación de WhatsApp */}
-                <div className="share-wa-chat-viewport p-3 sm:p-3.5 max-h-52 sm:max-h-60 lg:max-h-[260px] overflow-y-auto flex-1">
+                <div className="share-wa-chat-viewport p-3 sm:p-3.5 max-h-52 sm:max-h-60 lg:max-h-[245px] overflow-y-auto flex-1">
                   <div className="share-wa-bubble p-3 text-xs sm:text-[12.5px] leading-relaxed font-sans max-w-[96%] ml-auto">
                     <div className="whitespace-pre-line text-slate-900 selection:bg-emerald-200">
                       {currentShareMessage}
@@ -667,6 +733,32 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                       <CheckCheck className="w-3.5 h-3.5 text-sky-500 shrink-0" />
                     </div>
                   </div>
+                </div>
+
+                {/* Barra de estado y prueba en vivo del marcador GPS en Google Maps */}
+                <div className="px-3.5 py-2 bg-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-2 text-[11px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <MapPin className={`w-3.5 h-3.5 shrink-0 ${hasExactCoordinates ? 'text-emerald-600' : 'text-amber-500'}`} />
+                    {hasExactCoordinates ? (
+                      <span className="text-slate-600 font-semibold truncate">
+                        Pin GPS exacto: <strong className="font-mono text-slate-800">{resolvedLat}, {resolvedLng}</strong>
+                      </span>
+                    ) : (
+                      <span className="text-amber-700 font-semibold truncate">
+                        Búsqueda por dirección (Fija tu pin GPS en Configuración)
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800 hover:underline shrink-0"
+                    title="Abrir y verificar el marcador de la tienda en Google Maps"
+                  >
+                    <span>Probar Mapa</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               </section>
 

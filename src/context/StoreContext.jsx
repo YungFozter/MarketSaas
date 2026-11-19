@@ -1192,6 +1192,16 @@ export const StoreProvider = ({ children }) => {
         );
 
         const baseConfig = localStoreConfig || (isCurrentOwner && isSameStore ? prev : initialStoreConfig);
+        const resolvedLat = baseConfig?.latitude !== '' && baseConfig?.latitude != null
+          ? baseConfig.latitude
+          : (baseConfig?.googleMapsCoordinates?.lat ?? foundStore.latitude ?? foundStore.googleMapsCoordinates?.lat ?? null);
+        const resolvedLng = baseConfig?.longitude !== '' && baseConfig?.longitude != null
+          ? baseConfig.longitude
+          : (baseConfig?.googleMapsCoordinates?.lng ?? foundStore.longitude ?? foundStore.googleMapsCoordinates?.lng ?? null);
+        const resolvedCoords = (resolvedLat != null && resolvedLng != null && !isNaN(Number(resolvedLat)) && !isNaN(Number(resolvedLng)))
+          ? { lat: Number(resolvedLat), lng: Number(resolvedLng) }
+          : (foundStore.googleMapsCoordinates || baseConfig?.googleMapsCoordinates || null);
+
         const resolved = {
           ...initialStoreConfig,
           ...baseConfig,
@@ -1200,6 +1210,9 @@ export const StoreProvider = ({ children }) => {
           name: foundStore.name || baseConfig?.name,
           tagline: foundStore.tagline || baseConfig?.tagline,
           address: foundStore.address || baseConfig?.address,
+          latitude: resolvedLat,
+          longitude: resolvedLng,
+          googleMapsCoordinates: resolvedCoords,
           owner_id: foundStore.owner_id || baseConfig?.owner_id,
           logoUrl: foundStore.logoUrl || baseConfig?.logoUrl || '',
           bannerUrl: foundStore.bannerUrl || baseConfig?.bannerUrl || presetBanners[0].url,
@@ -1903,6 +1916,8 @@ export const StoreProvider = ({ children }) => {
       } else {
         const matchInStores = (stores || []).find(s => s.slug === merchantSlug || s.id === merchantSlug);
         if (matchInStores) {
+          const matchLat = matchInStores.latitude ?? matchInStores.googleMapsCoordinates?.lat ?? null;
+          const matchLng = matchInStores.longitude ?? matchInStores.googleMapsCoordinates?.lng ?? null;
           restoredConfig = {
             ...initialStoreConfig,
             id: matchInStores.id || matchInStores.slug,
@@ -1910,6 +1925,9 @@ export const StoreProvider = ({ children }) => {
             name: matchInStores.name,
             tagline: matchInStores.tagline || '',
             address: matchInStores.address || '',
+            latitude: matchLat,
+            longitude: matchLng,
+            googleMapsCoordinates: matchInStores.googleMapsCoordinates || (matchLat != null && matchLng != null ? { lat: Number(matchLat), lng: Number(matchLng) } : null),
             phone: matchInStores.phone || '',
             whatsapp: matchInStores.whatsapp || matchInStores.phone || '',
             logoUrl: matchInStores.logoUrl || matchInStores.logo_url || '',
@@ -1920,12 +1938,17 @@ export const StoreProvider = ({ children }) => {
             subscription: matchInStores.subscription || createDefaultSubscription()
           };
         } else {
+          const targetLat = targetStore.latitude ?? targetStore.googleMapsCoordinates?.lat ?? targetStore.config?.latitude ?? targetStore.config?.googleMapsCoordinates?.lat ?? null;
+          const targetLng = targetStore.longitude ?? targetStore.googleMapsCoordinates?.lng ?? targetStore.config?.longitude ?? targetStore.config?.googleMapsCoordinates?.lng ?? null;
           restoredConfig = {
             ...initialStoreConfig,
             id: targetStore.id || merchantSlug,
             tenant_id: merchantSlug,
             name: targetStore.name || 'Mi Tienda',
             address: targetStore.address || '',
+            latitude: targetLat,
+            longitude: targetLng,
+            googleMapsCoordinates: targetStore.googleMapsCoordinates || targetStore.config?.googleMapsCoordinates || (targetLat != null && targetLng != null ? { lat: Number(targetLat), lng: Number(targetLng) } : null),
             phone: targetStore.phone || '',
             whatsapp: targetStore.whatsapp || '',
             logoUrl: targetStore.logoUrl || targetStore.logo_url || '',
@@ -2146,6 +2169,15 @@ export const StoreProvider = ({ children }) => {
           configData.schedule || storeRecord.schedule || initialStoreConfig.schedule
         );
 
+        const seedOrDirectoryStore = initialStores.find(s => s.slug === storeRecord.id || s.id === storeRecord.id);
+        const rawLat = storeRecord.latitude ?? configData.latitude ?? configData.googleMapsCoordinates?.lat ?? seedOrDirectoryStore?.googleMapsCoordinates?.lat ?? null;
+        const rawLng = storeRecord.longitude ?? configData.longitude ?? configData.googleMapsCoordinates?.lng ?? seedOrDirectoryStore?.googleMapsCoordinates?.lng ?? null;
+        const effectiveLat = (rawLat !== '' && rawLat != null && !isNaN(Number(rawLat))) ? Number(rawLat) : null;
+        const effectiveLng = (rawLng !== '' && rawLng != null && !isNaN(Number(rawLng))) ? Number(rawLng) : null;
+        const effectiveCoords = (effectiveLat != null && effectiveLng != null)
+          ? { lat: effectiveLat, lng: effectiveLng }
+          : (configData.googleMapsCoordinates || seedOrDirectoryStore?.googleMapsCoordinates || null);
+
         const resolvedConfig = {
           ...initialStoreConfig,
           ...configData,
@@ -2158,8 +2190,9 @@ export const StoreProvider = ({ children }) => {
           address: cleanStoreAddress,
           zone: storeRecord.zone || configData.zone || '',
           reference: storeRecord.reference || configData.reference || '',
-          latitude: storeRecord.latitude ?? configData.latitude ?? null,
-          longitude: storeRecord.longitude ?? configData.longitude ?? null,
+          latitude: effectiveLat,
+          longitude: effectiveLng,
+          googleMapsCoordinates: effectiveCoords,
           schedule: effectiveSchedule,
           storeOpenMode: configData.storeOpenMode || storeRecord.store_open_mode || 'auto',
           scheduleClosedMessage: configData.scheduleClosedMessage || '',
@@ -2388,8 +2421,11 @@ export const StoreProvider = ({ children }) => {
           } catch (e) {}
         } else {
           // Reset reactivo limpio para evitar arrastrar imágenes o datos de otra tienda
-          const matchedStore = (stores || []).find(s => s.slug === tenantSlug || s.id === tenantSlug);
+          const matchedStore = (stores || []).find(s => s.slug === tenantSlug || s.id === tenantSlug)
+            || initialStores.find(s => s.slug === tenantSlug || s.id === tenantSlug);
           if (matchedStore) {
+            const mLat = matchedStore.latitude ?? matchedStore.googleMapsCoordinates?.lat ?? null;
+            const mLng = matchedStore.longitude ?? matchedStore.googleMapsCoordinates?.lng ?? null;
             setStoreConfigState({
               ...initialStoreConfig,
               id: matchedStore.id || tenantSlug,
@@ -2399,6 +2435,9 @@ export const StoreProvider = ({ children }) => {
               bannerUrl: matchedStore.bannerUrl || presetBanners[0].url,
               qrImageUrl: matchedStore.qrImageUrl || '',
               address: matchedStore.address || '',
+              latitude: mLat,
+              longitude: mLng,
+              googleMapsCoordinates: matchedStore.googleMapsCoordinates || (mLat != null && mLng != null ? { lat: Number(mLat), lng: Number(mLng) } : null),
               phone: matchedStore.phone || '',
               whatsapp: matchedStore.whatsapp || matchedStore.phone || ''
             });
@@ -2645,6 +2684,15 @@ export const StoreProvider = ({ children }) => {
           const storeMode = configData.storeOpenMode || data.store_open_mode || (isSameStore ? prev?.storeOpenMode : 'auto') || 'auto';
           const storeClosedMsg = configData.scheduleClosedMessage || (isSameStore ? prev?.scheduleClosedMessage : '') || '';
 
+          const seedStore = initialStores.find(s => s.slug === tenantSlug || s.id === tenantSlug);
+          const rawDbLat = configData.latitude ?? data.latitude ?? configData.googleMapsCoordinates?.lat ?? (isSameStore ? (prev?.latitude ?? prev?.googleMapsCoordinates?.lat) : null) ?? seedStore?.googleMapsCoordinates?.lat ?? null;
+          const rawDbLng = configData.longitude ?? data.longitude ?? configData.googleMapsCoordinates?.lng ?? (isSameStore ? (prev?.longitude ?? prev?.googleMapsCoordinates?.lng) : null) ?? seedStore?.googleMapsCoordinates?.lng ?? null;
+          const dbLat = (rawDbLat !== '' && rawDbLat != null && !isNaN(Number(rawDbLat))) ? Number(rawDbLat) : null;
+          const dbLng = (rawDbLng !== '' && rawDbLng != null && !isNaN(Number(rawDbLng))) ? Number(rawDbLng) : null;
+          const dbCoords = (dbLat != null && dbLng != null)
+            ? { lat: dbLat, lng: dbLng }
+            : (configData.googleMapsCoordinates || (isSameStore ? prev?.googleMapsCoordinates : null) || seedStore?.googleMapsCoordinates || null);
+
           const baseForStore = isSameStore ? prev : {};
           const merged = {
             ...initialStoreConfig,
@@ -2656,6 +2704,9 @@ export const StoreProvider = ({ children }) => {
             logoUrl: effectiveLogo,
             bannerUrl: effectiveBanner,
             qrImageUrl: effectiveQr,
+            latitude: dbLat,
+            longitude: dbLng,
+            googleMapsCoordinates: dbCoords,
             schedule: storeSchedule,
             storeOpenMode: storeMode,
             scheduleClosedMessage: storeClosedMsg,
