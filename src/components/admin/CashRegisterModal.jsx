@@ -36,9 +36,9 @@ export const CashRegisterModal = ({ isOpen, onClose }) => {
   const tenantKey = tenantSlug || storeConfig?.id || 'default';
 
   const [activeTab, setActiveTab] = useState('current'); // 'current' | 'history'
-  const [openingCash, setOpeningCash] = useState(100);
+  const [openingCash, setOpeningCash] = useState(0);
   const [isEditingOpeningCash, setIsEditingOpeningCash] = useState(false);
-  const [tempOpeningCash, setTempOpeningCash] = useState('100');
+  const [tempOpeningCash, setTempOpeningCash] = useState('');
   const [isRegisterOpen, setIsRegisterOpen] = useState(true);
   const [registerOpenedAt, setRegisterOpenedAt] = useState(() => new Date().toISOString());
   const [expenses, setExpenses] = useState([]);

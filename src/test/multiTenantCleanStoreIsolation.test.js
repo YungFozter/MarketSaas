@@ -8,8 +8,11 @@ import {
   isPredefinedMapStore,
   isSameTenantStore,
   isOwnedRemoteStoreRecord,
-  resolveIsolatedStoreShareData
+  resolveIsolatedStoreShareData,
+  isAuthorizedSeedOwnerUser,
+  canUseAdminSeedData
 } from '../utils/storeTenantUtils.js';
+import { initialStoreConfig } from '../data/initialData.js';
 import { 
   getStoreCatalog, 
   PREDEFINED_MAP_STORE_SLUGS 
@@ -400,6 +403,37 @@ test('resolveIsolatedStoreShareData no filtra coordenadas ni config de selectedS
 
   assert.equal(resolvedBWithGps.hasExactCoordinates, true);
   assert.equal(resolvedBWithGps.mapsUrl, 'https://maps.google.com/?q=-17.741234,-63.175678');
+});
+
+test('Solo yfozter@gmail.com e ianortizsandoval@gmail.com autorizan datos semilla en VISTA DUEÑO e initialStoreConfig nace sin datos personales inyectados', () => {
+  const matiasUser = { id: 'u1', email: 'yfozter@gmail.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+  const ianUser = { id: 'u2', email: 'ianortizsandoval@gmail.com', confirmed_at: '2026-01-01T00:00:00Z' };
+  const otherUser = { id: 'u3', email: 'otro.comerciante@gmail.com', email_confirmed_at: '2026-01-01T00:00:00Z' };
+  const unverifiedMatias = { id: 'u4', email: 'yfozter@gmail.com' };
+
+  assert.equal(isAuthorizedSeedOwnerUser(matiasUser), true);
+  assert.equal(isAuthorizedSeedOwnerUser(ianUser), true);
+  assert.equal(isAuthorizedSeedOwnerUser(otherUser), false);
+  assert.equal(isAuthorizedSeedOwnerUser(unverifiedMatias), false);
+  assert.equal(isAuthorizedSeedOwnerUser(null), false);
+
+  assert.equal(canUseAdminSeedData('matias-tiendatodo', matiasUser), true);
+  assert.equal(canUseAdminSeedData('minimarket-ian', matiasUser), false);
+  assert.equal(canUseAdminSeedData('minimarket-ian', ianUser), true);
+  assert.equal(canUseAdminSeedData('tiendita-fernando', ianUser), true);
+  assert.equal(canUseAdminSeedData('matias-tiendatodo', ianUser), false);
+  assert.equal(canUseAdminSeedData('matias-tiendatodo', otherUser), false);
+  assert.equal(canUseAdminSeedData('minimarket-ian', otherUser), false);
+  assert.equal(canUseAdminSeedData('tienda-nueva', otherUser), false);
+
+  // initialStoreConfig no debe inyectar teléfono, WhatsApp, lema, banner, correo ni monto mínimo de demo
+  assert.equal(initialStoreConfig.name, '');
+  assert.equal(initialStoreConfig.tagline, '');
+  assert.equal(initialStoreConfig.phone, '');
+  assert.equal(initialStoreConfig.whatsapp, '');
+  assert.equal(initialStoreConfig.adminEmail, '');
+  assert.equal(initialStoreConfig.bannerUrl, '');
+  assert.equal(initialStoreConfig.minDeliveryOrder, '');
 });
 
 

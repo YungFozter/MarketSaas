@@ -831,7 +831,10 @@ import {
   hasPredefinedCatalog,
   normalizeTenantId,
   isSameTenantStore,
-  isOwnedRemoteStoreRecord
+  isOwnedRemoteStoreRecord,
+  SEED_OWNER_ACCOUNTS,
+  isAuthorizedSeedOwnerUser,
+  canUseAdminSeedData
 } from '../utils/storeTenantUtils';
 
 export {
@@ -839,7 +842,10 @@ export {
   isMatiasSeedStore,
   isOfficialSeedStore,
   isPredefinedMapStore,
-  hasPredefinedCatalog
+  hasPredefinedCatalog,
+  SEED_OWNER_ACCOUNTS,
+  isAuthorizedSeedOwnerUser,
+  canUseAdminSeedData
 };
 
 // Auto-sanitización síncrona en el navegador: purga versiones viejas y limpia residuos mock en tiendas de comerciantes
@@ -1294,9 +1300,13 @@ export const StoreProvider = ({ children }) => {
   // 2. Productos
   const [products, setProducts] = useState(() => {
     if (!tenantSlug) return [];
+    const isAdminInitial = typeof window !== 'undefined' && (
+      new URLSearchParams(window.location.search).get('view') === 'admin' ||
+      localStorage.getItem('marketsaas_active_view_mode') === 'admin'
+    );
 
-    // Si NO es tienda con catálogo predefinido (tienda nueva creada por comerciante): NUNCA inyectar catálogo determinista ni productos demo
-    if (!hasPredefinedCatalog(tenantSlug)) {
+    // En VISTA DUEÑO o tiendas sin catálogo predefinido: jamás inyectar catálogo semilla en frío antes de validar cuenta autorizada
+    if (isAdminInitial || !hasPredefinedCatalog(tenantSlug)) {
       const saved = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
       if (saved) {
         try {
@@ -1309,7 +1319,7 @@ export const StoreProvider = ({ children }) => {
       return [];
     }
 
-    // Tiendas inyectadas del mapa o semillas oficiales
+    // Tiendas inyectadas del mapa o semillas oficiales en Vista Vecino
     const baseCatalog = tenantSlug === 'default' 
       ? initialProducts.map(normalizeProduct) 
       : getStoreCatalog(tenantSlug).map(normalizeProduct);
@@ -1341,16 +1351,22 @@ export const StoreProvider = ({ children }) => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (!parsed.name || parsed.name.includes('Don Pepe') || parsed.name.includes('VeciStore')) {
-          parsed.name = 'Minimarket Saas';
+        if (parsed.name && (parsed.name.includes('Don Pepe') || parsed.name.includes('VeciStore') || parsed.name === 'Minimarket Saas')) {
+          parsed.name = '';
         }
-        if (!parsed.address || parsed.address.includes('Calle Los Sauces')) {
-          parsed.address = 'Direccion según cada Tienda';
+        if (parsed.address && (parsed.address.includes('Calle Los Sauces') || parsed.address === 'Direccion según cada Tienda')) {
+          parsed.address = '';
+        }
+        if (parsed.phone === '+591 72125280' && !isOfficialSeedStore(tenantSlug)) {
+          parsed.phone = '';
+        }
+        if (parsed.whatsapp === '59172125280' && !isOfficialSeedStore(tenantSlug)) {
+          parsed.whatsapp = '';
+        }
+        if (parsed.adminEmail === 'admin@tienda.com') {
+          parsed.adminEmail = '';
         }
         parsed.schedule = normalizeStoreSchedule(parsed.schedule);
-        if (parsed.minDeliveryOrder === undefined) {
-          parsed.minDeliveryOrder = 20.00;
-        }
         if (parsed.isRainActive === undefined) {
           parsed.isRainActive = false;
         }
@@ -1417,7 +1433,7 @@ export const StoreProvider = ({ children }) => {
       || (safeConfig?.id && safeConfig.id !== 'default' ? safeConfig.id : null)
       || (safeConfig?.tenant_id && safeConfig.tenant_id !== 'default' ? safeConfig.tenant_id : null)
       || (localStorage.getItem('marketsaas_active_tenant') && localStorage.getItem('marketsaas_active_tenant') !== 'default' ? localStorage.getItem('marketsaas_active_tenant') : null)
-      || 'minimarket-ian';
+      || 'default';
 
     // Sellar identidad estricta del tenant en la configuración para evitar cruces entre dueños
     safeConfig.id = effectiveTenant;
@@ -1641,9 +1657,13 @@ export const StoreProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => {
     try {
       const activeSlug = tenantSlug || merchantStore?.id || null;
+      const isAdminInitial = typeof window !== 'undefined' && (
+        new URLSearchParams(window.location.search).get('view') === 'admin' ||
+        localStorage.getItem('marketsaas_active_view_mode') === 'admin'
+      );
 
-      // Si la tienda es de un comerciante registrado (no es semilla oficial): NUNCA inyectar pedidos de prueba
-      if (!isOfficialSeedStore(activeSlug)) {
+      // Si no es semilla oficial o estamos iniciando VISTA DUEÑO antes de validar cuenta autorizada: NUNCA inyectar pedidos demo
+      if (isAdminInitial || !isOfficialSeedStore(activeSlug)) {
         if (activeSlug) {
           const saved = localStorage.getItem(`marketsaas_${activeSlug}_orders`);
           if (saved) {
@@ -1747,11 +1767,15 @@ export const StoreProvider = ({ children }) => {
     } catch {}
   };
 
-  // 8. Solicitudes de productos (En Modo Demostración inicia con listado de ejemplo; en tiendas registradas con su lista o vacía)
+  // 8. Solicitudes de productos (Solo en cuentas semilla autorizadas; en el resto inicia vacío)
   const [productRequests, setProductRequests] = useState(() => {
     try {
       const activeSlug = tenantSlug || merchantStore?.id || null;
-      if (!isOfficialSeedStore(activeSlug)) {
+      const isAdminInitial = typeof window !== 'undefined' && (
+        new URLSearchParams(window.location.search).get('view') === 'admin' ||
+        localStorage.getItem('marketsaas_active_view_mode') === 'admin'
+      );
+      if (isAdminInitial || !isOfficialSeedStore(activeSlug)) {
         if (activeSlug) {
           const saved = localStorage.getItem(`marketsaas_${activeSlug}_requests`);
           if (saved) {
@@ -1777,7 +1801,11 @@ export const StoreProvider = ({ children }) => {
   const [suppliers, setSuppliers] = useState(() => {
     try {
       const activeSlug = tenantSlug || merchantStore?.id || null;
-      if (!isOfficialSeedStore(activeSlug)) {
+      const isAdminInitial = typeof window !== 'undefined' && (
+        new URLSearchParams(window.location.search).get('view') === 'admin' ||
+        localStorage.getItem('marketsaas_active_view_mode') === 'admin'
+      );
+      if (isAdminInitial || !isOfficialSeedStore(activeSlug)) {
         if (activeSlug) {
           const saved = localStorage.getItem(`marketsaas_${activeSlug}_suppliers`);
           if (saved) {
@@ -1812,7 +1840,8 @@ export const StoreProvider = ({ children }) => {
   const [supplierCategories, setSupplierCategoriesState] = useState(() => {
     try {
       const activeSlug = tenantSlug || 'matias-tiendatodo';
-      const saved = localStorage.getItem(`marketsaas_${activeSlug}_supplier_categories`) || localStorage.getItem('marketsaas_default_supplier_categories');
+      const saved = localStorage.getItem(`marketsaas_${activeSlug}_supplier_categories`) ||
+        (isOfficialSeedStore(activeSlug) ? localStorage.getItem('marketsaas_default_supplier_categories') : null);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -1828,7 +1857,11 @@ export const StoreProvider = ({ children }) => {
   const [creditCustomers, setCreditCustomers] = useState(() => {
     try {
       const activeSlug = tenantSlug || merchantStore?.id || null;
-      if (!isOfficialSeedStore(activeSlug)) {
+      const isAdminInitial = typeof window !== 'undefined' && (
+        new URLSearchParams(window.location.search).get('view') === 'admin' ||
+        localStorage.getItem('marketsaas_active_view_mode') === 'admin'
+      );
+      if (isAdminInitial || !isOfficialSeedStore(activeSlug)) {
         if (activeSlug) {
           const saved = localStorage.getItem(`marketsaas_${activeSlug}_credits`);
           if (saved) {
@@ -1967,7 +2000,7 @@ export const StoreProvider = ({ children }) => {
             phone: matchInStores.phone || '',
             whatsapp: matchInStores.whatsapp || matchInStores.phone || '',
             logoUrl: matchInStores.logoUrl || matchInStores.logo_url || '',
-            bannerUrl: matchInStores.bannerUrl || matchInStores.banner_url || presetBanners[0].url,
+            bannerUrl: matchInStores.bannerUrl || matchInStores.banner_url || '',
             qrImageUrl: matchInStores.qrImageUrl || matchInStores.qr_image_url || '',
             schedule: normalizeStoreSchedule(matchInStores.schedule || initialStoreConfig.schedule),
             deliverySchedule: normalizeDeliverySchedule(matchInStores.deliverySchedule || initialStoreConfig.deliverySchedule),
@@ -1980,7 +2013,7 @@ export const StoreProvider = ({ children }) => {
             ...initialStoreConfig,
             id: targetStore.id || merchantSlug,
             tenant_id: merchantSlug,
-            name: targetStore.name || 'Mi Tienda',
+            name: targetStore.name || '',
             address: targetStore.address || '',
             latitude: targetLat,
             longitude: targetLng,
@@ -1988,7 +2021,7 @@ export const StoreProvider = ({ children }) => {
             phone: targetStore.phone || '',
             whatsapp: targetStore.whatsapp || '',
             logoUrl: targetStore.logoUrl || targetStore.logo_url || '',
-            bannerUrl: targetStore.bannerUrl || targetStore.banner_url || presetBanners[0].url,
+            bannerUrl: targetStore.bannerUrl || targetStore.banner_url || '',
             qrImageUrl: targetStore.qrImageUrl || targetStore.qr_image_url || '',
             schedule: normalizeStoreSchedule(targetStore.schedule || initialStoreConfig.schedule),
             deliverySchedule: normalizeDeliverySchedule(targetStore.deliverySchedule || initialStoreConfig.deliverySchedule),
@@ -2010,6 +2043,9 @@ export const StoreProvider = ({ children }) => {
       } catch (e) {}
     }
 
+    const activeUser = currentUserRef.current;
+    const allowSeedForMerchant = canUseAdminSeedData(merchantSlug, activeUser);
+
     // 3. Restaurar productos del comerciante
     try {
       const localProds = localStorage.getItem(`marketsaas_${merchantSlug}_products`);
@@ -2020,7 +2056,7 @@ export const StoreProvider = ({ children }) => {
         } else {
           setProducts([]);
         }
-      } else if (hasPredefinedCatalog(merchantSlug)) {
+      } else if (allowSeedForMerchant && hasPredefinedCatalog(merchantSlug)) {
         const baseCatalog = merchantSlug === 'default'
           ? initialProducts.map(normalizeProduct)
           : getStoreCatalog(merchantSlug).map(normalizeProduct);
@@ -2039,7 +2075,7 @@ export const StoreProvider = ({ children }) => {
       if (localOrders) {
         const parsed = JSON.parse(localOrders);
         setOrders(Array.isArray(parsed) ? filterOutGhostOrders(parsed.map(normalizeOrder)) : []);
-      } else if (isOfficialSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant) {
         const isFernando = isFernandoSeedStore(merchantSlug);
         setOrders(isFernando ? getFernandoOrders().map(normalizeOrder) : getMatiasOrders().map(normalizeOrder));
       } else {
@@ -2059,7 +2095,7 @@ export const StoreProvider = ({ children }) => {
       if (localReqs) {
         const parsed = JSON.parse(localReqs);
         setProductRequests(Array.isArray(parsed) ? filterOutTestRequests(parsed.map(normalizeProductRequest)) : []);
-      } else if (isMatiasSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant && isMatiasSeedStore(merchantSlug)) {
         setProductRequests(matiasProductRequests.map(normalizeProductRequest));
       } else {
         setProductRequests([]);
@@ -2071,9 +2107,9 @@ export const StoreProvider = ({ children }) => {
       const localSuppliers = localStorage.getItem(`marketsaas_${merchantSlug}_suppliers`);
       if (localSuppliers) {
         setSuppliers(JSON.parse(localSuppliers));
-      } else if (isFernandoSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant && isFernandoSeedStore(merchantSlug)) {
         setSuppliers(fernandoSuppliers.map(normalizeSupplier));
-      } else if (isMatiasSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant && isMatiasSeedStore(merchantSlug)) {
         setSuppliers(matiasSuppliers.map(normalizeSupplier));
       } else {
         setSuppliers([]);
@@ -2085,9 +2121,9 @@ export const StoreProvider = ({ children }) => {
       const localCredits = localStorage.getItem(`marketsaas_${merchantSlug}_credits`);
       if (localCredits) {
         setCreditCustomers(JSON.parse(localCredits));
-      } else if (isFernandoSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant && isFernandoSeedStore(merchantSlug)) {
         setCreditCustomers(fernandoCreditCustomers.map(normalizeCreditCustomer));
-      } else if (isMatiasSeedStore(merchantSlug)) {
+      } else if (allowSeedForMerchant && isMatiasSeedStore(merchantSlug)) {
         setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
       } else {
         setCreditCustomers([]);
@@ -2194,7 +2230,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         const effectiveLogo = configData.logoUrl || storeRecord.logo_url || savedLocalLogo || '';
-        const effectiveBanner = configData.bannerUrl || storeRecord.banner_url || savedLocalBanner || presetBanners[0].url;
+        const effectiveBanner = configData.bannerUrl || storeRecord.banner_url || savedLocalBanner || '';
         const effectiveQr = configData.qrImageUrl || storeRecord.qr_image_url || savedLocalQr || '';
         const effectiveSubscription = normalizeSubscription(
           configData.subscription || storeRecord.subscription,
@@ -2235,7 +2271,7 @@ export const StoreProvider = ({ children }) => {
           deliverySchedule: normalizeDeliverySchedule(configData.deliverySchedule || storeRecord.delivery_schedule || initialStoreConfig.deliverySchedule),
           ...(loadedCategories ? { categories: loadedCategories } : {}),
           coupons: loadedCoupons,
-          name: storeRecord.name || configData.name || 'Mi Tienda'
+          name: storeRecord.name || configData.name || ''
         };
 
         const statusCalc = calculateStoreOpenStatus(resolvedConfig);
@@ -2350,11 +2386,16 @@ export const StoreProvider = ({ children }) => {
     if (!tenantSlug) return;
 
     // Cargar inmediatamente desde localStorage para respuesta instantánea
+    const allowSeedForTenant = viewMode === 'admin'
+      ? canUseAdminSeedData(tenantSlug, currentUser)
+      : isOfficialSeedStore(tenantSlug);
+    const allowAdminSeed = canUseAdminSeedData(tenantSlug, currentUser);
+
     try {
       if (tenantSlug !== 'default') {
         const localProds = localStorage.getItem(`marketsaas_${tenantSlug}_products`);
-        if (!hasPredefinedCatalog(tenantSlug)) {
-          // Tiendas de comerciantes: jamás mezclar con baseCatalog ni inyectar productos demo
+        if (!hasPredefinedCatalog(tenantSlug) || (viewMode === 'admin' && !allowAdminSeed)) {
+          // Tiendas de comerciantes o VISTA DUEÑO sin cuenta semilla autorizada: jamás mezclar con baseCatalog ni inyectar productos demo
           if (localProds) {
             try {
               const parsed = JSON.parse(localProds);
@@ -2370,7 +2411,7 @@ export const StoreProvider = ({ children }) => {
             setProducts([]);
           }
         } else {
-          // Tiendas inyectadas del mapa o semillas oficiales
+          // Tiendas inyectadas del mapa o semillas oficiales autorizadas
           const baseCatalog = tenantSlug === 'default'
             ? initialProducts.map(normalizeProduct)
             : getStoreCatalog(tenantSlug).map(normalizeProduct);
@@ -2396,7 +2437,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         const localOrders = localStorage.getItem(`marketsaas_${tenantSlug}_orders`);
-        if (!isOfficialSeedStore(tenantSlug)) {
+        if (!allowAdminSeed) {
           // Tiendas de comerciantes: jamás inyectar pedidos de prueba
           if (localOrders) {
             try {
@@ -2468,7 +2509,7 @@ export const StoreProvider = ({ children }) => {
               tenant_id: tenantSlug,
               name: matchedStore.name,
               logoUrl: matchedStore.logoUrl || '',
-              bannerUrl: matchedStore.bannerUrl || presetBanners[0].url,
+              bannerUrl: matchedStore.bannerUrl || '',
               qrImageUrl: matchedStore.qrImageUrl || '',
               address: matchedStore.address || '',
               latitude: mLat,
@@ -2481,7 +2522,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         const localReqs = localStorage.getItem(`marketsaas_${tenantSlug}_requests`);
-        if (!isOfficialSeedStore(tenantSlug)) {
+        if (!allowAdminSeed) {
           if (localReqs) {
             try {
               const parsed = JSON.parse(localReqs);
@@ -2510,7 +2551,7 @@ export const StoreProvider = ({ children }) => {
         }
 
         const activeSlug = tenantSlug;
-        if (!isOfficialSeedStore(activeSlug)) {
+        if (!allowAdminSeed) {
           const localSuppliers = localStorage.getItem(`marketsaas_${activeSlug}_suppliers`);
           if (localSuppliers) {
             try {
@@ -2547,7 +2588,7 @@ export const StoreProvider = ({ children }) => {
           }
         }
 
-        if (!isOfficialSeedStore(activeSlug)) {
+        if (!allowAdminSeed) {
           const localCredits = localStorage.getItem(`marketsaas_${activeSlug}_credits`);
           if (localCredits) {
             try {
@@ -2583,7 +2624,7 @@ export const StoreProvider = ({ children }) => {
             setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
           }
         }
-      } else {
+      } else if (allowSeedForTenant && canUseAdminSeedData('matias-tiendatodo', currentUser)) {
         setProductRequests(matiasProductRequests.map(normalizeProductRequest));
         const activeSlug = 'matias-tiendatodo';
         const hasSupInit = localStorage.getItem(`marketsaas_${activeSlug}_suppliers_initialized`);
@@ -2600,6 +2641,10 @@ export const StoreProvider = ({ children }) => {
         } else {
           setCreditCustomers(matiasCreditCustomers.map(normalizeCreditCustomer));
         }
+      } else {
+        setProductRequests([]);
+        setSuppliers([]);
+        setCreditCustomers([]);
       }
     } catch (e) {
       console.warn('Error cargando caché local de tenant:', e);
@@ -2793,7 +2838,8 @@ export const StoreProvider = ({ children }) => {
           }
 
           let normalized = filterOutGhostOrders(data.map(normalizeOrder));
-          if (isFernandoSeedStore(tenantSlug)) {
+          const allowSeedOrders = canUseAdminSeedData(tenantSlug, currentUser);
+          if (allowSeedOrders && isFernandoSeedStore(tenantSlug)) {
             const seedOrders = getFernandoOrders().map(normalizeOrder);
             const seedMap = new Map(seedOrders.map(so => [so.id, so]));
             normalized = normalized.map(o => {
@@ -2811,7 +2857,7 @@ export const StoreProvider = ({ children }) => {
                 normalized.push(so);
               }
             });
-          } else if (isMatiasSeedStore(tenantSlug)) {
+          } else if (allowSeedOrders && isMatiasSeedStore(tenantSlug)) {
             const seedOrders = getMatiasOrders().map(normalizeOrder);
             const seedMap = new Map(seedOrders.map(so => [so.id, so]));
             normalized = normalized.map(o => {
@@ -2833,7 +2879,7 @@ export const StoreProvider = ({ children }) => {
 
           setOrders(prev => {
             // Preservar pedidos pendientes legítimos locales para que nunca se pierdan por desfase de red
-            const isSeed = isOfficialSeedStore(tenantSlug);
+            const isSeed = canUseAdminSeedData(tenantSlug, currentUser);
             const localPending = (prev || []).filter(o => {
               if (!o || o.status !== 'pending') return false;
               const id = String(o.id || '');
@@ -2910,7 +2956,7 @@ export const StoreProvider = ({ children }) => {
             try {
               localStorage.setItem(`marketsaas_${tenantSlug}_requests`, JSON.stringify(normalized));
             } catch (e) {}
-          } else if (isMatiasSeedStore(tenantSlug)) {
+          } else if (canUseAdminSeedData(tenantSlug, currentUser) && isMatiasSeedStore(tenantSlug)) {
             const fallback = matiasProductRequests.map(normalizeProductRequest);
             setProductRequests(fallback);
             try {
@@ -2927,8 +2973,9 @@ export const StoreProvider = ({ children }) => {
 
     // 5. Cargar proveedores por tienda
     const activeSupplierTenant = merchantStore?.id || tenantSlug || 'default';
-    const isIanSup = isFernandoSeedStore(activeSupplierTenant);
-    const isDemoMatiasSup = isMatiasSeedStore(activeSupplierTenant);
+    const allowSupSeed = canUseAdminSeedData(activeSupplierTenant, currentUser);
+    const isIanSup = allowSupSeed && isFernandoSeedStore(activeSupplierTenant);
+    const isDemoMatiasSup = allowSupSeed && isMatiasSeedStore(activeSupplierTenant);
     const supTenantFilter = isIanSup
       ? ['minimarket-ian', 'tiendita-fernando']
       : isDemoMatiasSup
@@ -2989,7 +3036,7 @@ export const StoreProvider = ({ children }) => {
         let localExisting = [];
         try {
           const raw = localStorage.getItem(`marketsaas_${activeSupplierTenant}_suppliers`) || 
-                      (isOfficialSeedStore(activeSupplierTenant) ? (localStorage.getItem('marketsaas_default_suppliers') || localStorage.getItem('marketsaas_matias-tiendatodo_suppliers')) : null);
+                      (allowSupSeed ? (localStorage.getItem('marketsaas_default_suppliers') || localStorage.getItem('marketsaas_matias-tiendatodo_suppliers')) : null);
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) localExisting = parsed.map(normalizeSupplier).filter(Boolean);
@@ -3012,7 +3059,7 @@ export const StoreProvider = ({ children }) => {
             setSuppliers(localExisting);
             return;
           }
-          if (!isOfficialSeedStore(activeSupplierTenant)) {
+          if (!allowSupSeed) {
             setSuppliers([]);
             return;
           }
@@ -3027,8 +3074,9 @@ export const StoreProvider = ({ children }) => {
 
     // 6. Cargar deudores / libreta de créditos por tienda desde Supabase con persistencia resiliente
     const activeCreditTenant = merchantStore?.id || tenantSlug || 'default';
-    const isIanCredit = isFernandoSeedStore(activeCreditTenant);
-    const isDemoMatiasCredit = isMatiasSeedStore(activeCreditTenant);
+    const allowCreditSeed = canUseAdminSeedData(activeCreditTenant, currentUser);
+    const isIanCredit = allowCreditSeed && isFernandoSeedStore(activeCreditTenant);
+    const isDemoMatiasCredit = allowCreditSeed && isMatiasSeedStore(activeCreditTenant);
     const creditTenantFilter = isIanCredit 
       ? ['minimarket-ian', 'tiendita-fernando'] 
       : isDemoMatiasCredit 
@@ -3080,7 +3128,7 @@ export const StoreProvider = ({ children }) => {
         let localExisting = [];
         try {
           const raw = localStorage.getItem(`marketsaas_${activeCreditTenant}_credits`) || 
-                      (isOfficialSeedStore(activeCreditTenant) ? (localStorage.getItem('marketsaas_default_credits') || localStorage.getItem('marketsaas_matias-tiendatodo_credits')) : null);
+                      (allowCreditSeed ? (localStorage.getItem('marketsaas_default_credits') || localStorage.getItem('marketsaas_matias-tiendatodo_credits')) : null);
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) localExisting = parsed.map(normalizeCreditCustomer).filter(Boolean);
@@ -3130,7 +3178,7 @@ export const StoreProvider = ({ children }) => {
             setCreditCustomers(localExisting);
             return;
           }
-          if (hasInit || !isOfficialSeedStore(activeCreditTenant)) {
+          if (hasInit || !allowCreditSeed) {
             setCreditCustomers([]);
             return;
           }
@@ -3422,7 +3470,21 @@ export const StoreProvider = ({ children }) => {
       }
       window.removeEventListener('storage', handleStorageEvent);
     };
-  }, [tenantSlug, merchantStore?.id, currentUser?.id]);
+  }, [tenantSlug, merchantStore?.id, currentUser?.id, viewMode]);
+
+  // Blindaje de VISTA DUEÑO: garantiza cero datos semilla/demo para cualquier cuenta distinta a yfozter@gmail.com e ianortizsandoval@gmail.com
+  useEffect(() => {
+    if (viewMode !== 'admin' || isAuthLoading) return;
+    if (!currentUser || !isAuthorizedSeedOwnerUser(currentUser)) {
+      if (!currentUser || isOfficialSeedStore(tenantSlug)) {
+        setProducts([]);
+        setOrders([]);
+        setSuppliers([]);
+        setCreditCustomers([]);
+        setProductRequests([]);
+      }
+    }
+  }, [viewMode, isAuthLoading, currentUser, tenantSlug]);
 
   // Auto-purga en Supabase de peticiones de prueba residuales generadas durante diagnósticos
   useEffect(() => {
@@ -3782,14 +3844,14 @@ export const StoreProvider = ({ children }) => {
       localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
     } catch (e) {}
 
-    // En Modo Demostración ('default'): restablecer peticiones iniciales
-    if (tenantSlug === 'default') {
+    // En Modo Demostración ('default') fuera de Vista Dueño no autorizado: restablecer peticiones iniciales
+    if (tenantSlug === 'default' && (viewMode !== 'admin' || canUseAdminSeedData('default', currentUser))) {
       setProductRequests(initialProductRequests);
       try {
         localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
       } catch (e) {}
     }
-  }, [viewMode, tenantSlug]);
+  }, [viewMode, tenantSlug, currentUser]);
 
   // Invalidación automática de caché local para asegurar que los usuarios siempre vean los productos actualizados
   useEffect(() => {
@@ -3806,7 +3868,8 @@ export const StoreProvider = ({ children }) => {
         keysToRemove.forEach(k => localStorage.removeItem(k));
         localStorage.setItem('marketsaas_catalog_version', CURRENT_SCHEMA_VER);
 
-        if (tenantSlug === 'default') {
+        const allowSeedReload = viewMode !== 'admin' || canUseAdminSeedData(tenantSlug, currentUser);
+        if (allowSeedReload && tenantSlug === 'default') {
           setProducts(initialProducts.map(normalizeProduct));
           setStoreConfigState(initialStoreConfig);
           setCart([]);
@@ -3815,14 +3878,16 @@ export const StoreProvider = ({ children }) => {
           localStorage.setItem(`marketsaas_${tenantSlug}_config`, JSON.stringify(initialStoreConfig));
           localStorage.removeItem(`marketsaas_${tenantSlug}_cart`);
           localStorage.removeItem(`marketsaas_${tenantSlug}_requests`);
-        } else {
+        } else if (allowSeedReload && hasPredefinedCatalog(tenantSlug)) {
           setProducts(getStoreCatalog(tenantSlug).map(normalizeProduct));
+        } else {
+          setProducts([]);
         }
       }
     } catch (e) {
       console.warn('Error syncing catalog version:', e);
     }
-  }, [tenantSlug]);
+  }, [tenantSlug, viewMode, currentUser]);
 
   useEffect(() => {
     try {
@@ -5841,9 +5906,13 @@ export const StoreProvider = ({ children }) => {
     return normalizedPosOrder;
   };
 
-  // Inyección de ventas y pedidos de prueba para verificación de Pago Combinado
+  // Inyección de ventas y pedidos de prueba para verificación de Pago Combinado (Solo cuentas semilla autorizadas)
   const injectSplitPaymentTestOrders = () => {
-    const isFernando = tenantSlug === 'minimarket-ian' || tenantSlug === 'tiendita-fernando' || (!tenantSlug && merchantStore?.id === 'minimarket-ian');
+    if (!canUseAdminSeedData(tenantSlug, currentUser)) {
+      showToast('Esta herramienta de prueba está reservada solo para las cuentas demo autorizadas.', 'warning');
+      return;
+    }
+    const isFernando = isFernandoSeedStore(tenantSlug || merchantStore?.id);
     const rawSeeds = isFernando ? getFernandoOrders() : getMatiasOrders();
     const splitTestSeeds = rawSeeds
       .filter(o => o.id && (String(o.id).startsWith('POS-MIX-') || String(o.id).startsWith('ORD-MIX-')))
@@ -5881,9 +5950,13 @@ export const StoreProvider = ({ children }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.injectSplitPaymentTestOrders = injectSplitPaymentTestOrders;
+      if (canUseAdminSeedData(tenantSlug, currentUser)) {
+        window.injectSplitPaymentTestOrders = injectSplitPaymentTestOrders;
+      } else {
+        delete window.injectSplitPaymentTestOrders;
+      }
     }
-  }, [tenantSlug, storeConfig, injectSplitPaymentTestOrders]);
+  }, [tenantSlug, storeConfig, currentUser, injectSplitPaymentTestOrders]);
 
   // Solicitar producto ("Pídelo si no está")
   const submitProductRequest = async (customerName, productName, notes, location = '') => {
@@ -6932,15 +7005,19 @@ export const StoreProvider = ({ children }) => {
       const newConfig = {
         ...baseConfig,
         name: storeName,
-        tagline: 'Tu tienda de confianza a pasos de tu puerta',
+        tagline: '',
         phone: phone || '',
         whatsapp: whatsapp || phone || '',
+        adminEmail: sessionUser?.email || currentUser?.email || '',
+        logoUrl: '',
+        bannerUrl: '',
+        qrImageUrl: '',
         themeColor: themeColor || 'emerald',
         owner_id: userId,
         address: '',
         zone: '',
         reference: '',
-        minDeliveryOrder: 20.00,
+        minDeliveryOrder: '',
         maxDeliveryRadiusKm: 18.0,
         isRainActive: false,
         enableDelivery: true,
@@ -6951,7 +7028,7 @@ export const StoreProvider = ({ children }) => {
         id: cleanSlug,
         tenant_id: cleanSlug,
         name: storeName,
-        slogan: 'Tu tienda de confianza a pasos de tu puerta',
+        slogan: '',
         theme_color: themeColor || 'emerald',
         currency_symbol: 'Bs.',
         is_open: true,
@@ -7288,7 +7365,8 @@ export const StoreProvider = ({ children }) => {
         calculateSplitPortions,
         formatPaymentBreakdownText,
         roundMoney,
-        injectSplitPaymentTestOrders
+        injectSplitPaymentTestOrders: canUseAdminSeedData(tenantSlug, currentUser) ? injectSplitPaymentTestOrders : null,
+        isAuthorizedSeedOwnerAccount: isAuthorizedSeedOwnerUser(currentUser)
       }}
     >
       {children}

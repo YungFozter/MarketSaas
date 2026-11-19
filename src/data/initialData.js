@@ -248,14 +248,14 @@ export const presetBanners = [
 ];
 
 export const initialStoreConfig = {
-  name: 'Mi Tienda',
-  tagline: 'Tu tienda de confianza a pasos de tu puerta',
+  name: '',
+  tagline: '',
   address: '',
   themeColor: 'emerald', // 'emerald' | 'teal' | 'indigo' | 'rose' | 'amber' | 'purple'
   currencySymbol: 'Bs.',
-  adminEmail: 'admin@tienda.com',
+  adminEmail: '',
   logoUrl: '',
-  bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
+  bannerUrl: '',
   qrImageUrl: '',
   categories: [
     'Lácteos & Huevos',
@@ -267,13 +267,13 @@ export const initialStoreConfig = {
     'Limpieza & Hogar'
   ],
   coupons: [],
-  minDeliveryOrder: 20.00,
+  minDeliveryOrder: '',
   maxDeliveryRadiusKm: 18.0,
   isRainActive: false,
   freeDeliveryThreshold: 0,
-  phone: '+591 72125280',
-  whatsapp: '59172125280',
-  schedule: 'Horarios de Atención según cada Tienda',
+  phone: '',
+  whatsapp: '',
+  schedule: 'auto',
   isOpen: true,
   enableDelivery: true,
   deliverySchedule: {
@@ -391,5 +391,5 @@ export const initialProductRequests = [
 ];
 
 // Directorio de Minimarkets registrados en la plataforma (Red de 43 tiendas)
-export { initialStores } from './storesData';
+export { initialStores } from './storesData.js';
 

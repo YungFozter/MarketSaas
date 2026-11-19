@@ -26,6 +26,34 @@ export const isOfficialSeedStore = (slug) => {
   return isMatiasSeedStore(slug) || isFernandoSeedStore(slug);
 };
 
+export const SEED_OWNER_ACCOUNTS = Object.freeze({
+  MATIAS: 'yfozter@gmail.com',
+  IAN: 'ianortizsandoval@gmail.com'
+});
+
+/**
+ * Verifica si el usuario autenticado corresponde estrictamente a una de las 2 cuentas
+ * registradas autorizadas para visualizar/recibir datos semilla en VISTA DUEÑO.
+ */
+export const isAuthorizedSeedOwnerUser = (user) => {
+  if (!user || !user.email) return false;
+  const email = String(user.email).toLowerCase().trim();
+  const isVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
+  return isVerified && (email === SEED_OWNER_ACCOUNTS.MATIAS || email === SEED_OWNER_ACCOUNTS.IAN);
+};
+
+/**
+ * Evalúa si VISTA DUEÑO puede cargar datos semilla para el tenant indicado.
+ * Toda tienda/cuenta ajena a yfozter@gmail.com e ianortizsandoval@gmail.com inicia 100% limpia.
+ */
+export const canUseAdminSeedData = (slug, user) => {
+  if (!isAuthorizedSeedOwnerUser(user)) return false;
+  const email = String(user.email).toLowerCase().trim();
+  if (email === SEED_OWNER_ACCOUNTS.MATIAS) return isMatiasSeedStore(slug);
+  if (email === SEED_OWNER_ACCOUNTS.IAN) return isFernandoSeedStore(slug);
+  return false;
+};
+
 export const isPredefinedMapStore = (slug) => {
   if (!slug) return false;
   const s = String(slug).toLowerCase().trim();

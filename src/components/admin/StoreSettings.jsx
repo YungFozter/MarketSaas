@@ -539,7 +539,7 @@ export const StoreSettings = () => {
     currencySymbol: 'Bs.',
     themeColor: 'emerald',
     logoUrl: '',
-    bannerUrl: presetBanners[0].url,
+    bannerUrl: '',
     qrImageUrl: '',
     coupons: [],
     categories: [
@@ -552,11 +552,15 @@ export const StoreSettings = () => {
       'Limpieza & Hogar'
     ],
     ...storeConfig,
+    name: storeConfig?.name || '',
+    tagline: storeConfig?.tagline || '',
+    phone: storeConfig?.phone || '',
+    whatsapp: storeConfig?.whatsapp || '',
     schedule: normalizeStoreSchedule(storeConfig?.schedule),
     deliverySchedule: normalizeDeliverySchedule(storeConfig?.deliverySchedule, storeConfig),
     storeOpenMode: storeConfig?.storeOpenMode || 'auto',
     scheduleClosedMessage: storeConfig?.scheduleClosedMessage || '',
-    minDeliveryOrder: storeConfig?.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig?.minOrder || 20.00),
+    minDeliveryOrder: storeConfig?.minDeliveryOrder !== undefined && storeConfig?.minDeliveryOrder !== null ? storeConfig.minDeliveryOrder : (storeConfig?.minOrder ?? ''),
     isRainActive: Boolean(storeConfig?.isRainActive),
     zone: storeConfig?.zone || '',
     reference: storeConfig?.reference || '',
@@ -593,8 +597,13 @@ export const StoreSettings = () => {
         deliverySchedule: normalizeDeliverySchedule(storeConfig.deliverySchedule, storeConfig),
         storeOpenMode: storeConfig.storeOpenMode || 'auto',
         scheduleClosedMessage: storeConfig.scheduleClosedMessage || '',
-        minDeliveryOrder: storeConfig.minDeliveryOrder !== undefined ? storeConfig.minDeliveryOrder : (storeConfig.minOrder || 20.00),
+        minDeliveryOrder: storeConfig.minDeliveryOrder !== undefined && storeConfig.minDeliveryOrder !== null ? storeConfig.minDeliveryOrder : (storeConfig.minOrder ?? ''),
         isRainActive: Boolean(storeConfig.isRainActive),
+        name: storeConfig.name || '',
+        tagline: storeConfig.tagline || '',
+        phone: storeConfig.phone || '',
+        whatsapp: storeConfig.whatsapp || '',
+        bannerUrl: storeConfig.bannerUrl || '',
         coupons: Array.isArray(storeConfig.coupons)
           ? storeConfig.coupons.filter(c => c.code !== 'VECINO10' && c.code !== 'VECI-511')
           : [],
@@ -660,7 +669,7 @@ export const StoreSettings = () => {
   };
 
   const [newCouponCode, setNewCouponCode] = useState('');
-  const [newCouponDiscount, setNewCouponDiscount] = useState('10.00');
+  const [newCouponDiscount, setNewCouponDiscount] = useState('');
   const [editingCoupon, setEditingCoupon] = useState(null);
 
   const handleGenerateCouponCode = () => {
