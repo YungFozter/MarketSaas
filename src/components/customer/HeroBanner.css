@@ -1,28 +1,177 @@
 /* ==========================================================================
-   HeroBanner.css - Estilos específicos para el banner principal de bienvenida
+   HeroBanner.css - Cabecera compacta de tienda, container queries y LCP limpio
    ========================================================================== */
 
 .hero-banner-container {
   position: relative;
   overflow: hidden;
-  border-radius: 1.5rem;
+  border-radius: 1.25rem;
+  container: hero-banner / inline-size;
+  background: linear-gradient(135deg, #064e3b 0%, #0f766e 55%, #065f46 100%);
 }
 
-.hero-banner-image {
+.hero-banner-bg-img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
   object-fit: cover;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hero-banner-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(6, 78, 59, 0.92) 0%,
+    rgba(15, 118, 110, 0.86) 52%,
+    rgba(4, 47, 46, 0.94) 100%
+  );
+  pointer-events: none;
+}
+
+.hero-banner-inner {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.875rem;
+  padding: 1rem 1rem 1.1rem;
+  align-items: center;
+}
+
+.hero-banner-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-inline-size: 0;
+}
+
+.hero-banner-text {
+  min-inline-size: 0;
+  flex: 1;
+  overflow-wrap: break-word;
+}
+
+.hero-banner-title {
+  font-size: clamp(1.2rem, 0.95rem + 1.15vw, 1.8rem);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: #ffffff;
+  margin: 0;
+}
+
+.hero-banner-tagline {
+  font-size: clamp(0.78rem, 0.72rem + 0.2vw, 0.92rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+  color: rgba(209, 250, 229, 0.92);
+  margin: 0.25rem 0 0;
+}
+
+.hero-banner-logo-box {
+  inline-size: 3rem;
+  block-size: 3rem;
+  border-radius: 0.875rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+}
+
+.hero-banner-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
+.hero-banner-meta-pill,
+.hero-banner-maps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-block-size: 2rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  max-inline-size: 100%;
+}
+
+.hero-banner-meta-pill {
+  background-color: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ecfdf5;
+}
+
+.hero-banner-maps-link {
+  background-color: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  color: #065f46;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.hero-banner-maps-link:hover {
+  background-color: #ecfdf5;
+}
+
+.hero-banner-maps-link:active {
+  transform: scale(0.98);
+}
+
+.hero-banner-search-panel {
+  min-inline-size: 0;
   width: 100%;
-  height: 100%;
 }
 
-/* Distintivos exclusivos para Tiendas Oficiales PRO */
-.hero-banner-pro-badge {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #1e1b4b;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+.hero-banner-search-control,
+.hero-banner-search-btn,
+.hero-banner-clear-btn {
+  min-block-size: 2.5rem;
 }
 
+.hero-banner-search-control::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+@media (pointer: coarse) {
+  .hero-banner-maps-link,
+  .hero-banner-search-control,
+  .hero-banner-search-btn,
+  .hero-banner-clear-btn {
+    min-block-size: 44px;
+  }
+}
+
+/* Adaptación automática al ancho del contenedor (PC / Tablet ancho -> 2 columnas compactas) */
+@container hero-banner (inline-size >= 48rem) {
+  .hero-banner-inner {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 1.25rem 1.75rem;
+    padding: 1.25rem 1.75rem;
+  }
+
+  .hero-banner-logo-box {
+    inline-size: 3.75rem;
+    block-size: 3.75rem;
+    border-radius: 1rem;
+  }
+}
+
+/* Distintivo exclusivo para Tiendas Oficiales PRO */
 .hero-banner-pro-chip {
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(245, 158, 11, 0.6);
-  backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.65);
 }
