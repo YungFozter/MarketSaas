@@ -957,7 +957,7 @@ export const SpectatorShowcase = ({
 
                 <h4 className="text-xl font-black text-slate-900 mb-1">Plan Básico</h4>
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Todo lo necesario para vender en línea, recibir pedidos por WhatsApp y gestionar tu minimarket al 100%.
+                  Control total de ventas, inventario y pedidos vecinales para ordenar tu minimarket día a día sin cuadernos.
                 </p>
 
                 <div className="mb-6 pb-5 border-b border-slate-200">
@@ -966,7 +966,7 @@ export const SpectatorShowcase = ({
                     <span className="text-xs font-bold text-slate-500">/ mes</span>
                   </div>
                   <span className="text-[11px] text-emerald-700 font-bold mt-0.5 block">
-                    Ideal para comenzar la digitalización de tu barrio
+                    Sin comisiones por venta • Ideal para digitalizar tu barrio
                   </span>
                 </div>
 
@@ -976,39 +976,27 @@ export const SpectatorShowcase = ({
                   </p>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Catálogo Web Online:</strong> subdominio propio para compartir a tus clientes.</span>
+                    <span><strong>Catálogo Web Online 24/7:</strong> enlace propio para compartir con vecinos y vender sin comisiones.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Pedidos Directos por WhatsApp:</strong> carrito con desglose y cálculo exacto.</span>
+                    <span><strong>Pedidos Claros por WhatsApp:</strong> llegan listos con carrito, GPS y vuelto exacto.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>POS de Mostrador:</strong> cobros rápidos en efectivo, QR o crédito.</span>
+                    <span><strong>POS de Mostrador + Libreta de Fiados:</strong> cobros en efectivo, QR o crédito y abonos al día.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Control de Inventario:</strong> stock, precios y alertas de productos agotados.</span>
+                    <span><strong>Control de Inventario y Proveedores:</strong> stock, precios, reposiciones y alertas de agotados.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Libreta de Fiado:</strong> registro de deudas vecinales y abonos en vivo.</span>
+                    <span><strong>Mapa Vecinal y Tarifario GPS:</strong> tu local visible en el radar con cálculo automático de envío.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Gestión de Proveedores:</strong> agenda y pedidos de reposición.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Presencia en el Mapa:</strong> tu local geolocalizado en el radar de vecinos.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Kit Imprimible de Mostrador:</strong> carteles y carpas QR listos para imprimir.</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Cierre de Caja Diario:</strong> arqueo, ingresos, retiros y saldo.</span>
+                    <span><strong>Kit QR Imprimible y Cierre de Caja:</strong> carteles para mostrador y arqueo diario sin errores.</span>
                   </div>
                 </div>
               </div>
@@ -1048,7 +1036,7 @@ export const SpectatorShowcase = ({
 
                 <h4 className="text-xl font-black text-slate-900 mb-1">Plan Pro</h4>
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Todo lo del Plan Básico potenciado con seguimiento comercial, soporte preferencial VIP y reportes avanzados.
+                  Pensado para dueños que quieren ahorrar horas de trabajo, conocer sus ganancias reales y atraer más clientes del barrio cada día.
                 </p>
 
                 <div className="mb-6 pb-5 border-b border-emerald-100">
@@ -1057,41 +1045,41 @@ export const SpectatorShowcase = ({
                     <span className="text-xs font-bold text-slate-500">/ mes</span>
                   </div>
                   <span className="text-[11px] text-emerald-800 font-bold mt-0.5 block">
-                    Incluye TODO lo del Plan Básico + Beneficios VIP
+                    Todo lo del Básico + herramientas para ganar más y atraer clientes
                   </span>
                 </div>
 
                 <div className="space-y-2.5 text-xs text-slate-700">
                   <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-800 mb-2">
-                    Ventajas exclusivas PRO:
+                    Ventajas exclusivas para crecer:
                   </p>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Soporte Prioritario VIP:</strong> atención ágil y preferencial en menos de 2 horas.</span>
+                    <span><strong>Importación Masiva por Excel (Ahorra Horas):</strong> carga o actualiza cientos de productos y precios en segundos.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Acompañamiento Mensual:</strong> asesoría en carga de productos y optimización de ventas.</span>
+                    <span><strong>Analítica de Rentabilidad y Rotación:</strong> detecta tus artículos estrella y el margen real de ganancia.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Reportes Analíticos:</strong> métricas de productos más vendidos y descargas Excel/PDF.</span>
+                    <span><strong>Planillas Contables en Excel (.XLS) y PDF:</strong> reportes financieros listos para cierre de mes y control de utilidades.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Pin Destacado en el Mapa:</strong> insignia dorada para llamar más la atención en tu barrio.</span>
+                    <span><strong>Corona Dorada 👑 y Destacado en el Mapa:</strong> resalta sobre la competencia para atraer más vecinos nuevos.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Branding Personalizado:</strong> banner HD con la identidad visual propia de tu local.</span>
+                    <span><strong>Banner de Ofertas Flash en Cabecera:</strong> promociones y combos visibles apenas entran para vender más por pedido.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Campañas de Marketing:</strong> artes listos para publicar en estados de WhatsApp.</span>
+                    <span><strong>Marketing Vecinal & Difusión con GPS:</strong> plantillas y mensajes propios para WhatsApp con link directo y pin de Maps.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span><strong>Acceso Temprano:</strong> prioridad en nuevas funciones de la plataforma.</span>
+                    <span><strong>Marca Propia HD & Soporte VIP (&lt; 2h):</strong> portada HD personalizada y asistencia prioritaria para ayudarte a crecer.</span>
                   </div>
                 </div>
               </div>
@@ -1126,7 +1114,7 @@ export const SpectatorShowcase = ({
 
                 <h4 className="text-xl font-black text-slate-900 mb-1">Plan Mejora</h4>
                 <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                  Pago único por proyecto para añadir funciones especiales, integraciones de hardware o rediseños únicos.
+                  Pago único para negocios que desean automatizar aún más su operación o sumar funciones únicas hechas a su medida.
                 </p>
 
                 <div className="mb-6 pb-5 border-b border-slate-200">
@@ -1134,33 +1122,33 @@ export const SpectatorShowcase = ({
                     <span className="text-2xl sm:text-3xl font-black text-slate-900">Cotización a Medida</span>
                   </div>
                   <span className="text-[11px] text-indigo-700 font-bold mt-0.5 block">
-                    Pago único según el alcance requerido
+                    Pago único por proyecto • Sin mensualidades adicionales
                   </span>
                 </div>
 
                 <div className="space-y-2.5 text-xs text-slate-700">
                   <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 mb-2">
-                    Alcances posibles:
+                    ¿Cómo potencia tu negocio?
                   </p>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Nuevas Funcionalidades:</strong> herramientas específicas para tus operaciones.</span>
+                    <span><strong>Módulos Exclusivos para tu Flujo:</strong> precios mayoristas, sucursales o reglas propias de tu negocio.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Diseño y Experiencia Exclusiva:</strong> interfaz personalizada a tu marca.</span>
+                    <span><strong>Conexión con Hardware de Tienda:</strong> balanzas, lectores de barras, impresoras térmicas o APIs.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Integración de Tecnologías:</strong> balanzas, lectores de barras, impresoras térmicas o APIs.</span>
+                    <span><strong>Identidad Visual Única:</strong> personalizaciones exclusivas para diferenciar tu marca frente a la competencia.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Automatizaciones Propias:</strong> avisos especiales a clientes y reportes a medida.</span>
+                    <span><strong>Automatizaciones de Venta y Fidelización:</strong> avisos automáticos a clientes y reportes especiales.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                    <span><strong>Reunión Técnica Directa:</strong> asesoría personalizada para definir tu proyecto.</span>
+                    <span><strong>Asesoría Técnica Directa:</strong> definimos alcance, plazo de entrega y presupuesto cerrado contigo.</span>
                   </div>
                 </div>
               </div>

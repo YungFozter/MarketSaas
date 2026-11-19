@@ -371,8 +371,8 @@ export const SubscriptionManager = () => {
               </div>
 
               <h4 className="text-xl font-black text-slate-900 mb-1">Plan Básico</h4>
-              <p className="text-xs text-slate-500 mb-4">
-                La solución digital completa para operar tu minimarket de barrio día a día sin complicaciones.
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                Control total de ventas, inventario y pedidos vecinales para ordenar tu minimarket día a día sin cuadernos.
               </p>
 
               <div className="mb-6 pb-5 border-b border-slate-200">
@@ -381,57 +381,41 @@ export const SubscriptionManager = () => {
                   <span className="text-xs font-bold text-slate-500">/ mes</span>
                 </div>
                 <span className="text-[11px] text-emerald-700 font-bold mt-0.5 block">
-                  Sin contratos forzosos • Cancela o renueva cuando quieras
+                  Sin comisiones por venta • Cancela o renueva cuando quieras
                 </span>
               </div>
 
               <div className="space-y-2.5 text-xs text-slate-700">
                 <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 mb-2">
-                  Todo a lo que accedes:
+                  Todo lo que incluye:
                 </p>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Catálogo Web Online:</strong> subdominio propio para compartir a tus vecinos.</span>
+                  <span><strong>Catálogo Web Online 24/7:</strong> enlace propio para compartir con vecinos y vender sin comisiones.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Pedidos Directos por WhatsApp:</strong> carrito estructurado con cálculo automático.</span>
+                  <span><strong>Pedidos Claros por WhatsApp:</strong> llegan listos con carrito, ubicación GPS y vuelto exacto.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>POS / Venta Rápida de Mostrador:</strong> cobros en efectivo, QR o crédito.</span>
+                  <span><strong>POS de Mostrador + Libreta de Fiados:</strong> cobra en efectivo, QR o crédito y controla abonos sin pérdidas.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Gestión de Inventario:</strong> control de stock, precios y alertas de reposición.</span>
+                  <span><strong>Inventario y Proveedores:</strong> alertas de stock mínimo y control de compras de reposición.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Libreta de Fiado / Crédito Vecinal:</strong> cuentas por cobrar y abonos en vivo.</span>
+                  <span><strong>Mapa Vecinal y Tarifario GPS:</strong> aparece en el radar del barrio con horarios y envío por distancia.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Gestión de Proveedores:</strong> compras, contactos y pedidos de abastecimiento.</span>
+                  <span><strong>Cierre de Caja y Alertas Sonoras:</strong> arqueo diario al centavo y aviso instantáneo de pedidos.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Presencia en el Mapa Vecinal:</strong> tienda oficial visible con geolocalización GPS.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Horarios & Tarifas de Envíos:</strong> cálculo de costo por distancia y turnos de delivery.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Kit Imprimible de Mostrador:</strong> póster A4 y carpas con QR para vitrina.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Cierre y Arqueo de Caja:</strong> control de ingresos, retiros y balance diario.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Notificaciones Sonoras en Vivo:</strong> alerta acústica de nuevos pedidos en PC y móvil.</span>
+                  <span><strong>Kit Imprimible QR de Mostrador:</strong> carteles y carpas A4 para que tus clientes compren desde el celular.</span>
                 </div>
               </div>
             </div>
@@ -470,8 +454,8 @@ export const SubscriptionManager = () => {
               </div>
 
               <h4 className="text-xl font-black text-slate-900 mb-1">Plan Pro</h4>
-              <p className="text-xs text-slate-500 mb-4">
-                Todo lo del Básico más seguimiento comercial, soporte prioritario VIP y herramientas de fidelización avanzada.
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                Pensado para dueños que quieren ahorrar horas de trabajo, conocer sus ganancias reales y atraer más clientes del barrio cada día.
               </p>
 
               <div className="mb-6 pb-5 border-b border-emerald-100">
@@ -480,41 +464,41 @@ export const SubscriptionManager = () => {
                   <span className="text-xs font-bold text-slate-500">/ mes</span>
                 </div>
                 <span className="text-[11px] text-emerald-800 font-bold mt-0.5 block">
-                  Incluye TODO lo del Plan Básico + Beneficios Exclusivos
+                  Todo lo del Básico + herramientas para ganar más y atraer clientes
                 </span>
               </div>
 
               <div className="space-y-2.5 text-xs text-slate-700">
                 <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-800 mb-2">
-                  Beneficios Exclusivos PRO:
+                  Ventajas Exclusivas para Crecer:
                 </p>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Soporte Prioritario VIP:</strong> canal directo de WhatsApp con atención preferencial en &lt; 2h.</span>
+                  <span><strong>Importación Masiva por Excel (Ahorra Horas):</strong> sube o actualiza cientos de productos y precios en segundos sin digitar uno por uno.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Acompañamiento y Asistencia Mensual:</strong> ayuda en carga masiva de productos, ajuste de precios y optimización.</span>
+                  <span><strong>Analítica de Rentabilidad y Rotación:</strong> descubre qué productos te dejan mayor ganancia real y cuáles reponer primero para no perder ventas.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Reportes Analíticos Avanzados:</strong> métricas de productos más rentables, clientes top y descargas en Excel/PDF.</span>
+                  <span><strong>Planillas Contables en Excel (.XLS) y PDF:</strong> descarga reportes financieros profesionales listos para cierre de mes y control de utilidades.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Destacado Preferencial en el Mapa:</strong> pin distintivo con corona en el mapa vecinal y mejor visibilidad de búsqueda.</span>
+                  <span><strong>Corona Dorada 👑 y Destacado en el Mapa:</strong> resalta sobre otras tiendas en el radar vecinal para captar más compradores nuevos de tu zona.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Personalización Avanzada de Marca:</strong> banner HD personalizado en cabecera y colores representativos de tu negocio.</span>
+                  <span><strong>Banner de Ofertas Flash en Cabecera:</strong> anuncia combos, pan recién salido o promos del día apenas el cliente entra para aumentar el ticket promedio.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Campañas de Marketing Vecinal:</strong> plantillas y artes para estados de WhatsApp y ofertas del fin de semana.</span>
+                  <span><strong>Marketing & Difusión Vecinal con GPS:</strong> plantillas y mensajes personalizados para estados/grupos de WhatsApp con tu catálogo y pin exacto de Maps.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Acceso Temprano a Novedades:</strong> sé el primero en recibir e integrar nuevas funciones del sistema.</span>
+                  <span><strong>Marca Propia HD & Soporte VIP (&lt; 2h):</strong> portada HD personalizada que genera más confianza y atención prioritaria directa para ayudarte a crecer.</span>
                 </div>
               </div>
             </div>
@@ -547,8 +531,8 @@ export const SubscriptionManager = () => {
               </div>
 
               <h4 className="text-xl font-black text-slate-900 mb-1">Plan Mejora</h4>
-              <p className="text-xs text-slate-500 mb-4">
-                Pago único para implementar mejoras exclusivas, nuevas funcionalidades, diseños personalizados o integraciones tecnológicas.
+              <p className="text-xs text-slate-500 mb-4 leading-relaxed">
+                Pago único para negocios que desean automatizar aún más su operación o sumar funciones únicas hechas a su medida.
               </p>
 
               <div className="mb-6 pb-5 border-b border-slate-200">
@@ -556,33 +540,33 @@ export const SubscriptionManager = () => {
                   <span className="text-2xl sm:text-3xl font-black text-slate-900">Cotización a Medida</span>
                 </div>
                 <span className="text-[11px] text-indigo-700 font-bold mt-0.5 block">
-                  Pago único por proyecto o funcionalidad requerida
+                  Pago único por proyecto • Sin mensualidades adicionales
                 </span>
               </div>
 
               <div className="space-y-2.5 text-xs text-slate-700">
                 <p className="font-extrabold text-[11px] uppercase tracking-wider text-slate-400 mb-2">
-                  ¿Qué puedes solicitar en este plan?
+                  ¿Cómo potencia tu negocio?
                 </p>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>Nuevas Funcionalidades:</strong> módulos específicos para el flujo único de tu negocio.</span>
+                  <span><strong>Módulos Exclusivos para tu Flujo:</strong> precios mayoristas, sucursales o reglas especiales según cómo trabajas.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>Rediseño y Agregados Visuales:</strong> interfaz adaptada a la identidad exacta de tu marca.</span>
+                  <span><strong>Conexión con Hardware de Tienda:</strong> integración con impresoras térmicas de tickets, lectores de barras o balanzas.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>Integración de Tecnologías:</strong> conexión con lectores de códigos de barras específicos, balanzas o APIs.</span>
+                  <span><strong>Identidad Visual Única:</strong> personalizaciones exclusivas para diferenciar tu marca frente a la competencia.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>Automatizaciones Exclusivas:</strong> bots, avisos personalizados a clientes y reportes especiales.</span>
+                  <span><strong>Automatizaciones de Venta y Fidelización:</strong> avisos automáticos a clientes y reportes especiales a pedido.</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Check className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
-                  <span><strong>Consultoría y Soporte Directo:</strong> reunión técnica para definir alcance, tiempos y presupuesto.</span>
+                  <span><strong>Asesoría Técnica Directa:</strong> definimos contigo el alcance, plazo de entrega y presupuesto cerrado.</span>
                 </div>
               </div>
             </div>
