@@ -77,7 +77,7 @@
   display: none;
 }
 
-/* Chips de sugerencias rápidas */
+/* Chips de sugerencias rápidas y bloques insertables */
 .share-store-chips-row {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -87,6 +87,28 @@
 
 .share-store-chips-row::-webkit-scrollbar {
   display: none;
+}
+
+/* Textarea del Constructor de Plantilla Personalizada */
+.share-custom-textarea {
+  resize: none;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.share-custom-textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.share-custom-textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.share-custom-textarea::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
 }
 
 /* Tarjeta de plantilla individual */
@@ -109,6 +131,10 @@
 
 .share-template-card--active {
   box-shadow: 0 6px 16px -4px rgba(245, 158, 11, 0.18);
+}
+
+.share-template-card--custom-active {
+  box-shadow: 0 6px 16px -4px rgba(16, 185, 129, 0.2);
 }
 
 /* Superficie de previsualización de chat de WhatsApp */
@@ -161,9 +187,10 @@
   border-right: 8px solid transparent;
 }
 
-/* Evitar zoom automático en iOS Safari al enfocar el input en pantallas táctiles */
+/* Evitar zoom automático en iOS Safari al enfocar el input o textarea en pantallas táctiles */
 @media (pointer: coarse) {
-  .share-promo-input {
+  .share-promo-input,
+  .share-custom-textarea {
     font-size: 16px !important;
   }
 }

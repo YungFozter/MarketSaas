@@ -20,7 +20,14 @@ import {
   ChevronRight,
   Lightbulb,
   CheckCheck,
-  MapPin
+  MapPin,
+  PenTool,
+  RotateCcw,
+  Plus,
+  ShoppingBag,
+  Navigation,
+  Phone,
+  Truck
 } from 'lucide-react';
 import { useStore } from '../../context/StoreContext';
 import './ShareStoreModal.css';
@@ -39,7 +46,210 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   const [copiedMessage, setCopiedMessage] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
 
-  // Control del carrusel deslizante en móvil / tablet (< lg) con rAF throttling sin re-renders innecesarios
+  const storeName = storeConfig?.name || 'Mi Minimarket';
+  const tenant = tenantSlug || 'default';
+
+  // 1. Enlace directo a la tienda
+  const storeUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?view=customer&store=${tenant}`
+    : `https://marketsaas.com/?view=customer&store=${tenant}`;
+
+  // 2. Ubicación en texto y teléfono
+  const addressText = storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Dirección de la tienda';
+  const storePhone = (storeConfig?.whatsapp || storeConfig?.phone || '').trim();
+
+  // 3. Enlace oficial de Google Maps con Pin Exacto (Marker) de las coordenadas GPS de la tienda
+  const { mapsUrl, hasExactCoordinates, resolvedLat, resolvedLng } = useMemo(() => {
+    const matchedDirectoryStore = (stores || []).find(
+      s => s && (
+        s.slug === tenant ||
+        s.id === tenant ||
+        s.slug === storeConfig?.id ||
+        s.id === storeConfig?.id ||
+        (Array.isArray(s.aliases) && s.aliases.includes(tenant))
+      )
+    );
+
+    const candidateLat = [
+      storeConfig?.latitude,
+      storeConfig?.googleMapsCoordinates?.lat,
+      merchantStore?.latitude,
+      merchantStore?.config?.latitude,
+      merchantStore?.config?.googleMapsCoordinates?.lat,
+      selectedStore?.latitude,
+      selectedStore?.googleMapsCoordinates?.lat,
+      matchedDirectoryStore?.latitude,
+      matchedDirectoryStore?.googleMapsCoordinates?.lat
+    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
+
+    const candidateLng = [
+      storeConfig?.longitude,
+      storeConfig?.googleMapsCoordinates?.lng,
+      merchantStore?.longitude,
+      merchantStore?.config?.longitude,
+      merchantStore?.config?.googleMapsCoordinates?.lng,
+      selectedStore?.longitude,
+      selectedStore?.googleMapsCoordinates?.lng,
+      matchedDirectoryStore?.longitude,
+      matchedDirectoryStore?.googleMapsCoordinates?.lng
+    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
+
+    const numLat = candidateLat != null ? Number(candidateLat) : null;
+    const numLng = candidateLng != null ? Number(candidateLng) : null;
+
+    if (numLat != null && numLng != null) {
+      const cleanLat = Number(numLat.toFixed(6));
+      const cleanLng = Number(numLng.toFixed(6));
+      return {
+        mapsUrl: `https://maps.google.com/?q=${cleanLat},${cleanLng}`,
+        hasExactCoordinates: true,
+        resolvedLat: cleanLat,
+        resolvedLng: cleanLng
+      };
+    }
+
+    const cleanQuery = [
+      addressText !== 'Dirección de la tienda' ? addressText : storeName,
+      'Santa Cruz de la Sierra, Bolivia'
+    ].filter(Boolean).join(', ');
+
+    return {
+      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(cleanQuery)}`,
+      hasExactCoordinates: false,
+      resolvedLat: null,
+      resolvedLng: null
+    };
+  }, [
+    stores,
+    tenant,
+    storeConfig?.id,
+    storeConfig?.latitude,
+    storeConfig?.longitude,
+    storeConfig?.googleMapsCoordinates,
+    merchantStore,
+    selectedStore,
+    addressText,
+    storeName
+  ]);
+
+  // Mensaje base predeterminado para la plantilla personalizada
+  const buildDefaultCustomTemplate = () =>
+    `📣 *¡Novedades en ${storeName}!* ✨\n\n` +
+    `Hola vecinos, ya estamos atendiendo con productos frescos y ofertas especiales para hoy.\n\n` +
+    `🛒 *Catálogo Virtual & Pedidos:*\n👉 ${storeUrl}\n\n` +
+    `📍 *Dirección:* ${addressText}\n` +
+    `🗺️ *Ubicación GPS (Google Maps):*\n${mapsUrl}`;
+
+  // Estado persistido por tienda para la Plantilla Personalizada
+  const customStorageKey = `marketsaas_${tenant}_custom_marketing_tpl`;
+  const [customTemplateText, setCustomTemplateText] = useState(() => {
+    try {
+      const saved = localStorage.getItem(customStorageKey);
+      if (saved && saved.trim()) return saved;
+    } catch {}
+    return '';
+  });
+
+  // Inicializar texto por defecto si está vacío cuando cambia la tienda
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(customStorageKey);
+      if (saved && saved.trim()) {
+        setCustomTemplateText(saved);
+      } else {
+        setCustomTemplateText(buildDefaultCustomTemplate());
+      }
+    } catch {
+      setCustomTemplateText(buildDefaultCustomTemplate());
+    }
+  }, [tenant, storeName, storeUrl, addressText, mapsUrl]);
+
+  const handleUpdateCustomTemplateText = (newVal) => {
+    setCustomTemplateText(newVal);
+    try {
+      localStorage.setItem(customStorageKey, newVal);
+    } catch {}
+  };
+
+  const customTextareaRef = useRef(null);
+
+  // Insertar bloque inteligente (enlace de tienda, ubicación GPS, dirección, etc.) en la posición del cursor
+  const handleInsertSmartToken = (snippetText, label) => {
+    const textarea = customTextareaRef.current;
+    if (!textarea) {
+      const next = customTemplateText
+        ? `${customTemplateText.trimEnd()}\n${snippetText}`
+        : snippetText;
+      handleUpdateCustomTemplateText(next);
+      showToast(`Insertado: ${label}`, 'info');
+      return;
+    }
+
+    const start = textarea.selectionStart ?? customTemplateText.length;
+    const end = textarea.selectionEnd ?? customTemplateText.length;
+    const before = customTemplateText.slice(0, start);
+    const after = customTemplateText.slice(end);
+    const needsLeadingNewline = before.length > 0 && !before.endsWith('\n') && !before.endsWith(' ');
+    const prefix = needsLeadingNewline ? '\n' : '';
+    const nextText = `${before}${prefix}${snippetText}${after}`;
+
+    handleUpdateCustomTemplateText(nextText);
+    showToast(`+${label} agregado al mensaje`, 'info');
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + prefix.length + snippetText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 20);
+  };
+
+  // Bloques inteligentes ofrecidos por el sistema para armar la plantilla personalizada
+  const smartInsertBlocks = useMemo(() => [
+    {
+      id: 'catalog_link',
+      label: 'Link Catálogo Tienda',
+      icon: ShoppingBag,
+      colorClass: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300',
+      snippet: `🛒 *Catálogo Virtual & Pedidos:*\n👉 ${storeUrl}`
+    },
+    {
+      id: 'gps_maps',
+      label: 'Ubicación GPS (Maps)',
+      icon: Navigation,
+      colorClass: 'bg-sky-50 hover:bg-sky-100 text-sky-800 border-sky-300',
+      snippet: `🗺️ *Cómo llegar (Google Maps):*\n${mapsUrl}`
+    },
+    {
+      id: 'store_address',
+      label: 'Dirección Escrita',
+      icon: MapPin,
+      colorClass: 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300',
+      snippet: `📍 *Ubicación:* ${addressText}`
+    },
+    {
+      id: 'store_title',
+      label: 'Nombre Tienda',
+      icon: Store,
+      colorClass: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300',
+      snippet: `🏪 *${storeName.toUpperCase()}*`
+    },
+    {
+      id: 'delivery_info',
+      label: 'Info Delivery & Pagos',
+      icon: Truck,
+      colorClass: 'bg-purple-50 hover:bg-purple-100 text-purple-900 border-purple-300',
+      snippet: `🛵 *Delivery vecinal rápido o retiro en mostrador (Efectivo y QR).*`
+    },
+    ...(storePhone ? [{
+      id: 'whatsapp_phone',
+      label: 'Teléfono / WhatsApp',
+      icon: Phone,
+      colorClass: 'bg-teal-50 hover:bg-teal-100 text-teal-900 border-teal-300',
+      snippet: `📲 *Consultas y Pedidos:* ${storePhone}`
+    }] : [])
+  ], [storeUrl, mapsUrl, addressText, storeName, storePhone]);
+
+  // Control del carrusel deslizante en móvil / tablet (< lg)
   const carouselRef = useRef(null);
   const scrollTickRef = useRef(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -101,94 +311,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     };
   }, [isOpen, onClose]);
 
-  const storeName = storeConfig?.name || 'Mi Minimarket';
-  const tenant = tenantSlug || 'default';
-
-  // 1. Enlace directo a la tienda
-  const storeUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}?view=customer&store=${tenant}`
-    : `https://marketsaas.com/?view=customer&store=${tenant}`;
-
-  // 2. Ubicación en texto
-  const addressText = storeConfig?.address?.trim() || storeConfig?.zone?.trim() || 'Dirección de la tienda';
-
-  // 3. Enlace oficial de Google Maps con Pin Exacto (Marker) de las coordenadas GPS de la tienda
-  const { mapsUrl, hasExactCoordinates, resolvedLat, resolvedLng } = useMemo(() => {
-    const matchedDirectoryStore = (stores || []).find(
-      s => s && (
-        s.slug === tenant ||
-        s.id === tenant ||
-        s.slug === storeConfig?.id ||
-        s.id === storeConfig?.id ||
-        (Array.isArray(s.aliases) && s.aliases.includes(tenant))
-      )
-    );
-
-    const candidateLat = [
-      storeConfig?.latitude,
-      storeConfig?.googleMapsCoordinates?.lat,
-      merchantStore?.latitude,
-      merchantStore?.config?.latitude,
-      merchantStore?.config?.googleMapsCoordinates?.lat,
-      selectedStore?.latitude,
-      selectedStore?.googleMapsCoordinates?.lat,
-      matchedDirectoryStore?.latitude,
-      matchedDirectoryStore?.googleMapsCoordinates?.lat
-    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
-
-    const candidateLng = [
-      storeConfig?.longitude,
-      storeConfig?.googleMapsCoordinates?.lng,
-      merchantStore?.longitude,
-      merchantStore?.config?.longitude,
-      merchantStore?.config?.googleMapsCoordinates?.lng,
-      selectedStore?.longitude,
-      selectedStore?.googleMapsCoordinates?.lng,
-      matchedDirectoryStore?.longitude,
-      matchedDirectoryStore?.googleMapsCoordinates?.lng
-    ].find(val => val !== '' && val != null && !isNaN(Number(val)) && Number(val) !== 0);
-
-    const numLat = candidateLat != null ? Number(candidateLat) : null;
-    const numLng = candidateLng != null ? Number(candidateLng) : null;
-
-    if (numLat != null && numLng != null) {
-      const cleanLat = Number(numLat.toFixed(6));
-      const cleanLng = Number(numLng.toFixed(6));
-      // `https://maps.google.com/?q=lat,lng` coloca directamente un marcador rojo exacto en Google Maps (PC, Android y iOS)
-      return {
-        mapsUrl: `https://maps.google.com/?q=${cleanLat},${cleanLng}`,
-        hasExactCoordinates: true,
-        resolvedLat: cleanLat,
-        resolvedLng: cleanLng
-      };
-    }
-
-    // Fallback cuando una tienda nueva aún no ha fijado su pin GPS en Configuración:
-    const cleanQuery = [
-      addressText !== 'Dirección de la tienda' ? addressText : storeName,
-      'Santa Cruz de la Sierra, Bolivia'
-    ].filter(Boolean).join(', ');
-
-    return {
-      mapsUrl: `https://maps.google.com/?q=${encodeURIComponent(cleanQuery)}`,
-      hasExactCoordinates: false,
-      resolvedLat: null,
-      resolvedLng: null
-    };
-  }, [
-    stores,
-    tenant,
-    storeConfig?.id,
-    storeConfig?.latitude,
-    storeConfig?.longitude,
-    storeConfig?.googleMapsCoordinates,
-    merchantStore,
-    selectedStore,
-    addressText,
-    storeName
-  ]);
-
-  // 4. Catálogo de Plantillas de Marketing Vecinal
+  // 4. Catálogo de 6 Plantillas de Marketing Vecinal (5 predefinidas + 1 Personalizada)
   const templates = useMemo(() => [
     {
       id: 'weekend',
@@ -268,8 +391,18 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
         `\n📍 *Ubicación:* ${addressText}\n` +
         `🗺️ *Cómo llegar (Google Maps):*\n${mapsUrl}\n\n` +
         `¡Te esperamos con los brazos abiertos! ✨`
+    },
+    {
+      id: 'custom',
+      title: 'Personalizada',
+      tag: 'Crea a tu Medida',
+      icon: PenTool,
+      badge: 'Libre',
+      isCustomBuilder: true,
+      description: 'Redacta tu propio mensaje e inserta enlaces de catálogo y GPS con 1 clic',
+      buildText: () => customTemplateText.trim() || buildDefaultCustomTemplate()
     }
-  ], [storeName, storeUrl, addressText, mapsUrl]);
+  ], [storeName, storeUrl, addressText, mapsUrl, customTemplateText]);
 
   const activeTemplateIndex = useMemo(() => {
     const idx = templates.findIndex(t => t.id === selectedTemplate);
@@ -277,6 +410,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
   }, [templates, selectedTemplate]);
 
   const activeTemplate = templates[activeTemplateIndex] || templates[0];
+  const isCustomMode = activeTemplate.id === 'custom';
 
   // Mensaje actual generado
   const currentShareMessage = useMemo(() => {
@@ -289,7 +423,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
     } catch {
       return '09:00';
     }
-  }, [selectedTemplate, customPromo]);
+  }, [selectedTemplate, customPromo, customTemplateText]);
 
   // Manejadores de navegación del carrusel en móvil/tablet
   const handlePrev = () => {
@@ -418,13 +552,13 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <span>Difusión</span>
+                    <span>Difusión Digital</span>
                   </span>
                 )}
               </div>
 
               <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 leading-tight truncate">
-                Plantillas de WhatsApp para{' '}
+                Plantillas listas y constructor personalizado con enlaces de{' '}
                 <strong className="text-slate-800 font-extrabold">{storeName}</strong>
               </p>
             </div>
@@ -448,11 +582,11 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-4 lg:gap-5 items-stretch">
 
             {/* =========================================================== */}
-            {/* COLUMNA IZQUIERDA (PC: 7 cols): Plantillas + Nota de Oferta */}
+            {/* COLUMNA IZQUIERDA (PC: 7 cols): Plantillas + Paso 2 Dinámico */}
             {/* =========================================================== */}
             <div className="lg:col-span-7 flex flex-col justify-between gap-2.5 sm:gap-3.5 min-w-0">
 
-              {/* PASO 1: SELECTOR DE PLANTILLA */}
+              {/* PASO 1: SELECTOR DE PLANTILLA (6 tarjetas en grid 2x3 par en PC, carrusel en móvil) */}
               <section className="space-y-1.5 sm:space-y-2" aria-label="Selector de plantilla de campaña">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
@@ -460,13 +594,12 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                       1
                     </span>
                     <label className="text-[11px] sm:text-[13px] font-black uppercase tracking-wider text-slate-800 truncate">
-                      Selecciona la Campaña
+                      Selecciona la Campaña o Crea la Tuya
                     </label>
                   </div>
 
-                  {/* En PC se ven las 5 plantillas al mismo tiempo; en móvil/tablet se muestran flechas de carrusel */}
                   <span className="hidden lg:inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200/80">
-                    <span>{templates.length} plantillas disponibles</span>
+                    <span>5 plantillas + 1 personalizada</span>
                   </span>
 
                   <div className="flex lg:hidden items-center gap-1.5 shrink-0">
@@ -507,7 +640,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                {/* Contenedor Híbrido: Carrusel horizontal en móvil/tablet y Cuadrícula en PC */}
+                {/* Contenedor Híbrido: Carrusel horizontal en móvil/tablet y Cuadrícula simétrica 2x3 en PC */}
                 <div
                   ref={carouselRef}
                   onScroll={handleCarouselScroll}
@@ -516,7 +649,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   {templates.map((tpl, idx) => {
                     const IconComponent = tpl.icon;
                     const isSelected = selectedTemplate === tpl.id;
-                    const isLastOdd = idx === templates.length - 1 && templates.length % 2 !== 0;
+                    const isCustomCard = Boolean(tpl.isCustomBuilder);
 
                     return (
                       <button
@@ -526,12 +659,14 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                           setSelectedTemplate(tpl.id);
                           scrollToTemplateIndex(idx);
                         }}
-                        className={`share-template-card snap-start shrink-0 w-[82%] sm:w-[calc(50%-5px)] lg:w-auto ${
-                          isLastOdd ? 'lg:col-span-2' : ''
-                        } relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left cursor-pointer flex flex-col justify-between gap-1 sm:gap-1.5 select-none group ${
+                        className={`share-template-card snap-start shrink-0 w-[82%] sm:w-[calc(50%-5px)] lg:w-auto relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left cursor-pointer flex flex-col justify-between gap-1 sm:gap-1.5 select-none group ${
                           isSelected
-                            ? 'share-template-card--active border-amber-500 bg-amber-50/75 ring-2 ring-amber-400/35'
-                            : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/70'
+                            ? isCustomCard
+                              ? 'share-template-card--custom-active border-emerald-500 bg-emerald-50/75 ring-2 ring-emerald-400/35'
+                              : 'share-template-card--active border-amber-500 bg-amber-50/75 ring-2 ring-amber-400/35'
+                            : isCustomCard
+                              ? 'border-emerald-200/90 bg-emerald-50/25 hover:border-emerald-300 hover:bg-emerald-50/50'
+                              : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/70'
                         }`}
                       >
                         <div className="flex items-start justify-between w-full gap-1.5">
@@ -539,8 +674,12 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                             <div
                               className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${
                                 isSelected
-                                  ? 'bg-amber-500 text-white'
-                                  : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/70'
+                                  ? isCustomCard
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-amber-500 text-white'
+                                  : isCustomCard
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200/70'
                               }`}
                             >
                               <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -548,14 +687,24 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                             <div className="min-w-0 flex-1">
                               <span
                                 className={`text-xs sm:text-sm font-black tracking-tight block truncate ${
-                                  isSelected ? 'text-amber-950' : 'text-slate-900'
+                                  isSelected
+                                    ? isCustomCard
+                                      ? 'text-emerald-950'
+                                      : 'text-amber-950'
+                                    : 'text-slate-900'
                                 }`}
                               >
                                 {tpl.title}
                               </span>
                               <span
                                 className={`text-[9.5px] sm:text-[10px] font-bold block truncate ${
-                                  isSelected ? 'text-amber-700' : 'text-slate-400'
+                                  isSelected
+                                    ? isCustomCard
+                                      ? 'text-emerald-700'
+                                      : 'text-amber-700'
+                                    : isCustomCard
+                                      ? 'text-emerald-600'
+                                      : 'text-slate-400'
                                 }`}
                               >
                                 {tpl.tag}
@@ -565,14 +714,26 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
 
                           <div className="flex items-center gap-1 shrink-0">
                             {tpl.badge && (
-                              <span className="text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300/80 flex items-center gap-0.5">
-                                <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-400" />
+                              <span
+                                className={`text-[9px] sm:text-[10px] font-black px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 ${
+                                  isCustomCard
+                                    ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                                    : 'bg-amber-100 text-amber-900 border-amber-300/80'
+                                }`}
+                              >
+                                {isCustomCard ? (
+                                  <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                                ) : (
+                                  <Crown className="w-2.5 h-2.5 text-amber-600 fill-amber-400" />
+                                )}
                                 <span>{tpl.badge}</span>
                               </span>
                             )}
                             {isSelected && (
                               <span
-                                className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0"
+                                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full text-white flex items-center justify-center shrink-0 ${
+                                  isCustomCard ? 'bg-emerald-600' : 'bg-amber-500'
+                                }`}
                                 title="Plantilla activa"
                               >
                                 <Check className="w-2.5 h-2.5 stroke-[3]" />
@@ -583,7 +744,11 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
 
                         <p
                           className={`text-[10.5px] sm:text-[11px] leading-snug line-clamp-2 ${
-                            isSelected ? 'text-amber-950/90 font-semibold' : 'text-slate-600'
+                            isSelected
+                              ? isCustomCard
+                                ? 'text-emerald-950/90 font-semibold'
+                                : 'text-amber-950/90 font-semibold'
+                              : 'text-slate-600'
                           }`}
                         >
                           {tpl.description}
@@ -607,7 +772,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                         }}
                         className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                           isSelected
-                            ? 'w-6 bg-amber-500'
+                            ? tpl.isCustomBuilder ? 'w-6 bg-emerald-600' : 'w-6 bg-amber-500'
                             : 'w-1.5 bg-slate-300 hover:bg-slate-400'
                         }`}
                         title={`Seleccionar ${tpl.title}`}
@@ -618,63 +783,140 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                 </div>
               </section>
 
-              {/* PASO 2: CAMPO OPCIONAL DE OFERTA / DESTACADO DEL DÍA */}
-              <section className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-slate-50/70 p-2.5 sm:p-3.5 space-y-1.5 sm:space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label
-                    htmlFor="customPromoInput"
-                    className="text-[11px] sm:text-[13px] font-extrabold text-slate-800 flex items-center gap-1.5 min-w-0"
-                  >
-                    <span className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] sm:text-[11px] font-black flex items-center justify-center shrink-0">
-                      2
-                    </span>
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="truncate">Oferta o Nota de Hoy</span>
-                    <span className="text-[10px] font-semibold text-slate-400 shrink-0">(Opcional)</span>
-                  </label>
-
-                  {customPromo && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomPromo('')}
-                      className="text-[10px] sm:text-[11px] text-rose-600 hover:text-rose-700 font-bold cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-rose-50 transition-colors shrink-0"
+              {/* PASO 2 DINÁMICO: Si es "Personalizada" muestra el Constructor con Botones de Enlaces del Sistema; si es estándar muestra Nota/Oferta */}
+              {isCustomMode ? (
+                <section className="rounded-xl sm:rounded-2xl border border-emerald-200 bg-emerald-50/40 p-2.5 sm:p-3.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <label
+                      htmlFor="customTemplateTextarea"
+                      className="text-[11px] sm:text-[13px] font-extrabold text-slate-800 flex items-center gap-1.5 min-w-0"
                     >
-                      Limpiar
-                    </button>
-                  )}
-                </div>
+                      <span className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-emerald-600 text-white text-[10px] sm:text-[11px] font-black flex items-center justify-center shrink-0">
+                        2
+                      </span>
+                      <PenTool className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate">Diseña tu Plantilla Personalizada</span>
+                    </label>
 
-                <input
-                  id="customPromoInput"
-                  type="text"
-                  value={customPromo}
-                  onChange={(e) => setCustomPromo(e.target.value)}
-                  placeholder="Ej: Coca-Cola 2L a Bs. 12 / Pan caliente 17:00 / Delivery gratis"
-                  className="share-promo-input w-full text-xs sm:text-[13px] px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-colors"
-                />
-
-                {/* Chips de sugerencias rápidas con 1 toque */}
-                <div className="share-store-chips-row flex lg:flex-wrap items-center gap-1.5 overflow-x-auto lg:overflow-visible pt-0.5">
-                  <span className="text-[10px] font-bold text-slate-400 shrink-0">Ideas:</span>
-                  {QUICK_PROMO_SUGGESTIONS.map((suggestion) => {
-                    const isApplied = customPromo.trim() === suggestion;
-                    return (
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
-                        key={suggestion}
                         type="button"
-                        onClick={() => setCustomPromo(isApplied ? '' : suggestion)}
-                        className={`text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                          isApplied
-                            ? 'bg-amber-500 text-white border-amber-600'
-                            : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-900 border-slate-200'
-                        }`}
+                        onClick={() => {
+                          handleUpdateCustomTemplateText(buildDefaultCustomTemplate());
+                          showToast('Plantilla base restaurada con tus enlaces', 'info');
+                        }}
+                        className="text-[10px] sm:text-[11px] text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer px-2 py-0.5 rounded-md bg-white border border-emerald-200 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1"
+                        title="Restaurar mensaje base con enlaces de tienda y ubicación"
                       >
-                        + {suggestion}
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Base con Links</span>
                       </button>
-                    );
-                  })}
-                </div>
-              </section>
+                      {customTemplateText && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateCustomTemplateText('')}
+                          className="text-[10px] sm:text-[11px] text-rose-600 hover:text-rose-700 font-bold cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-rose-50 transition-colors"
+                        >
+                          Vaciar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Barra de Enlaces y Datos de la Tienda ofrecidos por el Sistema para insertar con 1 clic */}
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 block">
+                      Insertar enlaces y datos oficiales de tu tienda (1 clic):
+                    </span>
+                    <div className="share-store-chips-row flex lg:flex-wrap items-center gap-1.5 overflow-x-auto lg:overflow-visible py-0.5">
+                      {smartInsertBlocks.map((block) => {
+                        const BlockIcon = block.icon;
+                        return (
+                          <button
+                            key={block.id}
+                            type="button"
+                            onClick={() => handleInsertSmartToken(block.snippet, block.label)}
+                            className={`text-[10px] sm:text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 inline-flex items-center gap-1 active:scale-95 ${block.colorClass}`}
+                            title={`Insertar ${block.label} en el mensaje`}
+                          >
+                            <Plus className="w-3 h-3 shrink-0" />
+                            <BlockIcon className="w-3 h-3 shrink-0" />
+                            <span>{block.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Editor de texto libre de la plantilla personalizada */}
+                  <textarea
+                    id="customTemplateTextarea"
+                    ref={customTextareaRef}
+                    rows={3}
+                    value={customTemplateText}
+                    onChange={(e) => handleUpdateCustomTemplateText(e.target.value)}
+                    placeholder="Escribe aquí tu promoción o anuncio y toca los botones de arriba para insertar el link del catálogo, ubicación GPS o dirección..."
+                    className="share-custom-textarea w-full text-xs sm:text-[12.5px] px-3 py-2 rounded-xl border border-emerald-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-600 leading-relaxed"
+                  />
+                </section>
+              ) : (
+                <section className="rounded-xl sm:rounded-2xl border border-slate-200/90 bg-slate-50/70 p-2.5 sm:p-3.5 space-y-1.5 sm:space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label
+                      htmlFor="customPromoInput"
+                      className="text-[11px] sm:text-[13px] font-extrabold text-slate-800 flex items-center gap-1.5 min-w-0"
+                    >
+                      <span className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 text-[10px] sm:text-[11px] font-black flex items-center justify-center shrink-0">
+                        2
+                      </span>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span className="truncate">Oferta o Nota de Hoy</span>
+                      <span className="text-[10px] font-semibold text-slate-400 shrink-0">(Opcional)</span>
+                    </label>
+
+                    {customPromo && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomPromo('')}
+                        className="text-[10px] sm:text-[11px] text-rose-600 hover:text-rose-700 font-bold cursor-pointer px-1.5 py-0.5 rounded-md hover:bg-rose-50 transition-colors shrink-0"
+                      >
+                        Limpiar
+                      </button>
+                    )}
+                  </div>
+
+                  <input
+                    id="customPromoInput"
+                    type="text"
+                    value={customPromo}
+                    onChange={(e) => setCustomPromo(e.target.value)}
+                    placeholder="Ej: Coca-Cola 2L a Bs. 12 / Pan caliente 17:00 / Delivery gratis"
+                    className="share-promo-input w-full text-xs sm:text-[13px] px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-colors"
+                  />
+
+                  {/* Chips de sugerencias rápidas con 1 toque */}
+                  <div className="share-store-chips-row flex lg:flex-wrap items-center gap-1.5 overflow-x-auto lg:overflow-visible pt-0.5">
+                    <span className="text-[10px] font-bold text-slate-400 shrink-0">Ideas:</span>
+                    {QUICK_PROMO_SUGGESTIONS.map((suggestion) => {
+                      const isApplied = customPromo.trim() === suggestion;
+                      return (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => setCustomPromo(isApplied ? '' : suggestion)}
+                          className={`text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                            isApplied
+                              ? 'bg-amber-500 text-white border-amber-600'
+                              : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-900 border-slate-200'
+                          }`}
+                        >
+                          + {suggestion}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* =========================================================== */}
@@ -721,8 +963,8 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                   </button>
                 </div>
 
-                {/* Ventana simulada de conversación de WhatsApp (Compacta en móvil para que toda la ventana entre sin recortes) */}
-                <div className="share-wa-chat-viewport p-2.5 sm:p-3.5 max-h-36 sm:max-h-52 lg:max-h-[245px] overflow-y-auto flex-1">
+                {/* Ventana simulada de conversación de WhatsApp */}
+                <div className="share-wa-chat-viewport p-2.5 sm:p-3.5 max-h-36 sm:max-h-52 lg:max-h-[260px] overflow-y-auto flex-1">
                   <div className="share-wa-bubble p-2.5 sm:p-3 text-[11.5px] sm:text-[12.5px] leading-relaxed font-sans max-w-[96%] ml-auto">
                     <div className="whitespace-pre-line text-slate-900 selection:bg-emerald-200">
                       {currentShareMessage}
@@ -740,7 +982,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
                     <MapPin className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${hasExactCoordinates ? 'text-emerald-600' : 'text-amber-500'}`} />
                     {hasExactCoordinates ? (
                       <span className="text-slate-600 font-semibold truncate">
-                        GPS: <strong className="font-mono text-slate-800">{resolvedLat}, {resolvedLng}</strong>
+                        Pin GPS exacto: <strong className="font-mono text-slate-800">{resolvedLat}, {resolvedLng}</strong>
                       </span>
                     ) : (
                       <span className="text-amber-700 font-semibold truncate">
@@ -873,7 +1115,7 @@ export const ShareStoreModal = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Barra inferior con Tip y botón Cerrar (En móvil el botón X del header ya cierra y el tip es ultra compacto) */}
+          {/* Barra inferior con Tip y botón Cerrar */}
           <div className="flex items-center justify-between gap-2 pt-0.5 lg:pt-0">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
