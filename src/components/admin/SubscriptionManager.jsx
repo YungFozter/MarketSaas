@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   OFFICIAL_PLATFORM_CONTACT, 
@@ -47,7 +47,31 @@ export const SubscriptionManager = () => {
   const [redeemError, setRedeemError] = useState('');
   const [redeemSuccess, setRedeemSuccess] = useState('');
 
+  // Tick local de 1 segundo exclusivo para la vista "Mi Suscripción" (para que el segundero
+  // se mueva en tiempo real aquí sin forzar re-renderizados globales cada segundo en el resto de la app)
+  const [localNow, setLocalNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isSubscriptionActive) return;
+    const timer = setInterval(() => {
+      setLocalNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isSubscriptionActive]);
+
   const sub = storeConfig?.subscription || {};
+  const expiresAtIso = sub.subscriptionExpiresAt || sub.trialEndsAt;
+  const liveTimeRemaining = useMemo(() => {
+    if (!expiresAtIso) return subscriptionTimeRemaining;
+    const diffMs = new Date(expiresAtIso).getTime() - localNow;
+    if (diffMs <= 0 || isNaN(diffMs)) return subscriptionTimeRemaining;
+    const totalSeconds = Math.floor(diffMs / 1000);
+    return {
+      days: Math.floor(totalSeconds / 86400),
+      hours: Math.floor((totalSeconds % 86400) / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60
+    };
+  }, [expiresAtIso, localNow, subscriptionTimeRemaining]);
   const isTrial = activePlanType === 'trial';
   const history = Array.isArray(sub.history) ? sub.history : [];
 
@@ -198,7 +222,7 @@ export const SubscriptionManager = () => {
               <div className="grid grid-cols-4 gap-2 sm:gap-4 my-6">
                 <div className="bg-slate-50 border border-slate-200/80 p-3 sm:p-4 rounded-2xl text-center shadow-xs">
                   <span className="block text-2xl sm:text-4xl font-black text-slate-900 font-mono">
-                    {String(subscriptionTimeRemaining.days).padStart(2, '0')}
+                    {String(liveTimeRemaining.days).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 mt-1 block">
                     Días
@@ -206,7 +230,7 @@ export const SubscriptionManager = () => {
                 </div>
                 <div className="bg-slate-50 border border-slate-200/80 p-3 sm:p-4 rounded-2xl text-center shadow-xs">
                   <span className="block text-2xl sm:text-4xl font-black text-slate-900 font-mono">
-                    {String(subscriptionTimeRemaining.hours).padStart(2, '0')}
+                    {String(liveTimeRemaining.hours).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 mt-1 block">
                     Horas
@@ -214,7 +238,7 @@ export const SubscriptionManager = () => {
                 </div>
                 <div className="bg-slate-50 border border-slate-200/80 p-3 sm:p-4 rounded-2xl text-center shadow-xs">
                   <span className="block text-2xl sm:text-4xl font-black text-emerald-600 font-mono">
-                    {String(subscriptionTimeRemaining.minutes).padStart(2, '0')}
+                    {String(liveTimeRemaining.minutes).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 mt-1 block">
                     Minutos
@@ -222,7 +246,7 @@ export const SubscriptionManager = () => {
                 </div>
                 <div className="bg-slate-50 border border-slate-200/80 p-3 sm:p-4 rounded-2xl text-center shadow-xs">
                   <span className="block text-2xl sm:text-4xl font-black text-emerald-600 font-mono animate-pulse">
-                    {String(subscriptionTimeRemaining.seconds).padStart(2, '0')}
+                    {String(liveTimeRemaining.seconds).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500 mt-1 block">
                     Segundos

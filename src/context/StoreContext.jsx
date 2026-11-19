@@ -3755,14 +3755,23 @@ export const StoreProvider = ({ children }) => {
   // GESTIÓN REACTIVA DE SUSCRIPCIONES, CÓDIGOS Y BLOQUEO DE POS
   // ==============================================================================
 
-  // Tick reactivo de 1 segundo para actualizar contadores y estados en vivo
+  // Tick reactivo inteligente para actualizar contadores y estados en vivo:
+  // - Cuando quedan más de 24 horas (> 1 día) de suscripción, el contador superior solo muestra "Xd Yh",
+  //   por lo que actualizar cada 30 segundos evita re-renderizar toda la aplicación cada 1 segundo (eliminando jank de scroll).
+  // - Solo cuando queda menos de 1 día (< 24h) o la suscripción está por expirar, hace tick cada 1 segundo.
   const [currentTick, setCurrentTick] = useState(() => Date.now());
   useEffect(() => {
+    const expiresAt = storeConfig?.subscription?.subscriptionExpiresAt || storeConfig?.subscription?.trialEndsAt;
+    const targetMs = expiresAt ? new Date(expiresAt).getTime() : 0;
+    const remainingMs = targetMs - Date.now();
+    // Si queda más de 1 día (> 86,400,000 ms), tick cada 30s; si queda menos de 1 día (y aún no expiró), tick cada 1s.
+    const intervalMs = (remainingMs > 0 && remainingMs < 86400000) ? 1000 : 30000;
+
     const timer = setInterval(() => {
       setCurrentTick(Date.now());
-    }, 1000);
+    }, intervalMs);
     return () => clearInterval(timer);
-  }, []);
+  }, [storeConfig?.subscription?.subscriptionExpiresAt, storeConfig?.subscription?.trialEndsAt]);
 
   // Lista de códigos de activación (Persistencia en nube y fallback en localStorage para SuperAdmin)
   const [subscriptionCodes, setSubscriptionCodes] = useState(() => {
